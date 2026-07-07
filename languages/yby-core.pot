@@ -1,0 +1,3 @@
+# YBY Core translation template
+#
+# MVP placeholder file for future localization extraction.
