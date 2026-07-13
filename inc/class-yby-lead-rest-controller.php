@@ -84,8 +84,9 @@ class YBY_Lead_REST_Controller {
 				return $this->success_response( $lead['case_id'], true, false );
 			}
 
-			$email_service = new YBY_Lead_Email();
-			$sent          = $email_service->send( $lead );
+			$notification_manager = new YBY_Notification_Manager();
+			$result               = $notification_manager->sendLeadNotification( $lead );
+			$sent                 = ! empty( $result['mail_sent'] );
 
 			if ( ! $sent ) {
 				return $this->error_response( 'mail_send_failed', __( 'We could not send your request. Please try again or contact us on WhatsApp.', 'yby-core' ), 500 );

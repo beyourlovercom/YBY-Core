@@ -26,8 +26,9 @@ YBY Core v1.2.0 includes:
 - Runtime Viewer
 - Admin settings page
 - Governed public lead REST endpoint
+- Notification Center architecture
 - Governed inquiry email delivery
-- Lead recipient email setting
+- Lead notification recipient settings
 - Case ID validation and generation
 - 30-minute email idempotency
 - short send lock for duplicate-click protection
@@ -53,6 +54,23 @@ YBY Core v1.2.0 includes:
 - safe email template generator
 - public `POST /wp-json/yby/v1/leads` endpoint
 - enterprise HTML inquiry email with multipart AltBody
+
+## Notification Center
+
+Lead notifications now dispatch through `YBY_Notification_Manager`.
+
+Current provider:
+
+- `email`
+
+Current Email settings:
+
+- Primary Recipient Email
+- CC Recipient Emails
+- BCC Recipient Emails
+- Reply-To Policy
+
+Future providers are reserved for a later phase and are not implemented in this release candidate.
 
 ## Public Stable Runtime API
 
@@ -84,7 +102,7 @@ The following browser runtime objects are now frozen as public stable APIs for v
 On activation, default options are created under:
 
 - `yby_core_options`
-- `yby_lead_recipient_email`
+- `yby_lead_notification_primary_recipient_email`
 
 ## Case ID Rule
 
@@ -141,12 +159,12 @@ This route:
 - enforces duplicate-send protection
 - sends one governed HTML email per Case ID within 30 minutes
 - returns `success`, `case_id`, `duplicate`, and `mail_sent`
-- keeps the lead recipient email in WordPress only
+- keeps the lead notification recipients in WordPress only
 
-The configured recipient is stored in the dedicated option:
+The configured primary recipient is stored in the dedicated option:
 
-`yby_lead_recipient_email`
+`yby_lead_notification_primary_recipient_email`
 
 Default recipient:
 
-`beyourlovercom@gmail.com`
+`sale@yby-irrigation.com`

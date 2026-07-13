@@ -4,11 +4,12 @@
 
 - Added `POST /wp-json/yby/v1/leads` for governed public lead submission
 - Added enterprise HTML inquiry email delivery with multipart AltBody support
-- Added `Lead Recipient Email` admin setting with Gmail recipient default
+- Added Notification Center architecture with configurable lead recipients
 - Added server-side Case ID validation and generation
 - Added 30-minute email idempotency and short send lock protection
 - Added PII-safe frontend tracking payload filtering
 - Added `mail_sent` in REST success and duplicate responses
+- Added email provider Reply-To policy and CC/BCC validation
 - Preserved the governed v1.1.0 platform baseline, including Project Studio and frozen v1.x runtime APIs
 
 ## v1.1.0

@@ -24,6 +24,42 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<table class="form-table" role="presentation">
 			<tbody>
 				<tr>
+					<th scope="row" colspan="2"><h2><?php esc_html_e( 'Email', 'yby-core' ); ?></h2></th>
+				</tr>
+				<tr>
+					<th scope="row" colspan="2"><h3><?php esc_html_e( 'Lead Notification', 'yby-core' ); ?></h3></th>
+				</tr>
+				<tr>
+					<th scope="row"><label for="yby-lead-notification-primary-recipient-email"><?php esc_html_e( 'Primary Recipient Email', 'yby-core' ); ?></label></th>
+					<td>
+						<input id="yby-lead-notification-primary-recipient-email" name="yby_lead_notification_primary_recipient_email" type="email" class="regular-text" value="<?php echo esc_attr( YBY_Config::get_lead_notification_primary_recipient_email() ); ?>">
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="yby-lead-notification-cc-recipient-emails"><?php esc_html_e( 'CC Recipient Emails', 'yby-core' ); ?></label></th>
+					<td>
+						<input id="yby-lead-notification-cc-recipient-emails" name="yby_lead_notification_cc_recipient_emails" type="text" class="regular-text" value="<?php echo esc_attr( YBY_Config::get_lead_notification_cc_recipient_emails() ); ?>">
+						<p class="description"><?php esc_html_e( 'Comma-separated email addresses.', 'yby-core' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="yby-lead-notification-bcc-recipient-emails"><?php esc_html_e( 'BCC Recipient Emails', 'yby-core' ); ?></label></th>
+					<td>
+						<input id="yby-lead-notification-bcc-recipient-emails" name="yby_lead_notification_bcc_recipient_emails" type="text" class="regular-text" value="<?php echo esc_attr( YBY_Config::get_lead_notification_bcc_recipient_emails() ); ?>">
+						<p class="description"><?php esc_html_e( 'Reserved for archive / ERP / AI.', 'yby-core' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="yby-lead-notification-reply-to-policy"><?php esc_html_e( 'Reply-To Policy', 'yby-core' ); ?></label></th>
+					<td>
+						<select id="yby-lead-notification-reply-to-policy" name="yby_lead_notification_reply_to_policy">
+							<option value="auto" <?php selected( YBY_Config::get_lead_notification_reply_to_policy(), 'auto' ); ?>><?php esc_html_e( 'Auto', 'yby-core' ); ?></option>
+							<option value="customer_email_only" <?php selected( YBY_Config::get_lead_notification_reply_to_policy(), 'customer_email_only' ); ?>><?php esc_html_e( 'Customer Email Only', 'yby-core' ); ?></option>
+							<option value="disabled" <?php selected( YBY_Config::get_lead_notification_reply_to_policy(), 'disabled' ); ?>><?php esc_html_e( 'Disabled', 'yby-core' ); ?></option>
+						</select>
+					</td>
+				</tr>
+				<tr>
 					<th scope="row"><label for="yby-whatsapp-number"><?php esc_html_e( 'WhatsApp Number', 'yby-core' ); ?></label></th>
 					<td><input id="yby-whatsapp-number" name="yby_core_options[whatsapp_number]" type="text" class="regular-text" value="<?php echo esc_attr( $options['whatsapp_number'] ); ?>"></td>
 				</tr>
@@ -38,13 +74,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<tr>
 					<th scope="row"><label for="yby-support-email"><?php esc_html_e( 'Support Email', 'yby-core' ); ?></label></th>
 					<td><input id="yby-support-email" name="yby_core_options[support_email]" type="email" class="regular-text" value="<?php echo esc_attr( $options['support_email'] ); ?>"></td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="yby-lead-recipient-email"><?php esc_html_e( 'Lead Recipient Email', 'yby-core' ); ?></label></th>
-					<td>
-						<input id="yby-lead-recipient-email" name="yby_lead_recipient_email" type="email" class="regular-text" value="<?php echo esc_attr( $lead_recipient_email ); ?>">
-						<p class="description"><?php esc_html_e( 'The email address that receives new website inquiries.', 'yby-core' ); ?></p>
-					</td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="yby-crm-webhook-url"><?php esc_html_e( 'CRM Webhook URL', 'yby-core' ); ?></label></th>

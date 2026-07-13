@@ -34,5 +34,30 @@ class YBY_Activator {
 				YBY_Config::default_lead_recipient_email()
 			)
 		);
+		update_option(
+			YBY_Helpers::lead_notification_primary_recipient_option_key(),
+			YBY_Config::sanitize_email_value(
+				get_option( YBY_Helpers::lead_notification_primary_recipient_option_key(), 'sale@yby-irrigation.com' ),
+				'sale@yby-irrigation.com'
+			)
+		);
+		update_option(
+			YBY_Helpers::lead_notification_cc_recipient_option_key(),
+			YBY_Config::sanitize_email_list_value(
+				get_option( YBY_Helpers::lead_notification_cc_recipient_option_key(), 'yishitongshop@gmail.com' )
+			)
+		);
+		update_option(
+			YBY_Helpers::lead_notification_bcc_recipient_option_key(),
+			YBY_Config::sanitize_email_list_value(
+				get_option( YBY_Helpers::lead_notification_bcc_recipient_option_key(), '' )
+			)
+		);
+		update_option(
+			YBY_Helpers::lead_notification_reply_to_policy_option_key(),
+			YBY_Config::sanitize_reply_to_policy(
+				get_option( YBY_Helpers::lead_notification_reply_to_policy_option_key(), 'auto' )
+			)
+		);
 	}
 }

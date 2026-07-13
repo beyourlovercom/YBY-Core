@@ -33,6 +33,42 @@ class YBY_Helpers {
 	}
 
 	/**
+	 * Return the primary notification recipient option key.
+	 *
+	 * @return string
+	 */
+	public static function lead_notification_primary_recipient_option_key() {
+		return 'yby_lead_notification_primary_recipient_email';
+	}
+
+	/**
+	 * Return the CC recipient option key.
+	 *
+	 * @return string
+	 */
+	public static function lead_notification_cc_recipient_option_key() {
+		return 'yby_lead_notification_cc_recipient_emails';
+	}
+
+	/**
+	 * Return the BCC recipient option key.
+	 *
+	 * @return string
+	 */
+	public static function lead_notification_bcc_recipient_option_key() {
+		return 'yby_lead_notification_bcc_recipient_emails';
+	}
+
+	/**
+	 * Return the reply-to policy option key.
+	 *
+	 * @return string
+	 */
+	public static function lead_notification_reply_to_policy_option_key() {
+		return 'yby_lead_notification_reply_to_policy';
+	}
+
+	/**
 	 * Get admin page slug.
 	 *
 	 * @return string

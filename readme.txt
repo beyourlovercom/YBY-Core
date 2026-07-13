@@ -28,7 +28,8 @@ Included in v1.2.0:
 * Public `POST /wp-json/yby/v1/leads` endpoint
 * Enterprise HTML inquiry email
 * Multipart AltBody generation
-* Lead Recipient Email setting
+* Notification Center architecture
+* Lead notification recipient settings
 * CRM webhook placeholder
 * Admin settings page
 * Project Studio admin layer
@@ -76,9 +77,13 @@ Yes. v1.2.0 adds a governed lead endpoint that can send one HTML inquiry email p
 
 Successful and duplicate responses include `success`, `case_id`, `duplicate`, and `mail_sent`. No recipient email, stack trace, or transport credential is exposed.
 
-= Where is the inquiry recipient email stored? =
+= How does lead notification work? =
 
-The recipient is stored in the dedicated WordPress option `yby_lead_recipient_email`. It is not exposed to frontend config, JavaScript, hidden inputs, REST responses, or `dataLayer`.
+Lead notifications dispatch through `YBY_Notification_Manager` with the Email provider enabled in this release. Future providers are reserved for later phases.
+
+= What are the Email settings? =
+
+The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Recipient Emails, and Reply-To Policy. Invalid addresses are ignored.
 
 == Changelog ==
 
@@ -86,7 +91,8 @@ The recipient is stored in the dedicated WordPress option `yby_lead_recipient_em
 
 * Added `POST /wp-json/yby/v1/leads`.
 * Added enterprise HTML inquiry email delivery with multipart AltBody.
-* Added `Lead Recipient Email` admin setting with Gmail recipient default.
+* Added Notification Center architecture with Email provider.
+* Added configurable lead notification recipients and reply-to policy.
 * Added Case ID validation, idempotency, and send-lock protection.
 * Added PII-safe tracking payload filtering.
 * Added `mail_sent` in REST success and duplicate responses.

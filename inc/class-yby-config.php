@@ -140,6 +140,31 @@ class YBY_Config {
 		return (string) self::get( 'website_url' );
 	}
 
+	public static function get_lead_notification_primary_recipient_email() {
+		return self::sanitize_email_value(
+			get_option( YBY_Helpers::lead_notification_primary_recipient_option_key(), 'sale@yby-irrigation.com' ),
+			'sale@yby-irrigation.com'
+		);
+	}
+
+	public static function get_lead_notification_cc_recipient_emails() {
+		return self::sanitize_email_list_value(
+			get_option( YBY_Helpers::lead_notification_cc_recipient_option_key(), 'yishitongshop@gmail.com' )
+		);
+	}
+
+	public static function get_lead_notification_bcc_recipient_emails() {
+		return self::sanitize_email_list_value(
+			get_option( YBY_Helpers::lead_notification_bcc_recipient_option_key(), '' )
+		);
+	}
+
+	public static function get_lead_notification_reply_to_policy() {
+		return self::sanitize_reply_to_policy(
+			get_option( YBY_Helpers::lead_notification_reply_to_policy_option_key(), 'auto' )
+		);
+	}
+
 	public static function is_tracking_enabled() {
 		return (bool) self::get( 'enable_tracking' );
 	}
@@ -227,5 +252,59 @@ class YBY_Config {
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Sanitize a single email value.
+	 *
+	 * @param mixed  $value Raw email.
+	 * @param string $fallback Fallback email.
+	 * @return string
+	 */
+	public static function sanitize_email_value( $value, $fallback = '' ) {
+		$email = sanitize_email( (string) $value );
+
+		if ( is_email( $email ) ) {
+			return $email;
+		}
+
+		$fallback = sanitize_email( (string) $fallback );
+
+		return is_email( $fallback ) ? $fallback : '';
+	}
+
+	/**
+	 * Sanitize a comma-separated email list.
+	 *
+	 * @param mixed $value Raw list.
+	 * @return string
+	 */
+	public static function sanitize_email_list_value( $value ) {
+		$emails  = array();
+		$pieces  = preg_split( '/[\s,]+/', (string) $value, -1, PREG_SPLIT_NO_EMPTY );
+		$pieces  = is_array( $pieces ) ? $pieces : array();
+
+		foreach ( $pieces as $piece ) {
+			$email = sanitize_email( $piece );
+
+			if ( is_email( $email ) ) {
+				$emails[ strtolower( $email ) ] = $email;
+			}
+		}
+
+		return implode( ', ', array_values( $emails ) );
+	}
+
+	/**
+	 * Sanitize reply-to policy.
+	 *
+	 * @param mixed $value Raw policy.
+	 * @return string
+	 */
+	public static function sanitize_reply_to_policy( $value ) {
+		$value = sanitize_text_field( (string) $value );
+		$allowed = array( 'auto', 'customer_email_only', 'disabled' );
+
+		return in_array( $value, $allowed, true ) ? $value : 'auto';
 	}
 }

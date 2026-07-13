@@ -15,7 +15,8 @@ This release candidate preserves the governed YBY Core platform baseline and add
 - governed `POST /wp-json/yby/v1/leads`
 - governed HTML inquiry email delivery
 - multipart plain-text AltBody support
-- dedicated lead recipient email option
+- Notification Center architecture with Email provider
+- primary recipient, CC, BCC, and reply-to policy settings
 - server-side Case ID validation and canonical fallback
 - 30-minute idempotency window
 - 90-second send lock

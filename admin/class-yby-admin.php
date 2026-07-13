@@ -111,24 +111,36 @@ class YBY_Admin {
 		if ( isset( $_POST['yby_core_submit'] ) ) {
 			check_admin_referer( 'yby_core_save_settings', 'yby_core_nonce' );
 
-			$raw_options = wp_unslash( $_POST['yby_core_options'] ?? array() );
-			$options     = YBY_Config::sanitize( is_array( $raw_options ) ? $raw_options : array() );
-			$raw_email   = wp_unslash( $_POST['yby_lead_recipient_email'] ?? '' );
-			$email       = sanitize_email( $raw_email );
+			$raw_options  = wp_unslash( $_POST['yby_core_options'] ?? array() );
+			$options      = YBY_Config::sanitize( is_array( $raw_options ) ? $raw_options : array() );
+			$primary_email = sanitize_email( wp_unslash( $_POST['yby_lead_notification_primary_recipient_email'] ?? '' ) );
+			$cc_emails     = wp_unslash( $_POST['yby_lead_notification_cc_recipient_emails'] ?? '' );
+			$bcc_emails    = wp_unslash( $_POST['yby_lead_notification_bcc_recipient_emails'] ?? '' );
+			$reply_policy  = wp_unslash( $_POST['yby_lead_notification_reply_to_policy'] ?? 'auto' );
 
 			update_option( YBY_Helpers::option_key(), $options );
 
-			if ( is_email( $email ) ) {
-				update_option( YBY_Helpers::lead_recipient_option_key(), $email );
-				$notice = __( 'Settings saved.', 'yby-core' );
-			} else {
-				$notice      = __( 'Lead Recipient Email is invalid. Existing recipient was kept.', 'yby-core' );
-				$notice_type = 'error';
+			$notice = __( 'Settings saved.', 'yby-core' );
+
+			if ( is_email( $primary_email ) ) {
+				update_option( YBY_Helpers::lead_notification_primary_recipient_option_key(), $primary_email );
 			}
+
+			update_option(
+				YBY_Helpers::lead_notification_cc_recipient_option_key(),
+				YBY_Config::sanitize_email_list_value( $cc_emails )
+			);
+			update_option(
+				YBY_Helpers::lead_notification_bcc_recipient_option_key(),
+				YBY_Config::sanitize_email_list_value( $bcc_emails )
+			);
+			update_option(
+				YBY_Helpers::lead_notification_reply_to_policy_option_key(),
+				YBY_Config::sanitize_reply_to_policy( $reply_policy )
+			);
 		}
 
-		$options              = YBY_Config::get_options();
-		$lead_recipient_email = YBY_Config::get_lead_recipient_email();
+		$options = YBY_Config::get_options();
 
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/settings-page.php';
 	}

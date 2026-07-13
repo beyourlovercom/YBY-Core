@@ -24,6 +24,8 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-session.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-tracking.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-webhook.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-notification-provider.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-notification-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-email.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-rest-controller.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
