@@ -28,6 +28,9 @@ class YBY_Config {
 			'crm_webhook_url'          => '',
 			'default_country'          => 'Tanzania',
 			'default_product_interest' => 'irrigation system solution',
+			'thank_you_url'            => '/lp/thank-you-irrigation-solution/',
+			'return_page_url'          => '/lp/irrigation-solution/',
+			'website_url'              => function_exists( 'home_url' ) ? home_url( '/' ) : '/',
 			'enable_tracking'          => true,
 			'enable_case_id'           => true,
 			'enable_crm_webhook'       => false,
@@ -67,6 +70,9 @@ class YBY_Config {
 			'crm_webhook_url'          => esc_url_raw( $options['crm_webhook_url'] ?? $defaults['crm_webhook_url'] ),
 			'default_country'          => sanitize_text_field( $options['default_country'] ?? $defaults['default_country'] ),
 			'default_product_interest' => sanitize_text_field( $options['default_product_interest'] ?? $defaults['default_product_interest'] ),
+			'thank_you_url'            => self::sanitize_path_value( $options['thank_you_url'] ?? $defaults['thank_you_url'] ),
+			'return_page_url'          => self::sanitize_path_value( $options['return_page_url'] ?? $defaults['return_page_url'] ),
+			'website_url'              => esc_url_raw( $options['website_url'] ?? $defaults['website_url'] ),
 			'enable_tracking'          => ! empty( $options['enable_tracking'] ),
 			'enable_case_id'           => ! empty( $options['enable_case_id'] ),
 			'enable_crm_webhook'       => ! empty( $options['enable_crm_webhook'] ),
@@ -105,6 +111,26 @@ class YBY_Config {
 		return (string) self::get( 'crm_webhook_url' );
 	}
 
+	public static function get_default_country() {
+		return (string) self::get( 'default_country' );
+	}
+
+	public static function get_default_product_interest() {
+		return (string) self::get( 'default_product_interest' );
+	}
+
+	public static function get_thank_you_url() {
+		return (string) self::get( 'thank_you_url' );
+	}
+
+	public static function get_return_page_url() {
+		return (string) self::get( 'return_page_url' );
+	}
+
+	public static function get_website_url() {
+		return (string) self::get( 'website_url' );
+	}
+
 	public static function is_tracking_enabled() {
 		return (bool) self::get( 'enable_tracking' );
 	}
@@ -115,5 +141,48 @@ class YBY_Config {
 
 	public static function is_crm_webhook_enabled() {
 		return (bool) self::get( 'enable_crm_webhook' );
+	}
+
+	/**
+	 * Return sanitized frontend runtime config.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function get_runtime_config() {
+		return array(
+			'whatsappNumber'         => self::get_whatsapp_number(),
+			'catalogUrl'             => self::get_catalog_url(),
+			'youtubeVideoId'         => self::get_youtube_video_id(),
+			'supportEmail'           => self::get_support_email(),
+			'crmWebhookUrl'          => self::get_crm_webhook_url(),
+			'defaultCountry'         => self::get_default_country(),
+			'defaultProductInterest' => self::get_default_product_interest(),
+			'enableTracking'         => self::is_tracking_enabled(),
+			'enableCaseId'           => self::is_case_id_enabled(),
+			'enableCrmWebhook'       => self::is_crm_webhook_enabled(),
+			'thankYouUrl'            => self::get_thank_you_url(),
+			'returnPageUrl'          => self::get_return_page_url(),
+			'websiteUrl'             => self::get_website_url(),
+		);
+	}
+
+	/**
+	 * Sanitize a relative URL.
+	 *
+	 * @param string $value URL value.
+	 * @return string
+	 */
+	public static function sanitize_path_value( $value ) {
+		$value = sanitize_text_field( (string) $value );
+
+		if ( '' === $value ) {
+			return '/';
+		}
+
+		if ( 0 !== strpos( $value, '/' ) ) {
+			$value = '/' . ltrim( $value, '/' );
+		}
+
+		return $value;
 	}
 }

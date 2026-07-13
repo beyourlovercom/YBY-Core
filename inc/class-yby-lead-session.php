@@ -26,6 +26,7 @@ class YBY_Lead_Session {
 			'enableCaseId' => YBY_Config::is_case_id_enabled(),
 			'caseIdRegex'  => '^YBY-IRR-\\d{8}-[A-HJ-NP-Z2-9]{6}$',
 			'caseIdSample' => $case_id->generate(),
+			'thankYouUrl'  => YBY_Config::get_thank_you_url(),
 		);
 	}
 }

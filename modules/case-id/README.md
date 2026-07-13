@@ -10,6 +10,8 @@ Provide the Case ID engine foundation for YBY websites.
 - generation exists
 - validation exists
 - normalization exists
+- frontend and backend format alignment exists
+- safe use for email subject, WhatsApp text, and tracking `event_id`
 
 ## Future Roadmap
 

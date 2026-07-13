@@ -10,6 +10,8 @@ Provide one central options layer for YBY Core settings.
 - sanitization exists
 - getter helpers exist
 - admin settings page uses the options layer
+- frontend runtime config output exists via `window.YBYCoreConfig`
+- page profile values can override selected runtime values per page
 
 ## Future Roadmap
 

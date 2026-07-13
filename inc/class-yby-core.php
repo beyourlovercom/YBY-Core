@@ -14,10 +14,18 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-helpers.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-security.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-config.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-case-id.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-page-profile.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-content.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project-template.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project-cpt.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-brand-os.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-session.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-tracking.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-webhook.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
 require_once YBY_CORE_PLUGIN_DIR . 'public/class-yby-public.php';
 
 /**
@@ -58,9 +66,17 @@ class YBY_Core {
 	 * @return void
 	 */
 	protected function define_admin_hooks() {
-		$admin = new YBY_Admin( 'yby-core', YBY_CORE_VERSION );
+		$admin          = new YBY_Admin( 'yby-core', YBY_CORE_VERSION );
+		$project_cpt    = new YBY_Project_CPT();
+		$brand_os       = new YBY_Brand_OS( 'yby-core', YBY_CORE_VERSION );
+		$project_studio = new YBY_Project_Studio( 'yby-core', YBY_CORE_VERSION );
 
+		$this->loader->add_action( 'init', $project_cpt, 'register' );
+		$this->loader->add_action( 'admin_menu', $project_studio, 'add_admin_menu' );
+		$this->loader->add_action( 'admin_menu', $brand_os, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_menu', $admin, 'add_admin_menu' );
+		$this->loader->add_action( 'admin_enqueue_scripts', $project_studio, 'enqueue_assets' );
+		$this->loader->add_action( 'admin_enqueue_scripts', $brand_os, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_assets' );
 	}
 

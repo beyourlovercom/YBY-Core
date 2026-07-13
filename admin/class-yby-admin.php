@@ -53,14 +53,13 @@ class YBY_Admin {
 	 * @return void
 	 */
 	public function add_admin_menu() {
-		add_menu_page(
-			__( 'YBY Core', 'yby-core' ),
-			__( 'YBY Core', 'yby-core' ),
+		add_submenu_page(
+			YBY_Project_Studio::menu_slug(),
+			__( 'Settings', 'yby-core' ),
+			__( 'Settings', 'yby-core' ),
 			'manage_options',
 			YBY_Helpers::admin_page_slug(),
-			array( $this, 'render_settings_page' ),
-			'dashicons-admin-generic',
-			58
+			array( $this, 'render_settings_page' )
 		);
 	}
 
@@ -71,7 +70,12 @@ class YBY_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook_suffix ) {
-		if ( 'toplevel_page_' . YBY_Helpers::admin_page_slug() !== $hook_suffix ) {
+		$allowed_hooks = array(
+			'toplevel_page_' . YBY_Project_Studio::menu_slug(),
+			YBY_Project_Studio::menu_slug() . '_page_' . YBY_Helpers::admin_page_slug(),
+		);
+
+		if ( ! in_array( $hook_suffix, $allowed_hooks, true ) ) {
 			return;
 		}
 

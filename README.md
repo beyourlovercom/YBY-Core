@@ -4,53 +4,56 @@
 
 YBY Core is the shared WordPress foundation plugin for YBY websites.
 
-## MVP Scope
+## Current Version
 
-This plugin delivers a clean, installable, extensible plugin skeleton for:
+v1.1.0
 
-- Case ID Engine
-- Config Center
-- Tracking Engine
-- Lead Session
-- CRM Webhook placeholder
+## Stable Scope
 
-## Folder Structure
+YBY Core v1.1.0 includes:
 
-```text
-yby-core/
-├── yby-core.php
-├── uninstall.php
-├── readme.txt
-├── README.md
-├── CHANGELOG.md
-├── LICENSE.md
-├── inc/
-├── admin/
-├── public/
-├── assets/
-├── modules/
-├── templates/
-└── languages/
-```
-
-## Modules
-
-- `case-id`
-- `tracking`
-- `lead-session`
-- `crm-webhook`
-- `config-center`
+- Case ID frontend and backend consistency
+- Lead Session helper
+- Thank You Page integration helper
+- Config Center runtime output
+- Project Engine
+- Page Profile Engine
+- Tracking helper standardization
+- Safe email template generator
+- Project Studio admin layer
+- Runtime Viewer
+- Admin settings page
 
 ## What Is Included
 
-- Plugin bootstrap
-- Activation and deactivation handlers
-- Config option storage under `yby_core_options`
-- Admin settings page
-- Case ID utility class
-- Frontend lead-session helper
-- Frontend tracking helper
-- Safe CRM webhook placeholder
+- installable plugin skeleton
+- settings storage under `yby_core_options`
+- frontend runtime config output
+- frontend project runtime output
+- frontend page profile runtime output
+- frontend content runtime output
+- frontend project template runtime output
+- `window.YBYCoreConfig`
+- `window.YBYProject`
+- `window.YBYContent`
+- `window.YBYTemplate`
+- `window.YBYLead`
+- `window.YBYTracking`
+- `window.YBYThankYou`
+- `window.YBYPageProfile`
+- safe email template generator with no sending
+
+## Public Stable Runtime API
+
+The following browser runtime objects are now frozen as public stable APIs for v1.x:
+
+- `window.YBYCoreConfig`
+- `window.YBYProject`
+- `window.YBYContent`
+- `window.YBYTemplate`
+- `window.YBYLead`
+- `window.YBYTracking`
+- `window.YBYThankYou`
 
 ## What Is Not Included
 
@@ -58,16 +61,17 @@ yby-core/
 - ERP implementation
 - AI implementation
 - database tables
-- REST API endpoints
-- real external API connections
+- SQL
+- real webhook delivery
+- SMTP or `wp_mail`
 - GTM installation
 - Google Tag installation
-- theme file modifications
+- theme modifications
 - Bricks page modifications
 
 ## Activation Behavior
 
-On activation, the plugin creates default settings in one option key:
+On activation, default options are created under:
 
 `yby_core_options`
 
@@ -77,20 +81,40 @@ Case IDs follow:
 
 `YBY-IRR-YYYYMMDD-XXXXXX`
 
-The generator avoids PII and validates pattern structure.
-
 ## Tracking Rule
 
-Tracking helpers use `dataLayer` safely and do not install GTM, GA4, or Google Tag scripts.
+Tracking helpers push safe payloads to `window.dataLayer` only and do not inject GTM or Google tags.
+
+## Page Profile Rule
+
+Page Profile values follow this priority:
+
+1. Page Profile
+2. YBY Core global settings
+3. System defaults
+
+## Project Rule
+
+Project values are the canonical runtime layer and follow this priority:
+
+1. YBY Project
+2. YBY Page Profile
+3. YBY Core global settings
+4. System defaults
 
 ## CRM Webhook Placeholder
 
-The webhook module is disabled by default and does not send data unless explicitly enabled and configured in a future phase.
+Webhook behavior remains disabled by default and performs no external request unless a future phase explicitly enables a safe implementation.
+
+## Stability Note
+
+YBY Core v1.1.0 continues the stable public platform release line.
+
+Its public runtime API signatures are frozen for the v1.x line under the compatibility policy documented in the stable release package.
 
 ## Future Roadmap
 
-- Stronger settings UX
-- case-to-form integrations
+- staging validation
+- email sending integration after approval
 - controlled webhook transport
-- internal event wrappers
-- future CRM and ERP integration adapters
+- approved theme integration

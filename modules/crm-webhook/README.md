@@ -9,6 +9,7 @@ Provide a safe placeholder for future CRM webhook integration.
 - webhook class exists
 - `send_lead()` placeholder exists
 - disabled or missing configuration returns safe failure
+- no external API call happens by default
 
 ## Future Roadmap
 
