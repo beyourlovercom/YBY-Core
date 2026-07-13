@@ -1,0 +1,14 @@
+Repository remote: git@github.com:beyourlovercom/YBY-Core.git
+Branch: release/yby-core-v1.2.0-rc1
+Source commit: 6469a52ae607d6110a8d14bcc31e514d1fc5caaf
+Build date: 2026-07-13 Asia/Shanghai
+Plugin version: 1.2.0
+Release stage: RC2
+ZIP path: releases/v1.2.0-rc2/yby-core-v1.2.0-rc2.zip
+ZIP root: yby-core/
+File count: 53
+ZIP SHA256: EC645E6C56FD37D220221D644FBE092AEDCE055398718E2E1D991BFFB4EE1255
+PHP lint status: passed for all plugin PHP files
+Diff check status: clean
+Source-of-truth rule: yby-core repository only
+
