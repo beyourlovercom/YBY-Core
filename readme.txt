@@ -34,6 +34,7 @@ Included in v1.2.0:
 * Project Studio admin layer
 * Runtime Viewer
 * Stable public runtime API contract
+* `mail_sent` flag in REST responses
 
 Not included:
 

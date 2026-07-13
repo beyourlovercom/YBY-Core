@@ -72,7 +72,7 @@ class YBY_Lead_REST_Controller {
 		$lead['case_id'] = $this->resolve_case_id( $case_engine, $lead['case_id'] );
 
 		if ( $this->is_duplicate( $lead['case_id'] ) ) {
-			return $this->success_response( $lead['case_id'], true );
+			return $this->success_response( $lead['case_id'], true, false );
 		}
 
 		if ( ! $this->acquire_send_lock( $lead['case_id'] ) ) {
@@ -81,7 +81,7 @@ class YBY_Lead_REST_Controller {
 
 		try {
 			if ( $this->is_duplicate( $lead['case_id'] ) ) {
-				return $this->success_response( $lead['case_id'], true );
+				return $this->success_response( $lead['case_id'], true, false );
 			}
 
 			$email_service = new YBY_Lead_Email();
@@ -93,7 +93,7 @@ class YBY_Lead_REST_Controller {
 
 			$this->mark_sent( $lead['case_id'] );
 
-			return $this->success_response( $lead['case_id'], false );
+			return $this->success_response( $lead['case_id'], false, true );
 		} finally {
 			$this->release_send_lock( $lead['case_id'] );
 		}
@@ -107,7 +107,7 @@ class YBY_Lead_REST_Controller {
 	 */
 	protected function validate_request_origin( \WP_REST_Request $request ) {
 		$allowed_hosts = array( 'ybyirrigation.com', 'www.ybyirrigation.com' );
-		$landing_url   = $this->sanitize_landing_page_url( $request->get_param( 'landing_page_url' ) );
+		$landing_url   = $this->sanitize_landing_page_url( $request->get_param( 'landing_url' ) ?: $request->get_param( 'landing_page_url' ) );
 		$origin        = $this->sanitize_landing_page_url( $request->get_header( 'origin' ) );
 		$referer       = $this->sanitize_landing_page_url( $request->get_header( 'referer' ) );
 
@@ -153,7 +153,11 @@ class YBY_Lead_REST_Controller {
 			'estimated_range'      => $this->limit_text( $request->get_param( 'estimated_range' ), 120 ),
 			'selected_country'     => $this->limit_text( $request->get_param( 'selected_country' ), 100 ),
 			'case_id'              => $this->limit_text( $request->get_param( 'case_id' ), 40 ),
-			'landing_page_url'     => $this->sanitize_landing_page_url( $request->get_param( 'landing_page_url' ) ),
+			'project_id'           => $this->limit_text( $request->get_param( 'project_id' ), 120 ),
+			'product_interest'     => $this->limit_text( $request->get_param( 'product_interest' ), 120 ),
+			'tracking_group'       => $this->limit_text( $request->get_param( 'tracking_group' ), 120 ),
+			'landing_page_url'     => $this->sanitize_landing_page_url( $request->get_param( 'landing_url' ) ?: $request->get_param( 'landing_page_url' ) ),
+			'referrer'             => $this->sanitize_landing_page_url( $request->get_param( 'referrer' ) ),
 			'utm_source'           => $this->limit_text( $request->get_param( 'utm_source' ), 500 ),
 			'utm_medium'           => $this->limit_text( $request->get_param( 'utm_medium' ), 500 ),
 			'utm_campaign'         => $this->limit_text( $request->get_param( 'utm_campaign' ), 500 ),
@@ -263,12 +267,13 @@ class YBY_Lead_REST_Controller {
 	 * @param bool   $duplicate Duplicate status.
 	 * @return \WP_REST_Response
 	 */
-	protected function success_response( $case_id, $duplicate ) {
+	protected function success_response( $case_id, $duplicate, $mail_sent ) {
 		return new \WP_REST_Response(
 			array(
 				'success'   => true,
 				'case_id'   => $case_id,
 				'duplicate' => (bool) $duplicate,
+				'mail_sent' => (bool) $mail_sent,
 			),
 			200
 		);

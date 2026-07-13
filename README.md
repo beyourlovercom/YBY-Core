@@ -28,8 +28,10 @@ YBY Core v1.2.0 includes:
 - Governed public lead REST endpoint
 - Governed inquiry email delivery
 - Lead recipient email setting
-- Case ID validation, idempotency, and send-lock protection
-- `mail_sent` response support for lead submission flows
+- Case ID validation and generation
+- 30-minute email idempotency
+- short send lock for duplicate-click protection
+- `mail_sent` success flag in REST responses
 
 ## What Is Included
 
