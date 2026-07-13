@@ -24,6 +24,8 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-session.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-tracking.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-webhook.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-email.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-rest-controller.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
 require_once YBY_CORE_PLUGIN_DIR . 'public/class-yby-public.php';
@@ -86,9 +88,11 @@ class YBY_Core {
 	 * @return void
 	 */
 	protected function define_public_hooks() {
-		$public = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
+		$public          = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
+		$lead_rest_route = new YBY_Lead_REST_Controller();
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
+		$this->loader->add_action( 'rest_api_init', $lead_rest_route, 'register_routes' );
 	}
 
 	/**

@@ -23,6 +23,21 @@
   var content = window.YBYContent || data.content || {};
   var template = window.YBYTemplate || data.template || {};
   var readableChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  var trackingBlockedKeys = {
+    name: true,
+    first_name: true,
+    company: true,
+    contact: true,
+    message: true,
+    email: true,
+    whatsapp: true,
+    phone: true,
+    ip: true,
+    user_agent: true,
+    payload: true,
+    form_data: true,
+    rest_payload: true
+  };
 
   function safeString(value, maxLength) {
     return String(value || "")
@@ -95,9 +110,19 @@
     }
   }
 
-  function safePayload(payload) {
-    var base = payload && typeof payload === "object" ? payload : {};
-    return Object.assign({}, base);
+  function sanitizeTrackingPayload(payload) {
+    var input = payload && typeof payload === "object" ? payload : {};
+    var output = {};
+
+    Object.keys(input).forEach(function (key) {
+      if (trackingBlockedKeys[key]) {
+        return;
+      }
+
+      output[key] = safeString(input[key], 240);
+    });
+
+    return output;
   }
 
   function getCanonicalString(keys, fallback, maxLength) {
@@ -320,11 +345,12 @@
   };
 
   window.YBYLead.getCaseId = function () {
-    return normalizeCaseId(getSessionItem("yby_case_id"));
+    return normalizeCaseId(window.YBYLead.currentCaseId || getSessionItem("yby_case_id"));
   };
 
   window.YBYLead.setCaseId = function (caseId) {
     var normalized = normalizeCaseId(caseId);
+
     if (isValidCaseId(normalized)) {
       setSessionItem("yby_case_id", normalized);
       window.YBYLead.currentCaseId = normalized;
@@ -335,19 +361,24 @@
   };
 
   window.YBYLead.getFirstName = function () {
-    return safeString(getSessionItem("yby_lead_first_name"), 50);
+    return safeString(window.YBYLead.currentFirstName || getSessionItem("yby_lead_first_name"), 50);
   };
 
   window.YBYLead.setFirstName = function (firstName) {
     var normalized = safeString(firstName, 50);
     setSessionItem("yby_lead_first_name", normalized);
+    window.YBYLead.currentFirstName = normalized;
     return normalized;
   };
 
   window.YBYLead.saveLeadDisplayData = function (payload) {
     var safeInput = payload && typeof payload === "object" ? payload : {};
-    var firstName = window.YBYLead.setFirstName(safeInput.first_name);
+    var firstName = window.YBYLead.setFirstName(safeInput.first_name || safeInput.name || "");
     var caseId = window.YBYLead.setCaseId(safeInput.case_id || window.YBYLead.createCaseId());
+
+    if (!caseId) {
+      caseId = window.YBYLead.setCaseId(window.YBYLead.createCaseId());
+    }
 
     return {
       first_name: firstName,
@@ -378,7 +409,7 @@
       return false;
     }
 
-    var eventPayload = safePayload(payload);
+    var eventPayload = sanitizeTrackingPayload(payload);
     pushDataLayer(
       Object.assign(
         {

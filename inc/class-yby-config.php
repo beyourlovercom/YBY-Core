@@ -38,6 +38,15 @@ class YBY_Config {
 	}
 
 	/**
+	 * Return the governed default lead recipient email.
+	 *
+	 * @return string
+	 */
+	public static function default_lead_recipient_email() {
+		return 'beyourlovercom@gmail.com';
+	}
+
+	/**
 	 * Get plugin options.
 	 *
 	 * @return array<string, mixed>
@@ -144,7 +153,41 @@ class YBY_Config {
 	}
 
 	/**
-	 * Return sanitized frontend runtime config.
+	 * Return the saved lead recipient email.
+	 *
+	 * @return string
+	 */
+	public static function get_lead_recipient_email() {
+		$email = get_option( YBY_Helpers::lead_recipient_option_key(), self::default_lead_recipient_email() );
+
+		return self::sanitize_lead_recipient_email( $email, self::default_lead_recipient_email() );
+	}
+
+	/**
+	 * Sanitize a lead recipient email value.
+	 *
+	 * @param string $value Raw email value.
+	 * @param string $fallback Fallback email.
+	 * @return string
+	 */
+	public static function sanitize_lead_recipient_email( $value, $fallback = '' ) {
+		$value = sanitize_email( (string) $value );
+
+		if ( is_email( $value ) ) {
+			return $value;
+		}
+
+		$fallback = sanitize_email( (string) $fallback );
+
+		if ( is_email( $fallback ) ) {
+			return $fallback;
+		}
+
+		return self::default_lead_recipient_email();
+	}
+
+	/**
+	 * Return frontend-safe runtime config.
 	 *
 	 * @return array<string, mixed>
 	 */

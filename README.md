@@ -6,11 +6,11 @@ YBY Core is the shared WordPress foundation plugin for YBY websites.
 
 ## Current Version
 
-v1.1.0
+v1.2.0
 
 ## Stable Scope
 
-YBY Core v1.1.0 includes:
+YBY Core v1.2.0 includes:
 
 - Case ID frontend and backend consistency
 - Lead Session helper
@@ -18,11 +18,18 @@ YBY Core v1.1.0 includes:
 - Config Center runtime output
 - Project Engine
 - Page Profile Engine
+- Content Runtime Engine
+- Project Template Engine
 - Tracking helper standardization
 - Safe email template generator
 - Project Studio admin layer
 - Runtime Viewer
 - Admin settings page
+- Governed public lead REST endpoint
+- Governed inquiry email delivery
+- Lead recipient email setting
+- Case ID validation, idempotency, and send-lock protection
+- `mail_sent` response support for lead submission flows
 
 ## What Is Included
 
@@ -41,7 +48,9 @@ YBY Core v1.1.0 includes:
 - `window.YBYTracking`
 - `window.YBYThankYou`
 - `window.YBYPageProfile`
-- safe email template generator with no sending
+- safe email template generator
+- public `POST /wp-json/yby/v1/leads` endpoint
+- enterprise HTML inquiry email with multipart AltBody
 
 ## Public Stable Runtime API
 
@@ -54,6 +63,7 @@ The following browser runtime objects are now frozen as public stable APIs for v
 - `window.YBYLead`
 - `window.YBYTracking`
 - `window.YBYThankYou`
+- `window.YBYPageProfile`
 
 ## What Is Not Included
 
@@ -62,8 +72,6 @@ The following browser runtime objects are now frozen as public stable APIs for v
 - AI implementation
 - database tables
 - SQL
-- real webhook delivery
-- SMTP or `wp_mail`
 - GTM installation
 - Google Tag installation
 - theme modifications
@@ -73,7 +81,8 @@ The following browser runtime objects are now frozen as public stable APIs for v
 
 On activation, default options are created under:
 
-`yby_core_options`
+- `yby_core_options`
+- `yby_lead_recipient_email`
 
 ## Case ID Rule
 
@@ -81,9 +90,13 @@ Case IDs follow:
 
 `YBY-IRR-YYYYMMDD-XXXXXX`
 
+The generator avoids ambiguous characters and keeps PII out of the identifier.
+
 ## Tracking Rule
 
 Tracking helpers push safe payloads to `window.dataLayer` only and do not inject GTM or Google tags.
+
+Lead tracking in v1.2.0 also filters blocked PII keys before payloads are pushed.
 
 ## Page Profile Rule
 
@@ -108,13 +121,30 @@ Webhook behavior remains disabled by default and performs no external request un
 
 ## Stability Note
 
-YBY Core v1.1.0 continues the stable public platform release line.
+YBY Core v1.2.0 continues the stable public platform release line.
 
-Its public runtime API signatures are frozen for the v1.x line under the compatibility policy documented in the stable release package.
+Its public runtime API signatures remain frozen for the v1.x line under the compatibility policy documented in the stable release package.
 
-## Future Roadmap
+## v1.2.0 Lead Intake
 
-- staging validation
-- email sending integration after approval
-- controlled webhook transport
-- approved theme integration
+The official website inquiry endpoint is:
+
+`POST /wp-json/yby/v1/leads`
+
+This route:
+
+- accepts public lead submissions
+- validates and normalizes Case ID
+- checks honeypot and origin rules
+- enforces duplicate-send protection
+- sends one governed HTML email per Case ID within 30 minutes
+- returns `success`, `case_id`, `duplicate`, and `mail_sent`
+- keeps the lead recipient email in WordPress only
+
+The configured recipient is stored in the dedicated option:
+
+`yby_lead_recipient_email`
+
+Default recipient:
+
+`beyourlovercom@gmail.com`

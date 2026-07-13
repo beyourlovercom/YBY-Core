@@ -66,6 +66,7 @@ class YBY_Public {
 		$template     = YBY_Project_Template::get_current_template();
 
 		$data = array(
+			'config'      => YBY_Config::get_runtime_config(),
 			'leadSession' => ( new YBY_Lead_Session() )->get_frontend_config(),
 			'tracking'    => ( new YBY_Tracking() )->get_frontend_config(),
 			'project'     => $project,
@@ -76,7 +77,12 @@ class YBY_Public {
 
 		wp_add_inline_script(
 			$this->plugin_name . '-public',
-			'window.YBYCoreConfig = window.YBYCoreConfig || ' . wp_json_encode( YBY_Config::get_runtime_config() ) . ';window.YBYCoreData = window.YBYCoreData || ' . wp_json_encode( $data ) . ';window.YBYProject = window.YBYProject || ' . wp_json_encode( $project ) . ';window.YBYPageProfile = window.YBYPageProfile || ' . wp_json_encode( $page_profile ) . ';window.YBYContent = window.YBYContent || ' . wp_json_encode( $content ) . ';window.YBYTemplate = window.YBYTemplate || ' . wp_json_encode( $template ) . ';',
+			'window.YBYCoreConfig = Object.assign({}, window.YBYCoreConfig || {}, ' . wp_json_encode( $data['config'] ) . ');'
+			. 'window.YBYCoreData = window.YBYCoreData || ' . wp_json_encode( $data ) . ';'
+			. 'window.YBYProject = window.YBYProject || ' . wp_json_encode( $project ) . ';'
+			. 'window.YBYPageProfile = window.YBYPageProfile || ' . wp_json_encode( $page_profile ) . ';'
+			. 'window.YBYContent = window.YBYContent || ' . wp_json_encode( $content ) . ';'
+			. 'window.YBYTemplate = window.YBYTemplate || ' . wp_json_encode( $template ) . ';',
 			'before'
 		);
 	}

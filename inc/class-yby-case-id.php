@@ -35,7 +35,7 @@ class YBY_Case_ID {
 	public function validate( $case_id ) {
 		$case_id = $this->normalize( $case_id );
 
-		return 1 === preg_match( '/^YBY-IRR-\d{8}-[A-HJ-NP-Z2-9]{6}$/', $case_id );
+		return 1 === preg_match( '/^YBY-IRR-\d{8}-[A-Z0-9]{6}$/', $case_id );
 	}
 
 	/**

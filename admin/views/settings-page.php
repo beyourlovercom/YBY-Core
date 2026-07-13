@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<h1><?php echo esc_html__( 'YBY Core', 'yby-core' ); ?></h1>
 
 	<?php if ( ! empty( $notice ) ) : ?>
-		<div class="notice notice-success is-dismissible">
+		<div class="notice notice-<?php echo esc_attr( $notice_type ); ?> is-dismissible">
 			<p><?php echo esc_html( $notice ); ?></p>
 		</div>
 	<?php endif; ?>
@@ -38,6 +38,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<tr>
 					<th scope="row"><label for="yby-support-email"><?php esc_html_e( 'Support Email', 'yby-core' ); ?></label></th>
 					<td><input id="yby-support-email" name="yby_core_options[support_email]" type="email" class="regular-text" value="<?php echo esc_attr( $options['support_email'] ); ?>"></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="yby-lead-recipient-email"><?php esc_html_e( 'Lead Recipient Email', 'yby-core' ); ?></label></th>
+					<td>
+						<input id="yby-lead-recipient-email" name="yby_lead_recipient_email" type="email" class="regular-text" value="<?php echo esc_attr( $lead_recipient_email ); ?>">
+						<p class="description"><?php esc_html_e( 'The email address that receives new website inquiries.', 'yby-core' ); ?></p>
+					</td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="yby-crm-webhook-url"><?php esc_html_e( 'CRM Webhook URL', 'yby-core' ); ?></label></th>
