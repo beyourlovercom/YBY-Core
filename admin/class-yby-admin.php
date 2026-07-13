@@ -53,14 +53,13 @@ class YBY_Admin {
 	 * @return void
 	 */
 	public function add_admin_menu() {
-		add_menu_page(
-			__( 'YBY Core', 'yby-core' ),
-			__( 'YBY Core', 'yby-core' ),
+		add_submenu_page(
+			YBY_Project_Studio::menu_slug(),
+			__( 'Settings', 'yby-core' ),
+			__( 'Settings', 'yby-core' ),
 			'manage_options',
 			YBY_Helpers::admin_page_slug(),
-			array( $this, 'render_settings_page' ),
-			'dashicons-admin-generic',
-			58
+			array( $this, 'render_settings_page' )
 		);
 	}
 
@@ -71,7 +70,12 @@ class YBY_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook_suffix ) {
-		if ( 'toplevel_page_' . YBY_Helpers::admin_page_slug() !== $hook_suffix ) {
+		$allowed_hooks = array(
+			'toplevel_page_' . YBY_Project_Studio::menu_slug(),
+			YBY_Project_Studio::menu_slug() . '_page_' . YBY_Helpers::admin_page_slug(),
+		);
+
+		if ( ! in_array( $hook_suffix, $allowed_hooks, true ) ) {
 			return;
 		}
 
@@ -101,19 +105,30 @@ class YBY_Admin {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'yby-core' ) );
 		}
 
-		$notice = '';
+		$notice      = '';
+		$notice_type = 'success';
 
 		if ( isset( $_POST['yby_core_submit'] ) ) {
 			check_admin_referer( 'yby_core_save_settings', 'yby_core_nonce' );
 
 			$raw_options = wp_unslash( $_POST['yby_core_options'] ?? array() );
 			$options     = YBY_Config::sanitize( is_array( $raw_options ) ? $raw_options : array() );
+			$raw_email   = wp_unslash( $_POST['yby_lead_recipient_email'] ?? '' );
+			$email       = sanitize_email( $raw_email );
 
 			update_option( YBY_Helpers::option_key(), $options );
-			$notice = __( 'Settings saved.', 'yby-core' );
+
+			if ( is_email( $email ) ) {
+				update_option( YBY_Helpers::lead_recipient_option_key(), $email );
+				$notice = __( 'Settings saved.', 'yby-core' );
+			} else {
+				$notice      = __( 'Lead Recipient Email is invalid. Existing recipient was kept.', 'yby-core' );
+				$notice_type = 'error';
+			}
 		}
 
-		$options = YBY_Config::get_options();
+		$options              = YBY_Config::get_options();
+		$lead_recipient_email = YBY_Config::get_lead_recipient_email();
 
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/settings-page.php';
 	}

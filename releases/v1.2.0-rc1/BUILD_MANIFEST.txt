@@ -1,0 +1,13 @@
+Repository remote: not configured
+Branch: release/yby-core-v1.2.0-rc1
+Source commit: 09d6a890d64f6b4463c7af7bf2e49f16ef514eae
+Build date: 2026-07-13 Asia/Shanghai
+Plugin version: 1.2.0
+Release stage: RC1
+ZIP path: releases/v1.2.0-rc1/yby-core-v1.2.0-rc1.zip
+ZIP root: yby-core/
+File count: 47
+ZIP SHA256: D41FA8D7991BFF14844B6AC5CBB535CE70842B5E83116375C375422D75D7B247
+PHP lint status: passed for all plugin PHP files
+Diff check status: clean
+Source-of-truth rule: yby-core repository only

@@ -60,16 +60,29 @@ class YBY_Public {
 			true
 		);
 
+		$project      = YBY_Project::get_current_project();
+		$page_profile = YBY_Page_Profile::get_current_profile();
+		$content      = YBY_Content::get_current_content();
+		$template     = YBY_Project_Template::get_current_template();
+
 		$data = array(
-			'config'      => YBY_Config::get_options(),
+			'config'      => YBY_Config::get_runtime_config(),
 			'leadSession' => ( new YBY_Lead_Session() )->get_frontend_config(),
 			'tracking'    => ( new YBY_Tracking() )->get_frontend_config(),
-			'thankYouUrl' => home_url( '/lp/thank-you-irrigation-solution/' ),
+			'project'     => $project,
+			'pageProfile' => $page_profile,
+			'content'     => $content,
+			'template'    => $template,
 		);
 
 		wp_add_inline_script(
 			$this->plugin_name . '-public',
-			'window.YBYCoreData = window.YBYCoreData || ' . wp_json_encode( $data ) . ';',
+			'window.YBYCoreConfig = Object.assign({}, window.YBYCoreConfig || {}, ' . wp_json_encode( $data['config'] ) . ');'
+			. 'window.YBYCoreData = window.YBYCoreData || ' . wp_json_encode( $data ) . ';'
+			. 'window.YBYProject = window.YBYProject || ' . wp_json_encode( $project ) . ';'
+			. 'window.YBYPageProfile = window.YBYPageProfile || ' . wp_json_encode( $page_profile ) . ';'
+			. 'window.YBYContent = window.YBYContent || ' . wp_json_encode( $content ) . ';'
+			. 'window.YBYTemplate = window.YBYTemplate || ' . wp_json_encode( $template ) . ';',
 			'before'
 		);
 	}
