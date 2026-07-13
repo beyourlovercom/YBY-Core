@@ -8,6 +8,7 @@ Flow:
 2. `YBY_Notification_Manager` receives the payload.
 3. The manager dispatches to the active provider.
 4. The Email provider composes and sends the notification.
+5. Subject rendering, recipient validation, and branding are handled inside the Email provider layer.
 
 Design rules:
 

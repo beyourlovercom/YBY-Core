@@ -89,10 +89,12 @@ class YBY_Admin {
 		wp_enqueue_script(
 			$this->plugin_name . '-admin',
 			YBY_CORE_PLUGIN_URL . 'assets/js/yby-core-admin.js',
-			array(),
+			array( 'jquery' ),
 			$this->version,
 			true
 		);
+
+		wp_enqueue_media();
 	}
 
 	/**

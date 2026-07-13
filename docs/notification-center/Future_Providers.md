@@ -13,3 +13,5 @@ Reserved provider categories:
 - Enterprise WeChat
 
 These providers are not implemented in this release candidate.
+
+The current Email provider remains the only active provider and the architecture is prepared for future registration without changing the REST contract.

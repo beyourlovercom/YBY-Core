@@ -17,6 +17,8 @@ This release candidate preserves the governed YBY Core platform baseline and add
 - multipart plain-text AltBody support
 - Notification Center architecture with Email provider
 - primary recipient, CC, BCC, and reply-to policy settings
+- configurable lead email subject templates
+- email branding settings with Brand fallback for logos
 - server-side Case ID validation and canonical fallback
 - 30-minute idempotency window
 - 90-second send lock

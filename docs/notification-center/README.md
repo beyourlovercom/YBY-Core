@@ -6,6 +6,13 @@ Current provider:
 
 - Email
 
+Email provider capabilities:
+
+- configurable recipient lists
+- configurable lead email subject templates
+- email branding settings for company name, website, phone, WhatsApp, copyright, and logos
+- safe HTML and AltBody generation
+
 Planned future providers:
 
 - CRM

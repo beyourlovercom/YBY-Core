@@ -1,10 +1,3 @@
 # Version
 
-Notification Center first appears in YBY Core `v1.2.0`.
-
-Scope:
-
-- Email provider only
-- configurable lead recipients
-- safe provider dispatch layer
-- no future provider implementation yet
+Notification Center email enhancements are part of the YBY Core v1.2.0 RC1 line and remain backward compatible with the governed lead intake REST contract.

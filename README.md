@@ -69,6 +69,8 @@ Current Email settings:
 - CC Recipient Emails
 - BCC Recipient Emails
 - Reply-To Policy
+- Lead Email Subject Template
+- Email Branding settings
 
 Future providers are reserved for a later phase and are not implemented in this release candidate.
 

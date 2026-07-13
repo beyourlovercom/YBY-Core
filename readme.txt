@@ -30,6 +30,8 @@ Included in v1.2.0:
 * Multipart AltBody generation
 * Notification Center architecture
 * Lead notification recipient settings
+* Lead email subject template
+* Email branding settings
 * CRM webhook placeholder
 * Admin settings page
 * Project Studio admin layer
@@ -83,7 +85,7 @@ Lead notifications dispatch through `YBY_Notification_Manager` with the Email pr
 
 = What are the Email settings? =
 
-The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Recipient Emails, and Reply-To Policy. Invalid addresses are ignored.
+The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Recipient Emails, Reply-To Policy, Lead Email Subject Template, and Email Branding settings. Invalid addresses are ignored.
 
 == Changelog ==
 

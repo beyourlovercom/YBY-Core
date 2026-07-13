@@ -21,14 +21,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<form method="post">
 		<?php wp_nonce_field( 'yby_core_save_settings', 'yby_core_nonce' ); ?>
 
+		<h2><?php esc_html_e( 'Email', 'yby-core' ); ?></h2>
+
+		<h3><?php esc_html_e( 'Lead Notification', 'yby-core' ); ?></h3>
 		<table class="form-table" role="presentation">
 			<tbody>
-				<tr>
-					<th scope="row" colspan="2"><h2><?php esc_html_e( 'Email', 'yby-core' ); ?></h2></th>
-				</tr>
-				<tr>
-					<th scope="row" colspan="2"><h3><?php esc_html_e( 'Lead Notification', 'yby-core' ); ?></h3></th>
-				</tr>
 				<tr>
 					<th scope="row"><label for="yby-lead-notification-primary-recipient-email"><?php esc_html_e( 'Primary Recipient Email', 'yby-core' ); ?></label></th>
 					<td>
@@ -59,6 +56,61 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</select>
 					</td>
 				</tr>
+				<tr>
+					<th scope="row"><label for="yby-lead-notification-subject-template"><?php esc_html_e( 'Lead Email Subject Template', 'yby-core' ); ?></label></th>
+					<td>
+						<input id="yby-lead-notification-subject-template" name="yby_core_options[lead_notification_subject_template]" type="text" class="regular-text" value="<?php echo esc_attr( $options['lead_notification_subject_template'] ); ?>">
+						<p class="description"><?php esc_html_e( 'Use placeholders like {case_id}, {name}, {country}, {crop}, {farm_size}, {water_source}, {recommended_system}, {project_id}, {product_interest}, and {source_component}.', 'yby-core' ); ?></p>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<h3><?php esc_html_e( 'Email Branding', 'yby-core' ); ?></h3>
+		<table class="form-table" role="presentation">
+			<tbody>
+				<tr>
+					<th scope="row"><label for="yby-email-company-name"><?php esc_html_e( 'Company Name', 'yby-core' ); ?></label></th>
+					<td><input id="yby-email-company-name" name="yby_core_options[email_company_name]" type="text" class="regular-text" value="<?php echo esc_attr( $options['email_company_name'] ); ?>"></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="yby-email-company-website"><?php esc_html_e( 'Company Website', 'yby-core' ); ?></label></th>
+					<td><input id="yby-email-company-website" name="yby_core_options[email_company_website]" type="url" class="regular-text" value="<?php echo esc_attr( $options['email_company_website'] ); ?>"></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="yby-email-company-phone"><?php esc_html_e( 'Company Phone', 'yby-core' ); ?></label></th>
+					<td><input id="yby-email-company-phone" name="yby_core_options[email_company_phone]" type="text" class="regular-text" value="<?php echo esc_attr( $options['email_company_phone'] ); ?>"></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="yby-email-company-whatsapp"><?php esc_html_e( 'Company WhatsApp', 'yby-core' ); ?></label></th>
+					<td><input id="yby-email-company-whatsapp" name="yby_core_options[email_company_whatsapp]" type="text" class="regular-text" value="<?php echo esc_attr( $options['email_company_whatsapp'] ); ?>"></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="yby-email-footer-copyright"><?php esc_html_e( 'Footer Copyright', 'yby-core' ); ?></label></th>
+					<td><input id="yby-email-footer-copyright" name="yby_core_options[email_footer_copyright]" type="text" class="regular-text" value="<?php echo esc_attr( $options['email_footer_copyright'] ); ?>"></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="yby-email-logo-url"><?php esc_html_e( 'Email Logo', 'yby-core' ); ?></label></th>
+					<td>
+						<input id="yby-email-logo-url" name="yby_core_options[email_logo_url]" type="url" class="regular-text yby-media-url" value="<?php echo esc_attr( $options['email_logo_url'] ); ?>" data-yby-media-target="yby-email-logo-url">
+						<button type="button" class="button yby-media-button" data-yby-media-target="yby-email-logo-url"><?php esc_html_e( 'Select from Media Library', 'yby-core' ); ?></button>
+						<p class="description"><?php esc_html_e( 'Leave blank to use the configured Brand default logo.', 'yby-core' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="yby-email-reverse-logo-url"><?php esc_html_e( 'Email Reverse Logo', 'yby-core' ); ?></label></th>
+					<td>
+						<input id="yby-email-reverse-logo-url" name="yby_core_options[email_reverse_logo_url]" type="url" class="regular-text yby-media-url" value="<?php echo esc_attr( $options['email_reverse_logo_url'] ); ?>" data-yby-media-target="yby-email-reverse-logo-url">
+						<button type="button" class="button yby-media-button" data-yby-media-target="yby-email-reverse-logo-url"><?php esc_html_e( 'Select from Media Library', 'yby-core' ); ?></button>
+						<p class="description"><?php esc_html_e( 'Leave blank to use the configured Brand reverse logo.', 'yby-core' ); ?></p>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<h3><?php esc_html_e( 'Core Settings', 'yby-core' ); ?></h3>
+		<table class="form-table" role="presentation">
+			<tbody>
 				<tr>
 					<th scope="row"><label for="yby-whatsapp-number"><?php esc_html_e( 'WhatsApp Number', 'yby-core' ); ?></label></th>
 					<td><input id="yby-whatsapp-number" name="yby_core_options[whatsapp_number]" type="text" class="regular-text" value="<?php echo esc_attr( $options['whatsapp_number'] ); ?>"></td>

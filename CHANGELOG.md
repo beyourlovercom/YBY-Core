@@ -5,6 +5,7 @@
 - Added `POST /wp-json/yby/v1/leads` for governed public lead submission
 - Added enterprise HTML inquiry email delivery with multipart AltBody support
 - Added Notification Center architecture with configurable lead recipients
+- Added configurable lead email subject templates and email branding settings
 - Added server-side Case ID validation and generation
 - Added 30-minute email idempotency and short send lock protection
 - Added PII-safe frontend tracking payload filtering
