@@ -165,6 +165,26 @@
     return url + joiner + encodeURIComponent(key) + "=" + encodeURIComponent(value);
   }
 
+  function parseJsonResponse(response) {
+    return response.text().then(function (text) {
+      var data = {};
+
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch (error) {
+          data = {};
+        }
+      }
+
+      return {
+        ok: !!response.ok,
+        status: response.status || 0,
+        data: data && typeof data === "object" ? data : {}
+      };
+    });
+  }
+
   function getQueryParam(name) {
     try {
       return new URLSearchParams(window.location.search || "").get(name) || "";
@@ -402,6 +422,32 @@
      * Email and phone must stay out of the URL and out of UTM parameters.
      */
     window.location.href = window.YBYLead.buildThankYouUrl(dataPayload.case_id);
+  };
+
+  window.YBYLead.submit = function (payload) {
+    var requestPayload = payload && typeof payload === "object" ? payload : {};
+
+    return window
+      .fetch("/wp-json/yby/v1/leads", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify(requestPayload)
+      })
+      .then(parseJsonResponse)
+      .then(function (result) {
+        var responseData = result.data || {};
+        var message = safeString(responseData.message || "", 240);
+
+        if (!result.ok || !responseData.success) {
+          throw new Error(message || "We could not send your request right now.");
+        }
+
+        return responseData;
+      });
   };
 
   window.YBYTracking.push = function (eventName, payload) {
