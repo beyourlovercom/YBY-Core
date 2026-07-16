@@ -6,11 +6,11 @@ YBY Core is the shared WordPress foundation plugin for YBY websites.
 
 ## Current Version
 
-v1.2.0
+v1.1.1
 
 ## Stable Scope
 
-YBY Core v1.2.0 includes:
+YBY Core v1.1.1 includes:
 
 - Case ID frontend and backend consistency
 - Lead Session helper
@@ -118,7 +118,7 @@ The generator avoids ambiguous characters and keeps PII out of the identifier.
 
 Tracking helpers push safe payloads to `window.dataLayer` only and do not inject GTM or Google tags.
 
-Lead tracking in v1.2.0 also filters blocked PII keys before payloads are pushed.
+Lead tracking in v1.1.1 also filters blocked PII keys before payloads are pushed.
 
 ## Page Profile Rule
 
@@ -143,9 +143,18 @@ Webhook behavior remains disabled by default and performs no external request un
 
 ## Stability Note
 
-YBY Core v1.2.0 continues the stable public platform release line.
+YBY Core v1.1.1 is the official stable public platform release line.
 
 Its public runtime API signatures remain frozen for the v1.x line under the compatibility policy documented in the stable release package.
+
+## v1.1.1 Stable Release Notes
+
+- Brand Settings module included
+- Logo management added
+- Brand color management added
+- Font governance added
+- Activation fatal error fix included
+- Release QA validation completed
 
 ## v1.2.0 Lead Intake
 

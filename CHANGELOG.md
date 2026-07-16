@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v1.1.1
+
+- Promoted YBY Core to the official stable release line
+- Added Brand Settings module support
+- Added logo, color, and font governance documentation
+- Fixed the activation fatal error and completed release QA validation
+
 ## v1.2.0
 
 - Added `POST /wp-json/yby/v1/leads` for governed public lead submission
