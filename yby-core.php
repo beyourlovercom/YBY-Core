@@ -3,7 +3,7 @@
  * Plugin Name:       YBY Core
  * Plugin URI:        https://ybyglobal.com/
  * Description:       Core platform plugin for YBY websites, including Case ID, tracking, configuration, lead session, and CRM webhook foundation.
- * Version:           1.1.1
+ * Version:           1.2.1-dev
  * Author:            YBY Global
  * Text Domain:       yby-core
  * Domain Path:       /languages
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'YBY_CORE_VERSION', '1.1.1' );
+define( 'YBY_CORE_VERSION', '1.2.1-dev' );
 define( 'YBY_CORE_PLUGIN_FILE', __FILE__ );
 define( 'YBY_CORE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'YBY_CORE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
