@@ -1,0 +1,50 @@
+name: Release YBY Core
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+
+      - name: PHP syntax validation
+        run: find . -name "*.php" -print0 | xargs -0 -n1 php -l
+
+      - name: Build release package
+        run: |
+          set -e
+          version="${GITHUB_REF_NAME#v}"
+          release_dir="releases/v${version}"
+          stage_dir="$(mktemp -d)"
+          mkdir -p "${stage_dir}/yby-core"
+          for item in yby-core.php readme.txt README.md CHANGELOG.md VERSION.md uninstall.php; do
+            cp "$item" "${stage_dir}/yby-core/"
+          done
+          for dir in admin assets inc languages modules public templates; do
+            cp -R "$dir" "${stage_dir}/yby-core/"
+          done
+          mkdir -p "${release_dir}"
+          (cd "${stage_dir}" && zip -r "${GITHUB_WORKSPACE}/${release_dir}/yby-core-v${version}.zip" yby-core)
+          sha256sum "${release_dir}/yby-core-v${version}.zip" > "${release_dir}/SHA256.txt"
+
+      - name: Upload release artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            releases/${{ github.ref_name }}/yby-core-${{ github.ref_name }}.zip
+            releases/${{ github.ref_name }}/SHA256.txt
+            RELEASE_NOTES_${{ github.ref_name }}.md
+            UPGRADE_GUIDE_${{ github.ref_name }}.md
+            ROLLBACK_GUIDE_${{ github.ref_name }}.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

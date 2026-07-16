@@ -147,6 +147,10 @@ YBY Core v1.1.1 is the official stable public platform release line.
 
 Its public runtime API signatures remain frozen for the v1.x line under the compatibility policy documented in the stable release package.
 
+## Release Process
+
+All future YBY Core releases must follow the official workflow in [docs/RELEASE_WORKFLOW.md](docs/RELEASE_WORKFLOW.md).
+
 ## v1.1.1 Stable Release Notes
 
 - Brand Settings module included
