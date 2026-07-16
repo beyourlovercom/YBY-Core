@@ -28,7 +28,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-subject-renderer.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-notification-provider.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-notification-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-email.php';
-require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-rest-controller.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/api/class-yby-lead-rest-controller.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
 require_once YBY_CORE_PLUGIN_DIR . 'public/class-yby-public.php';

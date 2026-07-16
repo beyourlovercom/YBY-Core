@@ -1,10 +1,12 @@
 (function () {
   "use strict";
 
-  var runtime = window.YBYCoreConfig || {};
-  var leadSession = runtime.leadSession || {};
   var readableChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   var debugLabel = "[YBY Lead SDK]";
+
+  function getRuntime() {
+    return window.YBYCoreConfig || {};
+  }
 
   function log(message, data) {
     if (!window.YBYLead || !window.YBYLead.debug) {
@@ -65,6 +67,16 @@
   function validatePayload(payload) {
     var input = payload && typeof payload === "object" ? payload : {};
     var output = {};
+    var maxLengths = {
+      project_details: 3000,
+      page: 240,
+      utm_source: 500,
+      utm_medium: 500,
+      utm_campaign: 500,
+      utm_term: 500,
+      gclid: 500,
+      fbclid: 500
+    };
     var allowed = [
       "name",
       "first_name",
@@ -72,18 +84,65 @@
       "country",
       "whatsapp",
       "phone",
+      "buyer_type",
       "product_interest",
+      "project_details",
       "case_id",
-      "company"
+      "company",
+      "brand",
+      "website",
+      "page",
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_term",
+      "gclid",
+      "fbclid"
     ];
 
     allowed.forEach(function (key) {
       if (typeof input[key] !== "undefined") {
-        output[key] = safeString(input[key], 180);
+        output[key] = safeString(input[key], maxLengths[key] || 180);
       }
     });
 
     return output;
+  }
+
+  function validateRequired(payload) {
+    var errors = {};
+
+    if (!payload.name) {
+      errors.name = "Name is required";
+    }
+
+    if (!payload.email) {
+      errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+      errors.email = "Invalid email";
+    }
+
+    return errors;
+  }
+
+  function parseJsonResponse(response) {
+    return response.text().then(function (text) {
+      var data = {};
+
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch (error) {
+          data = {};
+        }
+      }
+
+      return {
+        ok: !!response.ok,
+        status: response.status || 0,
+        data: data && typeof data === "object" ? data : {}
+      };
+    });
   }
 
   function createSdk() {
@@ -170,6 +229,7 @@
     };
 
     sdk.buildThankYouUrl = function (caseId) {
+      var runtime = getRuntime();
       var safeCaseId = normalizeCaseId(caseId || sdk.getCaseId() || sdk.createCaseId());
       var baseUrl = runtime.thankYouUrl || runtime.returnPageUrl || "/thank-you/";
       var separator = baseUrl.indexOf("?") === -1 ? "?" : "&";
@@ -186,15 +246,38 @@
 
     sdk.submit = function (payload) {
       var requestPayload = validatePayload(payload);
+      var errors = validateRequired(requestPayload);
 
       log("submit called", requestPayload);
 
-      return Promise.resolve({
-        success: true,
-        prepared: true,
-        payload: requestPayload,
-        case_id: requestPayload.case_id || sdk.getCaseId() || sdk.createCaseId()
-      });
+      if (Object.keys(errors).length) {
+        return Promise.reject({
+          success: false,
+          message: "Validation failed",
+          errors: errors
+        });
+      }
+
+      return window
+        .fetch("/wp-json/yby/v1/leads", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json"
+          },
+          body: JSON.stringify(requestPayload)
+        })
+        .then(parseJsonResponse)
+        .then(function (result) {
+          var responseData = result.data || {};
+
+          if (!result.ok || !responseData.success) {
+            throw responseData;
+          }
+
+          return responseData;
+        });
     };
 
     sdk.currentCaseId = sdk.getCaseId();
