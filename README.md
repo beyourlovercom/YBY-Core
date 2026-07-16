@@ -155,6 +155,12 @@ All future YBY Core releases must follow the official workflow in [docs/RELEASE_
 
 All YBY Core feature, fix, refactor, and documentation work must follow [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md).
 
+## Sprint 001.5 Validation Result
+
+- Test URL: `https://ybyirrigation.com/lp/irrigation-solution/`
+- Test Date: `2026-07-16`
+- Result: SDK availability and submit interface validated in a simulated frontend load path; `window.YBYLead` and `window.YBYLead.submit` are available, and debug mode logs initialize and submit events.
+
 ## v1.1.1 Stable Release Notes
 
 - Brand Settings module included
