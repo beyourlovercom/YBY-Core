@@ -151,6 +151,10 @@ Its public runtime API signatures remain frozen for the v1.x line under the comp
 
 All future YBY Core releases must follow the official workflow in [docs/RELEASE_WORKFLOW.md](docs/RELEASE_WORKFLOW.md).
 
+## Development Process
+
+All YBY Core feature, fix, refactor, and documentation work must follow [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md).
+
 ## v1.1.1 Stable Release Notes
 
 - Brand Settings module included
