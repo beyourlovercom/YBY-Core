@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Unreleased
+
+- Added ZIP internal path separator validation to YBY Core Release Packaging QA Standard.
+
 ## v1.1.1
 
 - Promoted YBY Core to the official stable release line

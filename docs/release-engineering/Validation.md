@@ -12,7 +12,37 @@
 - no unintended Google Tag or GTM injection
 - no leaked recipient email in frontend payloads
 - ZIP root structure verified
+- ZIP main plugin file path verified
+- ZIP internal paths use `/` separators only
 - SHA256 generated
+
+## ZIP internal path separator check
+
+Before declaring a release package `release-ready`, `validated`, or `safe to upload`, the package must pass:
+
+- ZIP root directory validation
+- Main plugin file validation
+- Internal path separator validation
+
+Validation command:
+
+```bash
+unzip -l yby-core-vX.X.X.zip
+```
+
+Expected output example:
+
+```text
+yby-core/yby-core.php
+yby-core/inc/
+yby-core/public/
+```
+
+Invalid output:
+
+```text
+yby-core\yby-core.php
+```
 
 ## Required lead intake behavior
 

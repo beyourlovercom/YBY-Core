@@ -17,6 +17,54 @@ The ZIP must extract to:
 
 `yby-core/`
 
+## ZIP internal path separator validation
+
+All release ZIP packages must use Unix-style path separators.
+
+Required:
+
+- `/`
+
+Forbidden:
+
+- `\`
+
+Forbidden example:
+
+- `yby-core\yby-core.php`
+
+Required example:
+
+- `yby-core/yby-core.php`
+
+## ZIP validation command
+
+Before declaring a package release-ready, validated, or safe to upload, run:
+
+```bash
+unzip -l yby-core-vX.X.X.zip
+```
+
+Expected output example:
+
+```text
+yby-core/yby-core.php
+yby-core/inc/
+yby-core/public/
+```
+
+Invalid output:
+
+```text
+yby-core\yby-core.php
+```
+
+The package must pass:
+
+- ZIP root directory validation
+- Main plugin file validation
+- Internal path separator validation
+
 ## Required runtime scope
 
 Include only the governed runtime payload:
@@ -59,3 +107,7 @@ Each package must ship with a manifest containing:
 - ZIP SHA256
 - PHP lint status
 - `git diff --check` status
+
+## Release checklist
+
+- [ ] ZIP internal paths use `/` separators only
