@@ -32,6 +32,14 @@
     return safeString(caseId, 40).toUpperCase().replace(/[^A-Z0-9-]/g, "");
   }
 
+  function looksLikeEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeString(value, 150));
+  }
+
+  function looksLikeWhatsApp(value) {
+    return /^[+()\d\s-]{6,}$/.test(safeString(value, 50));
+  }
+
   function randomCode(length) {
     var output = "";
     var index;
@@ -92,6 +100,7 @@
       "name",
       "first_name",
       "email",
+      "contact",
       "country",
       "whatsapp",
       "phone",
@@ -105,6 +114,10 @@
       "page",
       "source_url",
       "quantity",
+      "crop",
+      "farm_size",
+      "water_source",
+      "message",
       "utm_source",
       "utm_medium",
       "utm_campaign",
@@ -118,6 +131,75 @@
         output[key] = safeString(input[key], maxLengths[key] || 180);
       }
     });
+
+    return output;
+  }
+
+  function appendDetailLine(lines, label, value) {
+    var normalized = safeString(value, 1000);
+
+    if (normalized) {
+      lines.push(label + ": " + normalized);
+    }
+  }
+
+  function buildProjectDetails(input) {
+    var lines = [];
+
+    appendDetailLine(lines, "Crop", input.crop);
+    appendDetailLine(lines, "Farm Size", input.farm_size);
+    appendDetailLine(lines, "Water Source", input.water_source);
+    appendDetailLine(lines, "Message", input.message);
+
+    return safeString(lines.join("\n"), 3000);
+  }
+
+  function normalizeLeadPayload(payload) {
+    var input = validatePayload(payload);
+    var contactCandidates = [input.email, input.whatsapp, input.phone, input.contact];
+    var output = {
+      name: input.name || input.first_name || "",
+      email: looksLikeEmail(input.email) ? input.email : "",
+      whatsapp: looksLikeEmail(input.whatsapp) ? "" : input.whatsapp || input.phone || "",
+      country: input.country || "",
+      product_interest: input.product_interest || input.crop || "",
+      project_details: input.project_details || buildProjectDetails(input),
+      case_id: normalizeCaseId(input.case_id || "")
+    };
+
+    contactCandidates.forEach(function (value) {
+      if (!output.email && looksLikeEmail(value)) {
+        output.email = safeString(value, 150);
+      }
+
+      if (!output.whatsapp && looksLikeWhatsApp(value) && !looksLikeEmail(value)) {
+        output.whatsapp = safeString(value, 50);
+      }
+    });
+
+    [
+      "brand",
+      "website",
+      "page",
+      "source_url",
+      "buyer_type",
+      "company",
+      "quantity",
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_term",
+      "gclid",
+      "fbclid"
+    ].forEach(function (key) {
+      if (input[key]) {
+        output[key] = input[key];
+      }
+    });
+
+    if (!output.case_id) {
+      delete output.case_id;
+    }
 
     return output;
   }
@@ -221,7 +303,7 @@
     };
 
     sdk.saveLeadDisplayData = function (payload) {
-      var safeInput = validatePayload(payload);
+      var safeInput = normalizeLeadPayload(payload);
       var firstName = sdk.setFirstName(safeInput.first_name || safeInput.name || "");
       var caseId = sdk.setCaseId(safeInput.case_id || sdk.createCaseId());
 
@@ -258,7 +340,7 @@
     };
 
     sdk.submit = function (payload) {
-      var requestPayload = validatePayload(payload);
+      var requestPayload = normalizeLeadPayload(payload);
       var errors = validateRequired(requestPayload);
 
       log("submit called", requestPayload);
