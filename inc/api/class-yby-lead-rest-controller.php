@@ -64,12 +64,29 @@ class YBY_Lead_REST_Controller {
 			);
 		}
 
+		$result = YBY_Lead_Service::create( $lead );
+
+		if ( empty( $result['success'] ) ) {
+			return new \WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => __( 'Lead could not be saved', 'yby-core' ),
+					'errors'  => array(
+						'storage' => __( 'Lead storage failed', 'yby-core' ),
+					),
+				),
+				500
+			);
+		}
+
 		return new \WP_REST_Response(
 			array(
 				'success' => true,
 				'message' => __( 'Lead received', 'yby-core' ),
 				'data'    => array(
-					'status' => 'received',
+					'lead_id' => (int) $result['lead_id'],
+					'case_id' => (string) $result['case_id'],
+					'status'  => (string) $result['status'],
 				),
 			),
 			200
@@ -84,23 +101,25 @@ class YBY_Lead_REST_Controller {
 	 */
 	protected function sanitize_request_payload( \WP_REST_Request $request ) {
 		return array(
-			'brand'            => $this->limit_text( $request->get_param( 'brand' ), 120 ),
-			'website'          => $this->limit_text( $request->get_param( 'website' ), 160 ),
-			'page'             => $this->limit_text( $request->get_param( 'page' ), 240 ),
-			'name'             => $this->limit_text( $request->get_param( 'name' ), 120 ),
-			'company'          => $this->limit_text( $request->get_param( 'company' ), 160 ),
+			'brand'            => $this->limit_text( $request->get_param( 'brand' ), 50 ),
+			'website'          => $this->limit_text( $request->get_param( 'website' ), 255 ),
+			'source_url'       => $this->limit_text( $request->get_param( 'source_url' ) ?: $request->get_param( 'page' ), 1000 ),
+			'case_id'          => $this->limit_text( $request->get_param( 'case_id' ), 50 ),
+			'name'             => $this->limit_text( $request->get_param( 'name' ), 100 ),
+			'company'          => $this->limit_text( $request->get_param( 'company' ), 150 ),
 			'country'          => $this->limit_text( $request->get_param( 'country' ), 100 ),
-			'email'            => sanitize_email( (string) $request->get_param( 'email' ) ),
-			'whatsapp'         => $this->limit_text( $request->get_param( 'whatsapp' ), 60 ),
-			'buyer_type'       => $this->limit_text( $request->get_param( 'buyer_type' ), 80 ),
-			'product_interest' => $this->limit_text( $request->get_param( 'product_interest' ), 160 ),
+			'email'            => substr( sanitize_email( (string) $request->get_param( 'email' ) ), 0, 150 ),
+			'whatsapp'         => $this->limit_text( $request->get_param( 'whatsapp' ), 50 ),
+			'buyer_type'       => $this->limit_text( $request->get_param( 'buyer_type' ), 50 ),
+			'product_interest' => $this->limit_text( $request->get_param( 'product_interest' ), 500 ),
+			'quantity'         => $this->limit_text( $request->get_param( 'quantity' ), 100 ),
 			'project_details'  => $this->limit_textarea( $request->get_param( 'project_details' ), 3000 ),
-			'utm_source'       => $this->limit_text( $request->get_param( 'utm_source' ), 500 ),
-			'utm_medium'       => $this->limit_text( $request->get_param( 'utm_medium' ), 500 ),
-			'utm_campaign'     => $this->limit_text( $request->get_param( 'utm_campaign' ), 500 ),
-			'utm_term'         => $this->limit_text( $request->get_param( 'utm_term' ), 500 ),
-			'gclid'            => $this->limit_text( $request->get_param( 'gclid' ), 500 ),
-			'fbclid'           => $this->limit_text( $request->get_param( 'fbclid' ), 500 ),
+			'utm_source'       => $this->limit_text( $request->get_param( 'utm_source' ), 100 ),
+			'utm_medium'       => $this->limit_text( $request->get_param( 'utm_medium' ), 100 ),
+			'utm_campaign'     => $this->limit_text( $request->get_param( 'utm_campaign' ), 150 ),
+			'utm_term'         => $this->limit_text( $request->get_param( 'utm_term' ), 150 ),
+			'gclid'            => $this->limit_text( $request->get_param( 'gclid' ), 255 ),
+			'fbclid'           => $this->limit_text( $request->get_param( 'fbclid' ), 255 ),
 		);
 	}
 

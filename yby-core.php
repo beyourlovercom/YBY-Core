@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'YBY_CORE_VERSION', '1.2.1-dev' );
+define( 'YBY_DATABASE_VERSION', '1.0.0' );
 define( 'YBY_CORE_PLUGIN_FILE', __FILE__ );
 define( 'YBY_CORE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'YBY_CORE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

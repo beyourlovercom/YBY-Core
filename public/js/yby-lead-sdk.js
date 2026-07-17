@@ -68,14 +68,25 @@
     var input = payload && typeof payload === "object" ? payload : {};
     var output = {};
     var maxLengths = {
+      brand: 50,
+      website: 255,
+      name: 100,
+      email: 150,
+      whatsapp: 50,
+      buyer_type: 50,
+      company: 150,
+      country: 100,
+      product_interest: 500,
+      quantity: 100,
       project_details: 3000,
       page: 240,
-      utm_source: 500,
-      utm_medium: 500,
-      utm_campaign: 500,
-      utm_term: 500,
-      gclid: 500,
-      fbclid: 500
+      source_url: 1000,
+      utm_source: 100,
+      utm_medium: 100,
+      utm_campaign: 150,
+      utm_term: 150,
+      gclid: 255,
+      fbclid: 255
     };
     var allowed = [
       "name",
@@ -92,6 +103,8 @@
       "brand",
       "website",
       "page",
+      "source_url",
+      "quantity",
       "utm_source",
       "utm_medium",
       "utm_campaign",
@@ -275,6 +288,31 @@
           if (!result.ok || !responseData.success) {
             throw responseData;
           }
+
+          if (responseData.data && responseData.data.case_id) {
+            requestPayload.case_id = responseData.data.case_id;
+            sdk.setCaseId(responseData.data.case_id);
+          }
+
+          sdk.saveLeadDisplayData(requestPayload);
+
+          if (responseData.data && responseData.data.lead_id) {
+            setSessionItem("yby_lead_id", responseData.data.lead_id);
+          }
+
+          try {
+            setSessionItem(
+              "yby_lead_data",
+              JSON.stringify({
+                lead_id: responseData.data ? responseData.data.lead_id || "" : "",
+                case_id: responseData.data ? responseData.data.case_id || "" : "",
+                name: requestPayload.name || "",
+                email: requestPayload.email || "",
+                country: requestPayload.country || "",
+                product_interest: requestPayload.product_interest || ""
+              })
+            );
+          } catch (error) {}
 
           return responseData;
         });
