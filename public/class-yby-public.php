@@ -53,9 +53,17 @@ class YBY_Public {
 		);
 
 		wp_enqueue_script(
+			'yby-lead-sdk',
+			YBY_CORE_PLUGIN_URL . 'public/js/yby-lead-sdk.js',
+			array(),
+			$this->version,
+			true
+		);
+
+		wp_enqueue_script(
 			$this->plugin_name . '-public',
 			YBY_CORE_PLUGIN_URL . 'public/assets/js/yby-core-public.js',
-			array(),
+			array( 'yby-lead-sdk' ),
 			$this->version,
 			true
 		);

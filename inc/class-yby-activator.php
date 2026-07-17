@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-helpers.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-config.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-database.php';
 
 /**
  * Activation routines.
@@ -59,5 +60,7 @@ class YBY_Activator {
 				get_option( YBY_Helpers::lead_notification_reply_to_policy_option_key(), 'auto' )
 			)
 		);
+
+		YBY_Database::install();
 	}
 }

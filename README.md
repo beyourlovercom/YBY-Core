@@ -6,11 +6,11 @@ YBY Core is the shared WordPress foundation plugin for YBY websites.
 
 ## Current Version
 
-v1.1.1
+v1.2.1-dev
 
 ## Stable Scope
 
-YBY Core v1.1.1 includes:
+YBY Core v1.2.1-dev includes:
 
 - Case ID frontend and backend consistency
 - Lead Session helper
@@ -143,7 +143,7 @@ Webhook behavior remains disabled by default and performs no external request un
 
 ## Stability Note
 
-YBY Core v1.1.1 is the official stable public platform release line.
+YBY Core v1.2.1-dev is the current development line.
 
 Its public runtime API signatures remain frozen for the v1.x line under the compatibility policy documented in the stable release package.
 
@@ -154,6 +154,12 @@ All future YBY Core releases must follow the official workflow in [docs/RELEASE_
 ## Development Process
 
 All YBY Core feature, fix, refactor, and documentation work must follow [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md).
+
+## Sprint 001.5 Validation Result
+
+- Test URL: `https://ybyirrigation.com/lp/irrigation-solution/`
+- Test Date: `2026-07-16`
+- Result: SDK availability and submit interface validated in a simulated frontend load path; `window.YBYLead` and `window.YBYLead.submit` are available, and debug mode logs initialize and submit events.
 
 ## v1.1.1 Stable Release Notes
 

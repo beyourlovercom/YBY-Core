@@ -424,7 +424,7 @@
     window.location.href = window.YBYLead.buildThankYouUrl(dataPayload.case_id);
   };
 
-  window.YBYLead.submit = function (payload) {
+  window.YBYLead.submit = window.YBYLead.submit || function (payload) {
     var requestPayload = payload && typeof payload === "object" ? payload : {};
 
     return window
