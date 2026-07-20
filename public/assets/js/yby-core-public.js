@@ -110,6 +110,22 @@
     }
   }
 
+  function isThankYouPage() {
+    return !!document.querySelector(
+      [
+        "[data-yby-lead-name]",
+        "[data-yby-case-id]",
+        "[data-yby-case-id-input]",
+        "[data-yby-whatsapp-link]",
+        "[data-yby-catalog-link]",
+        "[data-yby-return-link]",
+        "[data-yby-project-form]",
+        "[data-yby-video-frame]",
+        "[data-yby-video-note]"
+      ].join(", ")
+    );
+  }
+
   function sanitizeTrackingPayload(payload) {
     var input = payload && typeof payload === "object" ? payload : {};
     var output = {};
@@ -507,6 +523,10 @@
   };
 
   window.YBYThankYou.init = function () {
+    if (!isThankYouPage()) {
+      return;
+    }
+
     window.YBYThankYou.hydrateCaseIdFromUrl();
     window.YBYThankYou.renderLeadName();
     window.YBYThankYou.renderCaseId();
