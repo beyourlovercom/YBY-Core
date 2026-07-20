@@ -32,6 +32,8 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-email.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-field-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-preset-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-manager.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-renderer.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-shortcodes.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-service.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-rest-controller.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
@@ -96,11 +98,15 @@ class YBY_Core {
 	 * @return void
 	 */
 	protected function define_public_hooks() {
-		$public          = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
-		$lead_rest_route = new YBY_Lead_REST_Controller();
+		$public             = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
+		$lead_rest_route    = new YBY_Lead_REST_Controller();
+		$inquiry_manager    = new YBY_Inquiry_Manager();
+		$inquiry_renderer   = new YBY_Inquiry_Renderer();
+		$inquiry_shortcodes = new YBY_Inquiry_Shortcodes( $inquiry_manager, $inquiry_renderer );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
 		$this->loader->add_action( 'rest_api_init', $lead_rest_route, 'register_routes' );
+		$this->loader->add_action( 'init', $inquiry_shortcodes, 'register', 10, 0 );
 	}
 
 	/**

@@ -152,6 +152,10 @@ YBY Core v1.3.0-dev includes the Inquiry Field Registry and Inquiry Preset Regis
 
 M1 does not include modal UI, frontend inquiry components, admin configuration UI, or landing-page submission behavior changes.
 
+M2 adds the `[yby_inquiry_modal]` shortcode and a neutral server-side Inquiry Modal renderer.
+
+The modal remains non-interactive until M3, requires an explicit Preset, and loads no frontend assets in M2.
+
 ## Stability Note
 
 YBY Core v1.3.0-dev is the current development line.

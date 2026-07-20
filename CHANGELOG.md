@@ -8,6 +8,11 @@
 - Added `irrigation_quick_inquiry`.
 - Added `bottle_wholesale_inquiry`.
 - No frontend Inquiry Components added in M1.
+- Added `[yby_inquiry_modal]` shortcode.
+- Added neutral server-side Inquiry Modal renderer.
+- Added accessible Modal markup contract.
+- Added safe Field Renderer.
+- Modal remains hidden and disabled until M3 runtime.
 
 ## v1.1.1
 
