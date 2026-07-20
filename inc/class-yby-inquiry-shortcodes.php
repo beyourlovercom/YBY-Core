@@ -43,6 +43,13 @@ class YBY_Inquiry_Shortcodes {
 	protected static $deferred_modals = array();
 
 	/**
+	 * Request-level map of normalized shortcode instances to rendered modal IDs.
+	 *
+	 * @var array<string, string>
+	 */
+	protected static $rendered_instances = array();
+
+	/**
 	 * Constructor.
 	 *
 	 * @param YBY_Inquiry_Manager  $inquiry_manager Inquiry manager.
@@ -97,6 +104,20 @@ class YBY_Inquiry_Shortcodes {
 			return '';
 		}
 
+		$instance_key = md5(
+			wp_json_encode(
+				array(
+					'attributes' => $attributes,
+					'preset'     => $preset['id'],
+					'fields'     => wp_list_pluck( $fields, 'id' ),
+				)
+			)
+		);
+
+		if ( isset( self::$rendered_instances[ $instance_key ] ) ) {
+			return '<!-- yby_inquiry_modal:' . esc_html( self::$rendered_instances[ $instance_key ] ) . ' -->';
+		}
+
 		$attributes['id'] = $this->generate_unique_modal_id(
 			'' !== $attributes['id'] ? $attributes['id'] : 'yby-inquiry-modal-' . $preset['id']
 		);
@@ -107,6 +128,7 @@ class YBY_Inquiry_Shortcodes {
 			return '';
 		}
 
+		self::$rendered_instances[ $instance_key ] = $attributes['id'];
 		self::$deferred_modals[ $attributes['id'] ] = $modal_markup;
 
 		return '<!-- yby_inquiry_modal:' . esc_html( $attributes['id'] ) . ' -->';
