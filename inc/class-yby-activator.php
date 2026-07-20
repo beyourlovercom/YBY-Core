@@ -12,6 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-helpers.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-config.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-database.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-field-manager.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-preset-manager.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-manager.php';
 
 /**
  * Activation routines.
@@ -61,6 +64,7 @@ class YBY_Activator {
 			)
 		);
 
+		YBY_Inquiry_Manager::install_defaults();
 		YBY_Database::install();
 	}
 }

@@ -3,6 +3,11 @@
 ## Unreleased
 
 - Added ZIP internal path separator validation to YBY Core Release Packaging QA Standard.
+- Added Inquiry Field Registry foundation.
+- Added Inquiry Preset Registry foundation.
+- Added `irrigation_quick_inquiry`.
+- Added `bottle_wholesale_inquiry`.
+- No frontend Inquiry Components added in M1.
 
 ## v1.1.1
 

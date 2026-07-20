@@ -6,11 +6,15 @@ YBY Core is the shared WordPress foundation plugin for YBY websites.
 
 ## Current Version
 
-v1.2.1-dev
+v1.3.0-dev
+
+## Development Status
+
+YBY Core v1.3.0-dev has started the Inquiry Component System foundation.
 
 ## Stable Scope
 
-YBY Core v1.2.1-dev includes:
+YBY Core v1.3.0-dev currently includes:
 
 - Case ID frontend and backend consistency
 - Lead Session helper
@@ -52,6 +56,7 @@ YBY Core v1.2.1-dev includes:
 - `window.YBYThankYou`
 - `window.YBYPageProfile`
 - safe email template generator
+- existing custom lead table support
 - public `POST /wp-json/yby/v1/leads` endpoint
 - enterprise HTML inquiry email with multipart AltBody
 
@@ -92,7 +97,7 @@ The following browser runtime objects are now frozen as public stable APIs for v
 - CRM implementation
 - ERP implementation
 - AI implementation
-- database tables
+- new database schema changes in M1
 - SQL
 - GTM installation
 - Google Tag installation
@@ -141,9 +146,15 @@ Project values are the canonical runtime layer and follow this priority:
 
 Webhook behavior remains disabled by default and performs no external request unless a future phase explicitly enables a safe implementation.
 
+## Inquiry Foundation Status
+
+YBY Core v1.3.0-dev includes the Inquiry Field Registry and Inquiry Preset Registry foundation only.
+
+M1 does not include modal UI, frontend inquiry components, admin configuration UI, or landing-page submission behavior changes.
+
 ## Stability Note
 
-YBY Core v1.2.1-dev is the current development line.
+YBY Core v1.3.0-dev is the current development line.
 
 Its public runtime API signatures remain frozen for the v1.x line under the compatibility policy documented in the stable release package.
 
