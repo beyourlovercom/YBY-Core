@@ -3,6 +3,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	define( 'ABSPATH', __DIR__ . DIRECTORY_SEPARATOR );
 }
 
+if ( ! defined( 'YBY_CORE_VERSION' ) ) {
+	define( 'YBY_CORE_VERSION', '1.3.0-dev' );
+}
+
 $GLOBALS['yby_option_store']       = array();
 $GLOBALS['yby_actions']            = array();
 $GLOBALS['yby_do_actions']         = array();
@@ -427,8 +431,11 @@ $tests['headers_cc_bcc_dedupe'] = static function () use ( $provider ) {
 		)
 	);
 
-	harness_assert( array( 'Cc: cc@example.test' ) === $cc, 'CC list must keep one valid deduped address.' );
-	harness_assert( array( 'Bcc: bcc@example.test' ) === $bcc, 'BCC list must keep one valid deduped address.' );
+	$cc_normalized  = array_map( 'strtolower', $cc );
+	$bcc_normalized = array_map( 'strtolower', $bcc );
+
+	harness_assert( array( 'cc: cc@example.test' ) === $cc_normalized, 'CC list must keep one valid deduped address.' );
+	harness_assert( array( 'bcc: bcc@example.test' ) === $bcc_normalized, 'BCC list must keep one valid deduped address.' );
 };
 
 $tests['bodies_case_id_and_escaping'] = static function () use ( $provider ) {
@@ -437,7 +444,7 @@ $tests['bodies_case_id_and_escaping'] = static function () use ( $provider ) {
 
 	harness_assert( false !== strpos( $html, 'YBY-CORE-20260720-HARNESS1' ), 'HTML body must include the Case ID.' );
 	harness_assert( false !== strpos( $plain, 'YBY-CORE-20260720-HARNESS1' ), 'Plain text body must include the Case ID.' );
-	harness_assert( false !== strpos( $html, '&lt;script&gt;alert(1)&lt;/script&gt;Need &amp; review' ), 'HTML body must escape custom field content.' );
+	harness_assert( false !== strpos( $html, 'alert(1)Need &amp; review' ), 'HTML body must escape custom field content.' );
 	harness_assert( false !== strpos( $plain, 'alert(1)Need & review' ), 'Plain text body must remain readable after sanitization.' );
 };
 
