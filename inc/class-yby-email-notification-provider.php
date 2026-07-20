@@ -69,7 +69,6 @@ class YBY_Email_Notification_Provider {
 	 */
 	public function build_headers( $lead ) {
 		$headers = array(
-			'From: ' . $this->build_from_label() . ' <no-reply@ybyirrigation.com>',
 			'Content-Type: text/html; charset=UTF-8',
 		);
 
@@ -260,17 +259,6 @@ class YBY_Email_Notification_Provider {
 	 */
 	public function apply_alt_body( $phpmailer ) {
 		$phpmailer->AltBody = $this->current_alt_body;
-	}
-
-	/**
-	 * Build the sender label.
-	 *
-	 * @return string
-	 */
-	protected function build_from_label() {
-		$company_name = YBY_Config::get_email_company_name();
-
-		return '' !== $company_name ? $company_name : 'YBY Website';
 	}
 
 	/**
