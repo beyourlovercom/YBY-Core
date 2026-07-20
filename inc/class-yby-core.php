@@ -121,7 +121,6 @@ class YBY_Core {
 		$this->loader->add_action( 'rest_api_init', $lead_rest_route, 'register_routes' );
 		$this->loader->add_action( 'init', $inquiry_shortcodes, 'register', 10, 0 );
 		$this->loader->add_filter( 'the_content', $inquiry_shortcodes, 'capture_modal_shortcodes_in_content', 9, 1 );
-		$this->loader->add_action( 'wp', $inquiry_shortcodes, 'collect_from_queried_content', 20, 0 );
 		$this->loader->add_action( 'wp_footer', $inquiry_shortcodes, 'render_deferred_modals', 100, 0 );
 	}
 
