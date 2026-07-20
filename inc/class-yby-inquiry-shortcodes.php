@@ -128,6 +128,34 @@ class YBY_Inquiry_Shortcodes {
 	}
 
 	/**
+	 * Capture inquiry modals before other content filters strip the shortcode markup.
+	 *
+	 * @param string $content Raw content.
+	 * @return string
+	 */
+	public function capture_modal_shortcodes_in_content( $content ) {
+		if ( ! is_string( $content ) || false === strpos( $content, '[yby_inquiry_modal' ) ) {
+			return $content;
+		}
+
+		$pattern = get_shortcode_regex( array( 'yby_inquiry_modal' ) );
+
+		if ( empty( $pattern ) ) {
+			return $content;
+		}
+
+		return preg_replace_callback(
+			'/' . $pattern . '/',
+			static function ( $matches ) {
+				$shortcode_markup = isset( $matches[0] ) ? $matches[0] : '';
+
+				return '' !== $shortcode_markup ? do_shortcode( $shortcode_markup ) : '';
+			},
+			$content
+		);
+	}
+
+	/**
 	 * Collect modal shortcodes from the queried post content when themes skip shortcode execution.
 	 *
 	 * @return void
