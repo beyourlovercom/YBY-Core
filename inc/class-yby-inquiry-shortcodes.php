@@ -128,6 +128,33 @@ class YBY_Inquiry_Shortcodes {
 	}
 
 	/**
+	 * Collect modal shortcodes from the queried post content when themes skip shortcode execution.
+	 *
+	 * @return void
+	 */
+	public function collect_from_queried_content() {
+		if ( is_admin() || ! is_singular() ) {
+			return;
+		}
+
+		$post = get_queried_object();
+
+		if ( ! $post instanceof WP_Post || empty( $post->post_content ) || false === strpos( $post->post_content, '[yby_inquiry_modal' ) ) {
+			return;
+		}
+
+		$pattern = get_shortcode_regex( array( 'yby_inquiry_modal' ) );
+
+		if ( empty( $pattern ) || ! preg_match_all( '/' . $pattern . '/', $post->post_content, $matches ) ) {
+			return;
+		}
+
+		foreach ( isset( $matches[0] ) && is_array( $matches[0] ) ? $matches[0] : array() as $shortcode_markup ) {
+			do_shortcode( $shortcode_markup );
+		}
+	}
+
+	/**
 	 * Sanitize shortcode attributes.
 	 *
 	 * @param array<string, mixed> $attributes Raw attributes.
