@@ -120,6 +120,7 @@ class YBY_Core {
 		$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
 		$this->loader->add_action( 'rest_api_init', $lead_rest_route, 'register_routes' );
 		$this->loader->add_action( 'init', $inquiry_shortcodes, 'register', 10, 0 );
+		$this->loader->add_action( 'wp_footer', $inquiry_shortcodes, 'render_deferred_modals', 100, 0 );
 	}
 
 	/**

@@ -36,6 +36,13 @@ class YBY_Inquiry_Shortcodes {
 	protected static $modal_id_counts = array();
 
 	/**
+	 * Deferred modal markup collected during shortcode rendering.
+	 *
+	 * @var array<string, string>
+	 */
+	protected static $deferred_modals = array();
+
+	/**
 	 * Constructor.
 	 *
 	 * @param YBY_Inquiry_Manager  $inquiry_manager Inquiry manager.
@@ -94,7 +101,30 @@ class YBY_Inquiry_Shortcodes {
 			'' !== $attributes['id'] ? $attributes['id'] : 'yby-inquiry-modal-' . $preset['id']
 		);
 
-		return $this->renderer->render_modal( $preset, $fields, $attributes );
+		$modal_markup = $this->renderer->render_modal( $preset, $fields, $attributes );
+
+		if ( '' === $modal_markup ) {
+			return '';
+		}
+
+		self::$deferred_modals[ $attributes['id'] ] = $modal_markup;
+
+		return '<!-- yby_inquiry_modal:' . esc_html( $attributes['id'] ) . ' -->';
+	}
+
+	/**
+	 * Print deferred modal markup in the footer.
+	 *
+	 * @return void
+	 */
+	public function render_deferred_modals() {
+		if ( empty( self::$deferred_modals ) ) {
+			return;
+		}
+
+		foreach ( self::$deferred_modals as $modal_markup ) {
+			echo $modal_markup; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
 	}
 
 	/**
