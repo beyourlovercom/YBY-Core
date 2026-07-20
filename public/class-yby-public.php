@@ -49,21 +49,21 @@ class YBY_Public {
 			$this->plugin_name . '-public',
 			YBY_CORE_PLUGIN_URL . 'public/assets/css/yby-core-public.css',
 			array(),
-			$this->version
+			$this->asset_version( 'public/assets/css/yby-core-public.css' )
 		);
 
 		wp_enqueue_style(
 			'yby-inquiry-components',
 			YBY_CORE_PLUGIN_URL . 'public/css/yby-inquiry-components.css',
 			array(),
-			$this->version
+			$this->asset_version( 'public/css/yby-inquiry-components.css' )
 		);
 
 		wp_enqueue_script(
 			'yby-lead-sdk',
 			YBY_CORE_PLUGIN_URL . 'public/js/yby-lead-sdk.js',
 			array(),
-			$this->version,
+			$this->asset_version( 'public/js/yby-lead-sdk.js' ),
 			true
 		);
 
@@ -71,7 +71,7 @@ class YBY_Public {
 			$this->plugin_name . '-public',
 			YBY_CORE_PLUGIN_URL . 'public/assets/js/yby-core-public.js',
 			array( 'yby-lead-sdk' ),
-			$this->version,
+			$this->asset_version( 'public/assets/js/yby-core-public.js' ),
 			true
 		);
 
@@ -79,7 +79,7 @@ class YBY_Public {
 			'yby-inquiry-components',
 			YBY_CORE_PLUGIN_URL . 'public/js/yby-inquiry-components.js',
 			array( 'yby-lead-sdk', $this->plugin_name . '-public' ),
-			$this->version,
+			$this->asset_version( 'public/js/yby-inquiry-components.js' ),
 			true
 		);
 
@@ -108,5 +108,25 @@ class YBY_Public {
 			. 'window.YBYTemplate = window.YBYTemplate || ' . wp_json_encode( $template ) . ';',
 			'before'
 		);
+	}
+
+	/**
+	 * Build a cache-busting asset version for public runtime files.
+	 *
+	 * @param string $relative_path Plugin-relative asset path.
+	 * @return string
+	 */
+	protected function asset_version( $relative_path ) {
+		$path = YBY_CORE_PLUGIN_DIR . ltrim( (string) $relative_path, '/\\' );
+
+		if ( is_readable( $path ) ) {
+			$mtime = filemtime( $path );
+
+			if ( false !== $mtime ) {
+				return $this->version . '.' . $mtime;
+			}
+		}
+
+		return $this->version;
 	}
 }
