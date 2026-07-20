@@ -97,7 +97,7 @@
 
   function isValidCaseId(caseId) {
     var normalized = normalizeCaseId(caseId);
-    var pattern = leadSession.caseIdRegex || "^YBY-IRR-\\d{8}-[A-HJ-NP-Z2-9]{6}$";
+    var pattern = leadSession.caseIdRegex || "^YBY-[A-Z0-9]+-\\d{8}-[A-HJ-NP-Z2-9]{6}$";
 
     if (!normalized) {
       return false;
@@ -106,7 +106,7 @@
     try {
       return new RegExp(pattern).test(normalized);
     } catch (error) {
-      return /^YBY-IRR-\d{8}-[A-HJ-NP-Z2-9]{6}$/.test(normalized);
+      return /^YBY-[A-Z0-9]+-\d{8}-[A-HJ-NP-Z2-9]{6}$/.test(normalized);
     }
   }
 
@@ -663,7 +663,7 @@
 
   window.YBYLead.currentCaseId = window.YBYLead.getCaseId();
   window.YBYLead.currentFirstName = window.YBYLead.getFirstName();
-  window.YBYLead.caseIdRegex = leadSession.caseIdRegex || "^YBY-IRR-\\d{8}-[A-HJ-NP-Z2-9]{6}$";
+  window.YBYLead.caseIdRegex = leadSession.caseIdRegex || "^YBY-[A-Z0-9]+-\\d{8}-[A-HJ-NP-Z2-9]{6}$";
   window.YBYTracking.events = tracking.events || [];
 
   if (document.readyState === "loading") {
