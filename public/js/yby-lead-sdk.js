@@ -206,15 +206,22 @@
 
   function validateRequired(payload) {
     var errors = {};
+    var hasEmail = !!payload.email;
+    var hasWhatsApp = !!payload.whatsapp;
 
     if (!payload.name) {
       errors.name = "Name is required";
     }
 
-    if (!payload.email) {
-      errors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+    if (!hasEmail && !hasWhatsApp) {
+      errors.email = "Email or WhatsApp is required";
+      errors.whatsapp = "Email or WhatsApp is required";
+    } else if (hasEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
       errors.email = "Invalid email";
+    }
+
+    if (hasWhatsApp && !looksLikeWhatsApp(payload.whatsapp)) {
+      errors.whatsapp = "Invalid WhatsApp";
     }
 
     return errors;

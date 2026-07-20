@@ -48,7 +48,11 @@ class YBY_Inquiry_Renderer {
 
 		$classes = array_merge( array( 'yby-inquiry-modal' ), $extra_classes );
 
-		$output  = '<div id="' . esc_attr( $modal_id ) . '" class="' . esc_attr( implode( ' ', $classes ) ) . '" data-yby-inquiry-modal data-yby-preset="' . esc_attr( $preset['id'] ) . '" data-yby-preset-version="' . esc_attr( $preset['version'] ) . '" data-yby-source-component="' . esc_attr( $preset['source_component'] ) . '" hidden>';
+		if ( '' !== $image ) {
+			$classes[] = 'yby-inquiry-modal--has-media';
+		}
+
+		$output  = '<div id="' . esc_attr( $modal_id ) . '" class="' . esc_attr( implode( ' ', $classes ) ) . '" data-yby-inquiry-modal data-yby-preset="' . esc_attr( $preset['id'] ) . '" data-yby-preset-version="' . esc_attr( $preset['version'] ) . '" data-yby-source-component="' . esc_attr( $preset['source_component'] ) . '" aria-hidden="true" hidden>';
 		$output .= '<div class="yby-inquiry-modal__backdrop" data-yby-modal-close></div>';
 		$output .= '<div class="yby-inquiry-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="' . esc_attr( $title_id ) . '" tabindex="-1">';
 		$output .= '<button type="button" class="yby-inquiry-modal__close" data-yby-modal-close aria-label="' . esc_attr__( 'Close inquiry form', 'yby-core' ) . '"><span aria-hidden="true">&times;</span></button>';
@@ -59,7 +63,7 @@ class YBY_Inquiry_Renderer {
 
 		$output .= '<div class="yby-inquiry-modal__content">';
 		$output .= '<h2 id="' . esc_attr( $title_id ) . '">' . esc_html( $title ) . '</h2>';
-		$output .= '<form class="yby-inquiry-form" data-yby-inquiry-form data-yby-preset="' . esc_attr( $preset['id'] ) . '" data-yby-contact-requirement="' . esc_attr( isset( $preset['validation']['contact_requirement'] ) ? $preset['validation']['contact_requirement'] : 'none' ) . '" data-yby-form-version="' . esc_attr( $preset['version'] ) . '">';
+		$output .= '<form class="yby-inquiry-form" data-yby-inquiry-form data-yby-preset="' . esc_attr( $preset['id'] ) . '" data-yby-contact-requirement="' . esc_attr( isset( $preset['validation']['contact_requirement'] ) ? $preset['validation']['contact_requirement'] : 'none' ) . '" data-yby-form-version="' . esc_attr( $preset['version'] ) . '" novalidate>';
 		$output .= $form_markup;
 		$output .= '<div class="yby-inquiry-form__status" data-yby-inquiry-status role="status" aria-live="polite"></div>';
 		$output .= '<div class="yby-inquiry-form__error" data-yby-inquiry-error role="alert" aria-live="assertive" hidden></div>';

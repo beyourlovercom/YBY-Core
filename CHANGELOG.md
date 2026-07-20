@@ -13,6 +13,14 @@
 - Added accessible Modal markup contract.
 - Added safe Field Renderer.
 - Modal remains hidden and disabled until M3 runtime.
+- Added Inquiry Modal frontend runtime.
+- Added Modal accessibility interactions.
+- Added YBYLead submission bridge.
+- Added duplicate submission protection.
+- Added component lifecycle dataLayer events.
+- Added neutral responsive Inquiry CSS.
+- Broadened contact validation to Email or WhatsApp.
+- No database schema changes in M3.
 
 ## v1.1.1
 

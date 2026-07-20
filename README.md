@@ -156,6 +156,40 @@ M2 adds the `[yby_inquiry_modal]` shortcode and a neutral server-side Inquiry Mo
 
 The modal remains non-interactive until M3, requires an explicit Preset, and loads no frontend assets in M2.
 
+M3 adds the Inquiry Modal frontend runtime, modal interaction, SDK submission bridge, and Email-or-WhatsApp contact compatibility.
+
+Inquiry CSS remains brand-neutral, `generate_lead` remains owned by the Thank You flow, and structured custom field storage is deferred to M4.
+
+Example usage:
+
+```html
+<button type="button" data-yby-modal-open="homepage-inquiry">
+    Get Free Quote
+</button>
+```
+
+```text
+[yby_inquiry_modal
+    id="homepage-inquiry"
+    preset="irrigation_quick_inquiry"
+]
+```
+
+Bottle usage:
+
+```html
+<button type="button" data-yby-modal-open="bottle-inquiry">
+    Request Wholesale Quote
+</button>
+```
+
+```text
+[yby_inquiry_modal
+    id="bottle-inquiry"
+    preset="bottle_wholesale_inquiry"
+]
+```
+
 ## Stability Note
 
 YBY Core v1.3.0-dev is the current development line.

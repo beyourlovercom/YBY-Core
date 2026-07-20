@@ -52,6 +52,13 @@ class YBY_Public {
 			$this->version
 		);
 
+		wp_enqueue_style(
+			'yby-inquiry-components',
+			YBY_CORE_PLUGIN_URL . 'public/css/yby-inquiry-components.css',
+			array(),
+			$this->version
+		);
+
 		wp_enqueue_script(
 			'yby-lead-sdk',
 			YBY_CORE_PLUGIN_URL . 'public/js/yby-lead-sdk.js',
@@ -64,6 +71,14 @@ class YBY_Public {
 			$this->plugin_name . '-public',
 			YBY_CORE_PLUGIN_URL . 'public/assets/js/yby-core-public.js',
 			array( 'yby-lead-sdk' ),
+			$this->version,
+			true
+		);
+
+		wp_enqueue_script(
+			'yby-inquiry-components',
+			YBY_CORE_PLUGIN_URL . 'public/js/yby-inquiry-components.js',
+			array( 'yby-lead-sdk', $this->plugin_name . '-public' ),
 			$this->version,
 			true
 		);

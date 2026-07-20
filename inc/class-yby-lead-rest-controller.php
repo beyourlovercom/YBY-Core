@@ -136,10 +136,18 @@ class YBY_Lead_REST_Controller {
 			$errors['name'] = __( 'Name is required', 'yby-core' );
 		}
 
-		if ( '' === trim( (string) $lead['email'] ) ) {
-			$errors['email'] = __( 'Email is required', 'yby-core' );
-		} elseif ( ! is_email( $lead['email'] ) ) {
+		$email    = trim( (string) $lead['email'] );
+		$whatsapp = trim( (string) $lead['whatsapp'] );
+
+		if ( '' === $email && '' === $whatsapp ) {
+			$errors['email']    = __( 'Email or WhatsApp is required', 'yby-core' );
+			$errors['whatsapp'] = __( 'Email or WhatsApp is required', 'yby-core' );
+		} elseif ( '' !== $email && ! is_email( $email ) ) {
 			$errors['email'] = __( 'Invalid email', 'yby-core' );
+		}
+
+		if ( '' !== $whatsapp && ! preg_match( '/^[+()\d\s-]{6,}$/', $whatsapp ) ) {
+			$errors['whatsapp'] = __( 'Invalid WhatsApp', 'yby-core' );
 		}
 
 		return $errors;
