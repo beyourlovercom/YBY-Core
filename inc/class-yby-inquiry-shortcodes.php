@@ -43,11 +43,11 @@ class YBY_Inquiry_Shortcodes {
 	protected static $deferred_modals = array();
 
 	/**
-	 * Request-level map of normalized shortcode instances to rendered modal IDs.
+	 * Request-level cache of transformed content by stable signature.
 	 *
 	 * @var array<string, string>
 	 */
-	protected static $rendered_instances = array();
+	protected static $content_render_cache = array();
 
 	/**
 	 * Constructor.
@@ -104,20 +104,6 @@ class YBY_Inquiry_Shortcodes {
 			return '';
 		}
 
-		$instance_key = md5(
-			wp_json_encode(
-				array(
-					'attributes' => $attributes,
-					'preset'     => $preset['id'],
-					'fields'     => wp_list_pluck( $fields, 'id' ),
-				)
-			)
-		);
-
-		if ( isset( self::$rendered_instances[ $instance_key ] ) ) {
-			return '<!-- yby_inquiry_modal:' . esc_html( self::$rendered_instances[ $instance_key ] ) . ' -->';
-		}
-
 		$attributes['id'] = $this->generate_unique_modal_id(
 			'' !== $attributes['id'] ? $attributes['id'] : 'yby-inquiry-modal-' . $preset['id']
 		);
@@ -128,7 +114,6 @@ class YBY_Inquiry_Shortcodes {
 			return '';
 		}
 
-		self::$rendered_instances[ $instance_key ] = $attributes['id'];
 		self::$deferred_modals[ $attributes['id'] ] = $modal_markup;
 
 		return '<!-- yby_inquiry_modal:' . esc_html( $attributes['id'] ) . ' -->';
@@ -160,13 +145,19 @@ class YBY_Inquiry_Shortcodes {
 			return $content;
 		}
 
+		$signature = $this->build_content_signature( $content );
+
+		if ( isset( self::$content_render_cache[ $signature ] ) ) {
+			return self::$content_render_cache[ $signature ];
+		}
+
 		$pattern = get_shortcode_regex( array( 'yby_inquiry_modal' ) );
 
 		if ( empty( $pattern ) ) {
 			return $content;
 		}
 
-		return preg_replace_callback(
+		$transformed = preg_replace_callback(
 			'/' . $pattern . '/',
 			static function ( $matches ) {
 				$shortcode_markup = isset( $matches[0] ) ? $matches[0] : '';
@@ -175,33 +166,24 @@ class YBY_Inquiry_Shortcodes {
 			},
 			$content
 		);
+
+		if ( is_string( $transformed ) ) {
+			self::$content_render_cache[ $signature ] = $transformed;
+			return $transformed;
+		}
+
+		return $content;
 	}
 
 	/**
-	 * Collect modal shortcodes from the queried post content when themes skip shortcode execution.
+	 * Reset request-level static state.
 	 *
 	 * @return void
 	 */
-	public function collect_from_queried_content() {
-		if ( is_admin() || ! is_singular() ) {
-			return;
-		}
-
-		$post = get_queried_object();
-
-		if ( ! $post instanceof WP_Post || empty( $post->post_content ) || false === strpos( $post->post_content, '[yby_inquiry_modal' ) ) {
-			return;
-		}
-
-		$pattern = get_shortcode_regex( array( 'yby_inquiry_modal' ) );
-
-		if ( empty( $pattern ) || ! preg_match_all( '/' . $pattern . '/', $post->post_content, $matches ) ) {
-			return;
-		}
-
-		foreach ( isset( $matches[0] ) && is_array( $matches[0] ) ? $matches[0] : array() as $shortcode_markup ) {
-			do_shortcode( $shortcode_markup );
-		}
+	public static function reset_request_state() {
+		self::$modal_id_counts      = array();
+		self::$deferred_modals      = array();
+		self::$content_render_cache = array();
 	}
 
 	/**
@@ -339,6 +321,24 @@ class YBY_Inquiry_Shortcodes {
 		self::$modal_id_counts[ $base_id ]++;
 
 		return $base_id . '-' . self::$modal_id_counts[ $base_id ];
+	}
+
+	/**
+	 * Build a stable request-level content signature.
+	 *
+	 * @param string $content Raw content.
+	 * @return string
+	 */
+	protected function build_content_signature( $content ) {
+		$post_id = 0;
+
+		if ( isset( $GLOBALS['post']->ID ) ) {
+			$post_id = (int) $GLOBALS['post']->ID;
+		} elseif ( function_exists( 'get_the_ID' ) ) {
+			$post_id = (int) get_the_ID();
+		}
+
+		return $post_id . ':' . md5( $content );
 	}
 
 	/**
