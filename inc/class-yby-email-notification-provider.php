@@ -24,7 +24,7 @@ class YBY_Email_Notification_Provider {
 	/**
 	 * Send a lead notification email.
 	 *
-	 * @param array<string, string> $lead Lead payload.
+	 * @param array<string, mixed> $lead Lead payload.
 	 * @return array<string, mixed>
 	 */
 	public function sendLeadNotification( $lead ) {
@@ -52,7 +52,7 @@ class YBY_Email_Notification_Provider {
 	/**
 	 * Build the email subject.
 	 *
-	 * @param array<string, string> $lead Lead payload.
+	 * @param array<string, mixed> $lead Lead payload.
 	 * @return string
 	 */
 	public function build_subject( $lead ) {
@@ -64,7 +64,7 @@ class YBY_Email_Notification_Provider {
 	/**
 	 * Build headers.
 	 *
-	 * @param array<string, string> $lead Lead payload.
+	 * @param array<string, mixed> $lead Lead payload.
 	 * @return array<int, string>
 	 */
 	public function build_headers( $lead ) {
@@ -93,7 +93,7 @@ class YBY_Email_Notification_Provider {
 	/**
 	 * Build the HTML email body.
 	 *
-	 * @param array<string, string> $lead Lead payload.
+	 * @param array<string, mixed> $lead Lead payload.
 	 * @return string
 	 */
 	public function build_html( $lead ) {
@@ -129,36 +129,26 @@ class YBY_Email_Notification_Provider {
 
 		$quick_view_rows = $this->build_rows(
 			array(
-				'Customer'      => $this->lead_value( $lead, 'name' ),
-				'Country'       => $this->lead_value( $lead, 'country' ),
-				'Farm Size'     => $this->lead_value( $lead, 'farm_size' ),
-				'Crop'          => $this->lead_value( $lead, 'crop' ),
-				'Contact'       => $this->lead_value( $lead, 'contact' ),
-				'Water Source'  => $this->lead_value( $lead, 'water_source' ),
-				'Customer Need' => $this->lead_value( $lead, 'message' ),
+				'Customer'         => $this->lead_value( $lead, 'name' ),
+				'Company'          => $this->lead_value( $lead, 'company' ),
+				'Country'          => $this->lead_value( $lead, 'country' ),
+				'Email'            => $this->lead_value( $lead, 'email' ),
+				'WhatsApp'         => $this->lead_value( $lead, 'whatsapp' ),
+				'Product Interest' => $this->lead_value( $lead, 'product_interest' ),
+				'Quantity'         => $this->lead_value( $lead, 'quantity' ),
+				'Project Details'  => $this->lead_value( $lead, 'project_details' ),
 			),
 			$this->cell_label_style(),
 			$this->cell_value_style()
 		);
 
-		$project_rows = $this->build_rows(
+		$source_rows = $this->build_rows(
 			array(
-				'Company'            => $this->lead_value( $lead, 'company' ),
-				'Recommended System' => $this->lead_value( $lead, 'recommended_system' ),
-				'Estimated Range'    => $this->lead_value( $lead, 'estimated_range' ),
-				'Selected Country'   => $this->lead_value( $lead, 'selected_country' ),
-				'Landing Page URL'   => $this->lead_value( $lead, 'landing_page_url' ),
-			),
-			$this->cell_label_style(),
-			$this->cell_value_style()
-		);
-
-		$solution_rows = $this->build_rows(
-			array(
-				'Source Component'         => $this->lead_value( $lead, 'source_component' ),
-				'Default Country Context'  => (string) YBY_Config::get_default_country(),
-				'Default Product Interest' => (string) YBY_Config::get_default_product_interest(),
-				'Case ID'                  => $this->lead_value( $lead, 'case_id' ),
+				'Source Component' => $this->lead_value( $lead, 'source_component' ),
+				'Source Preset'    => $this->lead_value( $lead, 'source_preset' ),
+				'Source Page'      => $this->lead_value( $lead, 'source_page' ),
+				'Form Version'     => $this->lead_value( $lead, 'form_version' ),
+				'Case ID'          => $this->lead_value( $lead, 'case_id' ),
 			),
 			$this->cell_label_style(),
 			$this->cell_value_style()
@@ -166,25 +156,20 @@ class YBY_Email_Notification_Provider {
 
 		$technical_rows = $this->build_rows(
 			array(
-				'Case ID'            => $this->lead_value( $lead, 'case_id' ),
+				'Landing Page URL'   => $this->lead_value( $lead, 'landing_page_url' ),
 				'UTM Source'         => $this->lead_value( $lead, 'utm_source' ),
 				'UTM Medium'         => $this->lead_value( $lead, 'utm_medium' ),
 				'UTM Campaign'       => $this->lead_value( $lead, 'utm_campaign' ),
-				'UTM Content'        => $this->lead_value( $lead, 'utm_content' ),
 				'UTM Term'           => $this->lead_value( $lead, 'utm_term' ),
 				'GCLID'              => $this->lead_value( $lead, 'gclid' ),
-				'Ad Group ID'        => $this->lead_value( $lead, 'yby_adgroup_id' ),
-				'Match Type'         => $this->lead_value( $lead, 'yby_matchtype' ),
-				'Device'             => $this->lead_value( $lead, 'yby_device' ),
-				'Network'            => $this->lead_value( $lead, 'yby_network' ),
-				'User Agent'         => $this->lead_value( $lead, 'user_agent' ),
+				'FBCLID'             => $this->lead_value( $lead, 'fbclid' ),
 				'Submitted At (UTC)' => gmdate( 'Y-m-d H:i:s' ),
-				'Duplicate Window'   => '30 minutes',
 			),
 			$this->cell_label_style(),
 			$this->cell_value_style()
 		);
 
+		$custom_rows   = $this->build_custom_field_rows( $lead );
 		$quick_actions = $this->build_quick_actions( $lead );
 
 		return '<!doctype html><html><body style="margin:0;padding:0;background:#F4F6F4;">'
@@ -192,14 +177,14 @@ class YBY_Email_Notification_Provider {
 			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:640px;background:#FFFFFF;border-collapse:collapse;border:1px solid #DDE5DF;">'
 			. '<tr><td>' . $header_html . '</td></tr>'
 			. '<tr><td style="padding:24px 28px;background:#FFFFFF;">'
-			. '<h2 style="' . esc_attr( $this->section_head_style() ) . '">Sales Quick View</h2>'
+			. '<h2 style="' . esc_attr( $this->section_head_style() ) . '">Lead Details</h2>'
 			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0 0 24px;">' . $quick_view_rows . '</table>'
-			. '<h2 style="' . esc_attr( $this->section_head_style() ) . '">Project Requirements</h2>'
-			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0 0 24px;">' . $project_rows . '</table>'
-			. '<h2 style="' . esc_attr( $this->section_head_style() ) . '">YBY Solution Context</h2>'
-			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0 0 24px;">' . $solution_rows . '</table>'
+			. '<h2 style="' . esc_attr( $this->section_head_style() ) . '">Inquiry Source</h2>'
+			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0 0 24px;">' . $source_rows . '</table>'
 			. '<h2 style="' . esc_attr( $this->section_head_style() ) . '">Quick Actions</h2>'
 			. $quick_actions
+			. '<h2 style="' . esc_attr( $this->section_head_style() ) . '">Custom Fields</h2>'
+			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0 0 24px;">' . $custom_rows . '</table>'
 			. '<h2 style="' . esc_attr( $this->section_head_style() ) . '">Technical &amp; Attribution Details</h2>'
 			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0 0 24px;">' . $technical_rows . '</table>'
 			. '<p style="margin:0;font:400 12px Arial,Helvetica,sans-serif;line-height:1.6;color:#6B746E;">This email was generated by YBY Core v' . esc_html( YBY_CORE_VERSION ) . '.</p>'
@@ -214,7 +199,7 @@ class YBY_Email_Notification_Provider {
 	/**
 	 * Build the plain text version.
 	 *
-	 * @param array<string, string> $lead Lead payload.
+	 * @param array<string, mixed> $lead Lead payload.
 	 * @return string
 	 */
 	public function build_plain_text( $lead ) {
@@ -222,40 +207,46 @@ class YBY_Email_Notification_Provider {
 			'YBY Website Inquiry',
 			'Case ID: ' . $this->lead_value( $lead, 'case_id' ),
 			'',
-			'Sales Quick View',
+			'Lead Details',
 			'Customer: ' . $this->lead_value( $lead, 'name' ),
-			'Country: ' . $this->lead_value( $lead, 'country' ),
-			'Farm Size: ' . $this->lead_value( $lead, 'farm_size' ),
-			'Crop: ' . $this->lead_value( $lead, 'crop' ),
-			'Contact: ' . $this->lead_value( $lead, 'contact' ),
-			'Water Source: ' . $this->lead_value( $lead, 'water_source' ),
-			'Customer Need: ' . $this->lead_value( $lead, 'message' ),
-			'',
-			'Project Requirements',
 			'Company: ' . $this->lead_value( $lead, 'company' ),
-			'Recommended System: ' . $this->lead_value( $lead, 'recommended_system' ),
-			'Estimated Range: ' . $this->lead_value( $lead, 'estimated_range' ),
-			'Selected Country: ' . $this->lead_value( $lead, 'selected_country' ),
-			'Landing Page URL: ' . $this->lead_value( $lead, 'landing_page_url' ),
+			'Country: ' . $this->lead_value( $lead, 'country' ),
+			'Email: ' . $this->lead_value( $lead, 'email' ),
+			'WhatsApp: ' . $this->lead_value( $lead, 'whatsapp' ),
+			'Product Interest: ' . $this->lead_value( $lead, 'product_interest' ),
+			'Quantity: ' . $this->lead_value( $lead, 'quantity' ),
+			'Project Details: ' . $this->lead_value( $lead, 'project_details' ),
 			'',
-			'YBY Solution Context',
+			'Inquiry Source',
 			'Source Component: ' . $this->lead_value( $lead, 'source_component' ),
-			'Default Country Context: ' . (string) YBY_Config::get_default_country(),
-			'Default Product Interest: ' . (string) YBY_Config::get_default_product_interest(),
-			'Case ID: ' . $this->lead_value( $lead, 'case_id' ),
+			'Source Preset: ' . $this->lead_value( $lead, 'source_preset' ),
+			'Source Page: ' . $this->lead_value( $lead, 'source_page' ),
+			'Form Version: ' . $this->lead_value( $lead, 'form_version' ),
 			'',
-			'Technical & Attribution Details',
-			'UTM Source: ' . $this->lead_value( $lead, 'utm_source' ),
-			'UTM Medium: ' . $this->lead_value( $lead, 'utm_medium' ),
-			'UTM Campaign: ' . $this->lead_value( $lead, 'utm_campaign' ),
-			'UTM Content: ' . $this->lead_value( $lead, 'utm_content' ),
-			'UTM Term: ' . $this->lead_value( $lead, 'utm_term' ),
-			'GCLID: ' . $this->lead_value( $lead, 'gclid' ),
-			'Ad Group ID: ' . $this->lead_value( $lead, 'yby_adgroup_id' ),
-			'Match Type: ' . $this->lead_value( $lead, 'yby_matchtype' ),
-			'Device: ' . $this->lead_value( $lead, 'yby_device' ),
-			'Network: ' . $this->lead_value( $lead, 'yby_network' ),
-			'User Agent: ' . $this->lead_value( $lead, 'user_agent' ),
+			'Custom Fields',
+		);
+
+		foreach ( $this->get_custom_field_items( $lead ) as $label => $value ) {
+			$lines[] = $label . ': ' . $value;
+		}
+
+		if ( 'Custom Fields' === end( $lines ) ) {
+			$lines[] = 'Custom Fields: -';
+		}
+
+		$lines = array_merge(
+			$lines,
+			array(
+				'',
+				'Technical & Attribution Details',
+				'Landing Page URL: ' . $this->lead_value( $lead, 'landing_page_url' ),
+				'UTM Source: ' . $this->lead_value( $lead, 'utm_source' ),
+				'UTM Medium: ' . $this->lead_value( $lead, 'utm_medium' ),
+				'UTM Campaign: ' . $this->lead_value( $lead, 'utm_campaign' ),
+				'UTM Term: ' . $this->lead_value( $lead, 'utm_term' ),
+				'GCLID: ' . $this->lead_value( $lead, 'gclid' ),
+				'FBCLID: ' . $this->lead_value( $lead, 'fbclid' ),
+			)
 		);
 
 		return implode( "\n", array_map( 'sanitize_text_field', $lines ) );
@@ -285,7 +276,7 @@ class YBY_Email_Notification_Provider {
 	/**
 	 * Resolve the reply-to address according to policy.
 	 *
-	 * @param array<string, string> $lead Lead payload.
+	 * @param array<string, mixed> $lead Lead payload.
 	 * @return string
 	 */
 	protected function resolve_reply_to( $lead ) {
@@ -400,8 +391,8 @@ class YBY_Email_Notification_Provider {
 	 * Build two-column detail rows.
 	 *
 	 * @param array<string, string> $items Display items.
-	 * @param string $label_style Label style.
-	 * @param string $value_style Value style.
+	 * @param string                $label_style Label style.
+	 * @param string                $value_style Value style.
 	 * @return string
 	 */
 	protected function build_rows( $items, $label_style, $value_style ) {
@@ -422,9 +413,80 @@ class YBY_Email_Notification_Provider {
 	}
 
 	/**
+	 * Build custom field rows for HTML output.
+	 *
+	 * @param array<string, mixed> $lead Lead payload.
+	 * @return string
+	 */
+	protected function build_custom_field_rows( $lead ) {
+		$items = $this->get_custom_field_items( $lead );
+
+		if ( empty( $items ) ) {
+			$items = array(
+				'Custom Fields' => '-',
+			);
+		}
+
+		return $this->build_rows( $items, $this->cell_label_style(), $this->cell_value_style() );
+	}
+
+	/**
+	 * Normalize custom field items with labels.
+	 *
+	 * @param array<string, mixed> $lead Lead payload.
+	 * @return array<string, string>
+	 */
+	protected function get_custom_field_items( $lead ) {
+		$mapper          = new YBY_Inquiry_Lead_Mapper();
+		$field_manager   = new YBY_Inquiry_Field_Manager();
+		$custom_fields   = array();
+		$normalized      = array();
+		$source_payload  = isset( $lead['custom_fields'] ) ? $lead['custom_fields'] : array();
+		$core_field_keys = array_fill_keys( $mapper->get_core_field_ids(), true );
+
+		if ( is_array( $source_payload ) ) {
+			$custom_fields = $source_payload;
+		} elseif ( is_string( $source_payload ) ) {
+			$custom_fields = $mapper->decode_custom_fields( $source_payload );
+		} elseif ( isset( $lead['custom_fields_json'] ) && is_string( $lead['custom_fields_json'] ) ) {
+			$custom_fields = $mapper->decode_custom_fields( $lead['custom_fields_json'] );
+		}
+
+		foreach ( $custom_fields as $field_id => $value ) {
+			$field_id = sanitize_key( $field_id );
+
+			if ( '' === $field_id || isset( $core_field_keys[ $field_id ] ) || ! is_scalar( $value ) ) {
+				continue;
+			}
+
+			$field = $field_manager->get_field( $field_id );
+			$label = ! empty( $field['label'] ) ? (string) $field['label'] : $this->humanize_field_id( $field_id );
+			$text  = sanitize_textarea_field( (string) $value );
+
+			if ( '' === $text ) {
+				continue;
+			}
+
+			$normalized[ $label ] = $text;
+		}
+
+		return $normalized;
+	}
+
+	/**
+	 * Humanize a field ID when no registry label is available.
+	 *
+	 * @param string $field_id Field ID.
+	 * @return string
+	 */
+	protected function humanize_field_id( $field_id ) {
+		return ucwords( str_replace( '_', ' ', sanitize_key( $field_id ) ) );
+	}
+
+	/**
 	 * Build the quick action block.
 	 *
-	 * @param array<string, string> $lead Lead payload.
+	 * @param array<string, mixed> $lead Lead payload.
 	 * @return string
 	 */
 	protected function build_quick_actions( $lead ) {
@@ -446,7 +508,7 @@ class YBY_Email_Notification_Provider {
 		}
 
 		if ( empty( $actions ) ) {
-			return '<p style="margin:0 0 24px;font:400 14px Arial,Helvetica,sans-serif;line-height:1.7;color:#37433C;">No quick actions were available for this lead. Use the raw contact details in Sales Quick View.</p>';
+			return '<p style="margin:0 0 24px;font:400 14px Arial,Helvetica,sans-serif;line-height:1.7;color:#37433C;">No quick actions were available for this lead. Use the raw contact details in Lead Details.</p>';
 		}
 
 		return '<div style="margin:0 0 24px;">' . implode( '', $actions ) . '</div>';
@@ -491,12 +553,16 @@ class YBY_Email_Notification_Provider {
 	/**
 	 * Read a lead value safely.
 	 *
-	 * @param array<string, string> $lead Lead payload.
-	 * @param string $key Array key.
+	 * @param array<string, mixed> $lead Lead payload.
+	 * @param string               $key Array key.
 	 * @return string
 	 */
 	protected function lead_value( $lead, $key ) {
-		return isset( $lead[ $key ] ) ? (string) $lead[ $key ] : '';
+		if ( ! isset( $lead[ $key ] ) || is_array( $lead[ $key ] ) || is_object( $lead[ $key ] ) ) {
+			return '';
+		}
+
+		return (string) $lead[ $key ];
 	}
 
 	/**
@@ -506,13 +572,13 @@ class YBY_Email_Notification_Provider {
 	 */
 	protected function get_brand_values() {
 		return array(
-			'name'        => YBY_Config::sanitize_display_text( YBY_Config::get_email_company_name() ),
-			'website'     => esc_url_raw( YBY_Config::get_email_company_website() ),
-			'phone'       => YBY_Config::sanitize_display_text( YBY_Config::get_email_company_phone() ),
-			'whatsapp'    => YBY_Config::sanitize_display_text( YBY_Config::get_email_company_whatsapp() ),
-			'copyright'   => YBY_Config::sanitize_display_text( YBY_Config::get_email_footer_copyright() ),
-			'logo'        => esc_url_raw( YBY_Config::get_email_logo_url() ),
-			'reverse_logo'=> esc_url_raw( YBY_Config::get_email_reverse_logo_url() ),
+			'name'         => YBY_Config::sanitize_display_text( YBY_Config::get_email_company_name() ),
+			'website'      => esc_url_raw( YBY_Config::get_email_company_website() ),
+			'phone'        => YBY_Config::sanitize_display_text( YBY_Config::get_email_company_phone() ),
+			'whatsapp'     => YBY_Config::sanitize_display_text( YBY_Config::get_email_company_whatsapp() ),
+			'copyright'    => YBY_Config::sanitize_display_text( YBY_Config::get_email_footer_copyright() ),
+			'logo'         => esc_url_raw( YBY_Config::get_email_logo_url() ),
+			'reverse_logo' => esc_url_raw( YBY_Config::get_email_reverse_logo_url() ),
 		);
 	}
 

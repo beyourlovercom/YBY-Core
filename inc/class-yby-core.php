@@ -32,6 +32,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-email.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-field-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-preset-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-manager.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-lead-mapper.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-renderer.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-shortcodes.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-service.php';
@@ -58,9 +59,21 @@ class YBY_Core {
 	public function __construct() {
 		$this->loader = new YBY_Loader();
 
+		$this->define_system_hooks();
 		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
+	}
+
+	/**
+	 * Register system hooks.
+	 *
+	 * @return void
+	 */
+	protected function define_system_hooks() {
+		$database = new YBY_Database();
+
+		$this->loader->add_action( 'plugins_loaded', $database, 'maybe_upgrade', 5, 0 );
 	}
 
 	/**

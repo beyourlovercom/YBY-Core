@@ -28,6 +28,63 @@
       .substring(0, maxLength || 120);
   }
 
+  function sanitizeFieldKey(key) {
+    return String(key || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "")
+      .substring(0, 80);
+  }
+
+  function sanitizeFieldValue(value, maxLength) {
+    if (typeof value === "boolean") {
+      return value ? "1" : "";
+    }
+
+    if (typeof value === "number") {
+      return safeString(value, maxLength || 3000);
+    }
+
+    if (typeof value === "string") {
+      return safeString(value, maxLength || 3000);
+    }
+
+    return "";
+  }
+
+  function sanitizeStructuredFields(fields) {
+    var output = {};
+    var count = 0;
+
+    if (!fields || typeof fields !== "object" || Array.isArray(fields)) {
+      return output;
+    }
+
+    Object.keys(fields).forEach(function (key) {
+      var safeKey;
+      var safeValue;
+
+      if (count >= 50 || !Object.prototype.hasOwnProperty.call(fields, key)) {
+        return;
+      }
+
+      if (Array.isArray(fields[key]) || (fields[key] && typeof fields[key] === "object")) {
+        return;
+      }
+
+      safeKey = sanitizeFieldKey(key);
+      safeValue = sanitizeFieldValue(fields[key], 3000);
+
+      if (!safeKey || !safeValue) {
+        return;
+      }
+
+      output[safeKey] = safeValue;
+      count += 1;
+    });
+
+    return output;
+  }
+
   function normalizeCaseId(caseId) {
     return safeString(caseId, 40).toUpperCase().replace(/[^A-Z0-9-]/g, "");
   }
@@ -89,6 +146,10 @@
       project_details: 3000,
       page: 240,
       source_url: 1000,
+      source_component: 100,
+      source_preset: 100,
+      source_page: 255,
+      form_version: 30,
       utm_source: 100,
       utm_medium: 100,
       utm_campaign: 150,
@@ -113,6 +174,10 @@
       "website",
       "page",
       "source_url",
+      "source_component",
+      "source_preset",
+      "source_page",
+      "form_version",
       "quantity",
       "crop",
       "farm_size",
@@ -131,6 +196,10 @@
         output[key] = safeString(input[key], maxLengths[key] || 180);
       }
     });
+
+    if (typeof input.fields !== "undefined") {
+      output.fields = sanitizeStructuredFields(input.fields);
+    }
 
     return output;
   }
@@ -184,6 +253,10 @@
       "source_url",
       "buyer_type",
       "company",
+      "source_component",
+      "source_preset",
+      "source_page",
+      "form_version",
       "quantity",
       "utm_source",
       "utm_medium",
@@ -199,6 +272,10 @@
 
     if (!output.case_id) {
       delete output.case_id;
+    }
+
+    if (input.fields && Object.keys(input.fields).length) {
+      output.fields = input.fields;
     }
 
     return output;

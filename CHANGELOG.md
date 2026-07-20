@@ -20,7 +20,16 @@
 - Added component lifecycle dataLayer events.
 - Added neutral responsive Inquiry CSS.
 - Broadened contact validation to Email or WhatsApp.
-- No database schema changes in M3.
+- Added Inquiry source metadata storage.
+- Added `custom_fields` JSON storage.
+- Added database schema v1.1.0.
+- Added automatic database upgrade check.
+- Added Preset-aware custom field allowlisting.
+- Connected successful Lead storage to Notification Manager.
+- Added custom Inquiry details to HTML and plain-text emails.
+- Preserved REST response compatibility.
+- Email delivery failures remain non-fatal.
+- No stable release created.
 
 ## v1.1.1
 

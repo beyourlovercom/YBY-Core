@@ -34,14 +34,23 @@ class YBY_Database {
 	 * @return void
 	 */
 	public static function install() {
-		$stored_version = get_option( self::VERSION_OPTION, '' );
-
-		if ( YBY_DATABASE_VERSION === $stored_version && self::leads_table_exists() ) {
+		if ( ! self::needs_install_or_upgrade() ) {
 			return;
 		}
 
 		self::create_leads_table();
 		update_option( self::VERSION_OPTION, YBY_DATABASE_VERSION );
+	}
+
+	/**
+	 * Run an idempotent upgrade check during plugin boot.
+	 *
+	 * @return void
+	 */
+	public function maybe_upgrade() {
+		if ( self::needs_install_or_upgrade() ) {
+			self::install();
+		}
 	}
 
 	/**
@@ -66,6 +75,21 @@ class YBY_Database {
 		$table_name = self::leads_table_name();
 
 		return $table_name === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) );
+	}
+
+	/**
+	 * Check whether the database schema is missing or outdated.
+	 *
+	 * @return bool
+	 */
+	public static function needs_install_or_upgrade() {
+		$stored_version = get_option( self::VERSION_OPTION, '' );
+
+		if ( YBY_DATABASE_VERSION !== $stored_version ) {
+			return true;
+		}
+
+		return ! self::leads_table_exists();
 	}
 
 	/**
@@ -96,6 +120,11 @@ class YBY_Database {
 			product_interest text,
 			quantity varchar(100),
 			project_details longtext,
+			source_component varchar(100) DEFAULT '',
+			source_preset varchar(100) DEFAULT '',
+			source_page varchar(255) DEFAULT '',
+			form_version varchar(30) DEFAULT '',
+			custom_fields longtext,
 			utm_source varchar(100),
 			utm_medium varchar(100),
 			utm_campaign varchar(150),

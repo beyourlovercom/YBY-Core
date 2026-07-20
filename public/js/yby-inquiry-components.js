@@ -6,6 +6,16 @@
   var activeModal = null;
   var activeTrigger = null;
   var listenersBound = false;
+  var CORE_FIELD_IDS = {
+    name: true,
+    company: true,
+    email: true,
+    whatsapp: true,
+    country: true,
+    product_interest: true,
+    quantity: true,
+    message: true
+  };
 
   var FOCUSABLE_SELECTOR = [
     "a[href]",
@@ -177,12 +187,22 @@
     return safeString(lines.join("\n"), 3000);
   }
 
+  function getSourcePage(form, modal) {
+    return safeString(
+      form.getAttribute("data-yby-source-page") ||
+        (modal ? modal.getAttribute("data-yby-source-page") : "") ||
+        document.title ||
+        window.location.pathname,
+      255
+    );
+  }
+
   function getTrackingPayload(form, extra) {
     var modal = form.closest("[data-yby-inquiry-modal]");
     var base = {
       source_component: safeString(modal ? modal.getAttribute("data-yby-source-component") : "inquiry_modal", 80),
       source_preset: safeString(form.getAttribute("data-yby-preset"), 80),
-      source_page: safeString(document.title || window.location.pathname, 180),
+      source_page: getSourcePage(form, modal),
       modal_id: safeString(modal ? modal.id : "", 120),
       form_version: safeString(form.getAttribute("data-yby-form-version"), 80)
     };
@@ -344,6 +364,8 @@
   function buildPayload(form) {
     var fields = getFieldsByName(form);
     var payload = {};
+    var customFields = {};
+    var modal = form.closest("[data-yby-inquiry-modal]");
 
     Object.keys(fields).forEach(function (fieldId) {
       var field = fields[fieldId];
@@ -352,6 +374,10 @@
 
       if (value) {
         payload[fieldId] = value;
+
+        if (!CORE_FIELD_IDS[fieldId]) {
+          customFields[fieldId] = value;
+        }
       }
     });
 
@@ -365,6 +391,10 @@
     payload.project_details = buildProjectDetails(payload);
     payload.page = safeString(document.title || window.location.pathname, 240);
     payload.source_url = stripHash(window.location.href);
+    payload.source_component = safeString(modal ? modal.getAttribute("data-yby-source-component") : "inquiry_modal", 100);
+    payload.source_preset = safeString(form.getAttribute("data-yby-preset"), 100);
+    payload.source_page = getSourcePage(form, modal);
+    payload.form_version = safeString(form.getAttribute("data-yby-form-version"), 30);
     payload.website = safeString(runtime.websiteUrl || "", 255);
     payload.utm_source = safeString(getQueryParam("utm_source"), 100);
     payload.utm_medium = safeString(getQueryParam("utm_medium"), 100);
@@ -372,6 +402,10 @@
     payload.utm_term = safeString(getQueryParam("utm_term"), 150);
     payload.gclid = safeString(getQueryParam("gclid"), 255);
     payload.fbclid = safeString(getQueryParam("fbclid"), 255);
+
+    if (Object.keys(customFields).length) {
+      payload.fields = customFields;
+    }
 
     return payload;
   }

@@ -10,7 +10,7 @@ v1.3.0-dev
 
 ## Development Status
 
-YBY Core v1.3.0-dev has started the Inquiry Component System foundation.
+YBY Core v1.3.0-dev includes the M4 Inquiry Component persistence and notification foundation.
 
 ## Stable Scope
 
@@ -34,9 +34,11 @@ YBY Core v1.3.0-dev currently includes:
 - Governed inquiry email delivery
 - Lead notification recipient settings
 - Case ID validation and generation
-- 30-minute email idempotency
-- short send lock for duplicate-click protection
-- `mail_sent` success flag in REST responses
+- backward-compatible lead schema v1.1.0
+- structured Inquiry source metadata storage
+- structured `custom_fields` JSON storage
+- preset-based server allowlisting for flexible fields
+- non-fatal notification dispatch after successful lead storage
 
 ## What Is Included
 
@@ -62,7 +64,7 @@ YBY Core v1.3.0-dev currently includes:
 
 ## Notification Center
 
-Lead notifications now dispatch through `YBY_Notification_Manager`.
+Lead notifications dispatch through `YBY_Notification_Manager` after successful lead storage.
 
 Current provider:
 
@@ -77,7 +79,7 @@ Current Email settings:
 - Lead Email Subject Template
 - Email Branding settings
 
-Future providers are reserved for a later phase and are not implemented in this release candidate.
+Email delivery failure is non-fatal to the REST success response, and future providers are reserved for a later phase.
 
 ## Public Stable Runtime API
 
@@ -148,17 +150,20 @@ Webhook behavior remains disabled by default and performs no external request un
 
 ## Inquiry Foundation Status
 
-YBY Core v1.3.0-dev includes the Inquiry Field Registry and Inquiry Preset Registry foundation only.
+YBY Core v1.3.0-dev now includes:
 
-M1 does not include modal UI, frontend inquiry components, admin configuration UI, or landing-page submission behavior changes.
+- Inquiry Field Registry and Inquiry Preset Registry foundations
+- `[yby_inquiry_modal]` shortcode and server-side renderer
+- Inquiry Modal frontend runtime and SDK submission bridge
+- Email-or-WhatsApp contact compatibility
+- database schema v1.1.0 for Inquiry metadata
+- `source_component`, `source_preset`, `source_page`, and `form_version` lead storage
+- `custom_fields` JSON storage for preset-allowed flexible fields
+- automatic database upgrade checks without requiring reactivation
+- notification dispatch after successful lead storage
+- custom Inquiry details in HTML and plain-text email notifications
 
-M2 adds the `[yby_inquiry_modal]` shortcode and a neutral server-side Inquiry Modal renderer.
-
-The modal remains non-interactive until M3, requires an explicit Preset, and loads no frontend assets in M2.
-
-M3 adds the Inquiry Modal frontend runtime, modal interaction, SDK submission bridge, and Email-or-WhatsApp contact compatibility.
-
-Inquiry CSS remains brand-neutral, `generate_lead` remains owned by the Thank You flow, and structured custom field storage is deferred to M4.
+Inquiry CSS remains brand-neutral, the REST success response remains unchanged, `generate_lead` remains owned by the Thank You flow, and full multi-brand email identity work is deferred to M5.
 
 Example usage:
 
@@ -229,11 +234,11 @@ This route:
 
 - accepts public lead submissions
 - validates and normalizes Case ID
-- checks honeypot and origin rules
-- enforces duplicate-send protection
-- sends one governed HTML email per Case ID within 30 minutes
-- returns `success`, `case_id`, `duplicate`, and `mail_sent`
-- keeps the lead notification recipients in WordPress only
+- stores core lead data and structured Inquiry metadata
+- persists preset-allowed flexible fields in `custom_fields`
+- sends one notification after successful storage
+- keeps the existing HTTP 200 success response shape unchanged
+- treats email delivery failure as non-fatal
 
 The configured primary recipient is stored in the dedicated option:
 
@@ -242,3 +247,19 @@ The configured primary recipient is stored in the dedicated option:
 Default recipient:
 
 `sale@yby-irrigation.com`
+
+## Database Schema
+
+Current development schema version:
+
+`1.1.0`
+
+The `yby_leads` table includes backward-compatible nullable additions for:
+
+- `source_component`
+- `source_preset`
+- `source_page`
+- `form_version`
+- `custom_fields`
+
+`custom_fields` stores normalized JSON object data, defaulting to `{}` when no flexible Inquiry fields are saved.

@@ -17,13 +17,13 @@ class YBY_Lead_Service {
 	/**
 	 * Create a lead in the central lead table.
 	 *
-	 * @param array<string, string> $data Sanitized lead data.
+	 * @param array<string, mixed> $data Sanitized lead data.
 	 * @return array<string, mixed>
 	 */
 	public static function create( $data ) {
 		global $wpdb;
 
-		if ( ! YBY_Database::leads_table_exists() ) {
+		if ( YBY_Database::needs_install_or_upgrade() ) {
 			YBY_Database::install();
 		}
 
@@ -34,6 +34,11 @@ class YBY_Lead_Service {
 			YBY_Database::leads_table_name(),
 			$record,
 			array(
+				'%s',
+				'%s',
+				'%s',
+				'%s',
+				'%s',
 				'%s',
 				'%s',
 				'%s',
@@ -76,11 +81,13 @@ class YBY_Lead_Service {
 	/**
 	 * Build a database record.
 	 *
-	 * @param array<string, string> $data Sanitized lead data.
+	 * @param array<string, mixed> $data Sanitized lead data.
 	 * @param string                $case_id Case ID.
 	 * @return array<string, string>
 	 */
 	protected static function build_record( $data, $case_id ) {
+		$mapper = new YBY_Inquiry_Lead_Mapper();
+
 		return array(
 			'case_id'          => $case_id,
 			'brand'            => $data['brand'],
@@ -95,6 +102,11 @@ class YBY_Lead_Service {
 			'product_interest' => $data['product_interest'],
 			'quantity'         => $data['quantity'],
 			'project_details'  => $data['project_details'],
+			'source_component' => isset( $data['source_component'] ) ? (string) $data['source_component'] : '',
+			'source_preset'    => isset( $data['source_preset'] ) ? (string) $data['source_preset'] : '',
+			'source_page'      => isset( $data['source_page'] ) ? (string) $data['source_page'] : '',
+			'form_version'     => isset( $data['form_version'] ) ? (string) $data['form_version'] : '',
+			'custom_fields'    => $mapper->build_custom_fields_json( isset( $data['custom_fields'] ) && is_array( $data['custom_fields'] ) ? $data['custom_fields'] : array() ),
 			'utm_source'       => $data['utm_source'],
 			'utm_medium'       => $data['utm_medium'],
 			'utm_campaign'     => $data['utm_campaign'],
@@ -109,7 +121,7 @@ class YBY_Lead_Service {
 	/**
 	 * Resolve or generate a unique case ID.
 	 *
-	 * @param array<string, string> $data Sanitized lead data.
+	 * @param array<string, mixed> $data Sanitized lead data.
 	 * @return string
 	 */
 	protected static function resolve_case_id( $data ) {
@@ -126,7 +138,7 @@ class YBY_Lead_Service {
 	/**
 	 * Generate a unique temporary case ID.
 	 *
-	 * @param array<string, string> $data Sanitized lead data.
+	 * @param array<string, mixed> $data Sanitized lead data.
 	 * @return string
 	 */
 	protected static function generate_unique_case_id( $data ) {
