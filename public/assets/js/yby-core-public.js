@@ -859,17 +859,19 @@
     setSessionItem(key, "1");
   };
 
-  window.YBYThankYou.__testOnly = {
-    getBrandRuntimeString: getBrandRuntimeString,
-    normalizeWhatsAppMessage: normalizeWhatsAppMessage,
-    replaceWhatsAppTemplateTokens: replaceWhatsAppTemplateTokens,
-    ensureWhatsAppCaseId: ensureWhatsAppCaseId,
-    countExactOccurrences: countExactOccurrences,
-    buildDefaultWhatsAppMessage: buildDefaultWhatsAppMessage,
-    buildWhatsAppTokens: buildWhatsAppTokens,
-    getWhatsAppSummaryFields: getWhatsAppSummaryFields,
-    getRuntimeWhatsAppTemplate: getRuntimeWhatsAppTemplate
-  };
+  if (window.YBY_CORE_TEST_MODE === true) {
+    window.YBYThankYou.__testOnly = {
+      getBrandRuntimeString: getBrandRuntimeString,
+      normalizeWhatsAppMessage: normalizeWhatsAppMessage,
+      replaceWhatsAppTemplateTokens: replaceWhatsAppTemplateTokens,
+      ensureWhatsAppCaseId: ensureWhatsAppCaseId,
+      countExactOccurrences: countExactOccurrences,
+      buildDefaultWhatsAppMessage: buildDefaultWhatsAppMessage,
+      buildWhatsAppTokens: buildWhatsAppTokens,
+      getWhatsAppSummaryFields: getWhatsAppSummaryFields,
+      getRuntimeWhatsAppTemplate: getRuntimeWhatsAppTemplate
+    };
+  }
 
   window.YBYThankYou.bindActions = function () {
     document.addEventListener("click", function (event) {

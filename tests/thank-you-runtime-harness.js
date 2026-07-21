@@ -211,6 +211,7 @@ function createRuntime(options = {}) {
     href: "https://runtime.example.test" + (options.pathname || "/thank-you/") + (options.search || "")
   };
   const window = {
+    YBY_CORE_TEST_MODE: options.testMode === undefined ? true : !!options.testMode,
     YBYCoreConfig: Object.assign(
       {
         siteBrandName: "YBY Irrigation",
@@ -375,6 +376,23 @@ function runInquiryRuntime() {
 function testRuntimeCatalogWins() {
   const runtime = createRuntime();
   assert(runtime.nodes.catalogLink.getAttribute("href") === "https://brand.example.test/current-catalog.pdf", "Runtime catalog must win over stale compatibility values.");
+}
+
+function testTestHelpersHiddenByDefault() {
+  const runtime = createRuntime({
+    testMode: false
+  });
+
+  assert(!Object.prototype.hasOwnProperty.call(runtime.window.YBYThankYou, "__testOnly"), "Test-only helpers must not be exposed in normal public runtime.");
+}
+
+function testTestHelpersEnabledExplicitly() {
+  const runtime = createRuntime({
+    testMode: true
+  });
+
+  assert(!!runtime.window.YBYThankYou.__testOnly, "Test-only helpers must be exposed when test mode is enabled explicitly.");
+  assert(typeof runtime.window.YBYThankYou.__testOnly.getRuntimeWhatsAppTemplate === "function", "Test-only helper object must include runtime template access.");
 }
 
 function testRuntimeReturnWins() {
@@ -661,6 +679,8 @@ function testInquiryPageExclusion() {
 }
 
 const tests = [
+  ["test_helpers_hidden", testTestHelpersHiddenByDefault],
+  ["test_helpers_enabled", testTestHelpersEnabledExplicitly],
   ["runtime_catalog", testRuntimeCatalogWins],
   ["runtime_return", testRuntimeReturnWins],
   ["runtime_youtube", testRuntimeYouTubeWins],
