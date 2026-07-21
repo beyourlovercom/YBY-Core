@@ -21,6 +21,34 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<form method="post">
 		<?php wp_nonce_field( 'yby_core_save_settings', 'yby_core_nonce' ); ?>
 
+		<h2><?php esc_html_e( 'Site Identity', 'yby-core' ); ?></h2>
+		<table class="form-table" role="presentation">
+			<tbody>
+				<tr>
+					<th scope="row"><label for="yby-site-brand-key"><?php esc_html_e( 'Site Brand Key', 'yby-core' ); ?></label></th>
+					<td>
+						<input id="yby-site-brand-key" name="yby_core_options[site_brand_key]" type="text" class="regular-text" value="<?php echo esc_attr( $options['site_brand_key'] ); ?>">
+						<p class="description"><?php esc_html_e( 'Stable machine identifier stored in the Lead brand column.', 'yby-core' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="yby-site-brand-name"><?php esc_html_e( 'Site Brand Name', 'yby-core' ); ?></label></th>
+					<td><input id="yby-site-brand-name" name="yby_core_options[site_brand_name]" type="text" class="regular-text" value="<?php echo esc_attr( $options['site_brand_name'] ); ?>"></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="yby-case-id-brand-code"><?php esc_html_e( 'Case ID Brand Code', 'yby-core' ); ?></label></th>
+					<td>
+						<input id="yby-case-id-brand-code" name="yby_core_options[case_id_brand_code]" type="text" class="regular-text" value="<?php echo esc_attr( $options['case_id_brand_code'] ); ?>">
+						<p class="description"><?php esc_html_e( 'Used by server-generated Case IDs such as YBY-CORE-YYYYMMDD-XXXXXX.', 'yby-core' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="yby-website-url"><?php esc_html_e( 'Canonical Website URL', 'yby-core' ); ?></label></th>
+					<td><input id="yby-website-url" name="yby_core_options[website_url]" type="url" class="regular-text" value="<?php echo esc_attr( $options['website_url'] ); ?>"></td>
+				</tr>
+			</tbody>
+		</table>
+
 		<h2><?php esc_html_e( 'Email', 'yby-core' ); ?></h2>
 
 		<h3><?php esc_html_e( 'Lead Notification', 'yby-core' ); ?></h3>
@@ -146,10 +174,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<tr>
 					<th scope="row"><label for="yby-return-page-url"><?php esc_html_e( 'Return Page URL', 'yby-core' ); ?></label></th>
 					<td><input id="yby-return-page-url" name="yby_core_options[return_page_url]" type="text" class="regular-text" value="<?php echo esc_attr( $options['return_page_url'] ); ?>"></td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="yby-website-url"><?php esc_html_e( 'Website URL', 'yby-core' ); ?></label></th>
-					<td><input id="yby-website-url" name="yby_core_options[website_url]" type="url" class="regular-text" value="<?php echo esc_attr( $options['website_url'] ); ?>"></td>
 				</tr>
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Enable Tracking', 'yby-core' ); ?></th>

@@ -395,7 +395,6 @@
     payload.source_preset = safeString(form.getAttribute("data-yby-preset"), 100);
     payload.source_page = getSourcePage(form, modal);
     payload.form_version = safeString(form.getAttribute("data-yby-form-version"), 30);
-    payload.website = safeString(runtime.websiteUrl || "", 255);
     payload.utm_source = safeString(getQueryParam("utm_source"), 100);
     payload.utm_medium = safeString(getQueryParam("utm_medium"), 100);
     payload.utm_campaign = safeString(getQueryParam("utm_campaign"), 150);

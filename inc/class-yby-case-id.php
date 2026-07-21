@@ -33,7 +33,7 @@ class YBY_Case_ID {
 		$date = gmdate( 'Ymd' );
 		$code = $this->random_code( 6 );
 
-		return 'YBY-IRR-' . $date . '-' . $code;
+		return 'YBY-' . YBY_Site_Profile::get_case_id_code() . '-' . $date . '-' . $code;
 	}
 
 	/**

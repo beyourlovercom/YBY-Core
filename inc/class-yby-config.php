@@ -16,6 +16,9 @@ class YBY_Config {
 
 	public static function defaults() {
 		return array(
+			'site_brand_key'                     => 'yby_core',
+			'site_brand_name'                    => 'YBY',
+			'case_id_brand_code'                 => 'CORE',
 			'whatsapp_number'                    => '',
 			'catalog_url'                        => '',
 			'youtube_video_id'                   => '',
@@ -59,6 +62,9 @@ class YBY_Config {
 		$defaults = self::defaults();
 
 		return array(
+			'site_brand_key'                     => self::sanitize_site_brand_key( $options['site_brand_key'] ?? $defaults['site_brand_key'] ),
+			'site_brand_name'                    => self::sanitize_site_brand_name( $options['site_brand_name'] ?? $defaults['site_brand_name'] ),
+			'case_id_brand_code'                 => self::sanitize_case_id_brand_code( $options['case_id_brand_code'] ?? $defaults['case_id_brand_code'] ),
 			'whatsapp_number'                    => sanitize_text_field( $options['whatsapp_number'] ?? $defaults['whatsapp_number'] ),
 			'catalog_url'                        => esc_url_raw( $options['catalog_url'] ?? $defaults['catalog_url'] ),
 			'youtube_video_id'                   => sanitize_text_field( $options['youtube_video_id'] ?? $defaults['youtube_video_id'] ),
@@ -68,7 +74,7 @@ class YBY_Config {
 			'default_product_interest'           => sanitize_text_field( $options['default_product_interest'] ?? $defaults['default_product_interest'] ),
 			'thank_you_url'                      => self::sanitize_path_value( $options['thank_you_url'] ?? $defaults['thank_you_url'] ),
 			'return_page_url'                    => self::sanitize_path_value( $options['return_page_url'] ?? $defaults['return_page_url'] ),
-			'website_url'                        => esc_url_raw( $options['website_url'] ?? $defaults['website_url'] ),
+			'website_url'                        => self::sanitize_website_url( $options['website_url'] ?? $defaults['website_url'] ),
 			'lead_notification_subject_template' => self::sanitize_subject_template( $options['lead_notification_subject_template'] ?? $defaults['lead_notification_subject_template'] ),
 			'email_company_name'                 => sanitize_text_field( $options['email_company_name'] ?? $defaults['email_company_name'] ),
 			'email_company_website'              => esc_url_raw( $options['email_company_website'] ?? $defaults['email_company_website'] ),
@@ -91,6 +97,18 @@ class YBY_Config {
 
 	public static function get_whatsapp_number() {
 		return (string) self::get( 'whatsapp_number' );
+	}
+
+	public static function get_site_brand_key() {
+		return (string) self::get( 'site_brand_key' );
+	}
+
+	public static function get_site_brand_name() {
+		return (string) self::get( 'site_brand_name' );
+	}
+
+	public static function get_case_id_brand_code() {
+		return (string) self::get( 'case_id_brand_code' );
 	}
 
 	public static function get_catalog_url() {
@@ -264,6 +282,48 @@ class YBY_Config {
 		return $value;
 	}
 
+	public static function sanitize_site_brand_key( $value ) {
+		$value = strtolower( sanitize_text_field( (string) $value ) );
+		$value = preg_replace( '/[^a-z0-9_-]/', '', $value );
+		$value = substr( (string) $value, 0, 50 );
+
+		return '' !== $value ? $value : 'yby_core';
+	}
+
+	public static function sanitize_site_brand_name( $value ) {
+		$value = self::sanitize_display_text( $value );
+		$value = substr( $value, 0, 100 );
+
+		return '' !== $value ? $value : 'YBY';
+	}
+
+	public static function sanitize_case_id_brand_code( $value ) {
+		$value = strtoupper( sanitize_text_field( (string) $value ) );
+		$value = preg_replace( '/[^A-Z0-9]/', '', $value );
+
+		if ( ! is_string( $value ) ) {
+			return 'CORE';
+		}
+
+		if ( strlen( $value ) < 2 || strlen( $value ) > 8 ) {
+			return 'CORE';
+		}
+
+		return $value;
+	}
+
+	public static function sanitize_website_url( $value ) {
+		$value = esc_url_raw( (string) $value );
+
+		if ( self::is_absolute_url( $value ) ) {
+			return $value;
+		}
+
+		$fallback = function_exists( 'home_url' ) ? home_url( '/' ) : '/';
+
+		return self::is_absolute_url( $fallback ) ? $fallback : '/';
+	}
+
 	public static function sanitize_email_value( $value, $fallback = '' ) {
 		$email = sanitize_email( (string) $value );
 
@@ -312,5 +372,11 @@ class YBY_Config {
 		$value = str_replace( array( "\r", "\n" ), ' ', $value );
 
 		return trim( preg_replace( '/\s+/', ' ', $value ) );
+	}
+
+	protected static function is_absolute_url( $value ) {
+		$url = (string) $value;
+
+		return '' !== $url && (bool) preg_match( '#^https?://#i', $url );
 	}
 }

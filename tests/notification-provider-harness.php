@@ -152,6 +152,22 @@ class YBY_Helpers {
 }
 
 class YBY_Config {
+	public static function get_site_brand_key() {
+		return 'yby_core';
+	}
+
+	public static function get_site_brand_name() {
+		return 'YBY';
+	}
+
+	public static function get_case_id_brand_code() {
+		return 'CORE';
+	}
+
+	public static function get_website_url() {
+		return 'https://example.test/';
+	}
+
 	public static function get_lead_notification_primary_recipient_email() {
 		return 'sales@example.test';
 	}
@@ -202,6 +218,44 @@ class YBY_Config {
 
 	public static function sanitize_display_text( $value ) {
 		return sanitize_text_field( $value );
+	}
+
+	public static function sanitize_site_brand_key( $value ) {
+		return sanitize_key( $value );
+	}
+
+	public static function sanitize_site_brand_name( $value ) {
+		return sanitize_text_field( $value );
+	}
+
+	public static function sanitize_case_id_brand_code( $value ) {
+		$value = preg_replace( '/[^A-Z0-9]/', '', strtoupper( sanitize_text_field( $value ) ) );
+
+		return '' !== $value ? $value : 'CORE';
+	}
+
+	public static function sanitize_website_url( $value ) {
+		$value = esc_url_raw( $value );
+
+		return '' !== $value ? $value : 'https://example.test/';
+	}
+}
+
+class YBY_Site_Profile {
+	public static function get_brand_key() {
+		return YBY_Config::get_site_brand_key();
+	}
+
+	public static function get_brand_name() {
+		return YBY_Config::get_site_brand_name();
+	}
+
+	public static function get_case_id_code() {
+		return YBY_Config::get_case_id_brand_code();
+	}
+
+	public static function get_website_url() {
+		return YBY_Config::get_website_url();
 	}
 }
 

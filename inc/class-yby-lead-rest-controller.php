@@ -116,10 +116,10 @@ class YBY_Lead_REST_Controller {
 		return array_merge(
 			$source_metadata,
 			array(
-				'brand'            => $this->limit_text( $request->get_param( 'brand' ), 50 ),
-				'website'          => $this->limit_text( $request->get_param( 'website' ), 255 ),
+				'brand'            => YBY_Site_Profile::get_brand_key(),
+				'website'          => YBY_Site_Profile::get_website_url(),
 				'source_url'       => $this->limit_text( $request->get_param( 'source_url' ) ?: $request->get_param( 'page' ), 1000 ),
-				'case_id'          => $this->limit_text( $request->get_param( 'case_id' ), 50 ),
+				'case_id'          => '',
 				'name'             => $this->limit_text( $request->get_param( 'name' ), 100 ),
 				'company'          => $this->limit_text( $request->get_param( 'company' ), 150 ),
 				'country'          => $this->limit_text( $request->get_param( 'country' ), 100 ),

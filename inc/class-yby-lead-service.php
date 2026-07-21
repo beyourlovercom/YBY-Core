@@ -125,14 +125,7 @@ class YBY_Lead_Service {
 	 * @return string
 	 */
 	protected static function resolve_case_id( $data ) {
-		$case_engine = new YBY_Case_ID();
-		$case_id     = $case_engine->normalize( isset( $data['case_id'] ) ? $data['case_id'] : '' );
-
-		if ( $case_engine->validate( $case_id ) && self::is_case_id_unique( $case_id ) ) {
-			return $case_id;
-		}
-
-		return self::generate_unique_case_id( $data );
+		return self::generate_unique_case_id();
 	}
 
 	/**
@@ -141,18 +134,26 @@ class YBY_Lead_Service {
 	 * @param array<string, mixed> $data Sanitized lead data.
 	 * @return string
 	 */
-	protected static function generate_unique_case_id( $data ) {
-		$brand = self::brand_code( isset( $data['brand'] ) ? $data['brand'] : '' );
+	protected static function generate_unique_case_id() {
+		$case_engine = new YBY_Case_ID();
 
 		for ( $attempt = 0; $attempt < 10; $attempt++ ) {
-			$case_id = 'YBY-' . $brand . '-' . gmdate( 'Ymd' ) . '-' . self::random_code( 6 );
+			$case_id = $case_engine->generate();
 
 			if ( self::is_case_id_unique( $case_id ) ) {
 				return $case_id;
 			}
 		}
 
-		return 'YBY-' . $brand . '-' . gmdate( 'Ymd' ) . '-' . strtoupper( wp_generate_password( 10, false, false ) );
+		for ( $attempt = 0; $attempt < 40; $attempt++ ) {
+			$case_id = $case_engine->generate();
+
+			if ( self::is_case_id_unique( $case_id ) ) {
+				return $case_id;
+			}
+		}
+
+		return $case_engine->generate();
 	}
 
 	/**
@@ -167,22 +168,6 @@ class YBY_Lead_Service {
 		$table_name = YBY_Database::leads_table_name();
 
 		return null === $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table_name} WHERE case_id = %s LIMIT 1", $case_id ) );
-	}
-
-	/**
-	 * Build the case ID brand segment.
-	 *
-	 * @param string $brand Brand value.
-	 * @return string
-	 */
-	protected static function brand_code( $brand ) {
-		$brand = preg_replace( '/[^A-Z0-9]/', '', strtoupper( (string) $brand ) );
-
-		if ( false !== strpos( $brand, 'IRR' ) || false !== strpos( $brand, 'IRRIGATION' ) ) {
-			return 'IRR';
-		}
-
-		return substr( $brand ?: 'CORE', 0, 8 );
 	}
 
 	/**
