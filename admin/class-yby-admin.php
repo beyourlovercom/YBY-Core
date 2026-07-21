@@ -124,7 +124,9 @@ class YBY_Admin {
 
 			$notice = __( 'Settings saved.', 'yby-core' );
 
-			if ( is_email( $primary_email ) ) {
+			if ( '' === trim( (string) $primary_email ) ) {
+				update_option( YBY_Helpers::lead_notification_primary_recipient_option_key(), '' );
+			} elseif ( is_email( $primary_email ) ) {
 				update_option( YBY_Helpers::lead_notification_primary_recipient_option_key(), $primary_email );
 			}
 

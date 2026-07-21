@@ -204,6 +204,15 @@
     return output;
   }
 
+  function getCaseIdBrandCode() {
+    var runtime = getRuntime();
+    var candidate = safeString(runtime.caseIdBrandCode || "CORE", 8)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
+
+    return candidate.length >= 2 ? candidate : "CORE";
+  }
+
   function appendDetailLine(lines, label, value) {
     var normalized = safeString(value, 1000);
 
@@ -344,7 +353,7 @@
 
     sdk.createCaseId = function () {
       var today = formatDateYYYYMMDD(new Date());
-      return "YBY-IRR-" + today + "-" + randomCode(6);
+      return "YBY-" + getCaseIdBrandCode() + "-" + today + "-" + randomCode(6);
     };
 
     sdk.create = function () {
@@ -410,7 +419,7 @@
     sdk.buildThankYouUrl = function (caseId) {
       var runtime = getRuntime();
       var safeCaseId = normalizeCaseId(caseId || sdk.getCaseId() || sdk.createCaseId());
-      var baseUrl = runtime.thankYouUrl || runtime.returnPageUrl || "/thank-you/";
+      var baseUrl = runtime.thankYouUrl || runtime.returnPageUrl || "/";
       var separator = baseUrl.indexOf("?") === -1 ? "?" : "&";
       return baseUrl + separator + "case_id=" + encodeURIComponent(safeCaseId);
     };

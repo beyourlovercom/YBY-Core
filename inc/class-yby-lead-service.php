@@ -28,6 +28,14 @@ class YBY_Lead_Service {
 		}
 
 		$case_id = self::resolve_case_id( $data );
+
+		if ( '' === $case_id ) {
+			return array(
+				'success' => false,
+				'message' => 'Lead could not be saved',
+			);
+		}
+
 		$record  = self::build_record( $data, $case_id );
 
 		$inserted = $wpdb->insert(
@@ -137,7 +145,7 @@ class YBY_Lead_Service {
 	protected static function generate_unique_case_id() {
 		$case_engine = new YBY_Case_ID();
 
-		for ( $attempt = 0; $attempt < 10; $attempt++ ) {
+		for ( $attempt = 0; $attempt < 50; $attempt++ ) {
 			$case_id = $case_engine->generate();
 
 			if ( self::is_case_id_unique( $case_id ) ) {
@@ -145,15 +153,7 @@ class YBY_Lead_Service {
 			}
 		}
 
-		for ( $attempt = 0; $attempt < 40; $attempt++ ) {
-			$case_id = $case_engine->generate();
-
-			if ( self::is_case_id_unique( $case_id ) ) {
-				return $case_id;
-			}
-		}
-
-		return $case_engine->generate();
+		return '';
 	}
 
 	/**
@@ -170,21 +170,4 @@ class YBY_Lead_Service {
 		return null === $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table_name} WHERE case_id = %s LIMIT 1", $case_id ) );
 	}
 
-	/**
-	 * Generate a readable random code.
-	 *
-	 * @param int $length Code length.
-	 * @return string
-	 */
-	protected static function random_code( $length ) {
-		$characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-		$max_index  = strlen( $characters ) - 1;
-		$output     = '';
-
-		for ( $index = 0; $index < $length; $index++ ) {
-			$output .= $characters[ wp_rand( 0, $max_index ) ];
-		}
-
-		return $output;
-	}
 }

@@ -30,7 +30,8 @@ class YBY_Email_Template {
 
 		return sprintf(
 			/* translators: %s: Case ID. */
-			__( 'YBY Irrigation Request Received - Case ID: %s', 'yby-core' ),
+			__( '%1$s Request Received - Case ID: %2$s', 'yby-core' ),
+			YBY_Brand_Profile::get_brand_name(),
 			$normalized
 		);
 	}
@@ -69,7 +70,11 @@ class YBY_Email_Template {
 				$first_name
 			),
 			'',
-			__( 'Thank you for contacting YBY Irrigation.', 'yby-core' ),
+			sprintf(
+				/* translators: %s: Brand name. */
+				__( 'Thank you for contacting %s.', 'yby-core' ),
+				YBY_Brand_Profile::get_brand_name()
+			),
 			sprintf(
 				/* translators: %s: Case ID. */
 				__( 'Your Case ID is: %s', 'yby-core' ),

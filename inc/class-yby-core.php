@@ -15,6 +15,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-security.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-database.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-config.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-site-profile.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-brand-profile.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-case-id.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-page-profile.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project.php';

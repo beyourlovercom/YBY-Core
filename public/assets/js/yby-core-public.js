@@ -110,6 +110,14 @@
     }
   }
 
+  function getCaseIdBrandCode() {
+    var candidate = safeString(runtime.caseIdBrandCode || leadSession.caseIdBrandCode || "CORE", 8)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
+
+    return candidate.length >= 2 ? candidate : "CORE";
+  }
+
   function isThankYouPage() {
     return !!document.querySelector(
       [
@@ -169,11 +177,7 @@
   }
 
   function getProductInterest() {
-    return getCanonicalString(
-      "productInterest",
-      runtime.defaultProductInterest || tracking.defaultProduct || "irrigation system solution",
-      80
-    );
+    return getCanonicalString("productInterest", runtime.defaultProductInterest || tracking.defaultProduct || "", 80);
   }
 
   function appendQueryParam(url, key, value) {
@@ -377,7 +381,7 @@
   };
 
   window.YBYLead.createCaseId = function () {
-    return "YBY-IRR-" + formatDateYYYYMMDD(new Date()) + "-" + randomCode(6);
+    return "YBY-" + getCaseIdBrandCode() + "-" + formatDateYYYYMMDD(new Date()) + "-" + randomCode(6);
   };
 
   window.YBYLead.getCaseId = function () {
@@ -424,8 +428,7 @@
 
   window.YBYLead.buildThankYouUrl = function (caseId) {
     var safeCaseId = normalizeCaseId(caseId || window.YBYLead.getCaseId() || window.YBYLead.createCaseId());
-    var thankYouUrl =
-      getCanonicalString("thankYouUrl", runtime.thankYouUrl || leadSession.thankYouUrl || "/lp/thank-you-irrigation-solution/", 240);
+    var thankYouUrl = getCanonicalString("thankYouUrl", runtime.thankYouUrl || leadSession.thankYouUrl || "/", 240);
     return appendQueryParam(thankYouUrl, "case_id", safeCaseId);
   };
 
@@ -567,7 +570,7 @@
     var caseId = window.YBYLead.getCaseId() || "Pending";
     var number = safeString(runtime.whatsappNumber, 32).replace(/[^\d]/g, "");
     var customMessage = getCanonicalString("whatsappMessage", "", 240);
-    var message = customMessage || "Hello YBY, I submitted an irrigation request. My Case ID is " + caseId + ".";
+    var message = customMessage || "Hello YBY, I submitted a website inquiry. My Case ID is " + caseId + ".";
     return "https://wa.me/" + number + "?text=" + encodeURIComponent(message);
   };
 
@@ -587,7 +590,7 @@
     });
 
     returnLinks.forEach(function (node) {
-      node.setAttribute("href", getCanonicalString("returnPageUrl", runtime.returnPageUrl || "/lp/irrigation-solution/", 240));
+      node.setAttribute("href", getCanonicalString("returnPageUrl", runtime.returnPageUrl || "/", 240));
     });
 
     if (videoFrame) {

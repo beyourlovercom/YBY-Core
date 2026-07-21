@@ -152,22 +152,6 @@ class YBY_Helpers {
 }
 
 class YBY_Config {
-	public static function get_site_brand_key() {
-		return 'yby_core';
-	}
-
-	public static function get_site_brand_name() {
-		return 'YBY';
-	}
-
-	public static function get_case_id_brand_code() {
-		return 'CORE';
-	}
-
-	public static function get_website_url() {
-		return 'https://example.test/';
-	}
-
 	public static function get_lead_notification_primary_recipient_email() {
 		return 'sales@example.test';
 	}
@@ -183,79 +167,93 @@ class YBY_Config {
 	public static function get_lead_notification_reply_to_policy() {
 		return 'auto';
 	}
+}
 
-	public static function get_lead_notification_subject_template() {
-		return '[YBY New Lead] {country} | {farm_size} | {crop} | {case_id}';
+class YBY_Brand_Profile {
+	public static function get_subject_template() {
+		return '[New Inquiry] {country} | {product_interest} | {case_id}';
 	}
 
-	public static function get_email_company_name() {
-		return 'YBY Irrigation';
+	public static function get_brand_name() {
+		return 'YBY Bottle';
 	}
 
-	public static function get_email_company_website() {
-		return 'https://ybyirrigation.com/';
+	public static function get_website_url() {
+		return 'https://bottle.example.test/';
 	}
 
-	public static function get_email_company_phone() {
+	public static function get_phone() {
 		return '+86 123456789';
 	}
 
-	public static function get_email_company_whatsapp() {
+	public static function get_whatsapp() {
 		return '+86123456789';
 	}
 
-	public static function get_email_footer_copyright() {
-		return 'YBY Irrigation';
+	public static function get_support_email() {
+		return 'support@example.test';
 	}
 
-	public static function get_email_logo_url() {
+	public static function get_footer_copyright() {
+		return '© 2026 YBY Bottle. All rights reserved.';
+	}
+
+	public static function get_logo_url() {
 		return '';
 	}
 
-	public static function get_email_reverse_logo_url() {
+	public static function get_reverse_logo_url() {
 		return '';
 	}
 
-	public static function sanitize_display_text( $value ) {
-		return sanitize_text_field( $value );
+	public static function get_inquiry_email_title() {
+		return 'Bottle Website Inquiry';
 	}
 
-	public static function sanitize_site_brand_key( $value ) {
-		return sanitize_key( $value );
+	public static function get_primary_color() {
+		return '#123456';
 	}
 
-	public static function sanitize_site_brand_name( $value ) {
-		return sanitize_text_field( $value );
+	public static function get_primary_text_color() {
+		return '#FFFFFF';
 	}
 
-	public static function sanitize_case_id_brand_code( $value ) {
-		$value = preg_replace( '/[^A-Z0-9]/', '', strtoupper( sanitize_text_field( $value ) ) );
-
-		return '' !== $value ? $value : 'CORE';
+	public static function get_secondary_color() {
+		return '#654321';
 	}
 
-	public static function sanitize_website_url( $value ) {
-		$value = esc_url_raw( $value );
+	public static function get_surface_color() {
+		return '#FAFAFA';
+	}
 
-		return '' !== $value ? $value : 'https://example.test/';
+	public static function get_text_color() {
+		return '#101010';
+	}
+
+	public static function get_muted_text_color() {
+		return '#707070';
+	}
+
+	public static function get_border_color() {
+		return '#CCCCCC';
 	}
 }
 
 class YBY_Site_Profile {
 	public static function get_brand_key() {
-		return YBY_Config::get_site_brand_key();
+		return 'yby_bottle';
 	}
 
 	public static function get_brand_name() {
-		return YBY_Config::get_site_brand_name();
+		return 'YBY Bottle';
 	}
 
 	public static function get_case_id_code() {
-		return YBY_Config::get_case_id_brand_code();
+		return 'BOT';
 	}
 
 	public static function get_website_url() {
-		return YBY_Config::get_website_url();
+		return 'https://bottle.example.test/';
 	}
 }
 
@@ -500,6 +498,14 @@ $tests['bodies_case_id_and_escaping'] = static function () use ( $provider ) {
 	harness_assert( false !== strpos( $plain, 'YBY-CORE-20260720-HARNESS1' ), 'Plain text body must include the Case ID.' );
 	harness_assert( false !== strpos( $html, 'alert(1)Need &amp; review' ), 'HTML body must escape custom field content.' );
 	harness_assert( false !== strpos( $plain, 'alert(1)Need & review' ), 'Plain text body must remain readable after sanitization.' );
+	harness_assert( false !== strpos( $html, 'Bottle Website Inquiry' ), 'HTML body must include the configured inquiry email title.' );
+	harness_assert( false !== strpos( $plain, 'Bottle Website Inquiry' ), 'Plain text body must include the configured inquiry email title.' );
+	harness_assert( false !== strpos( $html, '#123456' ), 'HTML body must use configured primary brand color.' );
+	harness_assert( false !== strpos( $html, '#654321' ), 'HTML body must use configured secondary brand color.' );
+	harness_assert( false !== strpos( $html, 'YBY Bottle' ), 'HTML body must use configured brand identity.' );
+	harness_assert( false !== strpos( $html, 'https://bottle.example.test/' ), 'HTML body must use configured brand website.' );
+	harness_assert( false === strpos( $html, '#00754A' ), 'HTML body must not contain deprecated hardcoded green colors.' );
+	harness_assert( false === strpos( $html, '#17211B' ), 'HTML body must not contain deprecated hardcoded dark colors.' );
 };
 
 $tests['notification_ordering_nonfatal'] = static function () {

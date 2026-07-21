@@ -26,7 +26,7 @@ class YBY_Lead_Session {
 			'enableCaseId' => YBY_Config::is_case_id_enabled(),
 			'caseIdRegex'  => $case_id->frontend_regex(),
 			'caseIdSample' => $case_id->generate(),
-			'thankYouUrl'  => YBY_Config::get_thank_you_url(),
+			'thankYouUrl'  => YBY_Brand_Profile::get_thank_you_url(),
 		);
 	}
 }

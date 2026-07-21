@@ -58,7 +58,7 @@ class YBY_Email_Notification_Provider {
 	public function build_subject( $lead ) {
 		$renderer = new YBY_Email_Subject_Renderer();
 
-		return $renderer->render( YBY_Config::get_lead_notification_subject_template(), $lead );
+		return $renderer->render( YBY_Brand_Profile::get_subject_template(), $lead );
 	}
 
 	/**
@@ -96,33 +96,19 @@ class YBY_Email_Notification_Provider {
 	 * @return string
 	 */
 	public function build_html( $lead ) {
-		$brand = $this->get_brand_values();
-
-		$header_logo = $brand['logo'];
-		$footer_logo = $brand['reverse_logo'] ? $brand['reverse_logo'] : $brand['logo'];
-		$company     = $brand['name'];
-		$website     = $brand['website'];
-		$phone       = $brand['phone'];
-		$whatsapp    = $brand['whatsapp'];
-		$copyright   = $brand['copyright'];
-
-		$header_logo_html = $this->build_logo_markup( $header_logo, $company, '#FFFFFF', '180px' );
-		$footer_logo_html = $this->build_logo_markup( $footer_logo, $company, '#17211B', '160px' );
-
-		$header_html = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>'
-			. '<td style="padding:24px 28px;background:#00754A;color:#FFFFFF;">'
-			. '<div style="margin:0 0 10px;">' . $header_logo_html . '</div>'
-			. '<p style="margin:0;font:700 12px Arial,Helvetica,sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:#DDEFE6;">' . esc_html( $company ) . '</p>'
-			. '<p style="margin:8px 0 0;font:400 13px Arial,Helvetica,sans-serif;line-height:1.6;color:#E7F3ED;">' . esc_html( $website ) . '</p>'
-			. '</td></tr></table>';
-
-		$footer_lines = array_filter(
+		$brand            = $this->get_brand_values();
+		$title            = $brand['title'];
+		$header_logo_html = $this->build_logo_markup( $brand['logo'], $brand['name'], $brand['primary_text'], '180px' );
+		$footer_logo      = '' !== $brand['reverse_logo'] ? $brand['reverse_logo'] : $brand['logo'];
+		$footer_logo_html = $this->build_logo_markup( $footer_logo, $brand['name'], $brand['text'], '160px' );
+		$footer_lines     = array_filter(
 			array(
-				$company,
-				$website,
-				$phone,
-				$whatsapp,
-				$copyright,
+				$brand['name'],
+				$brand['website'],
+				$brand['phone'],
+				$brand['whatsapp'],
+				$brand['support_email'],
+				$brand['copyright'],
 			)
 		);
 
@@ -137,8 +123,8 @@ class YBY_Email_Notification_Provider {
 				'Quantity'         => $this->lead_value( $lead, 'quantity' ),
 				'Project Details'  => $this->lead_value( $lead, 'project_details' ),
 			),
-			$this->cell_label_style(),
-			$this->cell_value_style()
+			$this->cell_label_style( $brand ),
+			$this->cell_value_style( $brand )
 		);
 
 		$source_rows = $this->build_rows(
@@ -149,8 +135,8 @@ class YBY_Email_Notification_Provider {
 				'Form Version'     => $this->lead_value( $lead, 'form_version' ),
 				'Case ID'          => $this->lead_value( $lead, 'case_id' ),
 			),
-			$this->cell_label_style(),
-			$this->cell_value_style()
+			$this->cell_label_style( $brand ),
+			$this->cell_value_style( $brand )
 		);
 
 		$technical_rows = $this->build_rows(
@@ -164,33 +150,37 @@ class YBY_Email_Notification_Provider {
 				'FBCLID'             => $this->lead_value( $lead, 'fbclid' ),
 				'Submitted At (UTC)' => gmdate( 'Y-m-d H:i:s' ),
 			),
-			$this->cell_label_style(),
-			$this->cell_value_style()
+			$this->cell_label_style( $brand ),
+			$this->cell_value_style( $brand )
 		);
 
-		$custom_rows   = $this->build_custom_field_rows( $lead );
-		$quick_actions = $this->build_quick_actions( $lead );
+		$custom_rows = $this->build_custom_field_rows( $lead, $brand );
 
-		return '<!doctype html><html><body style="margin:0;padding:0;background:#F4F6F4;">'
-			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#F4F6F4;"><tr><td align="center" style="padding:24px 12px;">'
-			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:640px;background:#FFFFFF;border-collapse:collapse;border:1px solid #DDE5DF;">'
-			. '<tr><td>' . $header_html . '</td></tr>'
-			. '<tr><td style="padding:24px 28px;background:#FFFFFF;">'
-			. '<h2 style="' . esc_attr( $this->section_head_style() ) . '">Lead Details</h2>'
-			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0 0 24px;">' . $quick_view_rows . '</table>'
-			. '<h2 style="' . esc_attr( $this->section_head_style() ) . '">Inquiry Source</h2>'
-			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0 0 24px;">' . $source_rows . '</table>'
-			. '<h2 style="' . esc_attr( $this->section_head_style() ) . '">Quick Actions</h2>'
-			. $quick_actions
-			. '<h2 style="' . esc_attr( $this->section_head_style() ) . '">Custom Fields</h2>'
-			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0 0 24px;">' . $custom_rows . '</table>'
-			. '<h2 style="' . esc_attr( $this->section_head_style() ) . '">Technical &amp; Attribution Details</h2>'
-			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0 0 24px;">' . $technical_rows . '</table>'
-			. '<p style="margin:0;font:400 12px Arial,Helvetica,sans-serif;line-height:1.6;color:#6B746E;">This email was generated by YBY Core v' . esc_html( YBY_CORE_VERSION ) . '.</p>'
+		return '<!doctype html><html><body style="margin:0;padding:0;background:' . esc_attr( $brand['surface'] ) . ';">'
+			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:' . esc_attr( $brand['surface'] ) . ';"><tr><td align="center" style="padding:24px 12px;">'
+			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:640px;background:' . esc_attr( $brand['surface'] ) . ';border-collapse:collapse;border:1px solid ' . esc_attr( $brand['border'] ) . ';">'
+			. '<tr><td style="padding:24px 28px;background:' . esc_attr( $brand['primary'] ) . ';color:' . esc_attr( $brand['primary_text'] ) . ';">'
+			. '<div style="margin:0 0 10px;">' . $header_logo_html . '</div>'
+			. '<p style="margin:0;font:700 12px Arial,Helvetica,sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:' . esc_attr( $brand['primary_text'] ) . ';">' . esc_html( $brand['name'] ) . '</p>'
+			. '<p style="margin:8px 0 0;font:400 13px Arial,Helvetica,sans-serif;line-height:1.6;color:' . esc_attr( $brand['primary_text'] ) . ';">' . esc_html( $brand['website'] ) . '</p>'
 			. '</td></tr>'
-			. '<tr><td style="padding:20px 28px;background:#F7F9F7;border-top:1px solid #DDE5DF;">'
+			. '<tr><td style="padding:24px 28px;background:' . esc_attr( $brand['surface'] ) . ';">'
+			. '<h1 style="' . esc_attr( $this->title_style( $brand ) ) . '">' . esc_html( $title ) . '</h1>'
+			. '<h2 style="' . esc_attr( $this->section_head_style( $brand ) ) . '">Lead Details</h2>'
+			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0 0 24px;">' . $quick_view_rows . '</table>'
+			. '<h2 style="' . esc_attr( $this->section_head_style( $brand ) ) . '">Inquiry Source</h2>'
+			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0 0 24px;">' . $source_rows . '</table>'
+			. '<h2 style="' . esc_attr( $this->section_head_style( $brand ) ) . '">Quick Actions</h2>'
+			. $this->build_quick_actions( $lead, $brand )
+			. '<h2 style="' . esc_attr( $this->section_head_style( $brand ) ) . '">Custom Fields</h2>'
+			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0 0 24px;">' . $custom_rows . '</table>'
+			. '<h2 style="' . esc_attr( $this->section_head_style( $brand ) ) . '">Technical &amp; Attribution Details</h2>'
+			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0 0 24px;">' . $technical_rows . '</table>'
+			. '<p style="margin:0;font:400 12px Arial,Helvetica,sans-serif;line-height:1.6;color:' . esc_attr( $brand['muted'] ) . ';">This email was generated by YBY Core v' . esc_html( YBY_CORE_VERSION ) . '.</p>'
+			. '</td></tr>'
+			. '<tr><td style="padding:20px 28px;background:' . esc_attr( $brand['surface'] ) . ';border-top:1px solid ' . esc_attr( $brand['border'] ) . ';">'
 			. '<div style="margin-bottom:10px;">' . $footer_logo_html . '</div>'
-			. '<p style="' . esc_attr( $this->footer_line_style() ) . '">' . esc_html( implode( ' | ', array_filter( $footer_lines ) ) ) . '</p>'
+			. '<p style="' . esc_attr( $this->footer_line_style( $brand ) ) . '">' . esc_html( implode( ' | ', $footer_lines ) ) . '</p>'
 			. '</td></tr>'
 			. '</table></td></tr></table></body></html>';
 	}
@@ -202,8 +192,9 @@ class YBY_Email_Notification_Provider {
 	 * @return string
 	 */
 	public function build_plain_text( $lead ) {
+		$brand = $this->get_brand_values();
 		$lines = array(
-			'YBY Website Inquiry',
+			$brand['title'],
 			'Case ID: ' . $this->lead_value( $lead, 'case_id' ),
 			'',
 			'Lead Details',
@@ -321,7 +312,7 @@ class YBY_Email_Notification_Provider {
 			}
 
 			$blocked[ strtolower( $email ) ] = true;
-			$result[] = $email;
+			$result[]                        = $email;
 		}
 
 		return $result;
@@ -345,7 +336,7 @@ class YBY_Email_Notification_Provider {
 			}
 
 			$blocked[ strtolower( $email ) ] = true;
-			$result[] = $email;
+			$result[]                        = $email;
 		}
 
 		return $result;
@@ -404,9 +395,10 @@ class YBY_Email_Notification_Provider {
 	 * Build custom field rows for HTML output.
 	 *
 	 * @param array<string, mixed> $lead Lead payload.
+	 * @param array<string, string> $brand Brand presentation values.
 	 * @return string
 	 */
-	protected function build_custom_field_rows( $lead ) {
+	protected function build_custom_field_rows( $lead, $brand ) {
 		$items = $this->get_custom_field_items( $lead );
 
 		if ( empty( $items ) ) {
@@ -415,7 +407,7 @@ class YBY_Email_Notification_Provider {
 			);
 		}
 
-		return $this->build_rows( $items, $this->cell_label_style(), $this->cell_value_style() );
+		return $this->build_rows( $items, $this->cell_label_style( $brand ), $this->cell_value_style( $brand ) );
 	}
 
 	/**
@@ -475,67 +467,94 @@ class YBY_Email_Notification_Provider {
 	 * Build the quick action block.
 	 *
 	 * @param array<string, mixed> $lead Lead payload.
+	 * @param array<string, string> $brand Brand presentation values.
 	 * @return string
 	 */
-	protected function build_quick_actions( $lead ) {
+	protected function build_quick_actions( $lead, $brand ) {
 		$actions              = array();
 		$contact_email        = $this->lead_value( $lead, 'contact_email' );
 		$contact_whatsapp_url = $this->lead_value( $lead, 'contact_whatsapp_url' );
 		$landing_page_url     = $this->lead_value( $lead, 'landing_page_url' );
 
 		if ( '' !== $contact_email && is_email( $contact_email ) ) {
-			$actions[] = '<a href="mailto:' . esc_attr( $contact_email ) . '" style="display:inline-block;padding:10px 16px;margin:0 12px 12px 0;background:#00754A;color:#FFFFFF;text-decoration:none;font:700 13px Arial,Helvetica,sans-serif;border-radius:3px;">Reply by Email</a>';
+			$actions[] = '<a href="mailto:' . esc_attr( $contact_email ) . '" style="' . esc_attr( $this->action_button_style( $brand['primary'], $brand['primary_text'], $brand['primary'] ) ) . '">Reply by Email</a>';
 		}
 
 		if ( '' !== $contact_whatsapp_url ) {
-			$actions[] = '<a href="' . esc_url( $contact_whatsapp_url ) . '" style="display:inline-block;padding:10px 16px;margin:0 12px 12px 0;background:#17211B;color:#FFFFFF;text-decoration:none;font:700 13px Arial,Helvetica,sans-serif;border-radius:3px;">Open WhatsApp</a>';
+			$actions[] = '<a href="' . esc_url( $contact_whatsapp_url ) . '" style="' . esc_attr( $this->action_button_style( $brand['secondary'], $brand['primary_text'], $brand['secondary'] ) ) . '">Open WhatsApp</a>';
 		}
 
 		if ( '' !== $landing_page_url ) {
-			$actions[] = '<a href="' . esc_url( $landing_page_url ) . '" style="display:inline-block;padding:10px 16px;margin:0 12px 12px 0;background:#FFFFFF;color:#17211B;text-decoration:none;font:700 13px Arial,Helvetica,sans-serif;border:1px solid #DDE5DF;border-radius:3px;">Open Landing Page</a>';
+			$actions[] = '<a href="' . esc_url( $landing_page_url ) . '" style="' . esc_attr( $this->action_button_style( $brand['surface'], $brand['text'], $brand['border'] ) ) . '">Open Landing Page</a>';
 		}
 
 		if ( empty( $actions ) ) {
-			return '<p style="margin:0 0 24px;font:400 14px Arial,Helvetica,sans-serif;line-height:1.7;color:#37433C;">No quick actions were available for this lead. Use the raw contact details in Lead Details.</p>';
+			return '<p style="margin:0 0 24px;font:400 14px Arial,Helvetica,sans-serif;line-height:1.7;color:' . esc_attr( $brand['muted'] ) . ';">No quick actions were available for this lead. Use the raw contact details in Lead Details.</p>';
 		}
 
 		return '<div style="margin:0 0 24px;">' . implode( '', $actions ) . '</div>';
 	}
 
 	/**
-	 * Section heading style.
+	 * Build action button styles.
 	 *
+	 * @param string $background Background color.
+	 * @param string $text Color.
+	 * @param string $border Border color.
 	 * @return string
 	 */
-	protected function section_head_style() {
-		return 'margin:0 0 12px;font:700 18px Arial,Helvetica,sans-serif;line-height:1.35;color:#17211B;';
+	protected function action_button_style( $background, $text, $border ) {
+		return 'display:inline-block;padding:10px 16px;margin:0 12px 12px 0;background:' . $background . ';color:' . $text . ';text-decoration:none;font:700 13px Arial,Helvetica,sans-serif;border:1px solid ' . $border . ';border-radius:3px;';
+	}
+
+	/**
+	 * Section title style.
+	 *
+	 * @param array<string, string> $brand Brand presentation values.
+	 * @return string
+	 */
+	protected function title_style( $brand ) {
+		return 'margin:0 0 16px;font:700 24px Arial,Helvetica,sans-serif;line-height:1.25;color:' . $brand['text'] . ';';
+	}
+
+	/**
+	 * Section heading style.
+	 *
+	 * @param array<string, string> $brand Brand presentation values.
+	 * @return string
+	 */
+	protected function section_head_style( $brand ) {
+		return 'margin:0 0 12px;font:700 18px Arial,Helvetica,sans-serif;line-height:1.35;color:' . $brand['text'] . ';';
 	}
 
 	/**
 	 * Cell label style.
 	 *
+	 * @param array<string, string> $brand Brand presentation values.
 	 * @return string
 	 */
-	protected function cell_label_style() {
-		return 'padding:10px 12px;border:1px solid #DDE5DF;background:#F7F9F7;font:700 13px Arial,Helvetica,sans-serif;line-height:1.5;color:#17211B;vertical-align:top;width:34%;';
+	protected function cell_label_style( $brand ) {
+		return 'padding:10px 12px;border:1px solid ' . $brand['border'] . ';background:' . $brand['surface'] . ';font:700 13px Arial,Helvetica,sans-serif;line-height:1.5;color:' . $brand['text'] . ';vertical-align:top;width:34%;';
 	}
 
 	/**
 	 * Cell value style.
 	 *
+	 * @param array<string, string> $brand Brand presentation values.
 	 * @return string
 	 */
-	protected function cell_value_style() {
-		return 'padding:10px 12px;border:1px solid #DDE5DF;font:400 13px Arial,Helvetica,sans-serif;line-height:1.6;color:#37433C;vertical-align:top;';
+	protected function cell_value_style( $brand ) {
+		return 'padding:10px 12px;border:1px solid ' . $brand['border'] . ';font:400 13px Arial,Helvetica,sans-serif;line-height:1.6;color:' . $brand['muted'] . ';vertical-align:top;background:' . $brand['surface'] . ';';
 	}
 
 	/**
 	 * Footer line style.
 	 *
+	 * @param array<string, string> $brand Brand presentation values.
 	 * @return string
 	 */
-	protected function footer_line_style() {
-		return 'margin:0;font:400 13px Arial,Helvetica,sans-serif;line-height:1.7;color:#17211B;';
+	protected function footer_line_style( $brand ) {
+		return 'margin:0;font:400 13px Arial,Helvetica,sans-serif;line-height:1.7;color:' . $brand['text'] . ';';
 	}
 
 	/**
@@ -560,13 +579,22 @@ class YBY_Email_Notification_Provider {
 	 */
 	protected function get_brand_values() {
 		return array(
-			'name'         => YBY_Config::sanitize_display_text( YBY_Config::get_email_company_name() ),
-			'website'      => esc_url_raw( YBY_Config::get_email_company_website() ),
-			'phone'        => YBY_Config::sanitize_display_text( YBY_Config::get_email_company_phone() ),
-			'whatsapp'     => YBY_Config::sanitize_display_text( YBY_Config::get_email_company_whatsapp() ),
-			'copyright'    => YBY_Config::sanitize_display_text( YBY_Config::get_email_footer_copyright() ),
-			'logo'         => esc_url_raw( YBY_Config::get_email_logo_url() ),
-			'reverse_logo' => esc_url_raw( YBY_Config::get_email_reverse_logo_url() ),
+			'name'         => YBY_Brand_Profile::get_brand_name(),
+			'website'      => YBY_Brand_Profile::get_website_url(),
+			'phone'        => YBY_Brand_Profile::get_phone(),
+			'whatsapp'     => YBY_Brand_Profile::get_whatsapp(),
+			'support_email'=> YBY_Brand_Profile::get_support_email(),
+			'copyright'    => YBY_Brand_Profile::get_footer_copyright(),
+			'logo'         => YBY_Brand_Profile::get_logo_url(),
+			'reverse_logo' => YBY_Brand_Profile::get_reverse_logo_url(),
+			'title'        => YBY_Brand_Profile::get_inquiry_email_title(),
+			'primary'      => YBY_Brand_Profile::get_primary_color(),
+			'primary_text' => YBY_Brand_Profile::get_primary_text_color(),
+			'secondary'    => YBY_Brand_Profile::get_secondary_color(),
+			'surface'      => YBY_Brand_Profile::get_surface_color(),
+			'text'         => YBY_Brand_Profile::get_text_color(),
+			'muted'        => YBY_Brand_Profile::get_muted_text_color(),
+			'border'       => YBY_Brand_Profile::get_border_color(),
 		);
 	}
 

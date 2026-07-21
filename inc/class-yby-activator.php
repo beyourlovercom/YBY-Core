@@ -41,14 +41,14 @@ class YBY_Activator {
 		update_option(
 			YBY_Helpers::lead_notification_primary_recipient_option_key(),
 			YBY_Config::sanitize_email_value(
-				get_option( YBY_Helpers::lead_notification_primary_recipient_option_key(), 'sale@yby-irrigation.com' ),
-				'sale@yby-irrigation.com'
+				get_option( YBY_Helpers::lead_notification_primary_recipient_option_key(), '' ),
+				YBY_Config::sanitize_email_value( get_option( 'admin_email', '' ) )
 			)
 		);
 		update_option(
 			YBY_Helpers::lead_notification_cc_recipient_option_key(),
 			YBY_Config::sanitize_email_list_value(
-				get_option( YBY_Helpers::lead_notification_cc_recipient_option_key(), 'yishitongshop@gmail.com' )
+				get_option( YBY_Helpers::lead_notification_cc_recipient_option_key(), '' )
 			)
 		);
 		update_option(
