@@ -176,8 +176,231 @@
     return "";
   }
 
+  function getBrandRuntimeString(key, fallback, maxLength) {
+    var runtimeValue = safeString(runtime[key], maxLength || 240);
+
+    if (runtimeValue) {
+      return runtimeValue;
+    }
+
+    return getCanonicalString(key, fallback, maxLength);
+  }
+
   function getProductInterest() {
     return getCanonicalString("productInterest", runtime.defaultProductInterest || tracking.defaultProduct || "", 80);
+  }
+
+  function sanitizeMultilineText(value, maxLength) {
+    return String(value || "")
+      .replace(/[<>]/g, "")
+      .trim()
+      .substring(0, maxLength || 2000);
+  }
+
+  function normalizeWhatsAppMessage(value) {
+    return sanitizeMultilineText(value, 4000)
+      .replace(/\\+r\\+n/g, "\n")
+      .replace(/\\+n/g, "\n")
+      .replace(/\\+r/g, "\n")
+      .replace(/\r\n?/g, "\n")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
+  function countExactOccurrences(haystack, needle) {
+    var value = String(haystack || "");
+    var token = String(needle || "");
+    var count = 0;
+    var offset = 0;
+
+    if (!token) {
+      return 0;
+    }
+
+    while ((offset = value.indexOf(token, offset)) !== -1) {
+      count += 1;
+      offset += token.length;
+    }
+
+    return count;
+  }
+
+  function appendWhatsAppField(lines, label, value) {
+    var normalized = normalizeWhatsAppMessage(value);
+
+    if (normalized) {
+      lines.push(label + ": " + normalized.replace(/\n+/g, " "));
+    }
+  }
+
+  function removeEmptyTokenLines(message) {
+    return normalizeWhatsAppMessage(message);
+  }
+
+  function stripInternalWhatsAppLines(message) {
+    return normalizeWhatsAppMessage(
+      String(message || "")
+        .split("\n")
+        .filter(function (line) {
+          var normalized = normalizeWhatsAppMessage(line).toLowerCase();
+
+          if (!normalized) {
+            return true;
+          }
+
+          return !/^(source|source_component|source_preset|source_page|tracking_group|ga4_content_group|ads_conversion_group|crm_pipeline|utm_source|utm_medium|utm_campaign|utm_term|gclid|fbclid|project id|profile id)\s*:/.test(normalized);
+        })
+        .join("\n")
+    );
+  }
+
+  function replaceWhatsAppTemplateTokens(message, tokens) {
+    var lines = String(message || "").split("\n");
+
+    lines = lines
+      .map(function (line) {
+        var output = String(line || "");
+        var removeLine = false;
+
+        Object.keys(tokens).forEach(function (tokenKey) {
+          var rawValue = tokens[tokenKey];
+          var tokenPattern = new RegExp("\\{" + tokenKey + "\\}", "ig");
+          var lineHasToken = tokenPattern.test(output);
+
+          tokenPattern.lastIndex = 0;
+
+          if (!lineHasToken) {
+            return;
+          }
+
+          if (!rawValue) {
+            removeLine = true;
+            output = output.replace(tokenPattern, "");
+            return;
+          }
+
+          output = output.replace(tokenPattern, rawValue);
+        });
+
+        output = normalizeWhatsAppMessage(output).replace(/[ \t]{2,}/g, " ");
+
+        if (removeLine) {
+          return "";
+        }
+
+        return output;
+      })
+      .filter(function (line) {
+        return !!line;
+      });
+
+    return stripInternalWhatsAppLines(removeEmptyTokenLines(lines.join("\n")));
+  }
+
+  function buildWhatsAppCaseId(caseId) {
+    var normalized = normalizeCaseId(caseId || window.YBYLead.getCaseId());
+
+    return normalized || "Pending";
+  }
+
+  function ensureWhatsAppCaseId(message, caseId) {
+    var normalizedMessage = normalizeWhatsAppMessage(message);
+    var normalizedCaseId = buildWhatsAppCaseId(caseId);
+    var occurrenceCount = countExactOccurrences(normalizedMessage, normalizedCaseId);
+    var parts;
+
+    if (occurrenceCount > 1) {
+      parts = normalizedMessage.split(normalizedCaseId);
+      normalizedMessage = parts[0] + normalizedCaseId + parts.slice(1).join("");
+      occurrenceCount = 1;
+    }
+
+    if (occurrenceCount === 0) {
+      normalizedMessage = normalizedMessage
+        ? normalizedMessage + "\n\nCase ID: " + normalizedCaseId + "."
+        : "Case ID: " + normalizedCaseId + ".";
+    }
+
+    return stripInternalWhatsAppLines(normalizeWhatsAppMessage(normalizedMessage));
+  }
+
+  function getWhatsAppProjectValue(key, fallback, maxLength) {
+    return getCanonicalString(key, fallback || "", maxLength || 180);
+  }
+
+  function getWhatsAppSummaryFields() {
+    return [
+      {
+        label: "Country",
+        value: getWhatsAppProjectValue("country", runtime.defaultCountry || "", 120)
+      },
+      {
+        label: "Crop",
+        value: getWhatsAppProjectValue("crop", "", 180)
+      },
+      {
+        label: "Farm Size",
+        value: getWhatsAppProjectValue("farm_size", "", 180)
+      },
+      {
+        label: "Water Source",
+        value: getWhatsAppProjectValue("water_source", "", 180)
+      },
+      {
+        label: "Recommended System",
+        value: getWhatsAppProjectValue("recommended_system", "", 180)
+      },
+      {
+        label: "Estimated Range",
+        value: getWhatsAppProjectValue("estimated_range", "", 180)
+      }
+    ];
+  }
+
+  function getWhatsAppBrandName() {
+    return getBrandRuntimeString("siteBrandName", "YBY", 120) || "YBY";
+  }
+
+  function buildWhatsAppTokens(caseId) {
+    var fields = getWhatsAppSummaryFields();
+    var tokenValues = {
+      case_id: buildWhatsAppCaseId(caseId),
+      brand_name: getWhatsAppBrandName()
+    };
+
+    fields.forEach(function (field) {
+      tokenValues[field.label.toLowerCase().replace(/\s+/g, "_")] = normalizeWhatsAppMessage(field.value).replace(/\n+/g, " ");
+    });
+
+    return tokenValues;
+  }
+
+  function buildDefaultWhatsAppMessage(caseId) {
+    var tokens = buildWhatsAppTokens(caseId);
+    var productInterest = getProductInterest().toLowerCase();
+    var intro = productInterest.indexOf("irrigation") > -1 ? "I submitted an irrigation solution request." : "I submitted a website inquiry.";
+    var lines = [
+      "Hello " + tokens.brand_name + ", " + intro,
+      "",
+      "My Case ID: " + tokens.case_id,
+      ""
+    ];
+    var summaryLines = [];
+
+    getWhatsAppSummaryFields().forEach(function (field) {
+      appendWhatsAppField(summaryLines, field.label, field.value);
+    });
+
+    if (summaryLines.length) {
+      lines.push("Project Summary");
+      lines = lines.concat(summaryLines);
+      lines.push("");
+    }
+
+    lines.push("Please contact me about the next steps.");
+
+    return normalizeWhatsAppMessage(lines.join("\n"));
   }
 
   function appendQueryParam(url, key, value) {
@@ -427,8 +650,8 @@
   };
 
   window.YBYLead.buildThankYouUrl = function (caseId) {
-    var safeCaseId = normalizeCaseId(caseId || window.YBYLead.getCaseId() || window.YBYLead.createCaseId());
-    var thankYouUrl = getCanonicalString("thankYouUrl", runtime.thankYouUrl || leadSession.thankYouUrl || "/", 240);
+    var safeCaseId = buildWhatsAppCaseId(caseId);
+    var thankYouUrl = getBrandRuntimeString("thankYouUrl", leadSession.thankYouUrl || "/", 240) || "/";
     return appendQueryParam(thankYouUrl, "case_id", safeCaseId);
   };
 
@@ -567,10 +790,14 @@
   };
 
   window.YBYThankYou.buildWhatsAppUrl = function () {
-    var caseId = window.YBYLead.getCaseId() || "Pending";
-    var number = safeString(runtime.whatsappNumber, 32).replace(/[^\d]/g, "");
-    var customMessage = getCanonicalString("whatsappMessage", "", 240);
-    var message = customMessage || "Hello YBY, I submitted a website inquiry. My Case ID is " + caseId + ".";
+    var caseId = buildWhatsAppCaseId(window.YBYLead.getCaseId());
+    var number = getBrandRuntimeString("whatsappNumber", "", 32).replace(/[^\d]/g, "");
+    var customMessage = getCanonicalString("whatsappMessage", "", 1000);
+    var tokens = buildWhatsAppTokens(caseId);
+    var message = customMessage ? replaceWhatsAppTemplateTokens(customMessage, tokens) : buildDefaultWhatsAppMessage(caseId);
+
+    message = ensureWhatsAppCaseId(message, caseId);
+
     return "https://wa.me/" + number + "?text=" + encodeURIComponent(message);
   };
 
@@ -586,19 +813,19 @@
     });
 
     catalogLinks.forEach(function (node) {
-      node.setAttribute("href", getCanonicalString("catalogUrl", runtime.catalogUrl || "#", 240));
+      node.setAttribute("href", getBrandRuntimeString("catalogUrl", "#", 240) || "#");
     });
 
     returnLinks.forEach(function (node) {
-      node.setAttribute("href", getCanonicalString("returnPageUrl", runtime.returnPageUrl || "/", 240));
+      node.setAttribute("href", getBrandRuntimeString("returnPageUrl", "/", 240) || "/");
     });
 
     if (videoFrame) {
-      if (getCanonicalString("youtubeVideoId", runtime.youtubeVideoId || "", 120)) {
+      if (getBrandRuntimeString("youtubeVideoId", "", 120)) {
         videoFrame.setAttribute(
           "src",
           "https://www.youtube.com/embed/" +
-            encodeURIComponent(getCanonicalString("youtubeVideoId", runtime.youtubeVideoId || "", 120)) +
+            encodeURIComponent(getBrandRuntimeString("youtubeVideoId", "", 120)) +
             "?enablejsapi=1"
         );
         if (videoNote) {
@@ -630,6 +857,17 @@
     });
 
     setSessionItem(key, "1");
+  };
+
+  window.YBYThankYou.__testOnly = {
+    getBrandRuntimeString: getBrandRuntimeString,
+    normalizeWhatsAppMessage: normalizeWhatsAppMessage,
+    replaceWhatsAppTemplateTokens: replaceWhatsAppTemplateTokens,
+    ensureWhatsAppCaseId: ensureWhatsAppCaseId,
+    countExactOccurrences: countExactOccurrences,
+    buildDefaultWhatsAppMessage: buildDefaultWhatsAppMessage,
+    buildWhatsAppTokens: buildWhatsAppTokens,
+    getWhatsAppSummaryFields: getWhatsAppSummaryFields
   };
 
   window.YBYThankYou.bindActions = function () {
