@@ -41,6 +41,7 @@ class YBY_Config {
 			'default_product_interest'           => '',
 			'thank_you_url'                      => '/',
 			'return_page_url'                    => '/',
+			'whatsapp_message_template'          => '',
 			'lead_notification_subject_template' => '[New Inquiry] {country} | {product_interest} | {case_id}',
 			'inquiry_email_title'                => 'Website Inquiry',
 			'email_company_name'                 => '',
@@ -77,7 +78,7 @@ class YBY_Config {
 			$options = array();
 		}
 
-		return wp_parse_args( $options, self::defaults() );
+		return self::sanitize( wp_parse_args( $options, self::defaults() ) );
 	}
 
 	/**
@@ -111,6 +112,7 @@ class YBY_Config {
 			'default_product_interest'           => self::sanitize_display_text( $options['default_product_interest'] ?? $defaults['default_product_interest'] ),
 			'thank_you_url'                      => self::sanitize_path_or_absolute_url_value( $options['thank_you_url'] ?? $defaults['thank_you_url'], '/' ),
 			'return_page_url'                    => self::sanitize_path_or_absolute_url_value( $options['return_page_url'] ?? $defaults['return_page_url'], '/' ),
+			'whatsapp_message_template'          => self::sanitize_whatsapp_message_template( $options['whatsapp_message_template'] ?? $defaults['whatsapp_message_template'] ),
 			'lead_notification_subject_template' => self::sanitize_subject_template( $options['lead_notification_subject_template'] ?? $defaults['lead_notification_subject_template'] ),
 			'inquiry_email_title'                => self::sanitize_display_text( $options['inquiry_email_title'] ?? $defaults['inquiry_email_title'] ),
 			'email_company_name'                 => self::sanitize_display_text( $options['email_company_name'] ?? $defaults['email_company_name'] ),
@@ -216,6 +218,10 @@ class YBY_Config {
 
 	public static function get_return_page_url() {
 		return (string) self::get( 'return_page_url' );
+	}
+
+	public static function get_whatsapp_message_template() {
+		return (string) self::get( 'whatsapp_message_template' );
 	}
 
 	public static function get_lead_notification_subject_template() {
@@ -339,6 +345,7 @@ class YBY_Config {
 			'defaultProductInterest'=> isset( $brand_profile['default_product_interest'] ) ? (string) $brand_profile['default_product_interest'] : self::get_default_product_interest(),
 			'thankYouUrl'           => isset( $brand_profile['thank_you_url'] ) ? (string) $brand_profile['thank_you_url'] : self::get_thank_you_url(),
 			'returnPageUrl'         => isset( $brand_profile['return_page_url'] ) ? (string) $brand_profile['return_page_url'] : self::get_return_page_url(),
+			'whatsappMessageTemplate' => isset( $brand_profile['whatsapp_message_template'] ) ? (string) $brand_profile['whatsapp_message_template'] : self::get_whatsapp_message_template(),
 			'enableTracking'        => self::is_tracking_enabled(),
 			'enableCaseId'          => self::is_case_id_enabled(),
 			'enableCrmWebhook'      => self::is_crm_webhook_enabled(),
@@ -519,6 +526,20 @@ class YBY_Config {
 		$value = preg_replace( '/[\x00-\x1F\x7F]+/', '', $value );
 
 		return '' !== $value ? $value : '[New Inquiry] {country} | {product_interest} | {case_id}';
+	}
+
+	public static function sanitize_whatsapp_message_template( $value ) {
+		$value = (string) $value;
+		$value = str_replace( array( '\\r\\n', '\\n', '\\r' ), "\n", $value );
+		$value = str_replace( array( "\r\n", "\r" ), "\n", $value );
+		$value = strip_tags( $value );
+		$value = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]+/', '', $value );
+		$value = preg_replace( "/[ \t]+\n/", "\n", $value );
+		$value = trim( $value );
+		$value = preg_replace( "/\n{3,}/", "\n\n", $value );
+		$value = substr( (string) $value, 0, 4000 );
+
+		return trim( (string) $value );
 	}
 
 	public static function sanitize_display_text( $value ) {

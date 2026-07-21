@@ -42,6 +42,7 @@ class YBY_Brand_Profile {
 				'default_product_interest'           => YBY_Config::get_default_product_interest(),
 				'thank_you_url'                      => YBY_Config::get_thank_you_url(),
 				'return_page_url'                    => YBY_Config::get_return_page_url(),
+				'whatsapp_message_template'          => YBY_Config::get_whatsapp_message_template(),
 				'lead_notification_subject_template' => YBY_Config::get_lead_notification_subject_template(),
 				'inquiry_email_title'                => YBY_Config::get_inquiry_email_title(),
 				'email_company_name'                 => YBY_Config::get_email_company_name(),
@@ -98,6 +99,7 @@ class YBY_Brand_Profile {
 			'default_product_interest'           => YBY_Config::sanitize_display_text( $profile['default_product_interest'] ?? $defaults['default_product_interest'] ),
 			'thank_you_url'                      => YBY_Config::sanitize_path_or_absolute_url_value( $profile['thank_you_url'] ?? $defaults['thank_you_url'], '/' ),
 			'return_page_url'                    => YBY_Config::sanitize_path_or_absolute_url_value( $profile['return_page_url'] ?? $defaults['return_page_url'], '/' ),
+			'whatsapp_message_template'          => YBY_Config::sanitize_whatsapp_message_template( $profile['whatsapp_message_template'] ?? $defaults['whatsapp_message_template'] ),
 			'lead_notification_subject_template' => YBY_Config::sanitize_subject_template( $profile['lead_notification_subject_template'] ?? $defaults['lead_notification_subject_template'] ),
 			'inquiry_email_title'                => self::sanitize_inquiry_email_title( $profile['inquiry_email_title'] ?? $defaults['inquiry_email_title'] ),
 			'email_company_name'                 => YBY_Config::sanitize_display_text( $profile['email_company_name'] ?? $defaults['email_company_name'] ),
@@ -212,6 +214,10 @@ class YBY_Brand_Profile {
 
 	public static function get_default_product_interest() {
 		return self::get_profile()['default_product_interest'];
+	}
+
+	public static function get_whatsapp_message_template() {
+		return self::get_profile()['whatsapp_message_template'];
 	}
 
 	protected static function sanitize_inquiry_email_title( $value ) {

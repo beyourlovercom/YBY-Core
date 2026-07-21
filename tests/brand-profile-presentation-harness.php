@@ -260,6 +260,23 @@ $tests['legacy_override_and_recipients'] = static function () {
 	harness_assert( 'bcc@example.test' === YBY_Config::get_lead_notification_bcc_recipient_emails(), 'Invalid BCC addresses must be excluded.' );
 };
 
+$tests['whatsapp_template_sanitization'] = static function () {
+	harness_reset_state(
+		array(
+			'whatsapp_message_template' => "<strong>Hello {brand_name}</strong>\\n\\nCase ID: {case_id}\\r\\nCountry: {country}\n\n\n<script>alert(1)</script>",
+		)
+	);
+
+	$template = YBY_Config::get_whatsapp_message_template();
+	$profile  = YBY_Brand_Profile::get_whatsapp_message_template();
+
+	harness_assert( false === str_contains( $template, '<strong>' ), 'WhatsApp template sanitizer must remove HTML tags.' );
+	harness_assert( false === str_contains( $template, '<script>' ), 'WhatsApp template sanitizer must remove script tags.' );
+	harness_assert( false !== strpos( $template, "Hello {brand_name}\n\nCase ID: {case_id}\nCountry: {country}" ), 'WhatsApp template sanitizer must preserve normalized multiline placeholders.' );
+	harness_assert( false === str_contains( $template, '\\n' ), 'WhatsApp template sanitizer must convert literal escaped newlines.' );
+	harness_assert( $template === $profile, 'Brand profile must expose the sanitized WhatsApp template.' );
+};
+
 $tests['runtime_secret_and_path_hardening'] = static function () {
 	harness_reset_state(
 		array(

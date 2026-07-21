@@ -144,6 +144,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<th scope="row"><label for="yby-whatsapp-number"><?php esc_html_e( 'WhatsApp Number', 'yby-core' ); ?></label></th>
 					<td><input id="yby-whatsapp-number" name="yby_core_options[whatsapp_number]" type="text" class="regular-text" value="<?php echo esc_attr( $options['whatsapp_number'] ); ?>"></td>
 				</tr>
+				<tr>
+					<th scope="row"><label for="yby-whatsapp-message-template"><?php esc_html_e( 'WhatsApp Message Template', 'yby-core' ); ?></label></th>
+					<td>
+						<textarea id="yby-whatsapp-message-template" name="yby_core_options[whatsapp_message_template]" class="large-text code" rows="8"><?php echo esc_textarea( $options['whatsapp_message_template'] ); ?></textarea>
+						<p class="description"><?php esc_html_e( 'Supported placeholders: {brand_name}, {case_id}, {country}, {crop}, {farm_size}, {water_source}, {recommended_system}, {estimated_range}. Leave empty to use the shared portable default.', 'yby-core' ); ?></p>
+					</td>
+				</tr>
 			</tbody>
 		</table>
 

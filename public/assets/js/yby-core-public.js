@@ -192,18 +192,19 @@
 
   function sanitizeMultilineText(value, maxLength) {
     return String(value || "")
-      .replace(/[<>]/g, "")
+      .replace(/\\r\\n/g, "\n")
+      .replace(/\\n/g, "\n")
+      .replace(/\\r/g, "\n")
+      .replace(/\r\n?/g, "\n")
+      .replace(/<[^>]*>/g, "")
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+      .replace(/[ \t]+\n/g, "\n")
       .trim()
-      .substring(0, maxLength || 2000);
+      .substring(0, maxLength || 4000);
   }
 
   function normalizeWhatsAppMessage(value) {
     return sanitizeMultilineText(value, 4000)
-      .replace(/\\+r\\+n/g, "\n")
-      .replace(/\\+n/g, "\n")
-      .replace(/\\+r/g, "\n")
-      .replace(/\r\n?/g, "\n")
-      .replace(/[ \t]+\n/g, "\n")
       .replace(/\n{3,}/g, "\n\n")
       .trim();
   }
@@ -234,7 +235,7 @@
     }
   }
 
-  function removeEmptyTokenLines(message) {
+  function collapseExcessBlankLines(message) {
     return normalizeWhatsAppMessage(message);
   }
 
@@ -256,46 +257,43 @@
   }
 
   function replaceWhatsAppTemplateTokens(message, tokens) {
-    var lines = String(message || "").split("\n");
+    var normalizedTemplate = normalizeWhatsAppMessage(message);
+    var lines = normalizedTemplate ? normalizedTemplate.split("\n") : [];
 
-    lines = lines
-      .map(function (line) {
-        var output = String(line || "");
-        var removeLine = false;
+    lines = lines.map(function (line) {
+      var output = String(line || "");
+      var removeLine = false;
 
-        Object.keys(tokens).forEach(function (tokenKey) {
-          var rawValue = tokens[tokenKey];
-          var tokenPattern = new RegExp("\\{" + tokenKey + "\\}", "ig");
-          var lineHasToken = tokenPattern.test(output);
+      Object.keys(tokens).forEach(function (tokenKey) {
+        var rawValue = tokens[tokenKey];
+        var tokenPattern = new RegExp("\\{" + tokenKey + "\\}", "ig");
+        var lineHasToken = tokenPattern.test(output);
 
-          tokenPattern.lastIndex = 0;
+        tokenPattern.lastIndex = 0;
 
-          if (!lineHasToken) {
-            return;
-          }
-
-          if (!rawValue) {
-            removeLine = true;
-            output = output.replace(tokenPattern, "");
-            return;
-          }
-
-          output = output.replace(tokenPattern, rawValue);
-        });
-
-        output = normalizeWhatsAppMessage(output).replace(/[ \t]{2,}/g, " ");
-
-        if (removeLine) {
-          return "";
+        if (!lineHasToken) {
+          return;
         }
 
-        return output;
-      })
-      .filter(function (line) {
-        return !!line;
+        if (!rawValue) {
+          removeLine = true;
+          output = output.replace(tokenPattern, "");
+          return;
+        }
+
+        output = output.replace(tokenPattern, rawValue);
       });
 
-    return stripInternalWhatsAppLines(removeEmptyTokenLines(lines.join("\n")));
+      output = sanitizeMultilineText(output, 4000).replace(/[ \t]{2,}/g, " ").trim();
+
+      if (removeLine) {
+        return "";
+      }
+
+      return output;
+    });
+
+    return stripInternalWhatsAppLines(collapseExcessBlankLines(lines.join("\n")));
   }
 
   function buildWhatsAppCaseId(caseId) {
@@ -325,8 +323,8 @@
     return stripInternalWhatsAppLines(normalizeWhatsAppMessage(normalizedMessage));
   }
 
-  function getWhatsAppProjectValue(key, fallback, maxLength) {
-    return getCanonicalString(key, fallback || "", maxLength || 180);
+  function getWhatsAppProjectValue(keys, fallback, maxLength) {
+    return getCanonicalString(keys, fallback || "", maxLength || 180);
   }
 
   function getWhatsAppSummaryFields() {
@@ -341,21 +339,25 @@
       },
       {
         label: "Farm Size",
-        value: getWhatsAppProjectValue("farm_size", "", 180)
+        value: getWhatsAppProjectValue(["farmSize", "farm_size"], "", 180)
       },
       {
         label: "Water Source",
-        value: getWhatsAppProjectValue("water_source", "", 180)
+        value: getWhatsAppProjectValue(["waterSource", "water_source"], "", 180)
       },
       {
         label: "Recommended System",
-        value: getWhatsAppProjectValue("recommended_system", "", 180)
+        value: getWhatsAppProjectValue(["recommendedSystem", "recommended_system"], "", 180)
       },
       {
         label: "Estimated Range",
-        value: getWhatsAppProjectValue("estimated_range", "", 180)
+        value: getWhatsAppProjectValue(["estimatedRange", "estimated_range"], "", 180)
       }
     ];
+  }
+
+  function getRuntimeWhatsAppTemplate() {
+    return normalizeWhatsAppMessage(runtime.whatsappMessageTemplate || "");
   }
 
   function getWhatsAppBrandName() {
@@ -378,10 +380,8 @@
 
   function buildDefaultWhatsAppMessage(caseId) {
     var tokens = buildWhatsAppTokens(caseId);
-    var productInterest = getProductInterest().toLowerCase();
-    var intro = productInterest.indexOf("irrigation") > -1 ? "I submitted an irrigation solution request." : "I submitted a website inquiry.";
     var lines = [
-      "Hello " + tokens.brand_name + ", " + intro,
+      "Hello " + tokens.brand_name + ", I submitted a website inquiry.",
       "",
       "My Case ID: " + tokens.case_id,
       ""
@@ -792,7 +792,7 @@
   window.YBYThankYou.buildWhatsAppUrl = function () {
     var caseId = buildWhatsAppCaseId(window.YBYLead.getCaseId());
     var number = getBrandRuntimeString("whatsappNumber", "", 32).replace(/[^\d]/g, "");
-    var customMessage = getCanonicalString("whatsappMessage", "", 1000);
+    var customMessage = getRuntimeWhatsAppTemplate();
     var tokens = buildWhatsAppTokens(caseId);
     var message = customMessage ? replaceWhatsAppTemplateTokens(customMessage, tokens) : buildDefaultWhatsAppMessage(caseId);
 
@@ -867,7 +867,8 @@
     countExactOccurrences: countExactOccurrences,
     buildDefaultWhatsAppMessage: buildDefaultWhatsAppMessage,
     buildWhatsAppTokens: buildWhatsAppTokens,
-    getWhatsAppSummaryFields: getWhatsAppSummaryFields
+    getWhatsAppSummaryFields: getWhatsAppSummaryFields,
+    getRuntimeWhatsAppTemplate: getRuntimeWhatsAppTemplate
   };
 
   window.YBYThankYou.bindActions = function () {

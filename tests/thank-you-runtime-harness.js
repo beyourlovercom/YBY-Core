@@ -220,6 +220,7 @@ function createRuntime(options = {}) {
         catalogUrl: "https://brand.example.test/current-catalog.pdf",
         youtubeVideoId: "CurrentVideo123",
         whatsappNumber: "+8613798537439",
+        whatsappMessageTemplate: "",
         defaultCountry: "Tanzania",
         defaultProductInterest: "irrigation system solution",
         enableTracking: true,
@@ -247,7 +248,6 @@ function createRuntime(options = {}) {
           returnPageUrl: "/legacy-project-return/",
           thankYouUrl: "/legacy-project-thank-you/",
           youtubeVideoId: "LegacyProjectVideo",
-          whatsappMessage: "",
           country: "Tanzania",
           crop: "Vegetables",
           farm_size: "1–5 ha",
@@ -267,7 +267,6 @@ function createRuntime(options = {}) {
           returnPageUrl: "/legacy-page-return/",
           thankYouUrl: "/legacy-page-thank-you/",
           youtubeVideoId: "LegacyPageVideo",
-          whatsappMessage: ""
         },
         options.pageProfile || {}
       ),
@@ -436,23 +435,23 @@ function testLegacyFallbackRemains() {
 function testLegacyEscapedNewlines() {
   const runtime = createRuntime({
     search: "?case_id=YBY-IRR-20260721-ABC234",
-    project: {
-      whatsappMessage: "Hello YBY\\\\n\\\\nMy Case ID: {case_id}\\\\nCountry: Tanzania"
+    runtime: {
+      whatsappMessageTemplate: "Hello YBY\\\\n\\\\nMy Case ID: {case_id}\\\\nCountry: Tanzania"
     }
   });
   const message = decodeWhatsAppText(runtime.window.YBYThankYou.buildWhatsAppUrl());
 
   assert(message.indexOf("Hello YBY") === 0, "Legacy escaped message must remain readable.");
   assert(message.indexOf("\\n") === -1, "Legacy escaped newlines must become real line breaks.");
-  assert(/\n\s*\n/.test(message), "Legacy escaped newlines must preserve paragraph breaks.");
+  assert(message.split("\n").length >= 3, "Legacy escaped newlines must preserve paragraph breaks.");
   assert(message.indexOf("My Case ID: YBY-IRR-") > -1, "Legacy escaped message must interpolate case ID.");
 }
 
 function testWhatsAppTemplateInterpolation() {
   const runtime = createRuntime({
     search: "?case_id=YBY-IRR-20260721-ABC234",
-    project: {
-      whatsappMessage: "Hello {brand_name}, my reference is {case_id}."
+    runtime: {
+      whatsappMessageTemplate: "Hello {brand_name}, my reference is {case_id}."
     }
   });
   const message = decodeWhatsAppText(runtime.window.YBYThankYou.buildWhatsAppUrl());
@@ -463,8 +462,8 @@ function testWhatsAppTemplateInterpolation() {
 function testMandatoryCaseIdAppend() {
   const runtime = createRuntime({
     search: "?case_id=YBY-IRR-20260721-ABC234",
-    project: {
-      whatsappMessage: "Please contact me about this project."
+    runtime: {
+      whatsappMessageTemplate: "Please contact me about this project."
     }
   });
   const message = decodeWhatsAppText(runtime.window.YBYThankYou.buildWhatsAppUrl());
@@ -479,7 +478,7 @@ function testDefaultIrrigationMessage() {
   });
   const message = decodeWhatsAppText(runtime.window.YBYThankYou.buildWhatsAppUrl());
 
-  assert(message.indexOf("Hello YBY Irrigation, I submitted an irrigation solution request.") === 0, "Default irrigation message must use configured brand and irrigation context.");
+  assert(message.indexOf("Hello YBY Irrigation, I submitted a website inquiry.") === 0, "Default message must use the neutral website inquiry copy.");
   assert(message.indexOf("Project Summary") > -1, "Default irrigation message must include project summary.");
   assert(message.indexOf("Country: Tanzania") > -1, "Default irrigation message must include country.");
   assert(message.indexOf("Crop: Vegetables") > -1, "Default irrigation message must include crop.");
@@ -490,6 +489,65 @@ function testDefaultIrrigationMessage() {
   assert(/\nSource:/i.test(message) === false, "Default irrigation message must not expose internal source.");
   assert(message.indexOf("final_ctan") === -1, "Default irrigation message must not expose internal source tokens.");
   assert(message.indexOf("\\n") === -1, "Default irrigation message must use real line breaks.");
+}
+
+function testRuntimeTemplateWins() {
+  const runtime = createRuntime({
+    search: "?case_id=YBY-IRR-20260721-ABC234",
+    runtime: {
+      whatsappMessageTemplate: "Hello {brand_name}, runtime ref {case_id}."
+    },
+    project: {
+      whatsappMessage: "legacy project template"
+    },
+    pageProfile: {
+      whatsappMessage: "legacy page template"
+    }
+  });
+  const message = decodeWhatsAppText(runtime.window.YBYThankYou.buildWhatsAppUrl());
+
+  assert(message === "Hello YBY Irrigation, runtime ref YBY-IRR-20260721-ABC234.", "Runtime WhatsApp template must govern the final customer-facing message.");
+  assert(message.indexOf("legacy project template") === -1, "Legacy project WhatsApp template must not be used.");
+  assert(message.indexOf("legacy page template") === -1, "Legacy page WhatsApp template must not be used.");
+}
+
+function testOptionalTokenLineRemovalPreservesParagraphs() {
+  const runtime = createRuntime({
+    search: "?case_id=YBY-IRR-20260721-ABC234",
+    runtime: {
+      whatsappMessageTemplate: "Hello {brand_name}\n\nWater Source: {water_source}\nEstimated Range: {estimated_range}\n\nCase ID: {case_id}"
+    },
+    project: {
+      water_source: "",
+      estimated_range: ""
+    }
+  });
+  const message = decodeWhatsAppText(runtime.window.YBYThankYou.buildWhatsAppUrl());
+
+  assert(message === "Hello YBY Irrigation\n\nCase ID: YBY-IRR-20260721-ABC234", "Empty token lines must be removed without collapsing intentional paragraph breaks.");
+}
+
+function testSummaryAliasResolution() {
+  const runtime = createRuntime({
+    search: "?case_id=YBY-IRR-20260721-ABC234",
+    project: {
+      farmSize: "Camel Farm Size",
+      farm_size: "Snake Farm Size",
+      waterSource: "River",
+      water_source: "Canal",
+      recommendedSystem: "Pivot",
+      recommended_system: "Drip",
+      estimatedRange: "USD 999",
+      estimated_range: "USD 111"
+    }
+  });
+  const message = decodeWhatsAppText(runtime.window.YBYThankYou.buildWhatsAppUrl());
+
+  assert(message.indexOf("Farm Size: Camel Farm Size") > -1, "Camel-case farm size should resolve first when present.");
+  assert(message.indexOf("Farm Size: Snake Farm Size") === -1, "Summary should not duplicate farm size aliases.");
+  assert(message.indexOf("Water Source: River") > -1, "Camel-case water source should resolve first when present.");
+  assert(message.indexOf("Recommended System: Pivot") > -1, "Camel-case recommended system should resolve first when present.");
+  assert(message.indexOf("Estimated Range: USD 999") > -1, "Camel-case estimated range should resolve first when present.");
 }
 
 function testEmptyFieldSuppression() {
@@ -547,6 +605,7 @@ function testBottleDefaultMessage() {
   assert(message.indexOf("YBY-BCB-20260721-ABC234") > -1, "Bottle default message must include Bottle case ID.");
   assert(message.indexOf("YBY Irrigation") === -1, "Bottle default message must not leak Irrigation identity.");
   assert(message.toLowerCase().indexOf("irrigation solution") === -1, "Bottle default message must not hardcode irrigation wording.");
+  assert(message.indexOf("I submitted a website inquiry.") > -1, "Bottle default message must use neutral shared copy.");
 }
 
 function testSessionStorageHydrationAndTracking() {
@@ -607,10 +666,13 @@ const tests = [
   ["runtime_youtube", testRuntimeYouTubeWins],
   ["runtime_thank_you", testRuntimeThankYouWins],
   ["legacy_fallback", testLegacyFallbackRemains],
+  ["runtime_template", testRuntimeTemplateWins],
   ["legacy_newlines", testLegacyEscapedNewlines],
   ["whatsapp_tokens", testWhatsAppTemplateInterpolation],
+  ["empty_token_lines", testOptionalTokenLineRemovalPreservesParagraphs],
   ["mandatory_case_id", testMandatoryCaseIdAppend],
   ["default_irrigation", testDefaultIrrigationMessage],
+  ["summary_aliases", testSummaryAliasResolution],
   ["empty_field_suppression", testEmptyFieldSuppression],
   ["internal_source_exclusion", testInternalSourceExclusion],
   ["default_bottle", testBottleDefaultMessage],

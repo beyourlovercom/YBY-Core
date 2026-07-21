@@ -178,6 +178,7 @@ $GLOBALS['yby_option_store'] = array(
 		'thank_you_url'            => '/thank-you-bottle/',
 		'return_page_url'          => '/bottle-products/',
 		'whatsapp_number'          => '+8613812345678',
+		'whatsapp_message_template'=> "Hello {brand_name}\n\nCase: {case_id}",
 	),
 );
 
@@ -199,6 +200,7 @@ harness_assert( false !== strpos( $script, '"returnPageUrl":"\\/bottle-products\
 harness_assert( false !== strpos( $script, '"catalogUrl":"https:\\/\\/bottle.example.test\\/catalog.pdf"' ), 'Runtime config must expose catalogUrl.' );
 harness_assert( false !== strpos( $script, '"youtubeVideoId":"Bottle123"' ), 'Runtime config must expose youtubeVideoId.' );
 harness_assert( false !== strpos( $script, '"whatsappNumber":"+8613812345678"' ), 'Runtime config must expose whatsappNumber.' );
+harness_assert( false !== strpos( $script, '"whatsappMessageTemplate":"Hello {brand_name}\\n\\nCase: {case_id}"' ), 'Runtime config must expose whatsappMessageTemplate.' );
 harness_assert( false !== strpos( $script, '"supportEmail":"support@bottle.example.test"' ), 'Runtime config must expose supportEmail.' );
 harness_assert( false === strpos( $script, 'crmWebhookUrl' ), 'Runtime config must not expose crmWebhookUrl.' );
 harness_assert( false === strpos( $script, 'SECRET-TOKEN-123' ), 'Runtime config must not expose CRM webhook secret material.' );
