@@ -52,6 +52,10 @@ function home_url( $path = '/' ) {
 	return 'https://frontend.example.test/' . ltrim( (string) $path, '/' );
 }
 
+function wp_parse_url( $value ) {
+	return parse_url( (string) $value );
+}
+
 function wp_rand( $min = 0, $max = 0 ) {
 	static $counter = 0;
 	++$counter;
@@ -168,6 +172,7 @@ $GLOBALS['yby_option_store'] = array(
 		'catalog_url'              => 'https://bottle.example.test/catalog.pdf',
 		'youtube_video_id'         => 'Bottle123',
 		'support_email'            => 'support@bottle.example.test',
+		'crm_webhook_url'          => 'https://crm.example.test/hooks/SECRET-TOKEN-123',
 		'default_country'          => '',
 		'default_product_interest' => 'glass bottle wholesale',
 		'thank_you_url'            => '/thank-you-bottle/',
@@ -195,6 +200,8 @@ harness_assert( false !== strpos( $script, '"catalogUrl":"https:\\/\\/bottle.exa
 harness_assert( false !== strpos( $script, '"youtubeVideoId":"Bottle123"' ), 'Runtime config must expose youtubeVideoId.' );
 harness_assert( false !== strpos( $script, '"whatsappNumber":"+8613812345678"' ), 'Runtime config must expose whatsappNumber.' );
 harness_assert( false !== strpos( $script, '"supportEmail":"support@bottle.example.test"' ), 'Runtime config must expose supportEmail.' );
+harness_assert( false === strpos( $script, 'crmWebhookUrl' ), 'Runtime config must not expose crmWebhookUrl.' );
+harness_assert( false === strpos( $script, 'SECRET-TOKEN-123' ), 'Runtime config must not expose CRM webhook secret material.' );
 harness_assert( false === strpos( $script, 'lead_notification_primary_recipient' ), 'Runtime config must not expose recipient option keys.' );
 harness_assert( false === strpos( $script, 'smtp' ), 'Runtime config must not expose SMTP settings.' );
 harness_assert( false === strpos( $script, 'admin@frontend.example.test' ), 'Runtime config must not expose admin_email fallback.' );

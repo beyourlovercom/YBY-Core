@@ -50,6 +50,10 @@ function home_url( $path = '/' ) {
 	return 'https://example.test/' . ltrim( (string) $path, '/' );
 }
 
+function wp_parse_url( $value ) {
+	return parse_url( (string) $value );
+}
+
 function apply_filters( $hook, $value ) {
 	if ( isset( $GLOBALS['yby_filter_values'][ $hook ] ) && is_callable( $GLOBALS['yby_filter_values'][ $hook ] ) ) {
 		return call_user_func( $GLOBALS['yby_filter_values'][ $hook ], $value );
@@ -254,7 +258,34 @@ $tests['legacy_override_and_recipients'] = static function () {
 	harness_assert( 'owner@example.test' === YBY_Config::get_lead_notification_primary_recipient_email(), 'Valid stored primary recipient must win.' );
 	harness_assert( 'second@example.test' === YBY_Config::get_lead_notification_cc_recipient_emails(), 'Invalid CC addresses must be excluded.' );
 	harness_assert( 'bcc@example.test' === YBY_Config::get_lead_notification_bcc_recipient_emails(), 'Invalid BCC addresses must be excluded.' );
-	};
+};
+
+$tests['runtime_secret_and_path_hardening'] = static function () {
+	harness_reset_state(
+		array(
+			'crm_webhook_url'  => 'https://crm.example.test/hooks/SECRET-TOKEN-123',
+			'thank_you_url'    => '/thank-you?case=test',
+			'return_page_url'  => '/thank-you#complete',
+		)
+	);
+
+	$runtime = YBY_Config::get_runtime_config();
+
+	harness_assert( 'https://crm.example.test/hooks/SECRET-TOKEN-123' === YBY_Config::get_crm_webhook_url(), 'Server-side CRM getter must preserve the configured webhook URL.' );
+	harness_assert( ! array_key_exists( 'crmWebhookUrl', $runtime ), 'Public runtime config must not expose crmWebhookUrl.' );
+	harness_assert( '/thank-you?case=test' === YBY_Config::sanitize_relative_path_value( '/thank-you?case=test' ), 'Query-string relative paths must remain valid.' );
+	harness_assert( '/thank-you#complete' === YBY_Config::sanitize_relative_path_value( '/thank-you#complete' ), 'Fragment relative paths must remain valid.' );
+	harness_assert( '/' === YBY_Config::sanitize_relative_path_value( '/' ), 'Root path must remain valid.' );
+	harness_assert( '/lp/thank-you/' === YBY_Config::sanitize_relative_path_value( '/lp/thank-you/' ), 'Trailing-slash path must remain valid.' );
+	harness_assert( '' === YBY_Config::sanitize_relative_path_value( '//evil.example/path' ), 'Protocol-relative paths must be rejected.' );
+	harness_assert( '' === YBY_Config::sanitize_relative_path_value( '///evil.example/path' ), 'Triple-slash network paths must be rejected.' );
+	harness_assert( '' === YBY_Config::sanitize_relative_path_value( '/\\evil.example/path' ), 'Slash-backslash network paths must be rejected.' );
+	harness_assert( '/' === YBY_Config::sanitize_path_or_absolute_url_value( 'javascript:alert(1)', '/' ), 'Dangerous javascript scheme must fall back safely.' );
+	harness_assert( '/' === YBY_Config::sanitize_path_or_absolute_url_value( 'data:text/html,test', '/' ), 'Dangerous data scheme must fall back safely.' );
+	harness_assert( '/' === YBY_Config::sanitize_path_or_absolute_url_value( 'https:\\evil.example', '/' ), 'Malformed absolute URL must fall back safely.' );
+	harness_assert( 'https://example.test/thank-you/' === YBY_Config::sanitize_path_or_absolute_url_value( 'https://example.test/thank-you/', '/' ), 'HTTPS absolute URLs must remain valid.' );
+	harness_assert( 'http://example.test/return/' === YBY_Config::sanitize_path_or_absolute_url_value( 'http://example.test/return/', '/' ), 'HTTP absolute URLs must remain valid.' );
+};
 
 $results = array();
 

@@ -335,7 +335,6 @@ class YBY_Config {
 			'catalogUrl'            => isset( $brand_profile['catalog_url'] ) ? (string) $brand_profile['catalog_url'] : self::get_catalog_url(),
 			'youtubeVideoId'        => isset( $brand_profile['youtube_video_id'] ) ? (string) $brand_profile['youtube_video_id'] : self::get_youtube_video_id(),
 			'supportEmail'          => isset( $brand_profile['support_email'] ) ? (string) $brand_profile['support_email'] : self::get_support_email(),
-			'crmWebhookUrl'         => self::get_crm_webhook_url(),
 			'defaultCountry'        => isset( $brand_profile['default_country'] ) ? (string) $brand_profile['default_country'] : self::get_default_country(),
 			'defaultProductInterest'=> isset( $brand_profile['default_product_interest'] ) ? (string) $brand_profile['default_product_interest'] : self::get_default_product_interest(),
 			'thankYouUrl'           => isset( $brand_profile['thank_you_url'] ) ? (string) $brand_profile['thank_you_url'] : self::get_thank_you_url(),
@@ -433,14 +432,51 @@ class YBY_Config {
 			return '';
 		}
 
+		if ( preg_match( '/[\x00-\x1F\x7F]/', $value ) ) {
+			return '';
+		}
+
 		if ( '/' !== substr( $value, 0, 1 ) ) {
 			return '';
 		}
 
-		$value = preg_replace( '/[\x00-\x1F\x7F]/', '', $value );
-		$value = preg_replace( '/\s+/', '', (string) $value );
+		if ( preg_match( '#^/[\\\\/]#', $value ) ) {
+			return '';
+		}
 
-		return '/' === $value ? '/' : rtrim( (string) $value, '/' ) . '/';
+		$parsed = self::parse_url_value( $value );
+
+		if ( false === $parsed || ! is_array( $parsed ) ) {
+			return '';
+		}
+
+		foreach ( array( 'scheme', 'host', 'user', 'pass', 'port' ) as $forbidden_key ) {
+			if ( isset( $parsed[ $forbidden_key ] ) && '' !== (string) $parsed[ $forbidden_key ] ) {
+				return '';
+			}
+		}
+
+		$path = isset( $parsed['path'] ) ? (string) $parsed['path'] : '';
+
+		if ( '' === $path || '/' !== substr( $path, 0, 1 ) ) {
+			return '';
+		}
+
+		if ( preg_match( '#^/[\\\\/]#', $path ) ) {
+			return '';
+		}
+
+		$normalized = $path;
+
+		if ( isset( $parsed['query'] ) && '' !== (string) $parsed['query'] ) {
+			$normalized .= '?' . $parsed['query'];
+		}
+
+		if ( isset( $parsed['fragment'] ) && '' !== (string) $parsed['fragment'] ) {
+			$normalized .= '#' . $parsed['fragment'];
+		}
+
+		return $normalized;
 	}
 
 	public static function sanitize_email_value( $value, $fallback = '' ) {
@@ -502,6 +538,14 @@ class YBY_Config {
 		$url = (string) $value;
 
 		return '' !== $url && (bool) preg_match( '#^https?://#i', $url );
+	}
+
+	protected static function parse_url_value( $value ) {
+		if ( function_exists( 'wp_parse_url' ) ) {
+			return wp_parse_url( (string) $value );
+		}
+
+		return parse_url( (string) $value );
 	}
 
 	protected static function default_home_url() {
