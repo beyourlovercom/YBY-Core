@@ -10,7 +10,7 @@ v1.3.0-dev
 
 ## Development Status
 
-YBY Core v1.3.0-dev includes the M4 Inquiry Component persistence and notification foundation.
+YBY Core v1.3.0-dev includes the accepted M5B Brand Portability milestone on the feature branch and accepted development deployment.
 
 ## Stable Scope
 
@@ -200,6 +200,13 @@ Bottle usage:
 YBY Core v1.3.0-dev is the current development line.
 
 Its public runtime API signatures remain frozen for the v1.x line under the compatibility policy documented in the stable release package.
+
+## Documentation
+
+- [Brand Runtime Configuration](docs/brand-runtime/BRAND_RUNTIME_CONFIGURATION.md)
+- [M5B Development Deployment and Rollback](docs/deployment/M5B_DEV_DEPLOYMENT_AND_ROLLBACK.md)
+- [YBY Irrigation Runtime Profile](docs/configuration/YBY_IRRIGATION_RUNTIME_PROFILE.md)
+- [M5B Closeout](docs/sprints/M5B_CLOSEOUT.md)
 
 ## Release Process
 
