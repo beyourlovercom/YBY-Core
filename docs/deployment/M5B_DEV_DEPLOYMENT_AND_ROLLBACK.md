@@ -33,10 +33,10 @@ This was a development deployment only. It was not a production release.
 Backups were stored outside the public plugin directory.
 
 - Backup directory: `/home/u595431186/yby-backups/m5b3c2-20260721-101607`
-- Plugin archive path: `/home/u595431186/yby-backups/m5b3c2-20260721-101607/yby-core.zip`
+- Plugin archive path: `/home/u595431186/yby-backups/m5b3c2-20260721-101607/yby-core-plugin.tar.gz`
 - Database dump path: `/home/u595431186/yby-backups/m5b3c2-20260721-101607/wordpress.sql`
 - Option snapshot path: `/home/u595431186/yby-backups/m5b3c2-20260721-101607/yby_core_options.json`
-- Checksum file path: `/home/u595431186/yby-backups/m5b3c2-20260721-101607/SHA256SUMS.txt`
+- Checksum file path: `/home/u595431186/yby-backups/m5b3c2-20260721-101607/checksums.txt`
 
 No credentials are recorded in this document.
 
