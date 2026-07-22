@@ -15,6 +15,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 class YBY_Case_ID {
 
 	/**
+	 * Backward-compatible case ID validation pattern.
+	 *
+	 * Accepts the historic IRR prefix and newer server-generated brand segments
+	 * such as CORE without changing generation behavior.
+	 *
+	 * @var string
+	 */
+	const VALIDATION_PATTERN = '/^YBY-[A-Z0-9]+-\d{8}-[A-Z0-9]{6}$/';
+
+	/**
 	 * Generate a case ID.
 	 *
 	 * @return string
@@ -23,7 +33,7 @@ class YBY_Case_ID {
 		$date = gmdate( 'Ymd' );
 		$code = $this->random_code( 6 );
 
-		return 'YBY-IRR-' . $date . '-' . $code;
+		return 'YBY-' . YBY_Site_Profile::get_case_id_code() . '-' . $date . '-' . $code;
 	}
 
 	/**
@@ -35,7 +45,16 @@ class YBY_Case_ID {
 	public function validate( $case_id ) {
 		$case_id = $this->normalize( $case_id );
 
-		return 1 === preg_match( '/^YBY-IRR-\d{8}-[A-Z0-9]{6}$/', $case_id );
+		return 1 === preg_match( self::VALIDATION_PATTERN, $case_id );
+	}
+
+	/**
+	 * Return the frontend-compatible validation regex without delimiters.
+	 *
+	 * @return string
+	 */
+	public function frontend_regex() {
+		return '^YBY-[A-Z0-9]+-\\d{8}-[A-HJ-NP-Z2-9]{6}$';
 	}
 
 	/**

@@ -2,7 +2,62 @@
 
 ## Unreleased
 
-- Added ZIP internal path separator validation to YBY Core Release Packaging QA Standard.
+No unreleased changes.
+
+## v1.3.0 - 2026-07-22
+
+### Added
+
+- reusable Inquiry components
+- Site Profile
+- Brand Profile
+- Brand Runtime configuration
+- WhatsApp Message Template
+- notification provider
+- email presentation configuration
+- deterministic runtime Harnesses
+- development rollback evidence
+
+### Changed
+
+- server now owns stored site identity and Case ID generation
+- Brand Runtime governs Catalog, Return, YouTube, and Thank You URLs
+- customer-facing WhatsApp messages now use Brand Runtime template or neutral default
+- asset versions use deployment-safe cache busting
+- Thank You runtime hydrates Case ID and tracks accepted events
+
+### Fixed
+
+- duplicate Inquiry root rendering
+- Case ID runtime generation and cleanup
+- Thank You tracking behavior
+- `generate_lead` duplicate counting in the same session
+- stale Project/Page values overriding Brand Runtime links
+- WhatsApp escaped newline rendering
+- missing and duplicate Case ID in WhatsApp messages
+- internal Source values appearing in customer messages
+- public CRM webhook exposure
+- unsafe protocol-relative path handling
+- unconditional test-helper exposure
+
+### Security
+
+- recipients, SMTP values, and CRM webhook URL remain server-only
+- REST ignores client brand, website, and Case ID
+- no customer PII is included in the Thank You URL
+- public test helpers require exact test mode
+
+### Development validation
+
+- stable release prepared from the accepted feature branch
+- development validation completed on `dev.ybyirrigation.com`
+- exact accepted development runtime commit: `9e0363aa2f1516c0ec2a7f785cfb0521a25ba83c`
+- documentation freeze commit: `059a33567fc8db0f132f8e251c90698118184dd8`
+- package SHA-256: `C5DBC1A365192E0F6DCEA255FCA31F9A0DCCE2DD5900B9740514ED043175BE71`
+- Lead baseline remained `15`
+- Post SMTP baseline remained `39`
+- production deployment is handled after tag publication and production QA
+- no Bottle deployment
 
 ## v1.1.1
 

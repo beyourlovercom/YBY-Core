@@ -1,0 +1,221 @@
+.yby-inquiry-modal {
+  --yby-inquiry-primary: #1f2937;
+  --yby-inquiry-primary-text: #ffffff;
+  --yby-inquiry-surface: #ffffff;
+  --yby-inquiry-text: #111827;
+  --yby-inquiry-muted: #6b7280;
+  --yby-inquiry-border: #d1d5db;
+  --yby-inquiry-overlay: rgba(17, 24, 39, 0.72);
+  --yby-inquiry-radius: 20px;
+  --yby-inquiry-shadow: 0 24px 80px rgba(15, 23, 42, 0.24);
+  --yby-inquiry-max-width: 960px;
+  --yby-inquiry-spacing: 24px;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.yby-inquiry-modal[hidden] {
+  display: none !important;
+}
+
+.yby-inquiry-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--yby-inquiry-overlay);
+}
+
+.yby-inquiry-modal__dialog {
+  position: relative;
+  z-index: 1;
+  width: min(calc(100vw - 32px), var(--yby-inquiry-max-width));
+  max-height: calc(100vh - 32px);
+  margin: 16px auto;
+  background: var(--yby-inquiry-surface);
+  color: var(--yby-inquiry-text);
+  border-radius: var(--yby-inquiry-radius);
+  box-shadow: var(--yby-inquiry-shadow);
+  overflow: auto;
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.yby-inquiry-modal.is-open .yby-inquiry-modal__dialog {
+  animation: ybyInquiryFadeIn 180ms ease-out;
+}
+
+.yby-inquiry-modal__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--yby-inquiry-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--yby-inquiry-text);
+  cursor: pointer;
+}
+
+.yby-inquiry-modal__media {
+  min-height: 220px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.04), rgba(15, 23, 42, 0.08));
+}
+
+.yby-inquiry-modal__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.yby-inquiry-modal__content {
+  padding: calc(var(--yby-inquiry-spacing) * 1.5);
+}
+
+.yby-inquiry-modal__content h2 {
+  margin: 0 48px 20px 0;
+  font-size: clamp(1.5rem, 2vw, 2rem);
+  line-height: 1.2;
+}
+
+.yby-inquiry-form {
+  display: grid;
+  gap: 18px;
+}
+
+.yby-inquiry-field {
+  display: grid;
+  gap: 8px;
+}
+
+.yby-inquiry-field label {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.yby-inquiry-field__required {
+  color: #b91c1c;
+}
+
+.yby-inquiry-field input,
+.yby-inquiry-field select,
+.yby-inquiry-field textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--yby-inquiry-border);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--yby-inquiry-text);
+}
+
+.yby-inquiry-field textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.yby-inquiry-field__checkbox {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+}
+
+.yby-inquiry-field__checkbox input {
+  width: 20px;
+  min-height: 20px;
+  padding: 0;
+}
+
+.yby-inquiry-field input:focus,
+.yby-inquiry-field select:focus,
+.yby-inquiry-field textarea:focus,
+.yby-inquiry-modal__close:focus,
+.yby-inquiry-form__submit:focus {
+  outline: 3px solid rgba(37, 99, 235, 0.22);
+  outline-offset: 2px;
+}
+
+.yby-inquiry-field [aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
+.yby-inquiry-field__error,
+.yby-inquiry-form__error {
+  color: #b91c1c;
+  font-size: 0.9rem;
+}
+
+.yby-inquiry-form__status {
+  color: var(--yby-inquiry-muted);
+  font-size: 0.92rem;
+}
+
+.yby-inquiry-form__submit {
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--yby-inquiry-primary);
+  color: var(--yby-inquiry-primary-text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.yby-inquiry-form__submit[disabled] {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+body.yby-inquiry-modal-open {
+  overflow: hidden;
+}
+
+@media (min-width: 860px) {
+  .yby-inquiry-modal--has-media .yby-inquiry-modal__dialog {
+    grid-template-columns: minmax(280px, 0.95fr) minmax(360px, 1.05fr);
+  }
+
+  .yby-inquiry-modal--has-media .yby-inquiry-modal__media {
+    min-height: 100%;
+  }
+}
+
+@media (max-width: 859px) {
+  .yby-inquiry-modal__dialog {
+    width: min(calc(100vw - 20px), var(--yby-inquiry-max-width));
+    max-height: calc(100vh - 20px);
+    margin: 10px auto;
+  }
+
+  .yby-inquiry-modal__content {
+    padding: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yby-inquiry-modal.is-open .yby-inquiry-modal__dialog {
+    animation: none;
+  }
+
+  .yby-inquiry-field input,
+  .yby-inquiry-field select,
+  .yby-inquiry-field textarea,
+  .yby-inquiry-modal__close,
+  .yby-inquiry-form__submit {
+    transition: none;
+  }
+}
+
+@keyframes ybyInquiryFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

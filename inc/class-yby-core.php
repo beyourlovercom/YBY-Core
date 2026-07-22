@@ -14,6 +14,8 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-helpers.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-security.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-database.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-config.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-site-profile.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-brand-profile.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-case-id.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-page-profile.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project.php';
@@ -29,6 +31,12 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-subject-renderer.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-notification-provider.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-notification-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-email.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-field-manager.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-preset-manager.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-manager.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-lead-mapper.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-renderer.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-shortcodes.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-service.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-rest-controller.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
@@ -53,9 +61,21 @@ class YBY_Core {
 	public function __construct() {
 		$this->loader = new YBY_Loader();
 
+		$this->define_system_hooks();
 		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
+	}
+
+	/**
+	 * Register system hooks.
+	 *
+	 * @return void
+	 */
+	protected function define_system_hooks() {
+		$database = new YBY_Database();
+
+		$this->loader->add_action( 'plugins_loaded', $database, 'maybe_upgrade', 5, 0 );
 	}
 
 	/**
@@ -93,11 +113,17 @@ class YBY_Core {
 	 * @return void
 	 */
 	protected function define_public_hooks() {
-		$public          = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
-		$lead_rest_route = new YBY_Lead_REST_Controller();
+		$public             = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
+		$lead_rest_route    = new YBY_Lead_REST_Controller();
+		$inquiry_manager    = new YBY_Inquiry_Manager();
+		$inquiry_renderer   = new YBY_Inquiry_Renderer();
+		$inquiry_shortcodes = new YBY_Inquiry_Shortcodes( $inquiry_manager, $inquiry_renderer );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
 		$this->loader->add_action( 'rest_api_init', $lead_rest_route, 'register_routes' );
+		$this->loader->add_action( 'init', $inquiry_shortcodes, 'register', 10, 0 );
+		$this->loader->add_filter( 'the_content', $inquiry_shortcodes, 'capture_modal_shortcodes_in_content', 9, 1 );
+		$this->loader->add_action( 'wp_footer', $inquiry_shortcodes, 'render_deferred_modals', 100, 0 );
 	}
 
 	/**

@@ -49,14 +49,26 @@ class YBY_Public {
 			$this->plugin_name . '-public',
 			YBY_CORE_PLUGIN_URL . 'public/assets/css/yby-core-public.css',
 			array(),
-			$this->version
+			$this->asset_version( 'public/assets/css/yby-core-public.css' )
+		);
+
+		wp_enqueue_style(
+			'yby-inquiry-components',
+			YBY_CORE_PLUGIN_URL . 'public/css/yby-inquiry-components.css',
+			array(),
+			$this->asset_version( 'public/css/yby-inquiry-components.css' )
+		);
+
+		wp_add_inline_style(
+			'yby-inquiry-components',
+			$this->build_brand_profile_css()
 		);
 
 		wp_enqueue_script(
 			'yby-lead-sdk',
 			YBY_CORE_PLUGIN_URL . 'public/js/yby-lead-sdk.js',
 			array(),
-			$this->version,
+			$this->asset_version( 'public/js/yby-lead-sdk.js' ),
 			true
 		);
 
@@ -64,7 +76,15 @@ class YBY_Public {
 			$this->plugin_name . '-public',
 			YBY_CORE_PLUGIN_URL . 'public/assets/js/yby-core-public.js',
 			array( 'yby-lead-sdk' ),
-			$this->version,
+			$this->asset_version( 'public/assets/js/yby-core-public.js' ),
+			true
+		);
+
+		wp_enqueue_script(
+			'yby-inquiry-components',
+			YBY_CORE_PLUGIN_URL . 'public/js/yby-inquiry-components.js',
+			array( 'yby-lead-sdk', $this->plugin_name . '-public' ),
+			$this->asset_version( 'public/js/yby-inquiry-components.js' ),
 			true
 		);
 
@@ -93,5 +113,51 @@ class YBY_Public {
 			. 'window.YBYTemplate = window.YBYTemplate || ' . wp_json_encode( $template ) . ';',
 			'before'
 		);
+	}
+
+	/**
+	 * Build governed inline CSS variables for inquiry modals.
+	 *
+	 * @return string
+	 */
+	protected function build_brand_profile_css() {
+		$profile = YBY_Brand_Profile::get_profile();
+
+		$variables = array(
+			'--yby-inquiry-primary'       => $profile['brand_primary_color'],
+			'--yby-inquiry-primary-text'  => $profile['brand_primary_text_color'],
+			'--yby-inquiry-secondary'     => $profile['brand_secondary_color'],
+			'--yby-inquiry-surface'       => $profile['brand_surface_color'],
+			'--yby-inquiry-text'          => $profile['brand_text_color'],
+			'--yby-inquiry-muted'         => $profile['brand_muted_text_color'],
+			'--yby-inquiry-border'        => $profile['brand_border_color'],
+		);
+		$declarations = array();
+
+		foreach ( $variables as $name => $value ) {
+			$declarations[] = $name . ':' . $value;
+		}
+
+		return '.yby-inquiry-modal{' . implode( ';', $declarations ) . ';}';
+	}
+
+	/**
+	 * Build a cache-busting asset version for public runtime files.
+	 *
+	 * @param string $relative_path Plugin-relative asset path.
+	 * @return string
+	 */
+	protected function asset_version( $relative_path ) {
+		$path = YBY_CORE_PLUGIN_DIR . ltrim( (string) $relative_path, '/\\' );
+
+		if ( is_readable( $path ) ) {
+			$mtime = filemtime( $path );
+
+			if ( false !== $mtime ) {
+				return $this->version . '.' . $mtime;
+			}
+		}
+
+		return $this->version;
 	}
 }

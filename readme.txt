@@ -4,7 +4,7 @@ Tags: yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.3.0
 License: Proprietary
 License URI: https://ybyglobal.com/
 
@@ -14,7 +14,7 @@ Core platform plugin for YBY websites, including Case ID, tracking, configuratio
 
 YBY Core is the governed foundation plugin for YBY WordPress websites.
 
-Included in v1.1.1:
+Included in v1.3.0:
 
 * Case ID engine
 * Config center
@@ -73,7 +73,7 @@ No. The CRM webhook module is a safe placeholder in MVP.
 
 = Does this plugin send inquiry emails? =
 
-Yes. v1.1.1 adds a governed lead endpoint that can send one HTML inquiry email per Case ID within the configured idempotency window.
+Yes. v1.3.0 includes a governed lead endpoint that can send one HTML inquiry email per Case ID within the configured idempotency window.
 
 = What does the REST response return? =
 
@@ -88,6 +88,16 @@ Lead notifications dispatch through `YBY_Notification_Manager` with the Email pr
 The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Recipient Emails, Reply-To Policy, Lead Email Subject Template, and Email Branding settings. Invalid addresses are ignored.
 
 == Changelog ==
+
+= 1.3.0 =
+
+* Added the reusable Inquiry component system with shortcode and frontend runtime support.
+* Added structured Inquiry metadata persistence with database schema version 1.1.0.
+* Added Site Profile, Brand Profile, and Brand Runtime governance for shared multi-brand deployment.
+* Added governed WhatsApp Message Template support with customer-safe formatting and Case ID enforcement.
+* Added Thank You runtime hydration and same-session `generate_lead` deduplication.
+* Added deterministic Harness coverage for runtime, identity, presentation, and notification behavior.
+* Preserved server-owned Case ID, brand identity, and secret exclusion rules.
 
 = 1.1.1 =
 

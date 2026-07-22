@@ -12,6 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-helpers.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-config.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-database.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-field-manager.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-preset-manager.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-manager.php';
 
 /**
  * Activation routines.
@@ -38,14 +41,14 @@ class YBY_Activator {
 		update_option(
 			YBY_Helpers::lead_notification_primary_recipient_option_key(),
 			YBY_Config::sanitize_email_value(
-				get_option( YBY_Helpers::lead_notification_primary_recipient_option_key(), 'sale@yby-irrigation.com' ),
-				'sale@yby-irrigation.com'
+				get_option( YBY_Helpers::lead_notification_primary_recipient_option_key(), '' ),
+				YBY_Config::sanitize_email_value( get_option( 'admin_email', '' ) )
 			)
 		);
 		update_option(
 			YBY_Helpers::lead_notification_cc_recipient_option_key(),
 			YBY_Config::sanitize_email_list_value(
-				get_option( YBY_Helpers::lead_notification_cc_recipient_option_key(), 'yishitongshop@gmail.com' )
+				get_option( YBY_Helpers::lead_notification_cc_recipient_option_key(), '' )
 			)
 		);
 		update_option(
@@ -61,6 +64,7 @@ class YBY_Activator {
 			)
 		);
 
+		YBY_Inquiry_Manager::install_defaults();
 		YBY_Database::install();
 	}
 }
