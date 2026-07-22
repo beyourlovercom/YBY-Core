@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-Documentation freeze date: `2026-07-22`
+No unreleased changes.
+
+## v1.3.0 - 2026-07-22
 
 ### Added
 
@@ -45,14 +47,17 @@ Documentation freeze date: `2026-07-22`
 - no customer PII is included in the Thank You URL
 - public test helpers require exact test mode
 
-### Deployment
+### Development validation
 
-- accepted on `dev.ybyirrigation.com`
-- exact accepted commit: `9e0363aa2f1516c0ec2a7f785cfb0521a25ba83c`
+- stable release prepared from the accepted feature branch
+- development validation completed on `dev.ybyirrigation.com`
+- exact accepted development runtime commit: `9e0363aa2f1516c0ec2a7f785cfb0521a25ba83c`
+- documentation freeze commit: `059a33567fc8db0f132f8e251c90698118184dd8`
 - package SHA-256: `C5DBC1A365192E0F6DCEA255FCA31F9A0DCCE2DD5900B9740514ED043175BE71`
 - Lead baseline remained `15`
 - Post SMTP baseline remained `39`
-- no production or Bottle deployment
+- production deployment is handled after tag publication and production QA
+- no Bottle deployment
 
 ## v1.1.1
 

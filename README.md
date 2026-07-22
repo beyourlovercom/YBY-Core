@@ -6,15 +6,15 @@ YBY Core is the shared WordPress foundation plugin for YBY websites.
 
 ## Current Version
 
-v1.3.0-dev
+v1.3.0
 
 ## Development Status
 
-YBY Core v1.3.0-dev includes the accepted M5B Brand Portability milestone on the feature branch and accepted development deployment.
+YBY Core v1.3.0 is the current stable release line. M5B is CLOSED / PASS, and the planned next development line is v1.4.0. Production deployment is recorded only after production QA passes.
 
 ## Stable Scope
 
-YBY Core v1.3.0-dev currently includes:
+YBY Core v1.3.0 currently includes:
 
 - Case ID frontend and backend consistency
 - Lead Session helper
@@ -150,7 +150,7 @@ Webhook behavior remains disabled by default and performs no external request un
 
 ## Inquiry Foundation Status
 
-YBY Core v1.3.0-dev now includes:
+YBY Core v1.3.0 includes:
 
 - Inquiry Field Registry and Inquiry Preset Registry foundations
 - `[yby_inquiry_modal]` shortcode and server-side renderer
@@ -197,7 +197,7 @@ Bottle usage:
 
 ## Stability Note
 
-YBY Core v1.3.0-dev is the current development line.
+YBY Core v1.3.0 is the current stable release. The planned next development line is v1.4.0, and that work has not started.
 
 Its public runtime API signatures remain frozen for the v1.x line under the compatibility policy documented in the stable release package.
 
@@ -207,6 +207,7 @@ Its public runtime API signatures remain frozen for the v1.x line under the comp
 - [M5B Development Deployment and Rollback](docs/deployment/M5B_DEV_DEPLOYMENT_AND_ROLLBACK.md)
 - [YBY Irrigation Runtime Profile](docs/configuration/YBY_IRRIGATION_RUNTIME_PROFILE.md)
 - [M5B Closeout](docs/sprints/M5B_CLOSEOUT.md)
+- [v1.3.0 Release Notes](docs/releases/V1.3.0_RELEASE_NOTES.md)
 
 ## Release Process
 
