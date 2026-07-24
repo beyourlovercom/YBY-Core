@@ -1,6 +1,6 @@
 # VERSION
 
-- Stable Version: 1.3.0
+- Stable Version: 1.3.1
 - Development Version: 1.4.0-dev
 - Stable Release Type: Stable
 - Development Status: v1.4.0 planned, not started

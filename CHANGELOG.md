@@ -8,6 +8,14 @@
 - Added default `[yby_inquiry_modal]` preset fallback for safe global placement.
 - Added `[yby_sticky_cta]` shortcode as a Core-owned shared floating inquiry CTA.
 
+## v1.3.1 - 2026-07-24
+
+### Added
+
+- Added shared inquiry trigger support for site-wide modal integration.
+- Added the Core-owned sticky inquiry CTA shortcode.
+- Added default modal preset fallback for global shortcode placement.
+
 ## v1.3.0 - 2026-07-22
 
 ### Added
