@@ -28,6 +28,14 @@ function esc_url_raw( $value ) {
 	return trim( (string) $value );
 }
 
+function esc_url( $value ) {
+	return trim( (string) $value );
+}
+
+function esc_attr( $value ) {
+	return (string) $value;
+}
+
 function sanitize_html_class( $value ) {
 	return preg_replace( '/[^A-Za-z0-9_-]/', '', (string) $value );
 }
@@ -259,6 +267,35 @@ $tests['invalid_preset'] = static function () use ( $shortcodes ) {
 
 	harness_assert( '' === trim( $result ), 'Invalid preset should produce no modal output.' );
 	harness_assert( 0 === count( $state['modal_ids'] ), 'Invalid preset should defer no modals.' );
+};
+
+$tests['default_modal_preset'] = static function () use ( $shortcodes ) {
+	YBY_Inquiry_Shortcodes::reset_request_state();
+	$GLOBALS['post'] = (object) array( 'ID' => 705 );
+
+	$result = $shortcodes->capture_modal_shortcodes_in_content( '[yby_inquiry_modal]' );
+	$state  = harness_state();
+
+	harness_assert( false !== strpos( $result, 'yby_inquiry_modal:yby-inquiry-modal-irrigation_quick_inquiry' ), 'Bare modal shortcode should use default irrigation preset.' );
+	harness_assert( $state['modal_ids'] === array( 'yby-inquiry-modal-irrigation_quick_inquiry' ), 'Default modal should defer exactly one modal.' );
+};
+
+$tests['sticky_cta_shortcode'] = static function () use ( $shortcodes ) {
+	$result = $shortcodes->render_sticky_cta_shortcode(
+		array(
+			'id'       => 'wholesale-sticky',
+			'label'    => 'Request Wholesale Quote',
+			'href'     => '#yby-iw-inquiry',
+			'modal_id' => 'wholesale-inquiry',
+			'source'   => 'irrigation_wholesale_sticky_cta',
+			'profile'  => 'irrigation_wholesale',
+		)
+	);
+
+	harness_assert( false !== strpos( $result, 'data-yby-sticky-cta' ), 'Sticky CTA wrapper should include runtime hook.' );
+	harness_assert( false !== strpos( $result, 'data-yby-inquiry-trigger' ), 'Sticky CTA button should trigger inquiry runtime.' );
+	harness_assert( false !== strpos( $result, 'data-yby-modal-open="wholesale-inquiry"' ), 'Sticky CTA should preserve modal target.' );
+	harness_assert( false !== strpos( $result, 'data-yby-source="irrigation_wholesale_sticky_cta"' ), 'Sticky CTA should preserve source attribution.' );
 };
 
 $results = array();
