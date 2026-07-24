@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-No unreleased changes.
+### Added
+
+- Added shared inquiry trigger support for `data-yby-inquiry-trigger` and `data-yby-quote-trigger`.
+- Added default `[yby_inquiry_modal]` preset fallback for safe global placement.
+- Added `[yby_sticky_cta]` shortcode as a Core-owned shared floating inquiry CTA.
 
 ## v1.3.0 - 2026-07-22
 

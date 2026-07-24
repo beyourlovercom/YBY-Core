@@ -6,6 +6,7 @@
   var activeModal = null;
   var activeTrigger = null;
   var listenersBound = false;
+  var stickyListenersBound = false;
   var CORE_FIELD_IDS = {
     name: true,
     company: true,
@@ -49,6 +50,67 @@
 
   function getForm(modal) {
     return modal ? modal.querySelector("[data-yby-inquiry-form]") : null;
+  }
+
+  function getDefaultModal() {
+    return document.querySelector("[data-yby-inquiry-modal]");
+  }
+
+  function getClosestProfile(trigger) {
+    var root = trigger ? trigger.closest("[data-yby-page-profile]") : null;
+
+    return safeString(
+      (trigger ? trigger.getAttribute("data-yby-page-profile") : "") ||
+        (root ? root.getAttribute("data-yby-page-profile") : ""),
+      100
+    );
+  }
+
+  function resolveOpenRequest(modalOrOptions, trigger) {
+    var options = {};
+    var modalId = "";
+    var modal;
+
+    if (modalOrOptions && typeof modalOrOptions === "object" && !modalOrOptions.nodeType) {
+      options = modalOrOptions;
+    } else {
+      options.modalId = modalOrOptions;
+      options.trigger = trigger;
+    }
+
+    trigger = options.trigger || trigger || null;
+    modalId = safeString(
+      options.modalId ||
+        (trigger ? trigger.getAttribute("data-yby-modal-open") : "") ||
+        (trigger ? trigger.getAttribute("data-yby-inquiry-target") : ""),
+      120
+    );
+    modal = modalId ? getModalById(modalId) : getDefaultModal();
+
+    return {
+      modal: modal,
+      trigger: trigger,
+      source: safeString(options.source || (trigger ? trigger.getAttribute("data-yby-source") : ""), 120),
+      profile: safeString(options.profile || getClosestProfile(trigger), 100)
+    };
+  }
+
+  function applyTriggerContext(form, request) {
+    if (!form || !request) {
+      return;
+    }
+
+    if (request.source) {
+      form.setAttribute("data-yby-trigger-source", request.source);
+    } else {
+      form.removeAttribute("data-yby-trigger-source");
+    }
+
+    if (request.profile) {
+      form.setAttribute("data-yby-page-profile", request.profile);
+    } else {
+      form.removeAttribute("data-yby-page-profile");
+    }
   }
 
   function getFocusableElements(modal) {
@@ -204,7 +266,9 @@
       source_preset: safeString(form.getAttribute("data-yby-preset"), 80),
       source_page: getSourcePage(form, modal),
       modal_id: safeString(modal ? modal.id : "", 120),
-      form_version: safeString(form.getAttribute("data-yby-form-version"), 80)
+      form_version: safeString(form.getAttribute("data-yby-form-version"), 80),
+      trigger_source: safeString(form.getAttribute("data-yby-trigger-source"), 120),
+      page_profile: safeString(form.getAttribute("data-yby-page-profile"), 100)
     };
 
     if (extra && typeof extra === "object") {
@@ -395,6 +459,8 @@
     payload.source_preset = safeString(form.getAttribute("data-yby-preset"), 100);
     payload.source_page = getSourcePage(form, modal);
     payload.form_version = safeString(form.getAttribute("data-yby-form-version"), 30);
+    payload.trigger_source = safeString(form.getAttribute("data-yby-trigger-source"), 120);
+    payload.page_profile = safeString(form.getAttribute("data-yby-page-profile"), 100);
     payload.utm_source = safeString(getQueryParam("utm_source"), 100);
     payload.utm_medium = safeString(getQueryParam("utm_medium"), 100);
     payload.utm_campaign = safeString(getQueryParam("utm_campaign"), 150);
@@ -438,8 +504,9 @@
     }
   }
 
-  function open(modalId, trigger) {
-    var modal = getModalById(modalId);
+  function open(modalOrOptions, trigger) {
+    var request = resolveOpenRequest(modalOrOptions, trigger);
+    var modal = request.modal;
     var dialog;
     var form;
     var firstField;
@@ -459,7 +526,7 @@
     }
 
     activeModal = modal;
-    activeTrigger = trigger || document.activeElement;
+    activeTrigger = request.trigger || document.activeElement;
     modal.hidden = false;
     modal.setAttribute("aria-hidden", "false");
     modal.classList.add("is-open");
@@ -468,6 +535,7 @@
     form = getForm(modal);
     if (form) {
       form.setAttribute("data-yby-started", "false");
+      applyTriggerContext(form, request);
     }
 
     firstField = modal.querySelector("[data-yby-field]:not([type='hidden']):not([disabled])");
@@ -479,7 +547,12 @@
     }
 
     enableFormIfReady(form);
-    pushTracking(form, "yby_inquiry_open");
+    pushTracking(form, "yby_inquiry_open", {
+      trigger_source: request.source,
+      page_profile: request.profile
+    });
+
+    return modal;
   }
 
   function submitForm(form) {
@@ -550,12 +623,21 @@
   }
 
   function handleDocumentClick(event) {
-    var openTrigger = event.target.closest("[data-yby-modal-open]");
+    var openTrigger = event.target.closest("[data-yby-modal-open], [data-yby-inquiry-trigger], [data-yby-quote-trigger]");
     var closeTrigger = event.target.closest("[data-yby-modal-close]");
 
     if (openTrigger) {
-      event.preventDefault();
-      open(openTrigger.getAttribute("data-yby-modal-open"), openTrigger);
+      if (open(
+        {
+          modalId: openTrigger.getAttribute("data-yby-modal-open") || openTrigger.getAttribute("data-yby-inquiry-target") || "",
+          source: openTrigger.getAttribute("data-yby-source") || "",
+          profile: getClosestProfile(openTrigger),
+          trigger: openTrigger
+        },
+        openTrigger
+      )) {
+        event.preventDefault();
+      }
       return;
     }
 
@@ -636,6 +718,24 @@
     });
   }
 
+  function updateStickyCtas() {
+    var shouldShow = window.scrollY > 180 && !document.querySelector(".yby-inquiry-modal.is-open");
+
+    Array.prototype.slice.call(document.querySelectorAll("[data-yby-sticky-cta]")).forEach(function (cta) {
+      cta.classList.toggle("is-visible", shouldShow);
+    });
+  }
+
+  function initStickyCtas() {
+    if (!stickyListenersBound) {
+      window.addEventListener("scroll", updateStickyCtas, { passive: true });
+      window.addEventListener("resize", updateStickyCtas);
+      stickyListenersBound = true;
+    }
+
+    updateStickyCtas();
+  }
+
   function init() {
     if (!listenersBound) {
       document.addEventListener("click", handleDocumentClick);
@@ -648,6 +748,7 @@
     }
 
     initForms(document);
+    initStickyCtas();
 
     return inquiry;
   }

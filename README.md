@@ -180,6 +180,52 @@ Example usage:
 ]
 ```
 
+Shared trigger usage:
+
+```html
+<button
+    type="button"
+    data-yby-inquiry-trigger
+    data-yby-source="site_header_get_quote"
+>
+    Get Quote
+</button>
+```
+
+Backward-compatible triggers remain supported:
+
+```html
+<button type="button" data-yby-modal-open="homepage-inquiry">
+    Get Free Quote
+</button>
+
+<button type="button" data-yby-quote-trigger data-yby-source="site_header_get_quote">
+    Get Quote
+</button>
+```
+
+The modal shortcode may be placed with an explicit preset or with the default
+Core fallback:
+
+```text
+[yby_inquiry_modal]
+```
+
+Sticky CTA usage:
+
+```text
+[yby_sticky_cta
+    label="Get Quote"
+    href="#yby-inquiry"
+    source="site_global_sticky_cta"
+    profile="site_global"
+]
+```
+
+The sticky CTA opens the shared Core inquiry modal when one is present. It keeps
+the `href` as a safe fallback anchor and does not create a separate Lead or Case
+ID runtime.
+
 Bottle usage:
 
 ```html

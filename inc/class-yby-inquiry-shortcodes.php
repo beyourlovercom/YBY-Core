@@ -70,6 +70,11 @@ class YBY_Inquiry_Shortcodes {
 			'yby_inquiry_modal',
 			array( $this, 'render_modal_shortcode' )
 		);
+
+		add_shortcode(
+			'yby_sticky_cta',
+			array( $this, 'render_sticky_cta_shortcode' )
+		);
 	}
 
 	/**
@@ -86,8 +91,7 @@ class YBY_Inquiry_Shortcodes {
 		$attributes = $this->sanitize_shortcode_attributes( $attributes );
 
 		if ( '' === $attributes['preset'] ) {
-			$this->maybe_doing_it_wrong( 'Preset is required for [yby_inquiry_modal].' );
-			return '';
+			$attributes['preset'] = $this->get_default_modal_preset( $attributes );
 		}
 
 		$preset_manager = $this->inquiry_manager->get_preset_manager();
@@ -117,6 +121,34 @@ class YBY_Inquiry_Shortcodes {
 		self::$deferred_modals[ $attributes['id'] ] = $modal_markup;
 
 		return '<!-- yby_inquiry_modal:' . esc_html( $attributes['id'] ) . ' -->';
+	}
+
+	/**
+	 * Render the shared sticky CTA shortcode.
+	 *
+	 * @param array<string, mixed> $attributes Shortcode attributes.
+	 * @param string|null          $content Shortcode content.
+	 * @param string               $tag Shortcode tag.
+	 * @return string
+	 */
+	public function render_sticky_cta_shortcode( $attributes = array(), $content = null, $tag = '' ) {
+		unset( $content, $tag );
+
+		$attributes = $this->sanitize_sticky_cta_attributes( $attributes );
+		$classes    = array_merge( array( 'yby-sticky-cta' ), $attributes['class'] );
+
+		$output  = '<div id="' . esc_attr( $attributes['id'] ) . '" class="' . esc_attr( implode( ' ', $classes ) ) . '" data-yby-sticky-cta';
+		$output .= '' !== $attributes['profile'] ? ' data-yby-page-profile="' . esc_attr( $attributes['profile'] ) . '"' : '';
+		$output .= '>';
+		$output .= '<a class="yby-sticky-cta__button" href="' . esc_url( $attributes['href'] ) . '" data-yby-inquiry-trigger data-yby-source="' . esc_attr( $attributes['source'] ) . '"';
+		$output .= '' !== $attributes['modal_id'] ? ' data-yby-modal-open="' . esc_attr( $attributes['modal_id'] ) . '"' : '';
+		$output .= '' !== $attributes['profile'] ? ' data-yby-page-profile="' . esc_attr( $attributes['profile'] ) . '"' : '';
+		$output .= '>';
+		$output .= esc_html( $attributes['label'] );
+		$output .= '</a>';
+		$output .= '</div>';
+
+		return $output;
 	}
 
 	/**
@@ -214,6 +246,77 @@ class YBY_Inquiry_Shortcodes {
 			'image'        => esc_url_raw( $attributes['image'] ),
 			'class'        => $this->sanitize_class_tokens( $attributes['class'] ),
 		);
+	}
+
+	/**
+	 * Sanitize sticky CTA shortcode attributes.
+	 *
+	 * @param array<string, mixed> $attributes Raw attributes.
+	 * @return array<string, mixed>
+	 */
+	protected function sanitize_sticky_cta_attributes( $attributes ) {
+		$attributes = shortcode_atts(
+			array(
+				'id'       => 'yby-sticky-cta',
+				'label'    => 'Get Quote',
+				'href'     => '#yby-inquiry',
+				'modal_id' => '',
+				'source'   => 'site_global_sticky_cta',
+				'profile'  => '',
+				'class'    => '',
+			),
+			is_array( $attributes ) ? $attributes : array(),
+			'yby_sticky_cta'
+		);
+
+		$source = str_replace( '-', '_', sanitize_key( $attributes['source'] ) );
+		$source = '' !== $source ? $source : 'site_global_sticky_cta';
+		$id     = $this->sanitize_dom_id( $attributes['id'] );
+		$label  = sanitize_text_field( $attributes['label'] );
+
+		return array(
+			'id'       => '' !== $id ? $id : 'yby-sticky-cta',
+			'label'    => '' !== $label ? $label : 'Get Quote',
+			'href'     => $this->sanitize_anchor_or_url( $attributes['href'] ),
+			'modal_id' => $this->sanitize_dom_id( $attributes['modal_id'] ),
+			'source'   => $source,
+			'profile'  => str_replace( '-', '_', sanitize_key( $attributes['profile'] ) ),
+			'class'    => $this->sanitize_class_tokens( $attributes['class'] ),
+		);
+	}
+
+	/**
+	 * Return the default modal preset ID.
+	 *
+	 * @param array<string, mixed> $attributes Sanitized shortcode attributes.
+	 * @return string
+	 */
+	protected function get_default_modal_preset( $attributes ) {
+		$default = 'irrigation_quick_inquiry';
+
+		if ( function_exists( 'apply_filters' ) ) {
+			$default = apply_filters( 'yby_inquiry_default_preset', $default, $attributes );
+		}
+
+		return sanitize_key( $default );
+	}
+
+	/**
+	 * Sanitize a local anchor or URL.
+	 *
+	 * @param string $value Raw URL.
+	 * @return string
+	 */
+	protected function sanitize_anchor_or_url( $value ) {
+		$value = trim( (string) $value );
+
+		if ( preg_match( '/^#[A-Za-z][A-Za-z0-9_-]*$/', $value ) ) {
+			return $value;
+		}
+
+		$url = esc_url_raw( $value );
+
+		return '' !== $url ? $url : '#yby-inquiry';
 	}
 
 	/**
