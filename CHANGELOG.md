@@ -8,6 +8,14 @@
 - Added default `[yby_inquiry_modal]` preset fallback for safe global placement.
 - Added `[yby_sticky_cta]` shortcode as a Core-owned shared floating inquiry CTA.
 
+## v1.3.2 - 2026-07-24
+
+### Fixed
+
+- Corrected WordPress readme stable-tag metadata.
+- Synchronized release identity across plugin header, runtime constant, VERSION.md, README.md, and readme.txt.
+- No runtime or database behavior changed.
+
 ## v1.3.1 - 2026-07-24
 
 ### Added

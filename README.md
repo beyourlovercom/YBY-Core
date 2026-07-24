@@ -6,11 +6,13 @@ YBY Core is the shared WordPress foundation plugin for YBY websites.
 
 ## Current Version
 
-v1.3.1
+v1.3.2
 
 ## Development Status
 
-YBY Core v1.3.1 is the current stable release line. M5B is CLOSED / PASS, and the planned next development line is v1.4.0. Production deployment is recorded only after production QA passes.
+YBY Core v1.3.2 is the current stable release candidate. It supersedes v1.3.1 for deployment because v1.3.1 contained incorrect WordPress readme stable-tag metadata.
+
+M5B is CLOSED / PASS, and the planned next development line is v1.4.0. Dev and Production deployment are recorded only after the v1.3.2 release candidate validates and passes the required QA gates.
 
 ## Stable Scope
 
