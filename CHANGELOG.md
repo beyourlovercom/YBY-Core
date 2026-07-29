@@ -7,12 +7,16 @@
 - Added the Social Login admin submenu and provider overview.
 - Added the Google settings page.
 - Added secure Google option storage and validation.
+- Added the Google login shortcode and on-demand Google Identity Services button.
+- Added the POST-only Google authentication endpoint.
+- Added local RS256 Google ID Token verification with cached PEM certificates.
+- Added restricted WordPress user registration and login mapped by Google `sub`.
+- Added double-submit CSRF, short-lived nonce, authoritative-email, disabled-role, duplicate-identity, and internal redirect protections.
 
 ### Not yet included
 
-- Real Google authentication.
-- Google REST authentication endpoint.
-- Social Login shortcode.
+- Client Secret, Google API authorization, and access or refresh token storage.
+- Account linking, One Tap, and global avatar replacement.
 - Facebook, X, and TikTok authentication.
 
 ## v1.4.0 - 2026-07-29

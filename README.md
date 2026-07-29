@@ -12,14 +12,19 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## v1.5.0 development scope
 
-The active development line adds the Social Login administration foundation:
+The active development line adds secure Google authentication:
 
 - one Social Login submenu under Andy Core
 - provider status cards for Google, Facebook, X, and TikTok
 - validated Google settings stored outside the main Core option
 - role and same-site redirect security boundaries
+- `[yby_social_login provider="google"]` with an on-demand Google Identity Services button
+- one anonymous POST endpoint at `/wp-json/yby/v1/auth/google`
+- local RS256 ID Token verification with cached Google PEM certificates
+- Google `sub` identity mapping, restricted WordPress registration, and standard login sessions
+- double-submit CSRF, short-lived login nonce, authoritative-email, disabled-role, and internal redirect enforcement
 
-Google authentication, its REST endpoint, and the planned Social Login shortcode are not implemented yet. Facebook, X, and TikTok remain future provider phases.
+The development implementation stores the signed provider picture URL for future display but does not globally replace WordPress avatars. Client Secret, Google API authorization, access or refresh token storage, account linking, One Tap, and Facebook, X, or TikTok authentication are not implemented.
 
 ## v1.4.0 purpose
 
@@ -164,7 +169,7 @@ The database schema remains `1.1.0`; v1.4.0 performs no schema migration.
 
 The previous fixed long-term roadmap is superseded by a feature-driven roadmap.
 
-The next planned feature is **Social Login**, implemented incrementally by provider. Planning Social Login does not change the scope or stability of v1.4.0.
+The active v1.5.0 development feature is **Social Login**, beginning with the secure Google authentication flow documented above. This development work does not change the scope or stability of v1.4.0.
 
 ## Release process
 

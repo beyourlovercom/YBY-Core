@@ -297,15 +297,18 @@ $tests['view_scope'] = static function () {
 	harness_assert( false === strpos( $view, 'name="client_secret"' ), 'Google page must not render a secret credential input.' );
 };
 
-$tests['public_scope_absence'] = static function () {
+$tests['public_scope_registration'] = static function () {
 	$core  = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-core.php' );
 	$model = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-social-login.php' );
 	$admin = file_get_contents( dirname( __DIR__ ) . '/admin/class-yby-social-login-admin.php' );
-	$all   = $core . $model . $admin;
+	$rest  = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-google-auth-rest-controller.php' );
+	$shortcodes = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-social-login-shortcodes.php' );
+	$all   = $core . $model . $admin . $rest . $shortcodes;
 
-	harness_assert( false === strpos( $all, "register_rest_route( 'yby/v1', '/auth/google'" ), 'Google auth REST route must not be registered.' );
-	harness_assert( false === strpos( $all, "add_shortcode( 'yby_social_login'" ), 'Social Login shortcode must not be registered.' );
-	harness_assert( false === strpos( $all, 'accounts.google.com/gsi' ), 'Google frontend script must not be loaded.' );
+	harness_assert( false !== strpos( $all, "'/auth/google'" ), 'Google auth REST route must be registered.' );
+	harness_assert( false !== strpos( $all, "add_shortcode( 'yby_social_login'" ), 'Social Login shortcode must be registered.' );
+	harness_assert( false !== strpos( $all, 'accounts.google.com/gsi/client' ), 'Google frontend script must be available to the shortcode.' );
+	harness_assert( false === strpos( $core, 'accounts.google.com/gsi/client' ), 'Google script must not be loaded globally by the Core bootstrap.' );
 };
 
 $tests['version_and_regression_boundary'] = static function () {

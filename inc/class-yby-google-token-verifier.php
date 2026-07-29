@@ -210,6 +210,10 @@ class YBY_Google_Token_Verifier {
 			if ( is_array( $cached ) && $this->certificates_are_valid( $cached ) ) {
 				return $cached;
 			}
+
+			if ( false !== $cached ) {
+				delete_transient( self::CERTIFICATE_CACHE_KEY );
+			}
 		}
 
 		$result = $this->retrieve_certificates();

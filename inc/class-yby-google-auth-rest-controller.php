@@ -129,13 +129,12 @@ class YBY_Google_Auth_REST_Controller {
 			return $this->error_redirect( $claims->get_error_code(), $settings );
 		}
 
+		YBY_Social_Login::consume_login_nonce( (string) $claims['nonce'] );
 		$user = $this->auth_service->authenticate( $claims, $settings );
 
 		if ( is_wp_error( $user ) ) {
 			return $this->error_redirect( $user->get_error_code(), $settings );
 		}
-
-		YBY_Social_Login::consume_login_nonce( (string) $claims['nonce'] );
 
 		return $this->redirect_response( 'success', $settings );
 	}

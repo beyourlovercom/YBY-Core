@@ -92,6 +92,12 @@ class YBY_Google_Auth_Service {
 			$role = 'subscriber';
 		}
 
+		$disabled_roles = isset( $settings['disabled_roles'] ) && is_array( $settings['disabled_roles'] ) ? $settings['disabled_roles'] : array();
+
+		if ( in_array( $role, $disabled_roles, true ) ) {
+			return new \WP_Error( 'role_not_allowed' );
+		}
+
 		$username = $this->generate_unique_username( $settings );
 
 		if ( '' === $username ) {
