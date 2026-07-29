@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 <div class="wrap">
-	<h1><?php echo esc_html__( 'YBY Core', 'yby-core' ); ?></h1>
+	<h1><?php echo esc_html__( 'Andy Core', 'yby-core' ); ?></h1>
 
 	<?php if ( ! empty( $notice ) ) : ?>
 		<div class="notice notice-<?php echo esc_attr( $notice_type ); ?> is-dismissible">

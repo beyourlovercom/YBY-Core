@@ -1,20 +1,28 @@
-=== YBY Core ===
+=== Andy Core ===
 Contributors: ybyglobal
-Tags: yby, case-id, tracking, lead-session, configuration
+Tags: andy-core, yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.3.2
+Stable tag: 1.4.0
 License: Proprietary
 License URI: https://ybyglobal.com/
 
-Core platform plugin for YBY websites, including Case ID, tracking, configuration, lead session, governed lead email delivery, and CRM webhook foundation.
+Core platform plugin for managed WordPress websites, including Case ID, tracking, configuration, lead sessions, governed lead email delivery, and inquiry runtime.
 
 == Description ==
 
-YBY Core is the governed foundation plugin for YBY WordPress websites.
+Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.4.0 changes the user-facing product name while preserving the existing `yby-core` plugin path, technical namespace, shortcodes, REST routes, options, database tables, and runtime APIs for compatibility.
 
-Included in v1.3.0:
+Included in v1.4.0:
+
+* User-facing product name changed to Andy Core
+* Existing Inquiry, Case ID, tracking, configuration, email, and runtime behavior preserved
+* Plugin directory and main file remain `yby-core/yby-core.php`
+* Technical `YBY_*`, `yby_*`, `[yby_*]`, `data-yby-*`, and `/wp-json/yby/v1/` contracts remain unchanged
+* Database schema remains version 1.1.0
+
+Existing capabilities:
 
 * Case ID engine
 * Config center
@@ -44,16 +52,20 @@ Not included:
 * Real CRM connection
 * Real ERP connection
 * AI services
-* Database tables
+* Social Login in v1.4.0
 * GTM, GA4, Ads, or Bricks modifications
 
 == Installation ==
 
 1. Upload the `yby-core` folder to the `/wp-content/plugins/` directory.
-2. Activate the plugin through the `Plugins` screen in WordPress.
-3. Open `YBY OS > Settings` in the WordPress admin menu to review settings.
+2. Activate Andy Core through the `Plugins` screen in WordPress.
+3. Open `Andy Core > Settings` in the WordPress admin menu to review settings.
 
 == Frequently Asked Questions ==
+
+= Why is the folder still named yby-core? =
+
+Version 1.4.0 is a compatibility-safe product-name transition. The plugin path and technical identifiers remain unchanged so existing installations upgrade in place instead of being treated as a second plugin.
 
 = Does this plugin support a canonical project object? =
 
@@ -69,11 +81,11 @@ No. GTM remains globally installed by the approved site method only.
 
 = Does this plugin send real CRM data? =
 
-No. The CRM webhook module is a safe placeholder in MVP.
+No. The CRM webhook module is a safe placeholder in the current release.
 
 = Does this plugin send inquiry emails? =
 
-Yes. v1.3.0 includes a governed lead endpoint that can send one HTML inquiry email per Case ID within the configured idempotency window.
+Yes. The governed lead endpoint can send one HTML inquiry email per Case ID within the configured idempotency window.
 
 = What does the REST response return? =
 
@@ -89,6 +101,19 @@ The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Re
 
 == Changelog ==
 
+= 1.4.0 =
+
+* Changed the user-facing product name from YBY Core to Andy Core.
+* Updated the plugin and runtime version to 1.4.0.
+* Preserved the `yby-core` plugin path, technical namespace, shortcodes, REST routes, database tables, options, and frontend runtime APIs.
+* Preserved database schema version 1.1.0.
+* Added no Social Login behavior and made no Lead, Case ID, Thank You, WhatsApp, email, tracking, Bricks, theme, or Ads changes.
+
+= 1.3.2 =
+
+* Corrected WordPress stable-tag metadata.
+* Preserved the v1.3.1 runtime without behavior or database changes.
+
 = 1.3.0 =
 
 * Added the reusable Inquiry component system with shortcode and frontend runtime support.
@@ -98,15 +123,6 @@ The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Re
 * Added Thank You runtime hydration and same-session `generate_lead` deduplication.
 * Added deterministic Harness coverage for runtime, identity, presentation, and notification behavior.
 * Preserved server-owned Case ID, brand identity, and secret exclusion rules.
-
-= 1.1.1 =
-
-* Brand Settings module included.
-* Logo management added.
-* Brand color management added.
-* Font governance added.
-* Activation fatal error fix included.
-* Release QA validation completed.
 
 = 1.2.0 =
 
@@ -119,9 +135,18 @@ The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Re
 * Added `mail_sent` in REST success and duplicate responses.
 * Preserved Project Studio, Runtime Viewer, and frozen v1.x runtime APIs.
 
+= 1.1.1 =
+
+* Brand Settings module included.
+* Logo management added.
+* Brand color management added.
+* Font governance added.
+* Activation fatal error fix included.
+* Release QA validation completed.
+
 = 1.1.0 =
 
-* Added Project Studio as a managed admin layer under `YBY OS`.
+* Added Project Studio as a managed admin layer under the plugin menu.
 * Added the `yby_project` Custom Post Type for Project management records.
 * Added read-only Project List, Project Overview, and Runtime Viewer screens.
 * Preserved the existing stable public runtime APIs with no signature changes.

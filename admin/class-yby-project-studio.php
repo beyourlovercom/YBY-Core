@@ -63,8 +63,8 @@ class YBY_Project_Studio {
 	 */
 	public function add_admin_menu() {
 		add_menu_page(
-			__( 'YBY OS', 'yby-core' ),
-			__( 'YBY OS', 'yby-core' ),
+			__( 'Andy Core', 'yby-core' ),
+			__( 'Andy Core', 'yby-core' ),
 			'manage_options',
 			self::menu_slug(),
 			array( $this, 'render_project_studio_page' ),

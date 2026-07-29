@@ -1,7 +1,10 @@
 # VERSION
 
-- Stable Version: 1.3.2
-- Development Version: 1.4.0-dev
+- Product Name: Andy Core
+- Stable Version: 1.4.0
+- Development Version: 1.5.0-dev
 - Stable Release Type: Stable
-- Development Status: v1.4.0 planned, not started
+- Development Status: Social Login foundation planned, not started
+- Technical Namespace: YBY legacy compatibility retained
+- Database Version: 1.1.0
 - Brand Settings Included: Yes
