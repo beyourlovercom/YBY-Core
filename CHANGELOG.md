@@ -2,7 +2,18 @@
 
 ## Unreleased
 
-No unreleased changes.
+### Added
+
+- Added the Social Login admin submenu and provider overview.
+- Added the Google settings page.
+- Added secure Google option storage and validation.
+
+### Not yet included
+
+- Real Google authentication.
+- Google REST authentication endpoint.
+- Social Login shortcode.
+- Facebook, X, and TikTok authentication.
 
 ## v1.4.0 - 2026-07-29
 

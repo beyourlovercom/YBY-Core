@@ -23,6 +23,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-content.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project-template.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project-cpt.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-brand-os.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-social-login.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-session.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-tracking.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-webhook.php';
@@ -41,6 +42,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-service.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-rest-controller.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-social-login-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'public/class-yby-public.php';
 
 /**
@@ -97,13 +99,16 @@ class YBY_Core {
 		$project_cpt    = new YBY_Project_CPT();
 		$brand_os       = new YBY_Brand_OS( 'yby-core', YBY_CORE_VERSION );
 		$project_studio = new YBY_Project_Studio( 'yby-core', YBY_CORE_VERSION );
+		$social_login   = new YBY_Social_Login_Admin();
 
 		$this->loader->add_action( 'init', $project_cpt, 'register' );
 		$this->loader->add_action( 'admin_menu', $project_studio, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_menu', $brand_os, 'add_admin_menu' );
+		$this->loader->add_action( 'admin_menu', $social_login, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_menu', $admin, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $project_studio, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $brand_os, 'enqueue_assets' );
+		$this->loader->add_action( 'admin_enqueue_scripts', $social_login, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_assets' );
 	}
 

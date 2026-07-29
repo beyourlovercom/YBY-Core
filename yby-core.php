@@ -3,7 +3,7 @@
  * Plugin Name:       Andy Core
  * Plugin URI:        https://ybyglobal.com/
  * Description:       Core platform plugin for managed WordPress websites, including Case ID, tracking, configuration, lead sessions, and inquiry runtime.
- * Version:           1.4.0
+ * Version:           1.5.0-dev
  * Author:            YBY Global
  * Text Domain:       yby-core
  * Domain Path:       /languages
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'YBY_CORE_VERSION', '1.4.0' );
+define( 'YBY_CORE_VERSION', '1.5.0-dev' );
 define( 'YBY_DATABASE_VERSION', '1.1.0' );
 define( 'YBY_CORE_PLUGIN_FILE', __FILE__ );
 define( 'YBY_CORE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );

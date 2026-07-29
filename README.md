@@ -5,9 +5,21 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 ## Current release
 
 - Product version: `1.4.0`
+- Development version: `1.5.0-dev`
 - Database version: `1.1.0`
 - Plugin path: `yby-core/yby-core.php`
 - Technical namespace: existing `YBY_*` and `yby_*` identifiers retained for compatibility
+
+## v1.5.0 development scope
+
+The active development line adds the Social Login administration foundation:
+
+- one Social Login submenu under Andy Core
+- provider status cards for Google, Facebook, X, and TikTok
+- validated Google settings stored outside the main Core option
+- role and same-site redirect security boundaries
+
+Google authentication, its REST endpoint, and the planned Social Login shortcode are not implemented yet. Facebook, X, and TikTok remain future provider phases.
 
 ## v1.4.0 purpose
 

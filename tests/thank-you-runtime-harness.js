@@ -334,6 +334,7 @@ function createRuntime(options = {}) {
 
 function runInquiryRuntime() {
   const bundle = buildInquiryDocument();
+  const windowListeners = {};
   const window = {
     YBYCoreConfig: {
       enableTracking: true
@@ -355,7 +356,14 @@ function runInquiryRuntime() {
       pathname: "/inquiry/"
     },
     console,
-    URLSearchParams
+    URLSearchParams,
+    scrollY: 0,
+    addEventListener(type, listener) {
+      windowListeners[type] = listener;
+    },
+    removeEventListener(type) {
+      delete windowListeners[type];
+    }
   };
 
   window.window = window;
