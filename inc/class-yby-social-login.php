@@ -15,6 +15,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 class YBY_Social_Login {
 
 	/**
+	 * Login nonce lifetime in seconds.
+	 */
+	const LOGIN_NONCE_TTL = 600;
+
+	/**
 	 * Return the Social Login option key.
 	 *
 	 * @return string
@@ -85,6 +90,57 @@ class YBY_Social_Login {
 		$options = self::get_options();
 
 		return $options['google'];
+	}
+
+	/**
+	 * Create a short-lived nonce while retaining only its keyed hash.
+	 *
+	 * @return string
+	 */
+	public static function issue_login_nonce() {
+		$nonce = wp_generate_password( 48, false, false );
+
+		if ( '' === $nonce ) {
+			return '';
+		}
+
+		set_transient( self::login_nonce_key( $nonce ), 1, self::LOGIN_NONCE_TTL );
+
+		return $nonce;
+	}
+
+	/**
+	 * Determine whether a login nonce is still available.
+	 *
+	 * @param mixed $nonce Raw nonce claim.
+	 * @return bool
+	 */
+	public static function is_login_nonce_valid( $nonce ) {
+		if ( ! is_string( $nonce ) || '' === $nonce || strlen( $nonce ) > 128 ) {
+			return false;
+		}
+
+		return false !== get_transient( self::login_nonce_key( $nonce ) );
+	}
+
+	/**
+	 * Consume a login nonce after a successful login.
+	 *
+	 * @param string $nonce Verified nonce claim.
+	 * @return void
+	 */
+	public static function consume_login_nonce( $nonce ) {
+		delete_transient( self::login_nonce_key( $nonce ) );
+	}
+
+	/**
+	 * Build a non-reversible transient key for a login nonce.
+	 *
+	 * @param string $nonce Raw nonce.
+	 * @return string
+	 */
+	protected static function login_nonce_key( $nonce ) {
+		return 'yby_google_nonce_' . hash_hmac( 'sha256', $nonce, wp_salt( 'nonce' ) );
 	}
 
 	/**

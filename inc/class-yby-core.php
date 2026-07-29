@@ -24,6 +24,9 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project-template.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project-cpt.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-brand-os.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-social-login.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-token-verifier.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-auth-service.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-auth-rest-controller.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-session.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-tracking.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-webhook.php';
@@ -120,12 +123,14 @@ class YBY_Core {
 	protected function define_public_hooks() {
 		$public             = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
 		$lead_rest_route    = new YBY_Lead_REST_Controller();
+		$google_auth_route  = new YBY_Google_Auth_REST_Controller();
 		$inquiry_manager    = new YBY_Inquiry_Manager();
 		$inquiry_renderer   = new YBY_Inquiry_Renderer();
 		$inquiry_shortcodes = new YBY_Inquiry_Shortcodes( $inquiry_manager, $inquiry_renderer );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
 		$this->loader->add_action( 'rest_api_init', $lead_rest_route, 'register_routes' );
+		$this->loader->add_action( 'rest_api_init', $google_auth_route, 'register_routes' );
 		$this->loader->add_action( 'init', $inquiry_shortcodes, 'register', 10, 0 );
 		$this->loader->add_filter( 'the_content', $inquiry_shortcodes, 'capture_modal_shortcodes_in_content', 9, 1 );
 		$this->loader->add_action( 'wp_footer', $inquiry_shortcodes, 'render_deferred_modals', 100, 0 );
