@@ -2,11 +2,23 @@
 
 ## Unreleased
 
-### Added
+No unreleased changes.
 
-- Added shared inquiry trigger support for `data-yby-inquiry-trigger` and `data-yby-quote-trigger`.
-- Added default `[yby_inquiry_modal]` preset fallback for safe global placement.
-- Added `[yby_sticky_cta]` shortcode as a Core-owned shared floating inquiry CTA.
+## v1.4.0 - 2026-07-29
+
+### Changed
+
+- Changed the user-facing plugin name from YBY Core to Andy Core.
+- Changed the user-facing WordPress admin product label to Andy Core.
+- Updated plugin and runtime version identity to 1.4.0.
+- Reset the active product roadmap to a feature-driven sequence, with Social Login planned next.
+
+### Compatibility
+
+- Preserved the `yby-core/yby-core.php` plugin identity for in-place upgrades.
+- Preserved the `YBY_*` PHP namespace, `yby_*` functions and options, `[yby_*]` shortcodes, `data-yby-*` attributes, `.yby-*` selectors, `/wp-json/yby/v1/` routes, and existing database tables.
+- Preserved database schema version 1.1.0.
+- No Lead, Case ID, Inquiry, Thank You, WhatsApp, email, tracking, Bricks, theme, or Google Ads behavior changed.
 
 ## v1.3.2 - 2026-07-24
 
