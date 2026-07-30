@@ -12,11 +12,14 @@
 - Added local RS256 Google ID Token verification with cached PEM certificates.
 - Added restricted WordPress user registration and login mapped by Google `sub`.
 - Added double-submit CSRF, short-lived nonce, authoritative-email, disabled-role, duplicate-identity, and internal redirect protections.
+- Added optional Google sign-in on the standard WordPress login page.
+- Added the canonical Social Login shortcode and Copy control to the admin overview.
+- Added opt-in verified-email association for existing Subscriber and Customer accounts, with privileged, custom, mixed, and disabled roles blocked.
 
 ### Not yet included
 
 - Client Secret, Google API authorization, and access or refresh token storage.
-- Account linking, One Tap, and global avatar replacement.
+- Manual account linking or unlinking, One Tap, and global avatar replacement.
 - Facebook, X, and TikTok authentication.
 
 ## v1.4.0 - 2026-07-29

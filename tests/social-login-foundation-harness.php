@@ -131,9 +131,12 @@ $tests = array();
 
 $tests['defaults'] = static function () {
 	harness_reset();
+	$options = YBY_Social_Login::defaults();
 	$google = YBY_Social_Login::google_defaults();
 
+	harness_assert( false === $options['add_to_login_page'], 'WordPress login-page integration must default to disabled.' );
 	harness_assert( false === $google['enabled'], 'Google must default to disabled.' );
+	harness_assert( false === $google['auto_link_existing_accounts'], 'Existing-account association must default to disabled.' );
 	harness_assert( '' === $google['client_id'], 'Client ID must default to empty.' );
 	harness_assert( true === $google['select_account'], 'Account selection must default to true.' );
 	harness_assert( 'google_' === $google['username_prefix'], 'Username prefix default is invalid.' );
@@ -183,6 +186,8 @@ $tests['field_validation'] = static function () {
 	$valid = YBY_Social_Login::sanitize_google( array( 'client_id' => '123-example.apps.googleusercontent.com' ) );
 	harness_assert( '123-example.apps.googleusercontent.com' === $valid['client_id'], 'Valid Google client ID must be accepted.' );
 	harness_assert( '' === YBY_Social_Login::sanitize_google( array( 'client_id' => 'example.test' ) )['client_id'], 'Invalid client ID must be rejected.' );
+	harness_assert( false === YBY_Social_Login::sanitize( array( 'add_to_login_page' => array( '1' ) ) )['add_to_login_page'], 'Malformed general checkbox values must sanitize to false.' );
+	harness_assert( false === YBY_Social_Login::sanitize_google( array( 'auto_link_existing_accounts' => array( '1' ) ) )['auto_link_existing_accounts'], 'Malformed association checkbox values must sanitize to false.' );
 };
 
 $tests['disabled_roles'] = static function () {
@@ -225,22 +230,33 @@ $tests['array_shape_security'] = static function () {
 $tests['activation_merge_and_autoload'] = static function () {
 	harness_reset();
 	$GLOBALS['yby_social_options'][ YBY_Social_Login::option_key() ] = array(
+		'add_to_login_page' => true,
 		'google' => array(
 			'client_id'      => 'existing.apps.googleusercontent.com',
 			'enabled'        => false,
 			'redirect_url'   => '/members/',
 			'select_account' => false,
+			'auto_link_existing_accounts' => true,
 		),
 	);
 	$options = YBY_Social_Login::get_options();
 	YBY_Social_Login::save( $options );
 	$saved = $GLOBALS['yby_social_options'][ YBY_Social_Login::option_key() ]['google'];
 
+	harness_assert( true === $GLOBALS['yby_social_options'][ YBY_Social_Login::option_key() ]['add_to_login_page'], 'Existing login-page setting must survive default merging.' );
 	harness_assert( 'existing.apps.googleusercontent.com' === $saved['client_id'], 'Existing valid client ID must survive default merging.' );
 	harness_assert( false === $saved['enabled'], 'Activation merging must not enable Google.' );
 	harness_assert( '/members/' === $saved['redirect_url'], 'Existing valid redirect must survive merging.' );
 	harness_assert( false === $saved['select_account'], 'Existing boolean settings must survive merging.' );
+	harness_assert( true === $saved['auto_link_existing_accounts'], 'Existing association setting must survive merging.' );
 	harness_assert( false === $GLOBALS['yby_social_autoload'][ YBY_Social_Login::option_key() ], 'Option autoload must be disabled.' );
+
+	$options = YBY_Social_Login::get_options();
+	$options['add_to_login_page'] = false;
+	YBY_Social_Login::save( $options );
+	$saved_after_general = $GLOBALS['yby_social_options'][ YBY_Social_Login::option_key() ];
+	harness_assert( 'existing.apps.googleusercontent.com' === $saved_after_general['google']['client_id'], 'General Settings save must preserve the existing Client ID.' );
+	harness_assert( '/members/' === $saved_after_general['google']['redirect_url'], 'General Settings save must preserve provider configuration.' );
 
 	harness_reset();
 	YBY_Social_Login::save( YBY_Social_Login::defaults() );
@@ -284,6 +300,9 @@ $tests['capability_and_nonce'] = static function () {
 	harness_assert( $blocked, 'Social Login page must require manage_options.' );
 	$source = file_get_contents( dirname( __DIR__ ) . '/admin/class-yby-social-login-admin.php' );
 	harness_assert( false !== strpos( $source, "check_admin_referer( 'yby_social_login_save_google'" ), 'Save action must require its nonce.' );
+	harness_assert( false !== strpos( $source, "check_admin_referer( 'yby_social_login_save_general'" ), 'General Settings save must require its dedicated nonce.' );
+	harness_assert( false !== strpos( $source, 'can_manage_settings()' ), 'General Settings save must remain behind manage_options.' );
+	harness_assert( false !== strpos( $source, 'YBY_Social_Login::get_options()' ), 'General Settings save must merge into the complete existing configuration.' );
 };
 
 $tests['view_scope'] = static function () {
@@ -295,6 +314,11 @@ $tests['view_scope'] = static function () {
 
 	harness_assert( false === strpos( $view, 'client_secret' ), 'Google page must not contain a secret credential field.' );
 	harness_assert( false === strpos( $view, 'name="client_secret"' ), 'Google page must not render a secret credential input.' );
+	harness_assert( false !== strpos( $view, '[yby_social_login provider="google"]' ), 'Canonical Social Login shortcode must appear on the overview.' );
+	harness_assert( false !== strpos( $view, 'type="button" class="button" id="yby-copy-social-login-shortcode"' ), 'Copy control must be a non-submit button.' );
+	harness_assert( false !== strpos( $view, 'Configure social sign-in providers and choose where login buttons appear.' ), 'Overview description must match the approved copy.' );
+	harness_assert( false !== strpos( $view, 'Automatically connect matching existing accounts' ), 'Google automatic association setting must render.' );
+	harness_assert( false !== strpos( $view, 'Privileged and custom roles are never connected automatically.' ), 'Automatic association warning must render.' );
 };
 
 $tests['public_scope_registration'] = static function () {

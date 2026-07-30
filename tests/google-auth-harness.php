@@ -4,6 +4,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'YBY_CORE_PLUGIN_DIR', dirname( __DIR__ ) . DIRECTORY_SEPARATOR );
+define( 'YBY_CORE_PLUGIN_URL', 'https://example.test/wp-content/plugins/yby-core/' );
+define( 'YBY_CORE_VERSION', '1.5.0-dev' );
 
 class WP_Error {
 	protected $code;
@@ -64,6 +66,7 @@ $GLOBALS['ga_transients']    = array();
 $GLOBALS['ga_routes']        = array();
 $GLOBALS['ga_shortcodes']    = array();
 $GLOBALS['ga_scripts']       = array();
+$GLOBALS['ga_styles']        = array();
 $GLOBALS['ga_users']         = array();
 $GLOBALS['ga_user_meta']     = array();
 $GLOBALS['ga_password_seed'] = 0;
@@ -79,6 +82,7 @@ $GLOBALS['ga_queried_id']    = 1;
 $GLOBALS['ga_post_content']  = '';
 $GLOBALS['ga_post_meta']     = array();
 $GLOBALS['ga_nocache_calls'] = 0;
+$GLOBALS['ga_add_meta_fail'] = false;
 $GLOBALS['ga_roles']         = array(
 	'administrator' => array(),
 	'editor'        => array(),
@@ -235,6 +239,29 @@ function update_user_meta( $user_id, $key, $value ) {
 	return true;
 }
 
+function get_user_meta( $user_id, $key, $single = false ) {
+	unset( $single );
+	return $GLOBALS['ga_user_meta'][ $user_id ][ $key ] ?? '';
+}
+
+function add_user_meta( $user_id, $key, $value, $unique = false ) {
+	if ( $GLOBALS['ga_add_meta_fail'] || ( $unique && isset( $GLOBALS['ga_user_meta'][ $user_id ][ $key ] ) ) ) {
+		return false;
+	}
+
+	$GLOBALS['ga_user_meta'][ $user_id ][ $key ] = $value;
+	return true;
+}
+
+function delete_user_meta( $user_id, $key, $value = '' ) {
+	if ( isset( $GLOBALS['ga_user_meta'][ $user_id ][ $key ] ) && ( '' === $value || $GLOBALS['ga_user_meta'][ $user_id ][ $key ] === $value ) ) {
+		unset( $GLOBALS['ga_user_meta'][ $user_id ][ $key ] );
+		return true;
+	}
+
+	return false;
+}
+
 function username_exists( $username ) {
 	foreach ( $GLOBALS['ga_users'] as $user ) {
 		if ( $user->user_login === $username ) {
@@ -312,6 +339,10 @@ function wp_enqueue_script( $handle, $src, $dependencies, $version, $in_footer )
 	$GLOBALS['ga_scripts'][ $handle ] = compact( 'src', 'dependencies', 'version', 'in_footer' );
 }
 
+function wp_enqueue_style( $handle, $src, $dependencies, $version ) {
+	$GLOBALS['ga_styles'][ $handle ] = compact( 'src', 'dependencies', 'version' );
+}
+
 function add_shortcode( $tag, $callback ) {
 	$GLOBALS['ga_shortcodes'][ $tag ] = $callback;
 }
@@ -346,6 +377,7 @@ function ga_reset() {
 	$GLOBALS['ga_routes']        = array();
 	$GLOBALS['ga_shortcodes']    = array();
 	$GLOBALS['ga_scripts']       = array();
+	$GLOBALS['ga_styles']        = array();
 	$GLOBALS['ga_users']         = array();
 	$GLOBALS['ga_user_meta']     = array();
 	$GLOBALS['ga_password_seed'] = 0;
@@ -361,13 +393,16 @@ function ga_reset() {
 	$GLOBALS['ga_post_content']  = '';
 	$GLOBALS['ga_post_meta']     = array();
 	$GLOBALS['ga_nocache_calls'] = 0;
+	$GLOBALS['ga_add_meta_fail'] = false;
 	$_COOKIE                     = array();
 	$_GET                        = array();
+	$_REQUEST                    = array();
+	$GLOBALS['pagenow']          = 'index.php';
 	YBY_Social_Login_Shortcodes::reset_request_state();
 	ga_set_settings();
 }
 
-function ga_set_settings( $overrides = array() ) {
+function ga_set_settings( $overrides = array(), $general = array() ) {
 	$settings = array_merge(
 		YBY_Social_Login::google_defaults(),
 		array(
@@ -381,7 +416,13 @@ function ga_set_settings( $overrides = array() ) {
 		),
 		$overrides
 	);
-	$GLOBALS['ga_options'][ YBY_Social_Login::option_key() ] = array( 'google' => $settings );
+	$GLOBALS['ga_options'][ YBY_Social_Login::option_key() ] = array_merge(
+		array(
+			'add_to_login_page' => false,
+			'google'            => $settings,
+		),
+		$general
+	);
 }
 
 function ga_base64url( $value ) {
@@ -534,9 +575,9 @@ $tests['safe_allowlisted_error_messages'] = static function () {
 		'invalid_google_token'             => 'Google identity verification failed.',
 		'email_required'                   => 'Google did not provide an email address',
 		'email_verification_required'      => 'Google could not confirm this account email.',
-		'existing_account_requires_login' => 'An account already exists with this email.',
+		'existing_account_requires_login' => 'An account already exists with this email, but Google sign-in is not linked to it.',
 		'identity_conflict'                => 'This Google account could not be matched safely.',
-		'role_not_allowed'                 => 'Google login is not available for this account role.',
+		'role_not_allowed'                 => 'Google login is not available for this account.',
 		'registration_failed'              => 'The account could not be created.',
 		'login_failed'                     => 'The account was verified, but sign-in could not be completed.',
 		'verification_unavailable'         => 'Google verification is temporarily unavailable.',
@@ -707,6 +748,184 @@ $tests['returning_conflict_and_existing_email'] = static function () {
 	$GLOBALS['ga_user_meta'][1] = array( '_yby_google_sub' => 'google-subject-123' );
 	$result = $service->authenticate( ga_claims( array( 'email' => 'admin@gmail.com' ) ), YBY_Social_Login::get_google_options() );
 	ga_assert( 'role_not_allowed' === ga_error_code( $result ), 'Disabled returning-user role must be rejected.' );
+};
+
+$tests['safe_existing_account_association'] = static function () {
+	ga_reset();
+	$service = new YBY_Google_Auth_Service();
+	$GLOBALS['ga_users'][1] = new WP_User( 1, 'existing-subscriber', 'person@gmail.com', array( 'subscriber' ) );
+	$GLOBALS['ga_user_meta'][1] = array(
+		'first_name'   => 'Original',
+		'last_name'    => 'Subscriber',
+		'display_name' => 'Original Subscriber',
+	);
+	$profile_before = array(
+		'login' => $GLOBALS['ga_users'][1]->user_login,
+		'email' => $GLOBALS['ga_users'][1]->user_email,
+		'roles' => $GLOBALS['ga_users'][1]->roles,
+		'meta'  => $GLOBALS['ga_user_meta'][1],
+	);
+	$settings = YBY_Social_Login::get_google_options();
+	$settings['auto_link_existing_accounts'] = true;
+	$result = $service->authenticate( ga_claims(), $settings );
+
+	ga_assert( $result instanceof WP_User && 1 === $result->ID, 'Enabled Gmail association must use the existing Subscriber.' );
+	ga_assert( 1 === count( $GLOBALS['ga_users'] ), 'Association must not create a duplicate WordPress user.' );
+	ga_assert( 'google-subject-123' === $GLOBALS['ga_user_meta'][1]['_yby_google_sub'], 'Association must write the verified Google sub.' );
+	ga_assert( 'google' === $GLOBALS['ga_user_meta'][1]['_yby_social_provider'], 'Association must record the Google provider.' );
+	ga_assert( isset( $GLOBALS['ga_user_meta'][1]['_yby_social_registered_at'], $GLOBALS['ga_user_meta'][1]['_yby_social_last_login_at'] ), 'Association timestamps must be stored.' );
+	ga_assert( 'https://lh3.googleusercontent.com/avatar' === $GLOBALS['ga_user_meta'][1]['_yby_social_avatar_url'], 'Valid provider avatar must be stored.' );
+	ga_assert( $profile_before['login'] === $GLOBALS['ga_users'][1]->user_login && $profile_before['email'] === $GLOBALS['ga_users'][1]->user_email && $profile_before['roles'] === $GLOBALS['ga_users'][1]->roles, 'Association must preserve login, email, and roles.' );
+	foreach ( $profile_before['meta'] as $key => $value ) {
+		ga_assert( $value === $GLOBALS['ga_user_meta'][1][ $key ], 'Association must preserve existing profile metadata: ' . $key );
+	}
+	ga_assert( 1 === count( $GLOBALS['ga_auth_cookies'] ), 'Association must establish one normal WordPress session.' );
+
+	$result = $service->authenticate( ga_claims( array( 'email' => 'changed@example.invalid' ) ), $settings );
+	ga_assert( $result instanceof WP_User && 1 === $result->ID && 1 === count( $GLOBALS['ga_users'] ), 'Returning login must resolve by Google sub rather than email.' );
+
+	ga_reset();
+	$GLOBALS['ga_roles']['customer'] = array();
+	$GLOBALS['ga_users'][1] = new WP_User( 1, 'existing-customer', 'person@example.org', array( 'customer' ) );
+	$GLOBALS['ga_user_meta'][1] = array();
+	$settings = YBY_Social_Login::get_google_options();
+	$settings['auto_link_existing_accounts'] = true;
+	$result = $service->authenticate( ga_claims( array( 'email' => 'person@example.org', 'hd' => 'example.org' ) ), $settings );
+	ga_assert( $result instanceof WP_User && 1 === $result->ID, 'Verified Workspace association must use the existing Customer.' );
+};
+
+$tests['association_role_and_identity_protection'] = static function () {
+	$service = new YBY_Google_Auth_Service();
+
+	foreach ( array( 'administrator', 'editor', 'author', 'contributor', 'shop_manager', 'social_manager', 'custom_role' ) as $role ) {
+		ga_reset();
+		$GLOBALS['ga_roles'][ $role ] = array();
+		$GLOBALS['ga_users'][1] = new WP_User( 1, 'blocked-user', 'person@gmail.com', array( $role ) );
+		$GLOBALS['ga_user_meta'][1] = array();
+		$settings = YBY_Social_Login::get_google_options();
+		$settings['auto_link_existing_accounts'] = true;
+		$result = $service->authenticate( ga_claims(), $settings );
+		ga_assert( 'role_not_allowed' === ga_error_code( $result ), 'Privileged or custom role must not be associated: ' . $role );
+		ga_assert( empty( $GLOBALS['ga_user_meta'][1] ) && empty( $GLOBALS['ga_auth_cookies'] ), 'Blocked role must receive no mapping or session: ' . $role );
+	}
+
+	ga_reset();
+	$GLOBALS['ga_users'][1] = new WP_User( 1, 'mixed-user', 'person@gmail.com', array( 'subscriber', 'editor' ) );
+	$GLOBALS['ga_user_meta'][1] = array();
+	$settings = YBY_Social_Login::get_google_options();
+	$settings['auto_link_existing_accounts'] = true;
+	$result = $service->authenticate( ga_claims(), $settings );
+	ga_assert( 'role_not_allowed' === ga_error_code( $result ), 'A mixed safe and privileged role set must be rejected.' );
+
+	ga_reset();
+	$GLOBALS['ga_users'][1] = new WP_User( 1, 'disabled-subscriber', 'person@gmail.com', array( 'subscriber' ) );
+	$GLOBALS['ga_user_meta'][1] = array();
+	$settings = YBY_Social_Login::get_google_options();
+	$settings['auto_link_existing_accounts'] = true;
+	$settings['disabled_roles'] = array( 'subscriber' );
+	$result = $service->authenticate( ga_claims(), $settings );
+	ga_assert( 'role_not_allowed' === ga_error_code( $result ), 'Explicitly disabled Subscriber must be rejected.' );
+
+	ga_reset();
+	$GLOBALS['ga_users'][1] = new WP_User( 1, 'different-sub', 'person@gmail.com', array( 'subscriber' ) );
+	$GLOBALS['ga_user_meta'][1] = array( '_yby_google_sub' => 'different-google-sub' );
+	$settings = YBY_Social_Login::get_google_options();
+	$settings['auto_link_existing_accounts'] = true;
+	$result = $service->authenticate( ga_claims(), $settings );
+	ga_assert( 'identity_conflict' === ga_error_code( $result ), 'An existing different Google sub must be rejected.' );
+	ga_assert( 'different-google-sub' === $GLOBALS['ga_user_meta'][1]['_yby_google_sub'], 'Existing Google identity must never be replaced.' );
+
+	ga_reset();
+	$GLOBALS['ga_users'][1] = new WP_User( 1, 'target-user', 'person@gmail.com', array( 'subscriber' ) );
+	$GLOBALS['ga_users'][2] = new WP_User( 2, 'mapped-user', 'mapped@gmail.com', array( 'subscriber' ) );
+	$GLOBALS['ga_user_meta'][1] = array();
+	$GLOBALS['ga_user_meta'][2] = array( '_yby_google_sub' => 'google-subject-123' );
+	$settings = YBY_Social_Login::get_google_options();
+	$settings['auto_link_existing_accounts'] = true;
+	$result = $service->authenticate( ga_claims(), $settings );
+	ga_assert( $result instanceof WP_User && 2 === $result->ID, 'A pre-existing sub mapping must remain authoritative over email.' );
+	ga_assert( empty( $GLOBALS['ga_user_meta'][1] ), 'Sub mapped elsewhere must not be added to the email-matched user.' );
+
+	ga_reset();
+	$GLOBALS['ga_users'][1] = new WP_User( 1, 'atomic-failure', 'person@gmail.com', array( 'subscriber' ) );
+	$GLOBALS['ga_user_meta'][1] = array();
+	$GLOBALS['ga_add_meta_fail'] = true;
+	$settings = YBY_Social_Login::get_google_options();
+	$settings['auto_link_existing_accounts'] = true;
+	$result = $service->authenticate( ga_claims(), $settings );
+	ga_assert( 'identity_conflict' === ga_error_code( $result ), 'Failed unique mapping write must return identity_conflict.' );
+	ga_assert( empty( $GLOBALS['ga_user_meta'][1] ), 'Failed unique mapping write must leave no partial identity.' );
+};
+
+$tests['wordpress_login_page_integration'] = static function () {
+	ga_reset();
+	$shortcode = new YBY_Social_Login_Shortcodes();
+	$GLOBALS['pagenow'] = 'wp-login.php';
+	ga_assert( false === $shortcode->login_page_is_eligible(), 'WordPress login integration must default disabled.' );
+	$shortcode->enqueue_login_page_assets();
+	ga_assert( empty( $GLOBALS['ga_styles'] ), 'Disabled integration must not load login-page CSS.' );
+
+	ga_set_settings( array(), array( 'add_to_login_page' => true ) );
+	ga_assert( true === $shortcode->login_page_is_eligible(), 'Enabled integration must allow the default login screen.' );
+	$shortcode->enqueue_login_page_assets();
+	ga_assert( 1 === count( $GLOBALS['ga_styles'] ) && isset( $GLOBALS['ga_styles']['yby-social-login-login-page'] ), 'Enabled integration must load exactly one scoped login-page stylesheet.' );
+	ob_start();
+	$shortcode->render_login_page();
+	$output = ob_get_clean();
+	ga_assert( 1 === substr_count( $output, 'id="g_id_onload"' ), 'WordPress login page must render one GIS configuration.' );
+	ga_assert( 1 === substr_count( $output, 'class="g_id_signin"' ), 'WordPress login page must render one official Google button.' );
+	ga_assert( false !== strpos( $output, 'data-width="280"' ), 'WordPress login button must retain the fixed 280px width.' );
+	ga_assert( false !== strpos( $output, '>Or<' ), 'WordPress login integration must render the approved separator.' );
+	ga_assert( 1 === count( $GLOBALS['ga_scripts'] ), 'WordPress login page must enqueue GIS exactly once.' );
+
+	foreach ( array( 'lostpassword', 'register', 'rp', 'resetpass', 'logout' ) as $action ) {
+		ga_reset();
+		ga_set_settings( array(), array( 'add_to_login_page' => true ) );
+		$GLOBALS['pagenow'] = 'wp-login.php';
+		$_REQUEST['action'] = $action;
+		ga_assert( false === $shortcode->login_page_is_eligible(), 'Google button must not render for login action: ' . $action );
+	}
+
+	ga_reset();
+	ga_set_settings( array(), array( 'add_to_login_page' => true ) );
+	$GLOBALS['pagenow'] = 'wp-login.php';
+	$_REQUEST['interim-login'] = '1';
+	ga_assert( false === $shortcode->login_page_is_eligible(), 'Interim login must not render Social Login.' );
+
+	ga_reset();
+	ga_set_settings( array( 'enabled' => false ), array( 'add_to_login_page' => true ) );
+	$GLOBALS['pagenow'] = 'wp-login.php';
+	ga_assert( false === $shortcode->login_page_is_eligible(), 'Disabled Google provider must suppress login-page output.' );
+
+	ga_reset();
+	ga_set_settings( array( 'client_id' => '' ), array( 'add_to_login_page' => true ) );
+	$GLOBALS['pagenow'] = 'wp-login.php';
+	ga_assert( false === $shortcode->login_page_is_eligible(), 'Missing Client ID must suppress login-page output.' );
+};
+
+$tests['wordpress_login_blocked_error_ux'] = static function () {
+	foreach (
+		array(
+			'existing_account_requires_login' => 'An account already exists with this email, but Google sign-in is not linked to it. Please use the existing WordPress login.',
+			'role_not_allowed'                 => 'Google login is not available for this account. Please use the existing WordPress login.',
+		) as $code => $message
+	) {
+		ga_reset();
+		ga_set_settings( array(), array( 'add_to_login_page' => true ) );
+		$GLOBALS['pagenow'] = 'wp-login.php';
+		$_GET['yby_social_login'] = $code;
+		ob_start();
+		( new YBY_Social_Login_Shortcodes() )->render_login_page();
+		$output = ob_get_clean();
+		ga_assert( false !== strpos( $output, $message ), 'Blocked login result must show the approved safe message.' );
+		ga_assert( false === strpos( $output, 'g_id_signin' ) && false === strpos( $output, 'g_id_onload' ), 'Blocked login result must hide the repeated Google button.' );
+		ga_assert( empty( $GLOBALS['ga_scripts'] ), 'Blocked login result must not enqueue GIS.' );
+	}
+
+	$source = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-social-login-shortcodes.php' );
+	ga_assert( false === strpos( $source, 'login_form_top' ) && false === strpos( $source, 'login_form_middle' ), 'Integration must not replace standard WordPress username/password fields.' );
+	$login_css = file_get_contents( dirname( __DIR__ ) . '/public/css/yby-social-login-login-page.css' );
+	ga_assert( false !== strpos( $login_css, '.yby-social-login-login-page' ) && false !== strpos( $login_css, 'width: 280px' ) && false !== strpos( $login_css, 'min-height: 44px' ), 'Login-page CSS must remain scoped with stable button dimensions.' );
 };
 
 $tests['controller_nonce_redirect_and_reuse'] = static function () use ( $private_key, $public_key, $clock ) {

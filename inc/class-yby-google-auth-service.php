@@ -51,8 +51,18 @@ class YBY_Google_Auth_Service {
 			return new \WP_Error( 'email_verification_required' );
 		}
 
-		if ( get_user_by( 'email', $email ) ) {
-			return new \WP_Error( 'existing_account_requires_login' );
+		$existing_user = get_user_by( 'email', $email );
+
+		if ( $existing_user ) {
+			if ( empty( $settings['auto_link_existing_accounts'] ) ) {
+				return new \WP_Error( 'existing_account_requires_login' );
+			}
+
+			if ( ! $existing_user instanceof \WP_User ) {
+				return new \WP_Error( 'identity_conflict' );
+			}
+
+			return $this->associate_existing_user( $existing_user, $claims, $settings );
 		}
 
 		return $this->register_user( $claims, $settings );
@@ -75,6 +85,77 @@ class YBY_Google_Auth_Service {
 		update_user_meta( $user->ID, '_yby_social_last_login_at', gmdate( 'c' ) );
 
 		return $this->establish_session( $user );
+	}
+
+	/**
+	 * Associate a verified identity with one existing safe-role account.
+	 *
+	 * @param \WP_User            $user Existing WordPress user.
+	 * @param array<string, mixed> $claims Verified token claims.
+	 * @param array<string, mixed> $settings Google settings.
+	 * @return \WP_User|\WP_Error
+	 */
+	protected function associate_existing_user( $user, $claims, $settings ) {
+		$safe_roles     = YBY_Social_Login::allowed_registration_roles();
+		$user_roles     = array_values( array_unique( array_map( 'sanitize_key', (array) $user->roles ) ) );
+		$disabled_roles = isset( $settings['disabled_roles'] ) && is_array( $settings['disabled_roles'] ) ? $settings['disabled_roles'] : array();
+
+		if ( empty( $user_roles ) || array_diff( $user_roles, $safe_roles ) || array_intersect( $user_roles, $disabled_roles ) ) {
+			return new \WP_Error( 'role_not_allowed' );
+		}
+
+		$sub            = (string) $claims['sub'];
+		$existing_sub   = (string) get_user_meta( $user->ID, '_yby_google_sub', true );
+		$mapped_users   = $this->get_users_by_sub( $sub );
+
+		if ( '' !== $existing_sub && ! hash_equals( $existing_sub, $sub ) ) {
+			return new \WP_Error( 'identity_conflict' );
+		}
+
+		if ( ! empty( $mapped_users ) ) {
+			return new \WP_Error( 'identity_conflict' );
+		}
+
+		if ( ! add_user_meta( $user->ID, '_yby_google_sub', $sub, true ) ) {
+			return new \WP_Error( 'identity_conflict' );
+		}
+
+		$mapped_users = $this->get_users_by_sub( $sub );
+
+		if ( 1 !== count( $mapped_users ) || (int) $mapped_users[0]->ID !== (int) $user->ID ) {
+			delete_user_meta( $user->ID, '_yby_google_sub', $sub );
+			return new \WP_Error( 'identity_conflict' );
+		}
+
+		$timestamp = gmdate( 'c' );
+		update_user_meta( $user->ID, '_yby_social_provider', 'google' );
+		update_user_meta( $user->ID, '_yby_social_registered_at', $timestamp );
+		update_user_meta( $user->ID, '_yby_social_last_login_at', $timestamp );
+
+		$picture = $this->sanitize_picture_url( $claims['picture'] ?? '' );
+
+		if ( '' !== $picture ) {
+			update_user_meta( $user->ID, '_yby_social_avatar_url', $picture );
+		}
+
+		return $this->establish_session( $user );
+	}
+
+	/**
+	 * Return at most two users mapped to a Google subject.
+	 *
+	 * @param string $sub Google subject.
+	 * @return array<int, \WP_User>
+	 */
+	protected function get_users_by_sub( $sub ) {
+		return get_users(
+			array(
+				'meta_key'   => '_yby_google_sub',
+				'meta_value' => $sub,
+				'number'     => 2,
+				'fields'     => 'all',
+			)
+		);
 	}
 
 	/**

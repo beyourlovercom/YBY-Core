@@ -23,8 +23,12 @@ The active development line adds secure Google authentication:
 - local RS256 ID Token verification with cached Google PEM certificates
 - Google `sub` identity mapping, restricted WordPress registration, and standard login sessions
 - double-submit CSRF, short-lived login nonce, authoritative-email, disabled-role, and internal redirect enforcement
+- optional integration with the standard WordPress login page
+- canonical `[yby_social_login provider="google"]` placement from WordPress, templates, or Bricks
+- optional verified-email association for existing Subscriber and Customer accounts only
+- Google `sub` identity lookup for every returning login after association
 
-The development implementation stores the signed provider picture URL for future display but does not globally replace WordPress avatars. Client Secret, Google API authorization, access or refresh token storage, account linking, One Tap, and Facebook, X, or TikTok authentication are not implemented.
+The login-page integration and safe existing-account association settings default to disabled. Privileged, custom, mixed-role, and explicitly disabled-role accounts are never associated automatically. The development implementation stores the signed provider picture URL for future display but does not globally replace WordPress avatars. Client Secret, Google API authorization, access or refresh token storage, manual account linking or unlinking, One Tap, and Facebook, X, or TikTok authentication are not implemented.
 
 ## v1.4.0 purpose
 

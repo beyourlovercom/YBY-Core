@@ -1,0 +1,19 @@
+.yby-social-login-login-page {
+  box-sizing: border-box;
+  margin: 20px auto 0;
+  max-width: 100%;
+  text-align: center;
+}
+
+.yby-social-login-login-page .yby-social-login--google {
+  width: 280px;
+  max-width: 100%;
+  min-height: 44px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.yby-social-login-login-page__separator {
+  margin: 0 0 14px;
+  color: #646970;
+}

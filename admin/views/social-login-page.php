@@ -18,7 +18,62 @@ $page_url = admin_url( 'admin.php?page=' . YBY_Social_Login_Admin::page_slug() )
 
 	<?php if ( 'google' !== $provider ) : ?>
 		<h1><?php esc_html_e( 'Social Login', 'yby-core' ); ?></h1>
-		<p><?php esc_html_e( 'Configure sign-in providers for this site. Authentication flows are introduced separately after their administration foundation is approved.', 'yby-core' ); ?></p>
+		<p><?php esc_html_e( 'Configure social sign-in providers and choose where login buttons appear.', 'yby-core' ); ?></p>
+
+		<div class="card">
+			<h2><?php esc_html_e( 'General Settings', 'yby-core' ); ?></h2>
+			<form method="post" action="<?php echo esc_url( $page_url ); ?>">
+				<?php wp_nonce_field( 'yby_social_login_save_general', 'yby_social_login_general_nonce' ); ?>
+				<label>
+					<input type="checkbox" name="yby_social_login_options[add_to_login_page]" value="1" <?php checked( $options['add_to_login_page'] ); ?>>
+					<strong><?php esc_html_e( 'Add to WordPress login page', 'yby-core' ); ?></strong>
+				</label>
+				<p class="description"><?php esc_html_e( 'Display enabled social login providers on the standard WordPress login page.', 'yby-core' ); ?></p>
+				<?php submit_button( __( 'Save Changes', 'yby-core' ), 'primary', 'yby_social_login_general_submit' ); ?>
+			</form>
+		</div>
+
+		<div class="card">
+			<h2><?php esc_html_e( 'Shortcode', 'yby-core' ); ?></h2>
+			<p><?php esc_html_e( 'Add this shortcode to any WordPress page, post, template, or Bricks Shortcode element.', 'yby-core' ); ?></p>
+			<p>
+				<code id="yby-social-login-shortcode"><?php echo esc_html( '[yby_social_login provider="google"]' ); ?></code>
+				<button type="button" class="button" id="yby-copy-social-login-shortcode"><?php esc_html_e( 'Copy', 'yby-core' ); ?></button>
+				<span id="yby-social-login-shortcode-copied" hidden><?php esc_html_e( 'Copied', 'yby-core' ); ?></span>
+			</p>
+			<script>
+				(function () {
+					var button = document.getElementById('yby-copy-social-login-shortcode');
+					var value = document.getElementById('yby-social-login-shortcode');
+					var confirmation = document.getElementById('yby-social-login-shortcode-copied');
+
+					if (!button || !value || !confirmation) {
+						return;
+					}
+
+					button.addEventListener('click', function () {
+						var text = value.textContent || '';
+						var copied = navigator.clipboard && window.isSecureContext
+							? navigator.clipboard.writeText(text)
+							: Promise.reject();
+
+						copied.catch(function () {
+							var input = document.createElement('textarea');
+							input.value = text;
+							input.setAttribute('readonly', '');
+							input.style.position = 'fixed';
+							input.style.opacity = '0';
+							document.body.appendChild(input);
+							input.select();
+							document.execCommand('copy');
+							document.body.removeChild(input);
+						}).then(function () {
+							confirmation.hidden = false;
+						});
+					});
+				}());
+			</script>
+		</div>
 
 		<div class="card">
 			<h2><?php esc_html_e( 'Google', 'yby-core' ); ?></h2>
@@ -69,6 +124,14 @@ $page_url = admin_url( 'admin.php?page=' . YBY_Social_Login_Admin::page_slug() )
 					<td>
 						<label><input type="checkbox" name="yby_social_login_options[google][select_account]" value="1" <?php checked( $google_options['select_account'] ); ?>> <?php esc_html_e( 'Select account on each login', 'yby-core' ); ?></label>
 						<p class="description"><?php esc_html_e( 'Allow users to choose which Google account to use.', 'yby-core' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Automatically connect matching existing accounts', 'yby-core' ); ?></th>
+					<td>
+						<label><input type="checkbox" name="yby_social_login_options[google][auto_link_existing_accounts]" value="1" <?php checked( $google_options['auto_link_existing_accounts'] ); ?>> <?php esc_html_e( 'Automatically connect matching existing accounts', 'yby-core' ); ?></label>
+						<p class="description"><?php esc_html_e( 'Automatically connect an existing Subscriber or Customer when Google confirms ownership of the matching Gmail or Google Workspace email address.', 'yby-core' ); ?></p>
+						<p><strong><?php esc_html_e( 'Privileged and custom roles are never connected automatically.', 'yby-core' ); ?></strong></p>
 					</td>
 				</tr>
 				<tr>
@@ -129,8 +192,8 @@ $page_url = admin_url( 'admin.php?page=' . YBY_Social_Login_Admin::page_slug() )
 		$origin     = isset( $home_parts['scheme'], $home_parts['host'] ) ? $home_parts['scheme'] . '://' . $home_parts['host'] . ( isset( $home_parts['port'] ) ? ':' . absint( $home_parts['port'] ) : '' ) : home_url( '/' );
 		?>
 		<p><strong><?php esc_html_e( 'Authorized JavaScript Origin:', 'yby-core' ); ?></strong> <code><?php echo esc_html( $origin ); ?></code></p>
-		<p><strong><?php esc_html_e( 'Planned Login Endpoint:', 'yby-core' ); ?></strong> <code><?php echo esc_html( rest_url( 'yby/v1/auth/google' ) ); ?></code></p>
+		<p><strong><?php esc_html_e( 'Login Endpoint:', 'yby-core' ); ?></strong> <code><?php echo esc_html( rest_url( 'yby/v1/auth/google' ) ); ?></code></p>
 		<p><strong><?php esc_html_e( 'Shortcode:', 'yby-core' ); ?></strong> <code>[yby_social_login provider="google"]</code></p>
-		<p class="description"><?php esc_html_e( 'The endpoint and shortcode are planned for the Google authentication implementation phase.', 'yby-core' ); ?></p>
+		<p class="description"><?php esc_html_e( 'The unified shortcode is the canonical Social Login embed.', 'yby-core' ); ?></p>
 	<?php endif; ?>
 </div>

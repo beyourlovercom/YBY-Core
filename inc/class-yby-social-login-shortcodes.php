@@ -43,6 +43,73 @@ class YBY_Social_Login_Shortcodes {
 	public function register() {
 		add_shortcode( 'yby_social_login', array( $this, 'render' ) );
 		add_action( 'template_redirect', array( $this, 'maybe_disable_page_cache' ), 0 );
+		add_action( 'login_form', array( $this, 'render_login_page' ) );
+		add_action( 'login_enqueue_scripts', array( $this, 'enqueue_login_page_assets' ) );
+	}
+
+	/**
+	 * Render Social Login below the default WordPress login fields.
+	 *
+	 * @return void
+	 */
+	public function render_login_page() {
+		if ( ! $this->login_page_is_eligible() ) {
+			return;
+		}
+
+		$result = $this->get_status_code();
+
+		echo '<div class="yby-social-login-login-page">';
+
+		if ( $this->is_blocked_login_result( $result ) ) {
+			echo $this->render_status_message(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Method returns escaped allowlisted markup.
+		} else {
+			echo '<p class="yby-social-login-login-page__separator">' . esc_html__( 'Or', 'yby-core' ) . '</p>';
+			echo $this->render( array( 'provider' => 'google' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Renderer escapes all dynamic values.
+		}
+
+		echo '</div>';
+	}
+
+	/**
+	 * Load the scoped login-page stylesheet only for an active integration.
+	 *
+	 * @return void
+	 */
+	public function enqueue_login_page_assets() {
+		if ( ! $this->login_page_is_eligible() || $this->is_blocked_login_result( $this->get_status_code() ) ) {
+			return;
+		}
+
+		$this->disable_page_cache();
+		wp_enqueue_style(
+			'yby-social-login-login-page',
+			YBY_CORE_PLUGIN_URL . 'public/css/yby-social-login-login-page.css',
+			array(),
+			YBY_CORE_VERSION
+		);
+	}
+
+	/**
+	 * Confirm that this is the default logged-out WordPress login form.
+	 *
+	 * @return bool
+	 */
+	public function login_page_is_eligible() {
+		$options = YBY_Social_Login::get_options();
+		$action  = isset( $_REQUEST['action'] ) ? sanitize_key( wp_unslash( $_REQUEST['action'] ) ) : 'login';
+
+		if (
+			empty( $options['add_to_login_page'] ) ||
+			! $this->google_login_is_enabled() ||
+			is_user_logged_in() ||
+			'login' !== $action ||
+			! empty( $_REQUEST['interim-login'] )
+		) {
+			return false;
+		}
+
+		return ! isset( $GLOBALS['pagenow'] ) || 'wp-login.php' === $GLOBALS['pagenow'];
 	}
 
 	/**
@@ -149,7 +216,7 @@ class YBY_Social_Login_Shortcodes {
 	 * @return string
 	 */
 	protected function render_status_message() {
-		$code = isset( $_GET['yby_social_login'] ) ? sanitize_key( wp_unslash( $_GET['yby_social_login'] ) ) : '';
+		$code = $this->get_status_code();
 
 		if ( 'success' === $code ) {
 			return '<p class="yby-social-login__message yby-social-login__message--success">' . esc_html__( 'You are signed in.', 'yby-core' ) . '</p>';
@@ -164,9 +231,9 @@ class YBY_Social_Login_Shortcodes {
 			'invalid_google_token'             => 'Google identity verification failed.',
 			'email_required'                   => 'Google did not provide an email address for this account.',
 			'email_verification_required'      => 'Google could not confirm this account email.',
-			'existing_account_requires_login' => 'An account already exists with this email. Sign in using the existing account first.',
+			'existing_account_requires_login' => 'An account already exists with this email, but Google sign-in is not linked to it. Please use the existing WordPress login.',
 			'identity_conflict'                => 'This Google account could not be matched safely. Please contact site support.',
-			'role_not_allowed'                 => 'Google login is not available for this account role.',
+			'role_not_allowed'                 => 'Google login is not available for this account. Please use the existing WordPress login.',
 			'registration_failed'              => 'The account could not be created.',
 			'login_failed'                     => 'The account was verified, but sign-in could not be completed.',
 			'verification_unavailable'         => 'Google verification is temporarily unavailable. Please try again later.',
@@ -177,6 +244,25 @@ class YBY_Social_Login_Shortcodes {
 		}
 
 		return '<p class="yby-social-login__message yby-social-login__message--error">' . esc_html__( $messages[ $code ], 'yby-core' ) . '</p>';
+	}
+
+	/**
+	 * Return the allowlisted public login result key.
+	 *
+	 * @return string
+	 */
+	protected function get_status_code() {
+		return isset( $_GET['yby_social_login'] ) ? sanitize_key( wp_unslash( $_GET['yby_social_login'] ) ) : '';
+	}
+
+	/**
+	 * Determine whether a result should suppress another Google attempt.
+	 *
+	 * @param string $result Public result key.
+	 * @return bool
+	 */
+	protected function is_blocked_login_result( $result ) {
+		return in_array( $result, array( 'existing_account_requires_login', 'role_not_allowed' ), true );
 	}
 
 	/**

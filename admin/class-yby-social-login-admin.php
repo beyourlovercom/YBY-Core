@@ -87,6 +87,18 @@ class YBY_Social_Login_Admin {
 		$notice      = '';
 		$notice_type = 'success';
 
+		if ( '' === $provider && isset( $_POST['yby_social_login_general_submit'] ) ) {
+			check_admin_referer( 'yby_social_login_save_general', 'yby_social_login_general_nonce' );
+
+			$raw_all   = wp_unslash( $_POST['yby_social_login_options'] ?? array() );
+			$options   = YBY_Social_Login::get_options();
+			$raw_value = is_array( $raw_all ) ? ( $raw_all['add_to_login_page'] ?? false ) : false;
+
+			$options['add_to_login_page'] = in_array( $raw_value, array( true, 1, '1', 'on' ), true );
+			YBY_Social_Login::save( $options );
+			$notice = __( 'General Social Login settings saved.', 'yby-core' );
+		}
+
 		if ( 'google' === $provider && isset( $_POST['yby_social_login_submit'] ) ) {
 			check_admin_referer( 'yby_social_login_save_google', 'yby_social_login_nonce' );
 

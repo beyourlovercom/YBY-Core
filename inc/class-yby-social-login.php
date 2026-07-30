@@ -35,7 +35,8 @@ class YBY_Social_Login {
 	 */
 	public static function defaults() {
 		return array(
-			'google' => self::google_defaults(),
+			'add_to_login_page' => false,
+			'google'            => self::google_defaults(),
 		);
 	}
 
@@ -51,15 +52,16 @@ class YBY_Social_Login {
 		);
 
 		return array(
-			'enabled'            => false,
-			'client_id'          => '',
-			'select_account'     => true,
-			'username_prefix'    => 'google_',
-			'fallback_prefix'    => 'user_',
-			'profile_image_size' => 'default',
-			'default_role'       => 'subscriber',
-			'disabled_roles'     => array_values( $disabled_roles ),
-			'redirect_url'       => '',
+			'enabled'                     => false,
+			'client_id'                   => '',
+			'select_account'              => true,
+			'auto_link_existing_accounts' => false,
+			'username_prefix'             => 'google_',
+			'fallback_prefix'             => 'user_',
+			'profile_image_size'          => 'default',
+			'default_role'                => 'subscriber',
+			'disabled_roles'              => array_values( $disabled_roles ),
+			'redirect_url'                => '',
 		);
 	}
 
@@ -153,7 +155,8 @@ class YBY_Social_Login {
 		$options = is_array( $options ) ? $options : array();
 
 		return array(
-			'google' => self::sanitize_google( $options['google'] ?? array() ),
+			'add_to_login_page' => self::sanitize_checkbox( $options['add_to_login_page'] ?? false ),
+			'google'            => self::sanitize_google( $options['google'] ?? array() ),
 		);
 	}
 
@@ -186,15 +189,16 @@ class YBY_Social_Login {
 		}
 
 		return array(
-			'enabled'            => self::sanitize_checkbox( $options['enabled'] ?? false ) && '' !== $client,
-			'client_id'          => $client,
-			'select_account'     => self::sanitize_checkbox( $options['select_account'] ?? false ),
-			'username_prefix'    => self::sanitize_prefix( $options['username_prefix'] ?? '', $defaults['username_prefix'] ),
-			'fallback_prefix'    => self::sanitize_prefix( $options['fallback_prefix'] ?? '', $defaults['fallback_prefix'] ),
-			'profile_image_size' => $size,
-			'default_role'       => $role,
-			'disabled_roles'     => $roles,
-			'redirect_url'       => self::sanitize_internal_redirect( $options['redirect_url'] ?? '' ),
+			'enabled'                     => self::sanitize_checkbox( $options['enabled'] ?? false ) && '' !== $client,
+			'client_id'                   => $client,
+			'select_account'              => self::sanitize_checkbox( $options['select_account'] ?? false ),
+			'auto_link_existing_accounts' => self::sanitize_checkbox( $options['auto_link_existing_accounts'] ?? false ),
+			'username_prefix'             => self::sanitize_prefix( $options['username_prefix'] ?? '', $defaults['username_prefix'] ),
+			'fallback_prefix'             => self::sanitize_prefix( $options['fallback_prefix'] ?? '', $defaults['fallback_prefix'] ),
+			'profile_image_size'          => $size,
+			'default_role'                => $role,
+			'disabled_roles'              => $roles,
+			'redirect_url'                => self::sanitize_internal_redirect( $options['redirect_url'] ?? '' ),
 		);
 	}
 
