@@ -9,10 +9,26 @@ function apply_filters( $tag, $value ) { return $value; }
 function get_option( $key, $default = null ) { return $default; }
 function __( $value ) { return $value; }
 $dir = dirname( __DIR__ );
+$main = file_get_contents( $dir . '/yby-core.php' );
+$database = file_get_contents( $dir . '/inc/class-yby-database.php' );
 require_once $dir . '/inc/class-yby-inquiry-field-manager.php';
 require_once $dir . '/inc/class-yby-inquiry-preset-manager.php';
 require_once $dir . '/inc/class-yby-inquiry-lead-mapper.php';
 function bottle_assert( $test, $message ) { if ( ! $test ) { throw new RuntimeException( $message ); } }
+bottle_assert(
+	false !== strpos(
+		$main,
+		"define( 'YBY_DATABASE_VERSION', '1.2.0' );"
+	),
+	'Bottle page_profile migration requires database version 1.2.0.'
+);
+bottle_assert(
+	false !== strpos(
+		$database,
+		"page_profile varchar(100) DEFAULT ''"
+	),
+	'Bottle page_profile column must exist in the leads schema.'
+);
 $fields = new YBY_Inquiry_Field_Manager();
 $presets = new YBY_Inquiry_Preset_Manager( $fields );
 $oem = $presets->get_preset( 'bottle_oem_inquiry' );
