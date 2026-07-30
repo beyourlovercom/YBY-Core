@@ -1355,7 +1355,7 @@ $tests['schema_and_regression_boundary'] = static function () {
 	$css        = file_get_contents( dirname( __DIR__ ) . '/public/assets/css/yby-core-public.css' );
 	$all        = $controller . $verifier . $service;
 
-	ga_assert( false !== strpos( $main, "define( 'YBY_DATABASE_VERSION', '1.1.0' );" ), 'Database version must remain 1.1.0.' );
+	ga_assert( false !== strpos( $main, "define( 'YBY_DATABASE_VERSION', '1.2.0' );" ), 'Database version must remain 1.2.0.' );
 	ga_assert( false === stripos( $all, 'CREATE TABLE' ), 'Google authentication must not create a database table.' );
 	ga_assert( false === stripos( $all, 'client_secret' ), 'No Client Secret may exist.' );
 	ga_assert( false === stripos( $all, 'tokeninfo' ), 'Production verification must not depend on tokeninfo.' );
