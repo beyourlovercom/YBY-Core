@@ -3,6 +3,7 @@
 
   var readableChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   var debugLabel = "[YBY Lead SDK]";
+  var whatsAppSummaryFields = ["country", "crop", "farm_size", "water_source", "recommended_system", "estimated_range"];
 
   function getRuntime() {
     return window.YBYCoreConfig || {};
@@ -129,6 +130,39 @@
     } catch (error) {}
   }
 
+  function getConfirmedWhatsAppProjectSummary(summary, confirmedFields) {
+    var input = summary && typeof summary === "object" && !Array.isArray(summary) ? summary : {};
+    var confirmed = Array.isArray(confirmedFields) ? confirmedFields : [];
+    var confirmedLookup = {};
+    var output = {};
+
+    confirmed.forEach(function (key) {
+      var normalizedKey = safeString(key, 80).toLowerCase();
+
+      if (whatsAppSummaryFields.indexOf(normalizedKey) !== -1) {
+        confirmedLookup[normalizedKey] = true;
+      }
+    });
+
+    whatsAppSummaryFields.forEach(function (key) {
+      if (confirmedLookup[key]) {
+        output[key] = safeString(input[key], 180);
+      }
+    });
+
+    return output;
+  }
+
+  function saveConfirmedWhatsAppProjectSummary(caseId, summary, confirmedFields) {
+    setSessionItem(
+      "yby_whatsapp_project_summary",
+      JSON.stringify({
+        case_id: normalizeCaseId(caseId),
+        project_summary: getConfirmedWhatsAppProjectSummary(summary, confirmedFields)
+      })
+    );
+  }
+
   function validatePayload(payload) {
     var input = payload && typeof payload === "object" ? payload : {};
     var output = {};
@@ -182,6 +216,8 @@
       "crop",
       "farm_size",
       "water_source",
+      "recommended_system",
+      "estimated_range",
       "message",
       "utm_source",
       "utm_medium",
@@ -199,6 +235,16 @@
 
     if (typeof input.fields !== "undefined") {
       output.fields = sanitizeStructuredFields(input.fields);
+    }
+
+    if (input.project_summary && typeof input.project_summary === "object" && !Array.isArray(input.project_summary)) {
+      output.project_summary = input.project_summary;
+    }
+
+    if (typeof input.project_summary_confirmed_fields !== "undefined") {
+      output.project_summary_confirmed_fields = Array.isArray(input.project_summary_confirmed_fields)
+        ? input.project_summary_confirmed_fields
+        : [];
     }
 
     return output;
@@ -286,6 +332,14 @@
     if (input.fields && Object.keys(input.fields).length) {
       output.fields = input.fields;
     }
+
+    output.project_summary = getConfirmedWhatsAppProjectSummary(
+      input.project_summary,
+      input.project_summary_confirmed_fields
+    );
+    output.project_summary_confirmed_fields = Array.isArray(input.project_summary_confirmed_fields)
+      ? input.project_summary_confirmed_fields
+      : [];
 
     return output;
   }
@@ -403,6 +457,12 @@
       if (!caseId) {
         caseId = sdk.setCaseId(sdk.createCaseId());
       }
+
+      saveConfirmedWhatsAppProjectSummary(
+        caseId,
+        safeInput.project_summary,
+        safeInput.project_summary_confirmed_fields
+      );
 
       return {
         first_name: firstName || safeInput.name || "",
