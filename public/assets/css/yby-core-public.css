@@ -1,6 +1,11 @@
 /*
  * YBY Core public CSS
  *
- * MVP intentionally ships without frontend styling.
  * Page styling remains owned by the active theme and approved YBY CSS framework.
  */
+
+.yby-social-login--google {
+  width: 280px;
+  max-width: 100%;
+  min-height: 44px;
+}

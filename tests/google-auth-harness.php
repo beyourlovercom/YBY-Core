@@ -70,8 +70,15 @@ $GLOBALS['ga_password_seed'] = 0;
 $GLOBALS['ga_current_user']  = 0;
 $GLOBALS['ga_auth_cookies']  = array();
 $GLOBALS['ga_actions']       = array();
+$GLOBALS['ga_registered_actions'] = array();
 $GLOBALS['ga_ssl']           = true;
 $GLOBALS['ga_logged_in']     = false;
+$GLOBALS['ga_is_admin']      = false;
+$GLOBALS['ga_is_singular']   = true;
+$GLOBALS['ga_queried_id']    = 1;
+$GLOBALS['ga_post_content']  = '';
+$GLOBALS['ga_post_meta']     = array();
+$GLOBALS['ga_nocache_calls'] = 0;
 $GLOBALS['ga_roles']         = array(
 	'administrator' => array(),
 	'editor'        => array(),
@@ -255,12 +262,50 @@ function do_action( $hook ) {
 	$GLOBALS['ga_actions'][] = array( 'hook' => $hook, 'args' => array_slice( func_get_args(), 1 ) );
 }
 
+function add_action( $hook, $callback, $priority = 10 ) {
+	$GLOBALS['ga_registered_actions'][ $hook ][] = compact( 'callback', 'priority' );
+}
+
 function shortcode_atts( $defaults, $attributes ) {
 	return array_merge( $defaults, is_array( $attributes ) ? $attributes : array() );
 }
 
+function shortcode_parse_atts( $text ) {
+	$attributes = array();
+
+	if ( preg_match( '/\bprovider\s*=\s*(?:"([^"]+)"|\'([^\']+)\'|([^\s]+))/i', (string) $text, $match ) ) {
+		$attributes['provider'] = $match[1] ?: ( $match[2] ?: $match[3] );
+	}
+
+	return $attributes;
+}
+
 function is_user_logged_in() {
 	return $GLOBALS['ga_logged_in'];
+}
+
+function is_admin() {
+	return $GLOBALS['ga_is_admin'];
+}
+
+function is_singular() {
+	return $GLOBALS['ga_is_singular'];
+}
+
+function get_queried_object_id() {
+	return $GLOBALS['ga_queried_id'];
+}
+
+function get_post_field( $field, $post_id ) {
+	return 'post_content' === $field && (int) $post_id === (int) $GLOBALS['ga_queried_id'] ? $GLOBALS['ga_post_content'] : '';
+}
+
+function get_post_meta( $post_id, $key ) {
+	return $GLOBALS['ga_post_meta'][ (int) $post_id ][ $key ] ?? '';
+}
+
+function nocache_headers() {
+	$GLOBALS['ga_nocache_calls']++;
 }
 
 function wp_enqueue_script( $handle, $src, $dependencies, $version, $in_footer ) {
@@ -307,8 +352,15 @@ function ga_reset() {
 	$GLOBALS['ga_current_user']  = 0;
 	$GLOBALS['ga_auth_cookies']  = array();
 	$GLOBALS['ga_actions']       = array();
+	$GLOBALS['ga_registered_actions'] = array();
 	$GLOBALS['ga_ssl']           = true;
 	$GLOBALS['ga_logged_in']     = false;
+	$GLOBALS['ga_is_admin']      = false;
+	$GLOBALS['ga_is_singular']   = true;
+	$GLOBALS['ga_queried_id']    = 1;
+	$GLOBALS['ga_post_content']  = '';
+	$GLOBALS['ga_post_meta']     = array();
+	$GLOBALS['ga_nocache_calls'] = 0;
 	$_COOKIE                     = array();
 	$_GET                        = array();
 	YBY_Social_Login_Shortcodes::reset_request_state();
@@ -392,9 +444,21 @@ $clock      = static function () {
 
 $tests = array();
 
+$tests['unrelated_page_remains_cacheable'] = static function () {
+	ga_reset();
+	$shortcode = new YBY_Social_Login_Shortcodes();
+	$GLOBALS['ga_post_content'] = '<p>Unrelated Bottle page.</p>';
+	$shortcode->maybe_disable_page_cache();
+	ga_assert( 0 === $GLOBALS['ga_nocache_calls'], 'Unrelated pages must remain cacheable.' );
+	ga_assert( empty( $GLOBALS['ga_actions'] ), 'Unrelated pages must not signal LiteSpeed no-cache.' );
+};
+
 $tests['shortcode_visibility_and_script_scope'] = static function () {
 	ga_reset();
 	$shortcode = new YBY_Social_Login_Shortcodes();
+	$shortcode->register();
+	ga_assert( isset( $GLOBALS['ga_registered_actions']['template_redirect'][0] ), 'Social Login must register an early cache-control hook.' );
+	ga_assert( 0 === $GLOBALS['ga_registered_actions']['template_redirect'][0]['priority'], 'Cache-control hook must run at the earliest template redirect priority.' );
 	ga_set_settings( array( 'enabled' => false ) );
 	ga_assert( '' === $shortcode->render( array( 'provider' => 'google' ) ), 'Disabled Google must render nothing.' );
 	ga_assert( empty( $GLOBALS['ga_scripts'] ), 'Disabled Google must not enqueue GIS.' );
@@ -413,11 +477,83 @@ $tests['shortcode_visibility_and_script_scope'] = static function () {
 	ga_assert( 0 === substr_count( $first . $second, 'id="yby-google-identity-config"' ), 'Legacy project-specific configuration ID must not render.' );
 	ga_assert( 2 === substr_count( $first . $second, 'class="g_id_signin"' ), 'Each shortcode must render one button.' );
 	ga_assert( false !== strpos( $first, 'data-login_uri="https://example.test/wp-json/yby/v1/auth/google"' ), 'Google login URI must remain on the YBY REST endpoint.' );
-	ga_assert( false !== strpos( $first, 'data-auto_select="false"' ) && false !== strpos( $first, 'data-ux_mode="redirect"' ), 'GIS redirect safety configuration is incomplete.' );
+	ga_assert( false !== strpos( $first, 'data-auto_prompt="false"' ), 'Google One Tap must be disabled.' );
+	ga_assert( false !== strpos( $first, 'data-auto_select="false"' ), 'Automatic Google login must be disabled.' );
+	ga_assert( false !== strpos( $first, 'data-button_auto_select="false"' ), 'FedCM button auto-select must be disabled.' );
+	ga_assert( false !== strpos( $first, 'data-ux_mode="redirect"' ), 'GIS redirect mode must remain configured.' );
+	ga_assert( false !== strpos( $first, 'data-width="280"' ), 'Google button width must remain fixed at 280.' );
+	ga_assert( false !== strpos( $first, 'data-locale="en"' ), 'Google button locale must remain English.' );
+	ga_assert( 1 === $GLOBALS['ga_nocache_calls'], 'Active Google shortcode must mark the request non-cacheable once.' );
+	ga_assert( 1 === count( array_filter( $GLOBALS['ga_actions'], static function ( $action ) { return 'litespeed_control_set_nocache' === $action['hook']; } ) ), 'Active Google shortcode must signal LiteSpeed no-cache once.' );
 	ga_assert( false === strpos( $first, 'client_secret' ), 'Shortcode must not expose a Client Secret.' );
 
 	$GLOBALS['ga_logged_in'] = true;
 	ga_assert( '' === $shortcode->render( array( 'provider' => 'google' ) ), 'Logged-in users must not receive another Google button.' );
+};
+
+$tests['stored_shortcode_cache_and_nonce_isolation'] = static function () {
+	ga_reset();
+	$shortcode = new YBY_Social_Login_Shortcodes();
+	$GLOBALS['ga_post_content'] = '[yby_social_login provider="google"]';
+	$shortcode->maybe_disable_page_cache();
+	ga_assert( 1 === $GLOBALS['ga_nocache_calls'], 'Stored Google shortcode must disable page caching before render.' );
+
+	YBY_Social_Login_Shortcodes::reset_request_state();
+	$GLOBALS['ga_nocache_calls'] = 0;
+	$GLOBALS['ga_actions']       = array();
+	$GLOBALS['ga_post_content']  = '';
+	$GLOBALS['ga_post_meta'][1]['_bricks_page_content_2'] = array(
+		array( 'settings' => array( 'text' => '[yby_social_login provider="google"]' ) ),
+	);
+	$shortcode->maybe_disable_page_cache();
+	ga_assert( 1 === $GLOBALS['ga_nocache_calls'], 'Bricks Google shortcode must disable page caching before render.' );
+
+	YBY_Social_Login_Shortcodes::reset_request_state();
+	$first = $shortcode->render( array( 'provider' => 'google' ) );
+	preg_match( '/data-nonce="([^"]+)"/', $first, $first_match );
+	$first_nonce = $first_match[1] ?? '';
+	ga_assert( '' !== $first_nonce && YBY_Social_Login::is_login_nonce_valid( $first_nonce ), 'First request must issue a valid nonce.' );
+	YBY_Social_Login::consume_login_nonce( $first_nonce );
+	ga_assert( ! YBY_Social_Login::is_login_nonce_valid( $first_nonce ), 'Consumed nonce must not remain reusable.' );
+
+	YBY_Social_Login_Shortcodes::reset_request_state();
+	$second = $shortcode->render( array( 'provider' => 'google' ) );
+	preg_match( '/data-nonce="([^"]+)"/', $second, $second_match );
+	$second_nonce = $second_match[1] ?? '';
+	ga_assert( '' !== $second_nonce && $first_nonce !== $second_nonce, 'Every fresh request must issue a fresh nonce.' );
+	ga_assert( YBY_Social_Login::is_login_nonce_valid( $second_nonce ), 'Fresh markup must not reuse the consumed cached nonce.' );
+};
+
+$tests['safe_allowlisted_error_messages'] = static function () {
+	$messages = array(
+		'google_not_configured'            => 'Google sign-in is not configured.',
+		'google_login_disabled'            => 'Google sign-in is currently unavailable.',
+		'invalid_request'                  => 'The Google login response was incomplete.',
+		'invalid_csrf'                     => 'The login security check failed.',
+		'invalid_nonce'                    => 'The login session expired.',
+		'invalid_google_token'             => 'Google identity verification failed.',
+		'email_required'                   => 'Google did not provide an email address',
+		'email_verification_required'      => 'Google could not confirm this account email.',
+		'existing_account_requires_login' => 'An account already exists with this email.',
+		'identity_conflict'                => 'This Google account could not be matched safely.',
+		'role_not_allowed'                 => 'Google login is not available for this account role.',
+		'registration_failed'              => 'The account could not be created.',
+		'login_failed'                     => 'The account was verified, but sign-in could not be completed.',
+		'verification_unavailable'         => 'Google verification is temporarily unavailable.',
+	);
+
+	foreach ( $messages as $code => $expected ) {
+		ga_reset();
+		$_GET['yby_social_login'] = $code;
+		$output = ( new YBY_Social_Login_Shortcodes() )->render( array( 'provider' => 'google' ) );
+		preg_match( '/<p class="yby-social-login__message[^"]*">([^<]+)<\/p>/', $output, $message_match );
+		$message = $message_match[1] ?? '';
+		ga_assert( false !== strpos( $message, $expected ), 'Allowlisted error must render a useful message: ' . $code );
+		ga_assert( false !== strpos( $output, 'data-auto_prompt="false"' ), 'Error redirects must not automatically reopen the Google prompt.' );
+		foreach ( array( 'person@gmail.com', 'google-subject-123', 'test-client.apps.googleusercontent.com', 'C:\\server\\path' ) as $sensitive ) {
+			ga_assert( false === strpos( $message, $sensitive ), 'Public error message must remain PII-safe: ' . $code );
+		}
+	}
 };
 
 $tests['route_is_post_only'] = static function () {
@@ -615,6 +751,7 @@ $tests['schema_and_regression_boundary'] = static function () {
 	$controller = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-google-auth-rest-controller.php' );
 	$verifier   = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-google-token-verifier.php' );
 	$service    = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-google-auth-service.php' );
+	$css        = file_get_contents( dirname( __DIR__ ) . '/public/assets/css/yby-core-public.css' );
 	$all        = $controller . $verifier . $service;
 
 	ga_assert( false !== strpos( $main, "define( 'YBY_DATABASE_VERSION', '1.1.0' );" ), 'Database version must remain 1.1.0.' );
@@ -622,6 +759,7 @@ $tests['schema_and_regression_boundary'] = static function () {
 	ga_assert( false === stripos( $all, 'client_secret' ), 'No Client Secret may exist.' );
 	ga_assert( false === stripos( $all, 'tokeninfo' ), 'Production verification must not depend on tokeninfo.' );
 	ga_assert( false !== strpos( $core, 'YBY_Lead_REST_Controller' ) && false !== strpos( $core, 'YBY_Inquiry_Shortcodes' ), 'Lead and Inquiry registration must remain intact.' );
+	ga_assert( false !== strpos( $css, '.yby-social-login--google' ) && false !== strpos( $css, 'width: 280px' ) && false !== strpos( $css, 'min-height: 44px' ), 'Google login wrapper dimensions must remain stable.' );
 };
 
 $results = array();
