@@ -39,13 +39,25 @@ class WP_REST_Server {
 
 class WP_REST_Request {
 	protected $params;
+	protected $headers;
+	protected $json_params;
 
-	public function __construct( $params = array() ) {
-		$this->params = $params;
+	public function __construct( $params = array(), $headers = array(), $json_params = null ) {
+		$this->params      = $params;
+		$this->headers     = array_change_key_case( $headers, CASE_LOWER );
+		$this->json_params = 3 <= func_num_args() ? $json_params : $params;
 	}
 
 	public function get_param( $key ) {
 		return $this->params[ $key ] ?? null;
+	}
+
+	public function get_header( $key ) {
+		return $this->headers[ strtolower( (string) $key ) ] ?? '';
+	}
+
+	public function get_json_params() {
+		return $this->json_params;
 	}
 }
 
@@ -67,6 +79,8 @@ $GLOBALS['ga_routes']        = array();
 $GLOBALS['ga_shortcodes']    = array();
 $GLOBALS['ga_scripts']       = array();
 $GLOBALS['ga_styles']        = array();
+$GLOBALS['ga_inline_scripts'] = array();
+$GLOBALS['ga_dequeued_scripts'] = array();
 $GLOBALS['ga_users']         = array();
 $GLOBALS['ga_user_meta']     = array();
 $GLOBALS['ga_password_seed'] = 0;
@@ -83,6 +97,12 @@ $GLOBALS['ga_post_content']  = '';
 $GLOBALS['ga_post_meta']     = array();
 $GLOBALS['ga_nocache_calls'] = 0;
 $GLOBALS['ga_add_meta_fail'] = false;
+$GLOBALS['ga_is_feed']       = false;
+$GLOBALS['ga_is_embed']      = false;
+$GLOBALS['ga_is_preview']    = false;
+$GLOBALS['ga_doing_ajax']    = false;
+$GLOBALS['ga_doing_cron']    = false;
+$GLOBALS['ga_json_request']  = false;
 $GLOBALS['ga_roles']         = array(
 	'administrator' => array(),
 	'editor'        => array(),
@@ -278,6 +298,7 @@ function sanitize_user( $username ) {
 
 function wp_set_current_user( $user_id ) {
 	$GLOBALS['ga_current_user'] = $user_id;
+	$GLOBALS['ga_logged_in']    = 0 < (int) $user_id;
 	return get_user_by( 'id', $user_id );
 }
 
@@ -319,6 +340,30 @@ function is_singular() {
 	return $GLOBALS['ga_is_singular'];
 }
 
+function is_feed() {
+	return $GLOBALS['ga_is_feed'];
+}
+
+function is_embed() {
+	return $GLOBALS['ga_is_embed'];
+}
+
+function is_preview() {
+	return $GLOBALS['ga_is_preview'];
+}
+
+function wp_doing_ajax() {
+	return $GLOBALS['ga_doing_ajax'];
+}
+
+function wp_doing_cron() {
+	return $GLOBALS['ga_doing_cron'];
+}
+
+function wp_is_json_request() {
+	return $GLOBALS['ga_json_request'];
+}
+
 function get_queried_object_id() {
 	return $GLOBALS['ga_queried_id'];
 }
@@ -343,6 +388,20 @@ function wp_enqueue_style( $handle, $src, $dependencies, $version ) {
 	$GLOBALS['ga_styles'][ $handle ] = compact( 'src', 'dependencies', 'version' );
 }
 
+function wp_add_inline_script( $handle, $data, $position = 'after' ) {
+	$GLOBALS['ga_inline_scripts'][ $handle ][] = compact( 'data', 'position' );
+	return true;
+}
+
+function wp_dequeue_script( $handle ) {
+	$GLOBALS['ga_dequeued_scripts'][] = $handle;
+	unset( $GLOBALS['ga_scripts'][ $handle ] );
+}
+
+function wp_json_encode( $value ) {
+	return json_encode( $value );
+}
+
 function add_shortcode( $tag, $callback ) {
 	$GLOBALS['ga_shortcodes'][ $tag ] = $callback;
 }
@@ -363,6 +422,7 @@ require_once dirname( __DIR__ ) . '/inc/class-yby-social-login.php';
 require_once dirname( __DIR__ ) . '/inc/class-yby-google-token-verifier.php';
 require_once dirname( __DIR__ ) . '/inc/class-yby-google-auth-service.php';
 require_once dirname( __DIR__ ) . '/inc/class-yby-google-auth-rest-controller.php';
+require_once dirname( __DIR__ ) . '/inc/class-yby-google-one-tap-controller.php';
 require_once dirname( __DIR__ ) . '/inc/class-yby-social-login-shortcodes.php';
 
 function ga_assert( $condition, $message ) {
@@ -378,6 +438,8 @@ function ga_reset() {
 	$GLOBALS['ga_shortcodes']    = array();
 	$GLOBALS['ga_scripts']       = array();
 	$GLOBALS['ga_styles']        = array();
+	$GLOBALS['ga_inline_scripts'] = array();
+	$GLOBALS['ga_dequeued_scripts'] = array();
 	$GLOBALS['ga_users']         = array();
 	$GLOBALS['ga_user_meta']     = array();
 	$GLOBALS['ga_password_seed'] = 0;
@@ -394,9 +456,16 @@ function ga_reset() {
 	$GLOBALS['ga_post_meta']     = array();
 	$GLOBALS['ga_nocache_calls'] = 0;
 	$GLOBALS['ga_add_meta_fail'] = false;
+	$GLOBALS['ga_is_feed']       = false;
+	$GLOBALS['ga_is_embed']      = false;
+	$GLOBALS['ga_is_preview']    = false;
+	$GLOBALS['ga_doing_ajax']    = false;
+	$GLOBALS['ga_doing_cron']    = false;
+	$GLOBALS['ga_json_request']  = false;
 	$_COOKIE                     = array();
 	$_GET                        = array();
 	$_REQUEST                    = array();
+	$_SERVER['REMOTE_ADDR']      = '192.0.2.10';
 	$GLOBALS['pagenow']          = 'index.php';
 	YBY_Social_Login_Shortcodes::reset_request_state();
 	ga_set_settings();
@@ -459,6 +528,18 @@ function ga_claims( $overrides = array() ) {
 
 function ga_error_code( $value ) {
 	return is_wp_error( $value ) ? $value->get_error_code() : '';
+}
+
+function ga_onetap_headers( $overrides = array() ) {
+	return array_merge(
+		array(
+			'origin'                           => 'https://example.test',
+			'content-type'                     => 'application/json',
+			'x-andy-core-one-tap'              => '1',
+			'x-andy-core-one-tap-session'      => 'deterministic-session-12345',
+		),
+		$overrides
+	);
 }
 
 $key = openssl_pkey_new(
@@ -926,6 +1007,174 @@ $tests['wordpress_login_blocked_error_ux'] = static function () {
 	ga_assert( false === strpos( $source, 'login_form_top' ) && false === strpos( $source, 'login_form_middle' ), 'Integration must not replace standard WordPress username/password fields.' );
 	$login_css = file_get_contents( dirname( __DIR__ ) . '/public/css/yby-social-login-login-page.css' );
 	ga_assert( false !== strpos( $login_css, '.yby-social-login-login-page' ) && false !== strpos( $login_css, 'width: 280px' ) && false !== strpos( $login_css, 'min-height: 44px' ), 'Login-page CSS must remain scoped with stable button dimensions.' );
+};
+
+$tests['one_tap_display_scope_and_bootstrap'] = static function () {
+	ga_reset();
+	ga_set_settings( array( 'one_tap_enabled' => true ) );
+	$GLOBALS['pagenow'] = 'index.php';
+	$controller = new YBY_Google_One_Tap_Controller();
+	ga_assert( true === $controller->is_eligible_public_request(), 'Eligible logged-out HTTPS frontend page must allow One Tap.' );
+	$controller->enqueue_runtime();
+	ga_assert( isset( $GLOBALS['ga_scripts']['yby-google-one-tap'] ), 'Eligible page must enqueue the local One Tap runtime once.' );
+	ga_assert( 1 === count( $GLOBALS['ga_scripts'] ), 'One Tap bootstrap must not enqueue GIS before the challenge succeeds.' );
+	ga_assert( false !== strpos( $GLOBALS['ga_scripts']['yby-google-one-tap']['src'], 'public/assets/js/yby-google-one-tap.js' ), 'One Tap must use the scoped local runtime.' );
+	$inline = $GLOBALS['ga_inline_scripts']['yby-google-one-tap'][0]['data'] ?? '';
+	$inline = str_replace( '\/', '/', $inline );
+	ga_assert( false === strpos( $inline, 'nonce' ), 'Cacheable page configuration must not contain a one-time nonce.' );
+	ga_assert( false !== strpos( $inline, '/auth/google/onetap/challenge' ) && false !== strpos( $inline, '/auth/google/onetap' ), 'One Tap endpoints must be configured.' );
+	ga_assert( 0 === $GLOBALS['ga_nocache_calls'], 'One Tap must not disable ordinary public page caching.' );
+
+	$cases = array(
+		'disabled'     => static function () { ga_set_settings( array( 'one_tap_enabled' => false ) ); },
+		'logged_in'    => static function () { $GLOBALS['ga_logged_in'] = true; },
+		'wp_login'     => static function () { $GLOBALS['pagenow'] = 'wp-login.php'; },
+		'wp_admin'     => static function () { $GLOBALS['ga_is_admin'] = true; },
+		'json_rest'    => static function () { $GLOBALS['ga_json_request'] = true; },
+		'ajax'         => static function () { $GLOBALS['ga_doing_ajax'] = true; },
+		'cron'         => static function () { $GLOBALS['ga_doing_cron'] = true; },
+		'feed'         => static function () { $GLOBALS['ga_is_feed'] = true; },
+		'embed'        => static function () { $GLOBALS['ga_is_embed'] = true; },
+		'preview'      => static function () { $GLOBALS['ga_is_preview'] = true; },
+		'insecure'     => static function () { $GLOBALS['ga_ssl'] = false; },
+		'logout_cookie'=> static function () { $_COOKIE[ YBY_Google_One_Tap_Controller::LOGOUT_COOKIE ] = '1'; },
+		'logout_query' => static function () { $_GET['loggedout'] = 'true'; },
+		'blocked_result' => static function () { $_GET['yby_social_login'] = 'role_not_allowed'; },
+		'shortcode'    => static function () { $GLOBALS['ga_post_content'] = '[yby_social_login provider="google"]'; },
+	);
+
+	foreach ( $cases as $name => $configure ) {
+		ga_reset();
+		ga_set_settings( array( 'one_tap_enabled' => true ) );
+		$GLOBALS['pagenow'] = 'index.php';
+		$configure();
+		ga_assert( false === $controller->is_eligible_public_request(), 'One Tap scope exclusion failed: ' . $name );
+		$controller->enqueue_runtime();
+		ga_assert( empty( $GLOBALS['ga_scripts']['yby-google-one-tap'] ), 'Excluded request must not enqueue One Tap: ' . $name );
+	}
+
+	ga_reset();
+	ga_set_settings( array( 'one_tap_enabled' => true ) );
+	$GLOBALS['pagenow'] = 'index.php';
+	$controller->enqueue_runtime();
+	ga_assert( isset( $GLOBALS['ga_scripts']['yby-google-one-tap'] ), 'One Tap must enqueue before late shortcode rendering in the compatibility test.' );
+	( new YBY_Social_Login_Shortcodes() )->render( array( 'provider' => 'google' ) );
+	ga_assert( ! isset( $GLOBALS['ga_scripts']['yby-google-one-tap'] ) && in_array( 'yby-google-one-tap', $GLOBALS['ga_dequeued_scripts'], true ), 'Active shortcode rendering must remove the One Tap runtime.' );
+};
+
+$tests['one_tap_challenge_transport_and_replay'] = static function () {
+	ga_reset();
+	ga_set_settings( array( 'one_tap_enabled' => true ) );
+	$controller = new YBY_Google_One_Tap_Controller();
+	$controller->register_routes();
+	ga_assert( isset( $GLOBALS['ga_routes']['yby/v1/auth/google/onetap/challenge'], $GLOBALS['ga_routes']['yby/v1/auth/google/onetap'] ), 'Both One Tap POST routes must be registered.' );
+	ga_assert( 'POST' === $GLOBALS['ga_routes']['yby/v1/auth/google/onetap/challenge']['methods'] && 'POST' === $GLOBALS['ga_routes']['yby/v1/auth/google/onetap']['methods'], 'One Tap routes must be POST-only.' );
+
+	$request = new WP_REST_Request( array(), ga_onetap_headers(), array() );
+	$first   = $controller->issue_challenge( $request );
+	$second  = $controller->issue_challenge( $request );
+	ga_assert( 200 === $first->status && true === $first->data['success'], 'Valid challenge request must succeed with JSON.' );
+	ga_assert( isset( $first->data['nonce'] ) && 2 === count( $first->data ), 'Challenge response must contain only success and nonce.' );
+	ga_assert( $first->data['nonce'] !== $second->data['nonce'], 'Every challenge must be fresh.' );
+	ga_assert( YBY_Social_Login::is_login_nonce_valid( $first->data['nonce'] ), 'Issued challenge must be valid before use.' );
+	$nonce_key = 'yby_google_nonce_' . hash_hmac( 'sha256', $first->data['nonce'], wp_salt( 'nonce' ) );
+	ga_assert( YBY_Social_Login::LOGIN_NONCE_TTL === $GLOBALS['ga_transients'][ $nonce_key ]['expiration'], 'Challenge must expire after no more than ten minutes.' );
+	ga_assert( false !== strpos( $first->headers['Cache-Control'], 'no-store' ), 'Challenge response must be no-store.' );
+
+	YBY_Social_Login::consume_login_nonce( $first->data['nonce'] );
+	ga_assert( ! YBY_Social_Login::is_login_nonce_valid( $first->data['nonce'] ), 'Consumed challenge must not be reusable.' );
+	delete_transient( 'yby_google_nonce_' . hash_hmac( 'sha256', $second->data['nonce'], wp_salt( 'nonce' ) ) );
+	ga_assert( ! YBY_Social_Login::is_login_nonce_valid( $second->data['nonce'] ), 'Expired challenge must be rejected.' );
+
+	$foreign = $controller->issue_challenge( new WP_REST_Request( array(), ga_onetap_headers( array( 'origin' => 'https://evil.test' ) ), array() ) );
+	ga_assert( 'invalid_origin' === $foreign->data['code'], 'Foreign Origin must be rejected.' );
+	$wrong_type = $controller->issue_challenge( new WP_REST_Request( array(), ga_onetap_headers( array( 'content-type' => 'text/plain' ) ), array() ) );
+	ga_assert( 'invalid_content_type' === $wrong_type->data['code'], 'Non-JSON challenge must be rejected.' );
+	$missing_header = $controller->issue_challenge( new WP_REST_Request( array(), ga_onetap_headers( array( 'x-andy-core-one-tap' => '' ) ), array() ) );
+	ga_assert( 'invalid_request' === $missing_header->data['code'], 'Missing project header must be rejected.' );
+	$malformed_json = $controller->issue_challenge( new WP_REST_Request( array(), ga_onetap_headers(), null ) );
+	ga_assert( 'invalid_request' === $malformed_json->data['code'], 'Malformed JSON must be rejected.' );
+	$extra_field = $controller->issue_challenge( new WP_REST_Request( array( 'extra' => '1' ), ga_onetap_headers(), array( 'extra' => '1' ) ) );
+	ga_assert( 'invalid_request' === $extra_field->data['code'], 'Challenge must reject unrelated JSON fields.' );
+};
+
+$tests['one_tap_async_authentication'] = static function () use ( $private_key, $public_key, $clock ) {
+	ga_reset();
+	ga_set_settings( array( 'one_tap_enabled' => true, 'auto_link_existing_accounts' => true ) );
+	$verifier = new YBY_Google_Token_Verifier(
+		static function () use ( $public_key ) {
+			return array( 'certificates' => array( 'test-key' => $public_key ), 'max_age' => 600 );
+		},
+		$clock
+	);
+	$controller = new YBY_Google_One_Tap_Controller( $verifier, new YBY_Google_Auth_Service() );
+	$challenge_request = new WP_REST_Request( array(), ga_onetap_headers(), array() );
+	$challenge_response = $controller->issue_challenge( $challenge_request );
+	$challenge = $challenge_response->data['nonce'];
+	$token = ga_token( $private_key, ga_claims( array( 'nonce' => $challenge ) ) );
+	$auth_request = new WP_REST_Request(
+		array( 'credential' => $token, 'challenge' => $challenge ),
+		ga_onetap_headers(),
+		array( 'credential' => $token, 'challenge' => $challenge )
+	);
+	$response = $controller->authenticate( $auth_request );
+	ga_assert( 200 === $response->status && array( 'success' => true, 'code' => 'success' ) === $response->data, 'One Tap success must return the minimal JSON response.' );
+	ga_assert( ! isset( $response->headers['Location'] ), 'One Tap success must not return a redirect.' );
+	ga_assert( 1 === count( $GLOBALS['ga_auth_cookies'] ) && 1 === $GLOBALS['ga_current_user'], 'One Tap must establish the normal WordPress authentication cookie.' );
+	ga_assert( ! YBY_Social_Login::is_login_nonce_valid( $challenge ), 'Successful One Tap challenge must be consumed.' );
+	foreach ( array( 'person@gmail.com', 'google-subject-123', $token, 'subscriber', '_yby_google_sub' ) as $private_value ) {
+		ga_assert( false === strpos( json_encode( $response->data ), $private_value ), 'One Tap JSON must not expose identity data.' );
+	}
+
+	$GLOBALS['ga_logged_in'] = false;
+	$replay = $controller->authenticate( $auth_request );
+	ga_assert( 'invalid_nonce' === $replay->data['code'], 'One Tap challenge replay must be rejected.' );
+
+	ga_reset();
+	ga_set_settings( array( 'one_tap_enabled' => true ) );
+	$controller = new YBY_Google_One_Tap_Controller( $verifier, new YBY_Google_Auth_Service() );
+	$challenge = $controller->issue_challenge( new WP_REST_Request( array(), ga_onetap_headers(), array() ) )->data['nonce'];
+	$invalid = $controller->authenticate(
+		new WP_REST_Request(
+			array( 'credential' => '', 'challenge' => $challenge ),
+			ga_onetap_headers(),
+			array( 'credential' => '', 'challenge' => $challenge )
+		)
+	);
+	ga_assert( 'invalid_google_token' === $invalid->data['code'], 'Invalid One Tap credential must be rejected.' );
+	ga_assert( ! YBY_Social_Login::is_login_nonce_valid( $challenge ), 'Failed credential attempt must still consume its challenge.' );
+
+	ga_reset();
+	ga_set_settings( array( 'one_tap_enabled' => true ) );
+	$controller = new YBY_Google_One_Tap_Controller( $verifier, new YBY_Google_Auth_Service() );
+	$challenge = YBY_Social_Login::issue_login_nonce();
+	$GLOBALS['ga_logged_in'] = true;
+	$already_authenticated = $controller->authenticate(
+		new WP_REST_Request(
+			array( 'credential' => 'unused', 'challenge' => $challenge ),
+			ga_onetap_headers(),
+			array( 'credential' => 'unused', 'challenge' => $challenge )
+		)
+	);
+	ga_assert( 'already_authenticated' === $already_authenticated->data['code'], 'Already authenticated sessions must not switch identity through One Tap.' );
+	ga_assert( YBY_Social_Login::is_login_nonce_valid( $challenge ), 'Logged-in rejection must not consume an unused challenge.' );
+
+	ga_reset();
+	ga_set_settings( array( 'one_tap_enabled' => true, 'auto_link_existing_accounts' => true ) );
+	$GLOBALS['ga_users'][1] = new WP_User( 1, 'administrator', 'admin@gmail.com', array( 'administrator' ) );
+	$GLOBALS['ga_user_meta'][1] = array();
+	$controller = new YBY_Google_One_Tap_Controller( $verifier, new YBY_Google_Auth_Service() );
+	$challenge = $controller->issue_challenge( new WP_REST_Request( array(), ga_onetap_headers(), array() ) )->data['nonce'];
+	$admin_token = ga_token( $private_key, ga_claims( array( 'nonce' => $challenge, 'email' => 'admin@gmail.com' ) ) );
+	$blocked = $controller->authenticate(
+		new WP_REST_Request(
+			array( 'credential' => $admin_token, 'challenge' => $challenge ),
+			ga_onetap_headers(),
+			array( 'credential' => $admin_token, 'challenge' => $challenge )
+		)
+	);
+	ga_assert( 'role_not_allowed' === $blocked->data['code'], 'Administrator must remain blocked in One Tap.' );
+	ga_assert( empty( $GLOBALS['ga_user_meta'][1] ) && empty( $GLOBALS['ga_auth_cookies'] ), 'Blocked Administrator must receive no mapping or session.' );
 };
 
 $tests['controller_nonce_redirect_and_reuse'] = static function () use ( $private_key, $public_key, $clock ) {

@@ -15,11 +15,13 @@
 - Added optional Google sign-in on the standard WordPress login page.
 - Added the canonical Social Login shortcode and Copy control to the admin overview.
 - Added opt-in verified-email association for existing Subscriber and Customer accounts, with privileged, custom, mixed, and disabled roles blocked.
+- Added opt-in Google One Tap on eligible public pages with same-origin, single-use challenges and asynchronous same-page WordPress authentication.
+- Preserved ordinary public page caching by issuing One Tap challenges after page load.
 
 ### Not yet included
 
 - Client Secret, Google API authorization, and access or refresh token storage.
-- Manual account linking or unlinking, One Tap, and global avatar replacement.
+- Manual account linking or unlinking and global avatar replacement.
 - Facebook, X, and TikTok authentication.
 
 ## v1.4.0 - 2026-07-29

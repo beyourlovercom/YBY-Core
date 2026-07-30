@@ -27,6 +27,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-social-login.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-token-verifier.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-auth-service.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-auth-rest-controller.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-one-tap-controller.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-social-login-shortcodes.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-session.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-tracking.php';
@@ -125,6 +126,7 @@ class YBY_Core {
 		$public             = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
 		$lead_rest_route    = new YBY_Lead_REST_Controller();
 		$google_auth_route  = new YBY_Google_Auth_REST_Controller();
+		$google_one_tap     = new YBY_Google_One_Tap_Controller();
 		$social_shortcodes  = new YBY_Social_Login_Shortcodes();
 		$inquiry_manager    = new YBY_Inquiry_Manager();
 		$inquiry_renderer   = new YBY_Inquiry_Renderer();
@@ -133,6 +135,9 @@ class YBY_Core {
 		$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
 		$this->loader->add_action( 'rest_api_init', $lead_rest_route, 'register_routes' );
 		$this->loader->add_action( 'rest_api_init', $google_auth_route, 'register_routes' );
+		$this->loader->add_action( 'rest_api_init', $google_one_tap, 'register_routes' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $google_one_tap, 'enqueue_runtime', 20, 0 );
+		$this->loader->add_action( 'wp_logout', $google_one_tap, 'suppress_after_logout', 10, 0 );
 		$this->loader->add_action( 'init', $social_shortcodes, 'register', 10, 0 );
 		$this->loader->add_action( 'init', $inquiry_shortcodes, 'register', 10, 0 );
 		$this->loader->add_filter( 'the_content', $inquiry_shortcodes, 'capture_modal_shortcodes_in_content', 9, 1 );

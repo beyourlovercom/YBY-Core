@@ -9,3 +9,26 @@
   max-width: 100%;
   min-height: 44px;
 }
+
+.yby-google-one-tap-status {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 99999;
+  max-width: min(320px, calc(100vw - 40px));
+  padding: 10px 14px;
+  border: 1px solid #c3c4c7;
+  border-radius: 4px;
+  background: #fff;
+  color: #1d2327;
+  font: 600 14px/1.4 sans-serif;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.14);
+}
+
+.yby-google-one-tap-status.is-success {
+  border-color: #00a32a;
+}
+
+.yby-google-one-tap-status.is-error {
+  border-color: #d63638;
+}

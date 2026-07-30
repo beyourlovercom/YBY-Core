@@ -160,6 +160,7 @@ class YBY_Social_Login_Shortcodes {
 			return '';
 		}
 
+		wp_dequeue_script( 'yby-google-one-tap' );
 		$this->disable_page_cache();
 
 		if ( '' === self::$login_nonce ) {

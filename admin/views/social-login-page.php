@@ -135,6 +135,14 @@ $page_url = admin_url( 'admin.php?page=' . YBY_Social_Login_Admin::page_slug() )
 					</td>
 				</tr>
 				<tr>
+					<th scope="row"><?php esc_html_e( 'Enable Google One Tap on public pages', 'yby-core' ); ?></th>
+					<td>
+						<label><input type="checkbox" name="yby_social_login_options[google][one_tap_enabled]" value="1" <?php checked( $google_options['one_tap_enabled'] ); ?>> <?php esc_html_e( 'Enable Google One Tap on public pages', 'yby-core' ); ?></label>
+						<p class="description"><?php esc_html_e( 'Show Google One Tap to eligible logged-out visitors and complete sign-in without leaving the current page.', 'yby-core' ); ?></p>
+						<p class="description"><?php esc_html_e( 'Google and the browser decide whether the One Tap prompt is displayed. It may not appear after dismissal, during a cooldown period, or when third-party sign-in is disabled.', 'yby-core' ); ?></p>
+					</td>
+				</tr>
+				<tr>
 					<th scope="row"><label for="yby-google-username-prefix"><?php esc_html_e( 'Username prefix', 'yby-core' ); ?></label></th>
 					<td><input id="yby-google-username-prefix" type="text" maxlength="32" name="yby_social_login_options[google][username_prefix]" value="<?php echo esc_attr( $google_options['username_prefix'] ); ?>"></td>
 				</tr>

@@ -137,6 +137,7 @@ $tests['defaults'] = static function () {
 	harness_assert( false === $options['add_to_login_page'], 'WordPress login-page integration must default to disabled.' );
 	harness_assert( false === $google['enabled'], 'Google must default to disabled.' );
 	harness_assert( false === $google['auto_link_existing_accounts'], 'Existing-account association must default to disabled.' );
+	harness_assert( false === $google['one_tap_enabled'], 'Google One Tap must default to disabled.' );
 	harness_assert( '' === $google['client_id'], 'Client ID must default to empty.' );
 	harness_assert( true === $google['select_account'], 'Account selection must default to true.' );
 	harness_assert( 'google_' === $google['username_prefix'], 'Username prefix default is invalid.' );
@@ -188,6 +189,7 @@ $tests['field_validation'] = static function () {
 	harness_assert( '' === YBY_Social_Login::sanitize_google( array( 'client_id' => 'example.test' ) )['client_id'], 'Invalid client ID must be rejected.' );
 	harness_assert( false === YBY_Social_Login::sanitize( array( 'add_to_login_page' => array( '1' ) ) )['add_to_login_page'], 'Malformed general checkbox values must sanitize to false.' );
 	harness_assert( false === YBY_Social_Login::sanitize_google( array( 'auto_link_existing_accounts' => array( '1' ) ) )['auto_link_existing_accounts'], 'Malformed association checkbox values must sanitize to false.' );
+	harness_assert( false === YBY_Social_Login::sanitize_google( array( 'one_tap_enabled' => array( '1' ) ) )['one_tap_enabled'], 'Malformed One Tap checkbox values must sanitize to false.' );
 };
 
 $tests['disabled_roles'] = static function () {
@@ -237,6 +239,7 @@ $tests['activation_merge_and_autoload'] = static function () {
 			'redirect_url'   => '/members/',
 			'select_account' => false,
 			'auto_link_existing_accounts' => true,
+			'one_tap_enabled'             => true,
 		),
 	);
 	$options = YBY_Social_Login::get_options();
@@ -249,6 +252,7 @@ $tests['activation_merge_and_autoload'] = static function () {
 	harness_assert( '/members/' === $saved['redirect_url'], 'Existing valid redirect must survive merging.' );
 	harness_assert( false === $saved['select_account'], 'Existing boolean settings must survive merging.' );
 	harness_assert( true === $saved['auto_link_existing_accounts'], 'Existing association setting must survive merging.' );
+	harness_assert( true === $saved['one_tap_enabled'], 'Existing One Tap setting must survive merging.' );
 	harness_assert( false === $GLOBALS['yby_social_autoload'][ YBY_Social_Login::option_key() ], 'Option autoload must be disabled.' );
 
 	$options = YBY_Social_Login::get_options();
@@ -319,6 +323,8 @@ $tests['view_scope'] = static function () {
 	harness_assert( false !== strpos( $view, 'Configure social sign-in providers and choose where login buttons appear.' ), 'Overview description must match the approved copy.' );
 	harness_assert( false !== strpos( $view, 'Automatically connect matching existing accounts' ), 'Google automatic association setting must render.' );
 	harness_assert( false !== strpos( $view, 'Privileged and custom roles are never connected automatically.' ), 'Automatic association warning must render.' );
+	harness_assert( false !== strpos( $view, 'Enable Google One Tap on public pages' ), 'One Tap setting must render.' );
+	harness_assert( false !== strpos( $view, 'Google and the browser decide whether the One Tap prompt is displayed.' ), 'One Tap availability note must render.' );
 };
 
 $tests['public_scope_registration'] = static function () {
