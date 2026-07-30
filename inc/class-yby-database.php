@@ -124,6 +124,7 @@ class YBY_Database {
 			source_preset varchar(100) DEFAULT '',
 			source_page varchar(255) DEFAULT '',
 			form_version varchar(30) DEFAULT '',
+			page_profile varchar(100) DEFAULT '',
 			custom_fields longtext,
 			utm_source varchar(100),
 			utm_medium varchar(100),
