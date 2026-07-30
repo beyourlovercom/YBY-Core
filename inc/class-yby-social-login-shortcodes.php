@@ -81,8 +81,7 @@ class YBY_Social_Login_Shortcodes {
 
 		if ( ! self::$configuration_rendered ) {
 			$output .= $this->render_status_message();
-			$output .= '<div id="yby-google-identity-config"';
-			$output .= ' class="g_id_onload"';
+			$output .= '<div id="g_id_onload"';
 			$output .= ' data-client_id="' . esc_attr( $settings['client_id'] ) . '"';
 			$output .= ' data-login_uri="' . esc_url( rest_url( 'yby/v1/auth/google' ) ) . '"';
 			$output .= ' data-ux_mode="redirect"';

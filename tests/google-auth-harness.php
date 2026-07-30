@@ -407,9 +407,12 @@ $tests['shortcode_visibility_and_script_scope'] = static function () {
 	$first  = $shortcode->render( array( 'provider' => 'google' ) );
 	$second = $shortcode->render( array( 'provider' => 'google' ) );
 	ga_assert( isset( $GLOBALS['ga_scripts']['yby-google-identity-services'] ), 'Rendered shortcode must enqueue GIS.' );
+	ga_assert( 1 === count( $GLOBALS['ga_scripts'] ), 'GIS script must be enqueued exactly once.' );
 	ga_assert( 'https://accounts.google.com/gsi/client' === $GLOBALS['ga_scripts']['yby-google-identity-services']['src'], 'GIS URL is invalid.' );
-	ga_assert( 1 === substr_count( $first . $second, 'id="yby-google-identity-config"' ), 'Page configuration must be unique.' );
+	ga_assert( 1 === substr_count( $first . $second, 'id="g_id_onload"' ), 'Page configuration must use the required unique GIS ID.' );
+	ga_assert( 0 === substr_count( $first . $second, 'id="yby-google-identity-config"' ), 'Legacy project-specific configuration ID must not render.' );
 	ga_assert( 2 === substr_count( $first . $second, 'class="g_id_signin"' ), 'Each shortcode must render one button.' );
+	ga_assert( false !== strpos( $first, 'data-login_uri="https://example.test/wp-json/yby/v1/auth/google"' ), 'Google login URI must remain on the YBY REST endpoint.' );
 	ga_assert( false !== strpos( $first, 'data-auto_select="false"' ) && false !== strpos( $first, 'data-ux_mode="redirect"' ), 'GIS redirect safety configuration is incomplete.' );
 	ga_assert( false === strpos( $first, 'client_secret' ), 'Shortcode must not expose a Client Secret.' );
 
