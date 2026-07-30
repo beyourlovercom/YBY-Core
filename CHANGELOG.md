@@ -18,6 +18,10 @@
 - Added opt-in Google One Tap on eligible public pages with same-origin, single-use challenges and asynchronous same-page WordPress authentication.
 - Preserved ordinary public page caching by issuing One Tap challenges after page load.
 
+### Fixed
+
+- Fixed One Tap session confirmation by validating the returned WordPress logged-in cookie through a dedicated no-store endpoint instead of reusing anonymous challenge issuance.
+
 ### Not yet included
 
 - Client Secret, Google API authorization, and access or refresh token storage.

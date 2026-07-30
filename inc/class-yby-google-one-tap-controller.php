@@ -84,6 +84,16 @@ class YBY_Google_One_Tap_Controller {
 				'permission_callback' => '__return_true',
 			)
 		);
+
+		register_rest_route(
+			'yby/v1',
+			'/auth/google/onetap/session',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'confirm_session' ),
+				'permission_callback' => '__return_true',
+			)
+		);
 	}
 
 	/**
@@ -116,6 +126,7 @@ class YBY_Google_One_Tap_Controller {
 					'clientId'          => $settings['client_id'],
 					'challengeEndpoint' => rest_url( 'yby/v1/auth/google/onetap/challenge' ),
 					'authEndpoint'      => rest_url( 'yby/v1/auth/google/onetap' ),
+					'sessionEndpoint'   => rest_url( 'yby/v1/auth/google/onetap/session' ),
 					'requestHeader'     => self::REQUEST_HEADER,
 					'sessionHeader'     => self::SESSION_HEADER,
 				)
@@ -269,6 +280,34 @@ class YBY_Google_One_Tap_Controller {
 			),
 			200
 		);
+	}
+
+	/**
+	 * Confirm the logged-in cookie returned by the browser after authentication.
+	 *
+	 * REST cookie authentication requires a REST nonce and therefore cannot provide
+	 * the current-user state for this anonymous, same-origin confirmation request.
+	 *
+	 * @param \WP_REST_Request $request REST request.
+	 * @return \WP_REST_Response
+	 */
+	public function confirm_session( \WP_REST_Request $request ) {
+		$error = $this->validate_json_request( $request, true );
+
+		if ( $error ) {
+			return $error;
+		}
+
+		$cookie = defined( 'LOGGED_IN_COOKIE' ) && isset( $_COOKIE[ LOGGED_IN_COOKIE ] ) && is_string( $_COOKIE[ LOGGED_IN_COOKIE ] )
+			? $_COOKIE[ LOGGED_IN_COOKIE ]
+			: '';
+		$user_id = '' !== $cookie ? wp_validate_auth_cookie( $cookie, 'logged_in' ) : false;
+
+		if ( ! is_int( $user_id ) || $user_id < 1 ) {
+			return $this->session_response( false, 401 );
+		}
+
+		return $this->session_response( true, 200 );
 	}
 
 	/**
@@ -499,6 +538,35 @@ class YBY_Google_One_Tap_Controller {
 				'success' => false,
 				'code'    => $code,
 				'message' => $messages[ $code ],
+			),
+			$status
+		);
+	}
+
+	/**
+	 * Build a PII-free session confirmation response.
+	 *
+	 * @param bool $authenticated Whether WordPress validated the logged-in cookie.
+	 * @param int  $status HTTP status.
+	 * @return \WP_REST_Response
+	 */
+	protected function session_response( $authenticated, $status ) {
+		if ( $authenticated ) {
+			return $this->response(
+				array(
+					'success'       => true,
+					'authenticated' => true,
+				),
+				$status
+			);
+		}
+
+		return $this->response(
+			array(
+				'success'       => false,
+				'authenticated' => false,
+				'code'          => 'login_failed',
+				'message'       => 'The account was verified, but sign-in could not be completed.',
 			),
 			$status
 		);

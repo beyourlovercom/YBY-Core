@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'YBY_CORE_PLUGIN_DIR', dirname( __DIR__ ) . DIRECTORY_SEPARATOR );
 define( 'YBY_CORE_PLUGIN_URL', 'https://example.test/wp-content/plugins/yby-core/' );
 define( 'YBY_CORE_VERSION', '1.5.0-dev' );
+define( 'LOGGED_IN_COOKIE', 'wordpress_logged_in_test' );
 
 class WP_Error {
 	protected $code;
@@ -86,6 +87,9 @@ $GLOBALS['ga_user_meta']     = array();
 $GLOBALS['ga_password_seed'] = 0;
 $GLOBALS['ga_current_user']  = 0;
 $GLOBALS['ga_auth_cookies']  = array();
+$GLOBALS['ga_cookie_validation'] = array();
+$GLOBALS['ga_cookie_validation_calls'] = array();
+$GLOBALS['ga_last_logged_in_cookie'] = '';
 $GLOBALS['ga_actions']       = array();
 $GLOBALS['ga_registered_actions'] = array();
 $GLOBALS['ga_ssl']           = true;
@@ -304,6 +308,31 @@ function wp_set_current_user( $user_id ) {
 
 function wp_set_auth_cookie( $user_id, $remember = false, $secure = '' ) {
 	$GLOBALS['ga_auth_cookies'][] = compact( 'user_id', 'remember', 'secure' );
+	$cookie = 'wordpress-cookie-for-user-' . (int) $user_id;
+	$GLOBALS['ga_cookie_validation'][ $cookie ] = array(
+		'user_id'    => (int) $user_id,
+		'expires_at' => time() + 3600,
+		'signature'  => true,
+		'site'       => 'example.test',
+	);
+	$GLOBALS['ga_last_logged_in_cookie'] = $cookie;
+}
+
+function wp_validate_auth_cookie( $cookie = '', $scheme = '' ) {
+	$GLOBALS['ga_cookie_validation_calls'][] = compact( 'cookie', 'scheme' );
+	$record = $GLOBALS['ga_cookie_validation'][ $cookie ] ?? null;
+
+	if (
+		'logged_in' !== $scheme ||
+		! is_array( $record ) ||
+		empty( $record['signature'] ) ||
+		'example.test' !== $record['site'] ||
+		(int) $record['expires_at'] < time()
+	) {
+		return false;
+	}
+
+	return (int) $record['user_id'];
 }
 
 function do_action( $hook ) {
@@ -445,6 +474,9 @@ function ga_reset() {
 	$GLOBALS['ga_password_seed'] = 0;
 	$GLOBALS['ga_current_user']  = 0;
 	$GLOBALS['ga_auth_cookies']  = array();
+	$GLOBALS['ga_cookie_validation'] = array();
+	$GLOBALS['ga_cookie_validation_calls'] = array();
+	$GLOBALS['ga_last_logged_in_cookie'] = '';
 	$GLOBALS['ga_actions']       = array();
 	$GLOBALS['ga_registered_actions'] = array();
 	$GLOBALS['ga_ssl']           = true;
@@ -1022,7 +1054,12 @@ $tests['one_tap_display_scope_and_bootstrap'] = static function () {
 	$inline = $GLOBALS['ga_inline_scripts']['yby-google-one-tap'][0]['data'] ?? '';
 	$inline = str_replace( '\/', '/', $inline );
 	ga_assert( false === strpos( $inline, 'nonce' ), 'Cacheable page configuration must not contain a one-time nonce.' );
-	ga_assert( false !== strpos( $inline, '/auth/google/onetap/challenge' ) && false !== strpos( $inline, '/auth/google/onetap' ), 'One Tap endpoints must be configured.' );
+	ga_assert(
+		false !== strpos( $inline, '/auth/google/onetap/challenge' ) &&
+		false !== strpos( $inline, '/auth/google/onetap/session' ) &&
+		false !== strpos( $inline, '/auth/google/onetap' ),
+		'One Tap endpoints must be configured.'
+	);
 	ga_assert( 0 === $GLOBALS['ga_nocache_calls'], 'One Tap must not disable ordinary public page caching.' );
 
 	$cases = array(
@@ -1067,8 +1104,13 @@ $tests['one_tap_challenge_transport_and_replay'] = static function () {
 	ga_set_settings( array( 'one_tap_enabled' => true ) );
 	$controller = new YBY_Google_One_Tap_Controller();
 	$controller->register_routes();
-	ga_assert( isset( $GLOBALS['ga_routes']['yby/v1/auth/google/onetap/challenge'], $GLOBALS['ga_routes']['yby/v1/auth/google/onetap'] ), 'Both One Tap POST routes must be registered.' );
-	ga_assert( 'POST' === $GLOBALS['ga_routes']['yby/v1/auth/google/onetap/challenge']['methods'] && 'POST' === $GLOBALS['ga_routes']['yby/v1/auth/google/onetap']['methods'], 'One Tap routes must be POST-only.' );
+	ga_assert( isset( $GLOBALS['ga_routes']['yby/v1/auth/google/onetap/challenge'], $GLOBALS['ga_routes']['yby/v1/auth/google/onetap'], $GLOBALS['ga_routes']['yby/v1/auth/google/onetap/session'] ), 'All three One Tap POST routes must be registered.' );
+	ga_assert(
+		'POST' === $GLOBALS['ga_routes']['yby/v1/auth/google/onetap/challenge']['methods'] &&
+		'POST' === $GLOBALS['ga_routes']['yby/v1/auth/google/onetap']['methods'] &&
+		'POST' === $GLOBALS['ga_routes']['yby/v1/auth/google/onetap/session']['methods'],
+		'One Tap routes must be POST-only.'
+	);
 
 	$request = new WP_REST_Request( array(), ga_onetap_headers(), array() );
 	$first   = $controller->issue_challenge( $request );
@@ -1175,6 +1217,97 @@ $tests['one_tap_async_authentication'] = static function () use ( $private_key, 
 	);
 	ga_assert( 'role_not_allowed' === $blocked->data['code'], 'Administrator must remain blocked in One Tap.' );
 	ga_assert( empty( $GLOBALS['ga_user_meta'][1] ) && empty( $GLOBALS['ga_auth_cookies'] ), 'Blocked Administrator must receive no mapping or session.' );
+};
+
+$tests['one_tap_session_confirmation'] = static function () use ( $private_key, $public_key, $clock ) {
+	ga_reset();
+	ga_set_settings( array( 'one_tap_enabled' => true ) );
+	$verifier = new YBY_Google_Token_Verifier(
+		static function () use ( $public_key ) {
+			return array( 'certificates' => array( 'test-key' => $public_key ), 'max_age' => 600 );
+		},
+		$clock
+	);
+	$controller = new YBY_Google_One_Tap_Controller( $verifier, new YBY_Google_Auth_Service() );
+	$challenge_request = new WP_REST_Request( array(), ga_onetap_headers(), array() );
+	$challenge = $controller->issue_challenge( $challenge_request )->data['nonce'];
+	$token = ga_token( $private_key, ga_claims( array( 'nonce' => $challenge ) ) );
+	$authentication = $controller->authenticate(
+		new WP_REST_Request(
+			array( 'credential' => $token, 'challenge' => $challenge ),
+			ga_onetap_headers(),
+			array( 'credential' => $token, 'challenge' => $challenge )
+		)
+	);
+
+	ga_assert( true === $authentication->data['success'] && 1 === count( $GLOBALS['ga_auth_cookies'] ), 'Authentication success must set the WordPress auth cookie.' );
+	ga_assert( '' !== $GLOBALS['ga_last_logged_in_cookie'], 'The simulated browser must receive a logged-in cookie.' );
+
+	$_COOKIE[ LOGGED_IN_COOKIE ] = $GLOBALS['ga_last_logged_in_cookie'];
+	$GLOBALS['ga_logged_in']     = false;
+	$GLOBALS['ga_current_user']  = 0;
+	$transients_before           = $GLOBALS['ga_transients'];
+	$password_seed_before        = $GLOBALS['ga_password_seed'];
+	$session_request             = new WP_REST_Request( array(), ga_onetap_headers(), array() );
+	$confirmed                   = $controller->confirm_session( $session_request );
+
+	ga_assert( 200 === $confirmed->status && array( 'success' => true, 'authenticated' => true ) === $confirmed->data, 'A valid logged-in cookie must pass dedicated session confirmation.' );
+	ga_assert( false !== strpos( $confirmed->headers['Cache-Control'], 'no-store' ), 'Session confirmation must be no-store.' );
+	ga_assert( $transients_before === $GLOBALS['ga_transients'], 'Session confirmation must not issue a challenge or consume challenge rate limits.' );
+	ga_assert( $password_seed_before === $GLOBALS['ga_password_seed'], 'Session confirmation must not generate a new login nonce.' );
+	ga_assert( 0 === $GLOBALS['ga_current_user'] && false === $GLOBALS['ga_logged_in'], 'Session confirmation must not mutate the REST current-user state.' );
+	ga_assert( 1 === count( $GLOBALS['ga_cookie_validation_calls'] ) && 'logged_in' === $GLOBALS['ga_cookie_validation_calls'][0]['scheme'], 'Session confirmation must use WordPress logged-in cookie validation exactly once.' );
+	foreach ( array( 'user_id', 'email', 'username', 'role', 'sub', 'cookie', 'token', 'claims' ) as $blocked_key ) {
+		ga_assert( ! array_key_exists( $blocked_key, $confirmed->data ), 'Session response must not expose: ' . $blocked_key );
+	}
+
+	$anonymous_challenge = $controller->issue_challenge( $challenge_request );
+	ga_assert( true === $anonymous_challenge->data['success'] && isset( $anonymous_challenge->data['nonce'] ), 'Regression fixture must reproduce the old REST current-user false negative at the challenge endpoint.' );
+
+	$failure = array(
+		'success'       => false,
+		'authenticated' => false,
+		'code'          => 'login_failed',
+		'message'       => 'The account was verified, but sign-in could not be completed.',
+	);
+	$invalid_cases = array(
+		'missing' => null,
+		'expired' => array(
+			'cookie' => 'expired-cookie',
+			'record' => array( 'user_id' => 1, 'expires_at' => time() - 1, 'signature' => true, 'site' => 'example.test' ),
+		),
+		'malformed' => array(
+			'cookie' => 'not-a-wordpress-cookie',
+			'record' => null,
+		),
+		'invalid_signature' => array(
+			'cookie' => 'invalid-signature-cookie',
+			'record' => array( 'user_id' => 1, 'expires_at' => time() + 3600, 'signature' => false, 'site' => 'example.test' ),
+		),
+		'other_site' => array(
+			'cookie' => 'other-site-cookie',
+			'record' => array( 'user_id' => 1, 'expires_at' => time() + 3600, 'signature' => true, 'site' => 'other.test' ),
+		),
+	);
+
+	foreach ( $invalid_cases as $name => $fixture ) {
+		unset( $_COOKIE[ LOGGED_IN_COOKIE ] );
+
+		if ( is_array( $fixture ) ) {
+			$_COOKIE[ LOGGED_IN_COOKIE ] = $fixture['cookie'];
+
+			if ( is_array( $fixture['record'] ) ) {
+				$GLOBALS['ga_cookie_validation'][ $fixture['cookie'] ] = $fixture['record'];
+			}
+		}
+
+		$transients_before    = $GLOBALS['ga_transients'];
+		$password_seed_before = $GLOBALS['ga_password_seed'];
+		$result               = $controller->confirm_session( $session_request );
+		ga_assert( 401 === $result->status && $failure === $result->data, 'Invalid cookie must fail safely: ' . $name );
+		ga_assert( false !== strpos( $result->headers['Cache-Control'], 'no-store' ), 'Invalid cookie response must be no-store: ' . $name );
+		ga_assert( $transients_before === $GLOBALS['ga_transients'] && $password_seed_before === $GLOBALS['ga_password_seed'], 'Invalid confirmation must not issue a nonce or consume rate quota: ' . $name );
+	}
 };
 
 $tests['controller_nonce_redirect_and_reuse'] = static function () use ( $private_key, $public_key, $clock ) {

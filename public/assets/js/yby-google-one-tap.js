@@ -13,6 +13,7 @@
     !config.clientId ||
     !config.challengeEndpoint ||
     !config.authEndpoint ||
+    !config.sessionEndpoint ||
     !config.requestHeader ||
     !config.sessionHeader
   ) {
@@ -181,8 +182,8 @@
   }
 
   function confirmSession() {
-    return postJson(config.challengeEndpoint, {}).then(function (result) {
-      return result && result.success === false && result.code === "already_authenticated";
+    return postJson(config.sessionEndpoint, {}).then(function (result) {
+      return result && result.success === true && result.authenticated === true;
     });
   }
 

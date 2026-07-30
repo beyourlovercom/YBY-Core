@@ -28,9 +28,9 @@ The active development line adds secure Google authentication:
 - optional verified-email association for existing Subscriber and Customer accounts only
 - Google `sub` identity lookup for every returning login after association
 - opt-in Google One Tap for eligible logged-out visitors on normal public pages
-- same-origin, single-use One Tap challenges and asynchronous same-page WordPress authentication
+- same-origin, single-use One Tap challenges, asynchronous authentication, and dedicated logged-in cookie confirmation
 
-The login-page integration, safe existing-account association, and One Tap settings default to disabled. One Tap is intended for eligible returning Google users, never enables automatic account selection or automatic login, and leaves the visitor on the current page after a successful sign-in. Google and the browser control whether and where the prompt appears, including dismissal and cooldown behavior. Ordinary public pages remain cacheable because each short-lived challenge is requested after page load rather than embedded in page HTML.
+The login-page integration, safe existing-account association, and One Tap settings default to disabled. One Tap is intended for eligible returning Google users, never enables automatic account selection or automatic login, and leaves the visitor on the current page after a successful sign-in. A dedicated no-store endpoint cryptographically validates the returned WordPress logged-in cookie without exposing a REST nonce or identity data. Google and the browser control whether and where the prompt appears, including dismissal and cooldown behavior. Ordinary public pages remain cacheable because each short-lived challenge is requested after page load rather than embedded in page HTML.
 
 Privileged, custom, mixed-role, and explicitly disabled-role accounts are never associated automatically. The development implementation stores the signed provider picture URL for future display but does not globally replace WordPress avatars. Client Secret, Google API authorization, access or refresh token storage, manual account linking or unlinking, and Facebook, X, or TikTok authentication are not implemented.
 
