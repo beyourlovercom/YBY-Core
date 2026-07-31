@@ -410,7 +410,14 @@
   }
 
   function getRuntimeWhatsAppTemplate() {
-    return normalizeWhatsAppMessage(runtime.whatsappMessageTemplate || "");
+    var template = normalizeWhatsAppMessage(runtime.whatsappMessageTemplate || "");
+    var brandName = getWhatsAppBrandName().toLowerCase();
+
+    if (brandName.indexOf("bottle") !== -1 && /\b(irrigation|farm|crop|water source)\b/i.test(template)) {
+      return "";
+    }
+
+    return template;
   }
 
   function getWhatsAppBrandName() {

@@ -705,6 +705,23 @@ function testBottleDefaultMessage() {
   assert(message.indexOf("I submitted a website inquiry.") > -1, "Bottle default message must use neutral shared copy.");
 }
 
+function testBottleRejectsIrrigationRuntimeTemplate() {
+  const runtime = createRuntime({
+    search: "?case_id=YBY-YBC-20260721-ABC234",
+    runtime: {
+      siteBrandName: "YBY Bottle",
+      caseIdBrandCode: "YBC",
+      defaultProductInterest: "glass bottle OEM",
+      whatsappMessageTemplate: "Hello {brand_name}, I submitted an irrigation solution request.\n\nMy Case ID: {case_id}\n\nCountry: {country}\nCrop: {crop}\nWater Source: {water_source}"
+    }
+  });
+  const message = decodeWhatsAppText(runtime.window.YBYThankYou.buildWhatsAppUrl());
+
+  assert(message.indexOf("Hello YBY Bottle, I submitted a website inquiry.") === 0, "Bottle must fall back to the neutral shared message when the Runtime template belongs to irrigation.");
+  assert(message.indexOf("YBY-YBC-20260721-ABC234") > -1, "Bottle fallback must preserve the exact Case ID.");
+  assert(!/irrigation|farm|crop|water source/i.test(message), "Bottle fallback must exclude irrigation identity and fields.");
+}
+
 function testSessionStorageHydrationAndTracking() {
   const runtime = createRuntime({
     search: "?case_id=YBY-IRR-20260721-ABC234"
@@ -777,6 +794,7 @@ const tests = [
   ["empty_lead_clears_summary", testNewEmptyLeadClearsSummary],
   ["internal_source_exclusion", testInternalSourceExclusion],
   ["default_bottle", testBottleDefaultMessage],
+  ["bottle_template_isolation", testBottleRejectsIrrigationRuntimeTemplate],
   ["session_tracking", testSessionStorageHydrationAndTracking],
   ["tracking_pii", testTrackingPiiExclusion],
   ["non_thank_you", testNonThankYouExclusion],
