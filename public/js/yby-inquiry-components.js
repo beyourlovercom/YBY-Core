@@ -259,6 +259,12 @@
     );
   }
 
+  function getPageProfile(form) {
+    var pageProfile = window.YBYPageProfile || {};
+
+    return safeString(form.getAttribute("data-yby-page-profile") || pageProfile.profileId, 100);
+  }
+
   function getTrackingPayload(form, extra) {
     var modal = form.closest("[data-yby-inquiry-modal]");
     var base = {
@@ -268,7 +274,7 @@
       modal_id: safeString(modal ? modal.id : "", 120),
       form_version: safeString(form.getAttribute("data-yby-form-version"), 80),
       trigger_source: safeString(form.getAttribute("data-yby-trigger-source"), 120),
-      page_profile: safeString(form.getAttribute("data-yby-page-profile"), 100)
+      page_profile: getPageProfile(form)
     };
 
     if (extra && typeof extra === "object") {
@@ -460,7 +466,7 @@
     payload.source_page = getSourcePage(form, modal);
     payload.form_version = safeString(form.getAttribute("data-yby-form-version"), 30);
     payload.trigger_source = safeString(form.getAttribute("data-yby-trigger-source"), 120);
-    payload.page_profile = safeString(form.getAttribute("data-yby-page-profile"), 100);
+    payload.page_profile = getPageProfile(form);
     payload.utm_source = safeString(getQueryParam("utm_source"), 100);
     payload.utm_medium = safeString(getQueryParam("utm_medium"), 100);
     payload.utm_campaign = safeString(getQueryParam("utm_campaign"), 150);
