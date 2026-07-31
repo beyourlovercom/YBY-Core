@@ -29,11 +29,11 @@
       .substring(0, maxLength || 120);
   }
 
-  function sanitizeFieldKey(key) {
+  function sanitizeFieldKey(key, maxLength) {
     return String(key || "")
       .toLowerCase()
       .replace(/[^a-z0-9_]/g, "")
-      .substring(0, 80);
+      .substring(0, maxLength || 80);
   }
 
   function sanitizeFieldValue(value, maxLength) {
@@ -182,6 +182,7 @@
       source_url: 1000,
       source_component: 100,
       source_preset: 100,
+      page_profile: 100,
       source_page: 255,
       form_version: 30,
       utm_source: 100,
@@ -210,6 +211,7 @@
       "source_url",
       "source_component",
       "source_preset",
+      "page_profile",
       "source_page",
       "form_version",
       "quantity",
@@ -229,7 +231,10 @@
 
     allowed.forEach(function (key) {
       if (typeof input[key] !== "undefined") {
-        output[key] = safeString(input[key], maxLengths[key] || 180);
+        output[key] =
+          key === "page_profile"
+            ? sanitizeFieldKey(input[key], maxLengths[key])
+            : safeString(input[key], maxLengths[key] || 180);
       }
     });
 
@@ -310,6 +315,7 @@
       "company",
       "source_component",
       "source_preset",
+      "page_profile",
       "source_page",
       "form_version",
       "quantity",
