@@ -240,32 +240,12 @@ class YBY_Page_Profile {
 
 		switch ( $runtime_key ) {
 			case 'catalogUrl':
-				return esc_url_raw( $value );
+				return YBY_Config::sanitize_absolute_url_value( $value );
 			case 'thankYouUrl':
 			case 'returnPageUrl':
-				return self::sanitize_relative_or_absolute_url( $value );
+				return YBY_Config::sanitize_path_or_absolute_url_value( $value, '' );
 			default:
 				return sanitize_text_field( $value );
 		}
-	}
-
-	/**
-	 * Sanitize a relative or absolute URL.
-	 *
-	 * @param string $value URL value.
-	 * @return string
-	 */
-	protected static function sanitize_relative_or_absolute_url( $value ) {
-		$value = trim( (string) $value );
-
-		if ( '' === $value ) {
-			return '';
-		}
-
-		if ( preg_match( '#^https?://#i', $value ) ) {
-			return esc_url_raw( $value );
-		}
-
-		return YBY_Config::sanitize_path_value( $value );
 	}
 }
