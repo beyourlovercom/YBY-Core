@@ -342,10 +342,16 @@ $tests['public_scope_registration'] = static function () {
 };
 
 $tests['version_and_regression_boundary'] = static function () {
-	$main = file_get_contents( dirname( __DIR__ ) . '/yby-core.php' );
-	$core = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-core.php' );
+	$core       = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-core.php' );
+	$model      = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-social-login.php' );
+	$admin      = file_get_contents( dirname( __DIR__ ) . '/admin/class-yby-social-login-admin.php' );
+	$rest       = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-google-auth-rest-controller.php' );
+	$shortcodes = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-social-login-shortcodes.php' );
+	$sources    = $model . $admin . $rest . $shortcodes;
 
-	harness_assert( false !== strpos( $main, "define( 'YBY_DATABASE_VERSION', '1.1.0' );" ), 'Database version must remain 1.1.0.' );
+	harness_assert( false === strpos( $sources, 'YBY_DATABASE_VERSION' ), 'Social Login must not modify the database version.' );
+	harness_assert( false === stripos( $sources, 'dbDelta' ), 'Social Login must not run database migrations.' );
+	harness_assert( false === stripos( $sources, 'CREATE TABLE' ) && false === stripos( $sources, 'ALTER TABLE' ), 'Social Login must not own database schema.' );
 	harness_assert( false !== strpos( $core, "'/wp-json/yby/v1/" ) || false !== strpos( file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-lead-rest-controller.php' ), "'yby/v1'" ), 'Lead REST namespace must remain present.' );
 	harness_assert( false !== strpos( $core, 'YBY_Inquiry_Shortcodes' ), 'Inquiry runtime must remain registered.' );
 	harness_assert( false !== strpos( $core, 'YBY_Lead_REST_Controller' ), 'Lead runtime must remain registered.' );

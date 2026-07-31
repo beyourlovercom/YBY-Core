@@ -1347,7 +1347,6 @@ $tests['controller_nonce_redirect_and_reuse'] = static function () use ( $privat
 };
 
 $tests['schema_and_regression_boundary'] = static function () {
-	$main       = file_get_contents( dirname( __DIR__ ) . '/yby-core.php' );
 	$core       = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-core.php' );
 	$controller = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-google-auth-rest-controller.php' );
 	$verifier   = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-google-token-verifier.php' );
@@ -1355,7 +1354,8 @@ $tests['schema_and_regression_boundary'] = static function () {
 	$css        = file_get_contents( dirname( __DIR__ ) . '/public/assets/css/yby-core-public.css' );
 	$all        = $controller . $verifier . $service;
 
-	ga_assert( false !== strpos( $main, "define( 'YBY_DATABASE_VERSION', '1.1.0' );" ), 'Database version must remain 1.1.0.' );
+	ga_assert( false === strpos( $all, 'YBY_DATABASE_VERSION' ), 'Google authentication must not modify the database version.' );
+	ga_assert( false === stripos( $all, 'dbDelta' ), 'Google authentication must not run database migrations.' );
 	ga_assert( false === stripos( $all, 'CREATE TABLE' ), 'Google authentication must not create a database table.' );
 	ga_assert( false === stripos( $all, 'client_secret' ), 'No Client Secret may exist.' );
 	ga_assert( false === stripos( $all, 'tokeninfo' ), 'Production verification must not depend on tokeninfo.' );

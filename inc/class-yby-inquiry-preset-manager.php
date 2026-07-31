@@ -96,6 +96,16 @@ class YBY_Inquiry_Preset_Manager {
 					),
 					'source_component' => 'inquiry_modal',
 				),
+				'bottle_oem_inquiry' => array(
+					'id'               => 'bottle_oem_inquiry',
+					'label'            => 'Bottle OEM Inquiry',
+					'enabled'          => true,
+					'version'          => '1.0',
+					'fields'           => array( 'name', 'company', 'email', 'whatsapp', 'country', 'product_interest', 'estimated_quantity', 'target_launch_date', 'project_path', 'spirit_type', 'selected_components', 'selected_model', 'customization', 'message' ),
+					'validation'       => array( 'contact_requirement' => 'email_or_whatsapp' ),
+					'source_component' => 'inquiry_modal',
+					'page_profiles'    => array( 'bottle_oem' ),
+				),
 			)
 		);
 	}
@@ -202,7 +212,24 @@ class YBY_Inquiry_Preset_Manager {
 			'fields'           => $this->sanitize_preset_fields( isset( $preset['fields'] ) ? $preset['fields'] : array(), $allowed_field_ids ),
 			'validation'       => $this->sanitize_validation( isset( $preset['validation'] ) ? $preset['validation'] : array() ),
 			'source_component' => isset( $preset['source_component'] ) ? sanitize_text_field( $preset['source_component'] ) : '',
+			'page_profiles'    => $this->sanitize_page_profiles( isset( $preset['page_profiles'] ) ? $preset['page_profiles'] : array() ),
 		);
+	}
+
+	/** @return bool */
+	public function is_preset_allowed_for_profile( $preset_id, $profile_id ) {
+		$preset = $this->get_preset( $preset_id );
+		if ( empty( $preset ) || empty( $preset['enabled'] ) ) { return false; }
+		$profiles = isset( $preset['page_profiles'] ) && is_array( $preset['page_profiles'] ) ? $preset['page_profiles'] : array();
+		return empty( $profiles ) || in_array( sanitize_key( $profile_id ), $profiles, true );
+	}
+
+	/** @return array<int, string> */
+	protected function sanitize_page_profiles( $profiles ) {
+		if ( ! is_array( $profiles ) ) { return array(); }
+		$output = array();
+		foreach ( $profiles as $profile ) { $profile = sanitize_key( $profile ); if ( '' !== $profile && ! in_array( $profile, $output, true ) ) { $output[] = $profile; } }
+		return $output;
 	}
 
 	/**

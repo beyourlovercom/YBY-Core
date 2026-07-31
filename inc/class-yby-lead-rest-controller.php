@@ -109,6 +109,7 @@ class YBY_Lead_REST_Controller {
 				'source_preset'    => $request->get_param( 'source_preset' ),
 				'source_page'      => $request->get_param( 'source_page' ),
 				'form_version'     => $request->get_param( 'form_version' ),
+				'page_profile'     => $request->get_param( 'page_profile' ),
 			)
 		);
 		$custom_fields   = $mapper->sanitize_custom_fields( $request->get_param( 'fields' ), $source_metadata['source_preset'] );
@@ -148,6 +149,10 @@ class YBY_Lead_REST_Controller {
 	 */
 	protected function validate_lead( $lead ) {
 		$errors = array();
+		$mapper = new YBY_Inquiry_Lead_Mapper();
+		if ( method_exists( $mapper, 'validate_submission_context' ) ) {
+			$errors = array_merge( $errors, $mapper->validate_submission_context( $lead['source_preset'], $lead['page_profile'] ) );
+		}
 
 		if ( '' === trim( (string) $lead['name'] ) ) {
 			$errors['name'] = __( 'Name is required', 'yby-core' );
