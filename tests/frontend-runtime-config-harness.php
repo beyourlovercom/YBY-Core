@@ -122,6 +122,10 @@ class YBY_Page_Profile {
 	public static function get_current_profile() {
 		return array( 'profileId' => 'page-1' );
 	}
+
+	public static function get_current_overrides() {
+		return array( 'thankYouUrl' => '/page-thank-you/' );
+	}
 }
 
 class YBY_Content {
@@ -196,6 +200,8 @@ harness_assert( false !== strpos( $script, '"siteBrandName":"YBY Bottle"' ), 'Ru
 harness_assert( false !== strpos( $script, '"caseIdBrandCode":"BOT"' ), 'Runtime config must expose caseIdBrandCode.' );
 harness_assert( false !== strpos( $script, '"websiteUrl":"https:\\/\\/bottle.example.test\\/"' ), 'Runtime config must expose websiteUrl.' );
 harness_assert( false !== strpos( $script, '"thankYouUrl":"\\/thank-you-bottle\\/"' ), 'Runtime config must expose thankYouUrl.' );
+harness_assert( false !== strpos( $script, '"pageProfileOverrides":{"thankYouUrl":"\\/page-thank-you\\/"}' ), 'Frontend data must expose explicit page profile overrides.' );
+harness_assert( false === strpos( $script, 'yby_thank_you_url' ), 'Frontend data must not expose WordPress meta names.' );
 harness_assert( false !== strpos( $script, '"returnPageUrl":"\\/bottle-products\\/"' ), 'Runtime config must expose returnPageUrl.' );
 harness_assert( false !== strpos( $script, '"catalogUrl":"https:\\/\\/bottle.example.test\\/catalog.pdf"' ), 'Runtime config must expose catalogUrl.' );
 harness_assert( false !== strpos( $script, '"youtubeVideoId":"Bottle123"' ), 'Runtime config must expose youtubeVideoId.' );

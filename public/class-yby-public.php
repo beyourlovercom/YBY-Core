@@ -90,6 +90,7 @@ class YBY_Public {
 
 		$project      = YBY_Project::get_current_project();
 		$page_profile = YBY_Page_Profile::get_current_profile();
+		$page_profile_overrides = YBY_Page_Profile::get_current_overrides();
 		$content      = YBY_Content::get_current_content();
 		$template     = YBY_Project_Template::get_current_template();
 
@@ -99,6 +100,7 @@ class YBY_Public {
 			'tracking'    => ( new YBY_Tracking() )->get_frontend_config(),
 			'project'     => $project,
 			'pageProfile' => $page_profile,
+			'pageProfileOverrides' => $page_profile_overrides,
 			'content'     => $content,
 			'template'    => $template,
 		);
