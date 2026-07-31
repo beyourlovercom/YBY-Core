@@ -12,6 +12,14 @@ Andy Core owns Bottle OEM and wholesale submission through the existing `POST /w
 
 The page may populate modal controls carrying `data-yby-field-id` before submission. The accepted OEM builder fields are `project_path`, `spirit_type`, `selected_components`, `estimated_quantity`, `target_launch_date`, and `selected_model`; they are stored in the existing `custom_fields` JSON column. `project_path` is an allowlisted select value; text values are scalar-only and are sanitized and length-limited by the field registry.
 
+## Thank You destination ownership
+
+- A page-level administrator value stored through the governed Page Profile may explicitly override the global Thank You target.
+- Explicit page overrides are sanitized and serialized server-side in `pageProfileOverrides`; the merged compatibility profile is not treated as an explicit override.
+- The Lead payload cannot choose or replace the redirect destination.
+- The Case ID remains server-generated, and only `case_id` may be appended to the resolved Thank You URL.
+- When the page has no explicit override, the existing global and compatibility fallback behavior remains unchanged.
+
 `source_url` and UTM fields are sanitized as existing lead metadata. No client input can set the final Case ID or Thank You destination.
 
 ## Shared Bottle runtime

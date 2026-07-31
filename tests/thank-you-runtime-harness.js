@@ -271,6 +271,7 @@ function createRuntime(options = {}) {
         },
         options.pageProfile || {}
       ),
+      pageProfileOverrides: Object.assign({}, options.pageProfileOverrides || {}),
       leadSession: Object.assign(
         {
           caseIdRegex: "^YBY-[A-Z0-9]+-\\d{8}-[A-HJ-NP-Z2-9]{6}$",
@@ -419,7 +420,41 @@ function testRuntimeThankYouWins() {
   const runtime = createRuntime({
     search: "?case_id=YBY-IRR-20260721-ABC234"
   });
-  assert(runtime.window.YBYLead.buildThankYouUrl("YBY-IRR-20260721-ABC234") === "/current-thank-you/?case_id=YBY-IRR-20260721-ABC234", "Runtime Thank You URL must win.");
+  assert(runtime.window.YBYLead.buildThankYouUrl("YBY-IRR-20260721-ABC234") === "/current-thank-you/?case_id=YBY-IRR-20260721-ABC234", "Global Runtime must win when no explicit page override exists.");
+}
+
+function testExplicitPageThankYouOverrideWins() {
+  const runtime = createRuntime({
+    pageProfileOverrides: {
+      thankYouUrl: "/lp/thank-you-glass-bottle-oem/"
+    }
+  });
+  const url = runtime.window.YBYLead.buildThankYouUrl("YBY-IRR-20260721-ABC234", {
+    thankYouUrl: "https://evil.example.test/",
+    redirect_url: "https://evil.example.test/",
+    name: "Private Name",
+    email: "private@example.test",
+    whatsapp: "+8613800000000",
+    company: "Private Company"
+  });
+
+  assert(url === "/lp/thank-you-glass-bottle-oem/?case_id=YBY-IRR-20260721-ABC234", "Explicit page Thank You override must win over global runtime.");
+  assert(url.indexOf("evil.example.test") === -1, "Client payload must not choose the Thank You target.");
+  ["Private Name", "private@example.test", "+8613800000000", "Private Company"].forEach((value) => {
+    assert(url.indexOf(value) === -1, "Thank You URL must not expose PII.");
+  });
+  assert(url.split("?")[1] === "case_id=YBY-IRR-20260721-ABC234", "Only case_id may be appended to the Thank You URL.");
+}
+
+function testMergedPageProfileCannotOverrideGlobal() {
+  const runtime = createRuntime({
+    pageProfile: {
+      thankYouUrl: "/merged-page-thank-you/"
+    },
+    pageProfileOverrides: {}
+  });
+
+  assert(runtime.window.YBYLead.buildThankYouUrl("YBY-IRR-20260721-ABC234") === "/current-thank-you/?case_id=YBY-IRR-20260721-ABC234", "Merged page profile must not override global runtime without an explicit override.");
 }
 
 function testLegacyFallbackRemains() {
@@ -693,6 +728,8 @@ const tests = [
   ["runtime_return", testRuntimeReturnWins],
   ["runtime_youtube", testRuntimeYouTubeWins],
   ["runtime_thank_you", testRuntimeThankYouWins],
+  ["explicit_page_thank_you", testExplicitPageThankYouOverrideWins],
+  ["merged_page_profile_boundary", testMergedPageProfileCannotOverrideGlobal],
   ["legacy_fallback", testLegacyFallbackRemains],
   ["runtime_template", testRuntimeTemplateWins],
   ["legacy_newlines", testLegacyEscapedNewlines],

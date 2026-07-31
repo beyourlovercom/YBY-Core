@@ -20,6 +20,7 @@
   var tracking = data.tracking || {};
   var project = window.YBYProject || data.project || {};
   var pageProfile = window.YBYPageProfile || data.pageProfile || {};
+  var pageProfileOverrides = data.pageProfileOverrides || {};
   var content = window.YBYContent || data.content || {};
   var template = window.YBYTemplate || data.template || {};
   var readableChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -184,6 +185,16 @@
     }
 
     return getCanonicalString(key, fallback, maxLength);
+  }
+
+  function getResolvedThankYouUrl() {
+    var pageOverride = safeString(pageProfileOverrides.thankYouUrl, 240);
+
+    if (pageOverride) {
+      return pageOverride;
+    }
+
+    return getBrandRuntimeString("thankYouUrl", leadSession.thankYouUrl || "/", 240) || "/";
   }
 
   function getProductInterest() {
@@ -651,7 +662,7 @@
 
   window.YBYLead.buildThankYouUrl = function (caseId) {
     var safeCaseId = buildWhatsAppCaseId(caseId);
-    var thankYouUrl = getBrandRuntimeString("thankYouUrl", leadSession.thankYouUrl || "/", 240) || "/";
+    var thankYouUrl = getResolvedThankYouUrl();
     return appendQueryParam(thankYouUrl, "case_id", safeCaseId);
   };
 

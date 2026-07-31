@@ -51,6 +51,58 @@ class YBY_Page_Profile {
 	}
 
 	/**
+	 * Get explicit profile overrides for the current queried page.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function get_current_overrides() {
+		return self::get_overrides_by_post_id( get_queried_object_id() );
+	}
+
+	/**
+	 * Get explicit profile overrides by post ID.
+	 *
+	 * Values are returned only when the page stores a non-empty value. Global
+	 * configuration and system defaults are intentionally not merged.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array<string, string>
+	 */
+	public static function get_overrides_by_post_id( $post_id ) {
+		$post_id = absint( $post_id );
+
+		if ( ! $post_id ) {
+			return array();
+		}
+
+		$overrides = array();
+
+		foreach ( self::field_map() as $runtime_key => $meta_key ) {
+			if ( ! metadata_exists( 'post', $post_id, $meta_key ) ) {
+				continue;
+			}
+
+			$value = '';
+
+			if ( function_exists( 'get_field' ) ) {
+				$value = get_field( $meta_key, $post_id );
+			}
+
+			if ( '' === $value || null === $value || false === $value ) {
+				$value = get_post_meta( $post_id, $meta_key, true );
+			}
+
+			$value = self::sanitize_profile_value( $runtime_key, $value );
+
+			if ( '' !== $value ) {
+				$overrides[ $runtime_key ] = $value;
+			}
+		}
+
+		return $overrides;
+	}
+
+	/**
 	 * Get page profile by post ID.
 	 *
 	 * @param int $post_id Post ID.
