@@ -417,9 +417,30 @@ function testRuntimeYouTubeWins() {
 
 function testRuntimeThankYouWins() {
   const runtime = createRuntime({
-    search: "?case_id=YBY-IRR-20260721-ABC234"
+    search: "?case_id=YBY-IRR-20260721-ABC234",
+    pageProfile: {
+      thankYouUrl: ""
+    }
   });
-  assert(runtime.window.YBYLead.buildThankYouUrl("YBY-IRR-20260721-ABC234") === "/current-thank-you/?case_id=YBY-IRR-20260721-ABC234", "Runtime Thank You URL must win.");
+  assert(runtime.window.YBYLead.buildThankYouUrl("YBY-IRR-20260721-ABC234") === "/current-thank-you/?case_id=YBY-IRR-20260721-ABC234", "Runtime Thank You URL must remain the fallback when no page URL is configured.");
+}
+
+function testPageProfileThankYouWins() {
+  const runtime = createRuntime({
+    search: "?case_id=YBY-YBC-20260731-KBGGRM",
+    runtime: {
+      thankYouUrl: "/lp/thank-you/"
+    },
+    project: {
+      thankYouUrl: "/legacy-project-thank-you/"
+    },
+    pageProfile: {
+      profileId: "bottle_oem",
+      thankYouUrl: "/lp/thank-you-glass-bottle-oem/"
+    }
+  });
+
+  assert(runtime.window.YBYLead.buildThankYouUrl("YBY-YBC-20260731-KBGGRM") === "/lp/thank-you-glass-bottle-oem/?case_id=YBY-YBC-20260731-KBGGRM", "The final Core Runtime method must prefer the explicit page-profile Thank You URL.");
 }
 
 function testLegacyFallbackRemains() {
@@ -435,7 +456,7 @@ function testLegacyFallbackRemains() {
   assert(runtimeProject.nodes.catalogLink.getAttribute("href") === "/legacy-project-catalog.pdf", "Project catalog fallback must remain.");
   assert(runtimeProject.nodes.returnLink.getAttribute("href") === "/legacy-project-return/", "Project return fallback must remain.");
   assert(runtimeProject.nodes.videoFrame.getAttribute("src").indexOf("LegacyProjectVideo") > -1, "Project YouTube fallback must remain.");
-  assert(runtimeProject.window.YBYLead.buildThankYouUrl("YBY-IRR-20260721-ABC234") === "/legacy-project-thank-you/?case_id=YBY-IRR-20260721-ABC234", "Project Thank You fallback must remain.");
+  assert(runtimeProject.window.YBYLead.buildThankYouUrl("YBY-IRR-20260721-ABC234") === "/legacy-page-thank-you/?case_id=YBY-IRR-20260721-ABC234", "An explicit page Thank You URL must win over the Project compatibility value.");
 
   const runtimePage = createRuntime({
     runtime: {
@@ -781,6 +802,7 @@ const tests = [
   ["runtime_return", testRuntimeReturnWins],
   ["runtime_youtube", testRuntimeYouTubeWins],
   ["runtime_thank_you", testRuntimeThankYouWins],
+  ["page_profile_thank_you", testPageProfileThankYouWins],
   ["legacy_fallback", testLegacyFallbackRemains],
   ["runtime_template", testRuntimeTemplateWins],
   ["legacy_newlines", testLegacyEscapedNewlines],

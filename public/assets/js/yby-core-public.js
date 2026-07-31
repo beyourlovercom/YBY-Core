@@ -717,7 +717,7 @@
 
   window.YBYLead.buildThankYouUrl = function (caseId) {
     var safeCaseId = buildWhatsAppCaseId(caseId);
-    var thankYouUrl = getBrandRuntimeString("thankYouUrl", leadSession.thankYouUrl || "/", 240) || "/";
+    var thankYouUrl = safeString(pageProfile.thankYouUrl, 240) || getBrandRuntimeString("thankYouUrl", leadSession.thankYouUrl || "/", 240) || "/";
     return appendQueryParam(thankYouUrl, "case_id", safeCaseId);
   };
 
