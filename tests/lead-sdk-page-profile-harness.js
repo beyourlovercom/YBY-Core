@@ -15,7 +15,8 @@ function assert(condition, message) {
   }
 }
 
-function createRuntime() {
+function createRuntime(options) {
+  options = options || {};
   const requests = [];
   const session = new Map();
   const dataLayer = [];
@@ -77,6 +78,10 @@ function createRuntime() {
   });
 
   vm.runInContext(source, context, { filename: "yby-lead-sdk.js" });
+
+  if (options.pageProfileAfterSdk) {
+    window.YBYPageProfile = options.pageProfileAfterSdk;
+  }
 
   return {
     dataLayer,
@@ -168,6 +173,50 @@ async function submit(runtime, overrides) {
   assert(
     runtime.requests[0].body.page_profile === "bottle_oem",
     "The fetch JSON body must contain the sanitized page_profile."
+  );
+
+  const productionOrderRuntime = createRuntime({
+    pageProfileAfterSdk: {
+      profileId: "bottle_oem",
+      thankYouUrl: "/lp/thank-you-glass-bottle-oem/"
+    }
+  });
+  const productionCaseId = "YBY-YBC-20991231-ABC234";
+  assert(
+    productionOrderRuntime.sdk.buildThankYouUrl(productionCaseId) ===
+      "/lp/thank-you-glass-bottle-oem/?case_id=YBY-YBC-20991231-ABC234",
+    "A page profile loaded after the SDK must override the global Thank You URL."
+  );
+
+  const globalFallbackRuntime = createRuntime();
+  assert(
+    globalFallbackRuntime.sdk.buildThankYouUrl(productionCaseId) ===
+      "/thank-you/?case_id=YBY-YBC-20991231-ABC234",
+    "The global Thank You URL must remain the fallback when no page URL is configured."
+  );
+
+  const untrustedRedirectRuntime = createRuntime({
+    pageProfileAfterSdk: {
+      thankYouUrl: "/lp/thank-you-glass-bottle-oem/"
+    }
+  });
+  await submit(untrustedRedirectRuntime, {
+    name: "URL PII Sentinel",
+    email: "url-pii@example.test",
+    whatsapp: "+15550001111",
+    company: "URL Company Sentinel",
+    message: "URL Message Sentinel",
+    thankYouUrl: "https://evil.example.test/",
+    redirect_url: "https://evil.example.test/redirect"
+  });
+  const untrustedRedirectUrl = untrustedRedirectRuntime.sdk.buildThankYouUrl(productionCaseId);
+  assert(
+    untrustedRedirectUrl === "/lp/thank-you-glass-bottle-oem/?case_id=YBY-YBC-20991231-ABC234",
+    "Payload redirect fields must not control the Thank You URL."
+  );
+  assert(
+    !/url-pii|evil|company|message|whatsapp|email/i.test(untrustedRedirectUrl),
+    "The Thank You URL must contain no payload PII or untrusted redirect data."
   );
 
   console.log("PASS lead-sdk-page-profile-harness");

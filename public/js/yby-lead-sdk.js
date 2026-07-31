@@ -9,6 +9,10 @@
     return window.YBYCoreConfig || {};
   }
 
+  function getPageProfile() {
+    return window.YBYPageProfile || {};
+  }
+
   function log(message, data) {
     if (!window.YBYLead || !window.YBYLead.debug) {
       return;
@@ -484,8 +488,9 @@
 
     sdk.buildThankYouUrl = function (caseId) {
       var runtime = getRuntime();
+      var pageProfile = getPageProfile();
       var safeCaseId = normalizeCaseId(caseId || sdk.getCaseId() || sdk.createCaseId());
-      var baseUrl = runtime.thankYouUrl || runtime.returnPageUrl || "/";
+      var baseUrl = safeString(pageProfile.thankYouUrl, 1000) || safeString(runtime.thankYouUrl, 1000) || safeString(runtime.returnPageUrl, 1000) || "/";
       var separator = baseUrl.indexOf("?") === -1 ? "?" : "&";
       return baseUrl + separator + "case_id=" + encodeURIComponent(safeCaseId);
     };
