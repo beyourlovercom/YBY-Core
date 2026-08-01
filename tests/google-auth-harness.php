@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'YBY_CORE_PLUGIN_DIR', dirname( __DIR__ ) . DIRECTORY_SEPARATOR );
 define( 'YBY_CORE_PLUGIN_URL', 'https://example.test/wp-content/plugins/yby-core/' );
-define( 'YBY_CORE_VERSION', '1.5.0-dev' );
+define( 'YBY_CORE_VERSION', '1.5.0' );
 define( 'LOGGED_IN_COOKIE', 'wordpress_logged_in_test' );
 
 class WP_Error {

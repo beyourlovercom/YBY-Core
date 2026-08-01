@@ -4,15 +4,15 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `1.4.0`
-- Development version: `1.5.0-dev`
-- Database version: `1.1.0`
+- Product version: `1.5.0`
+- Development version: none during release freeze
+- Database version: `1.2.0`
 - Plugin path: `yby-core/yby-core.php`
 - Technical namespace: existing `YBY_*` and `yby_*` identifiers retained for compatibility
 
-## v1.5.0 development scope
+## v1.5.0 release scope
 
-The active development line adds secure Google authentication:
+Version 1.5.0 adds secure Google authentication and portable Bottle inquiry runtime support:
 
 - one Social Login submenu under Andy Core
 - provider status cards for Google, Facebook, X, and TikTok
@@ -29,10 +29,15 @@ The active development line adds secure Google authentication:
 - Google `sub` identity lookup for every returning login after association
 - opt-in Google One Tap for eligible logged-out visitors on normal public pages
 - same-origin, single-use One Tap challenges, asynchronous authentication, and dedicated logged-in cookie confirmation
+- Bottle OEM inquiry fields and preset/profile validation
+- persisted `page_profile` lead attribution
+- page-profile-specific Thank You URL precedence with strict URL validation
+- Case-scoped, confirmed-only WhatsApp project summaries
+- cross-brand email and WhatsApp identity regression protection
 
 The login-page integration, safe existing-account association, and One Tap settings default to disabled. One Tap is intended for eligible returning Google users, never enables automatic account selection or automatic login, and leaves the visitor on the current page after a successful sign-in. A dedicated no-store endpoint cryptographically validates the returned WordPress logged-in cookie without exposing a REST nonce or identity data. Google and the browser control whether and where the prompt appears, including dismissal and cooldown behavior. Ordinary public pages remain cacheable because each short-lived challenge is requested after page load rather than embedded in page HTML.
 
-Privileged, custom, mixed-role, and explicitly disabled-role accounts are never associated automatically. The development implementation stores the signed provider picture URL for future display but does not globally replace WordPress avatars. Client Secret, Google API authorization, access or refresh token storage, manual account linking or unlinking, and Facebook, X, or TikTok authentication are not implemented.
+Privileged, custom, mixed-role, and explicitly disabled-role accounts are never associated automatically. The implementation stores the signed provider picture URL for future display but does not globally replace WordPress avatars. Client Secret, Google API authorization, access or refresh token storage, manual account linking or unlinking, and Facebook, X, or TikTok authentication are not implemented.
 
 ## v1.4.0 purpose
 
@@ -152,7 +157,7 @@ Default settings remain stored under existing option keys, including:
 - `yby_core_options`
 - `yby_lead_notification_primary_recipient_email`
 
-The database schema remains `1.1.0`; v1.4.0 performs no schema migration.
+Version 1.5.0 upgrades the database schema to `1.2.0` by adding the nullable `page_profile` Lead column through the existing idempotent database installer.
 
 ## Security boundaries
 
@@ -173,11 +178,9 @@ The database schema remains `1.1.0`; v1.4.0 performs no schema migration.
 - database schema changes
 - theme or Bricks changes
 
-## Development direction
+## Release state
 
-The previous fixed long-term roadmap is superseded by a feature-driven roadmap.
-
-The active v1.5.0 development feature is **Social Login**, beginning with the secure Google authentication flow documented above. This development work does not change the scope or stability of v1.4.0.
+Andy Core v1.5.0 is frozen for release. Production deployment remains a separate, explicitly authorized operation.
 
 ## Release process
 

@@ -4,7 +4,7 @@ Tags: andy-core, yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 License: Proprietary
 License URI: https://ybyglobal.com/
 
@@ -12,15 +12,18 @@ Core platform plugin for managed WordPress websites, including Case ID, tracking
 
 == Description ==
 
-Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.4.0 changes the user-facing product name while preserving the existing `yby-core` plugin path, technical namespace, shortcodes, REST routes, options, database tables, and runtime APIs for compatibility.
+Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.0 adds secure Google authentication and portable Bottle inquiry runtime support while preserving the existing `yby-core` plugin identity and compatibility contracts.
 
-Included in v1.4.0:
+Included in v1.5.0:
 
 * User-facing product name changed to Andy Core
-* Existing Inquiry, Case ID, tracking, configuration, email, and runtime behavior preserved
+* Google Social Login and opt-in Google One Tap
+* Bottle OEM inquiry preset and page profile transport
+* Page-specific Thank You URLs with strict URL validation
+* Confirmed-only, Case-scoped WhatsApp project summaries
 * Plugin directory and main file remain `yby-core/yby-core.php`
 * Technical `YBY_*`, `yby_*`, `[yby_*]`, `data-yby-*`, and `/wp-json/yby/v1/` contracts remain unchanged
-* Database schema remains version 1.1.0
+* Database schema version 1.2.0 adds Lead page_profile attribution
 
 Existing capabilities:
 
@@ -52,7 +55,7 @@ Not included:
 * Real CRM connection
 * Real ERP connection
 * AI services
-* Social Login in v1.4.0
+* Facebook, X, or TikTok authentication
 * GTM, GA4, Ads, or Bricks modifications
 
 == Installation ==
@@ -100,6 +103,14 @@ Lead notifications dispatch through `YBY_Notification_Manager` with the Email pr
 The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Recipient Emails, Reply-To Policy, Lead Email Subject Template, and Email Branding settings. Invalid addresses are ignored.
 
 == Changelog ==
+
+= 1.5.0 =
+
+* Added secure Google Social Login and opt-in Google One Tap.
+* Added Bottle OEM inquiry preset, profile validation, and Lead page_profile persistence.
+* Added page-specific Thank You routing with hardened URL validation.
+* Added confirmed-only, Case-scoped WhatsApp project summaries and cross-brand identity isolation.
+* Updated database schema version to 1.2.0.
 
 = 1.4.0 =
 

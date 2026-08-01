@@ -1,10 +1,10 @@
 # VERSION
 
 - Product Name: Andy Core
-- Stable Version: 1.4.0
-- Development Version: 1.5.0-dev
+- Stable Version: 1.5.0
+- Development Version: None
 - Stable Release Type: Stable
-- Development Status: Google Social Login and One Tap UAT
+- Development Status: Release Freeze
 - Technical Namespace: YBY legacy compatibility retained
-- Database Version: 1.1.0
+- Database Version: 1.2.0
 - Brand Settings Included: Yes
