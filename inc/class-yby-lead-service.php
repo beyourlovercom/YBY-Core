@@ -68,6 +68,7 @@ class YBY_Lead_Service {
 				'%s',
 				'%s',
 				'%s',
+				'%s',
 			)
 		);
 
@@ -114,6 +115,7 @@ class YBY_Lead_Service {
 			'source_preset'    => isset( $data['source_preset'] ) ? (string) $data['source_preset'] : '',
 			'source_page'      => isset( $data['source_page'] ) ? (string) $data['source_page'] : '',
 			'form_version'     => isset( $data['form_version'] ) ? (string) $data['form_version'] : '',
+			'page_profile'     => isset( $data['page_profile'] ) ? (string) $data['page_profile'] : '',
 			'custom_fields'    => $mapper->build_custom_fields_json( isset( $data['custom_fields'] ) && is_array( $data['custom_fields'] ) ? $data['custom_fields'] : array() ),
 			'utm_source'       => $data['utm_source'],
 			'utm_medium'       => $data['utm_medium'],

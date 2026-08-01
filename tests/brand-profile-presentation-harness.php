@@ -181,26 +181,64 @@ $tests['bottle_presentation'] = static function () {
 	harness_reset_state(
 		array(
 			'site_brand_key'           => 'yby_bottle',
-			'site_brand_name'          => 'BC Glass Bottles',
-			'case_id_brand_code'       => 'BCB',
-			'website_url'              => 'https://bottle.example.test/',
+			'site_brand_name'          => 'YBY Bottle',
+			'case_id_brand_code'       => 'YBC',
+			'website_url'              => 'https://ybybottle.com/',
 			'brand_primary_color'      => '#8B5E3C',
 			'brand_secondary_color'    => '#1F2937',
-			'catalog_url'              => 'https://bottle.example.test/catalog.pdf',
+			'catalog_url'              => 'https://ybybottle.com/catalog.pdf',
 			'thank_you_url'            => '/thank-you-bottle/',
 			'return_page_url'          => '/bottle-products/',
 			'youtube_video_id'         => 'Bottle123',
 			'default_product_interest' => 'glass bottle wholesale',
+			'inquiry_email_title'      => 'Bottle Project Inquiry',
+			'email_company_name'       => '',
+			'email_company_website'    => '',
 		)
 	);
 
 	$brand_profile = YBY_Brand_Profile::get_profile();
 
-	harness_assert( 'BCB' === YBY_Site_Profile::get_case_id_code(), 'Bottle site profile must preserve configured case ID code.' );
-	harness_assert( false === str_contains( YBY_Brand_Profile::get_brand_name(), 'Irrigation' ), 'Bottle profile must not leak irrigation identity.' );
+	harness_assert( 'YBC' === YBY_Site_Profile::get_case_id_code(), 'Bottle site profile must preserve configured case ID code.' );
+	harness_assert( 'YBY Bottle' === YBY_Brand_Profile::get_brand_name(), 'Blank email company name must fall back to the Bottle site brand name.' );
+	harness_assert( 'https://ybybottle.com/' === YBY_Brand_Profile::get_website_url(), 'Blank email company website must fall back to the Bottle site website.' );
+	harness_assert( 'Bottle Project Inquiry' === YBY_Brand_Profile::get_inquiry_email_title(), 'Bottle inquiry title must remain governed by the Brand Profile.' );
+	harness_assert( false === str_contains( implode( ' ', $brand_profile ), 'YBY Irrigation' ), 'Bottle profile must not leak irrigation identity.' );
 	harness_assert( '#8B5E3C' === $brand_profile['brand_primary_color'], 'Bottle primary color must resolve.' );
 	harness_assert( '/bottle-products/' === YBY_Brand_Profile::get_return_page_url(), 'Bottle return page must resolve.' );
 	harness_assert( 'Bottle123' === YBY_Brand_Profile::get_youtube_video_id(), 'Bottle YouTube ID must resolve.' );
+};
+
+$tests['site_identity_isolation'] = static function () {
+	harness_reset_state(
+		array(
+			'site_brand_key'      => 'yby_irrigation',
+			'site_brand_name'     => 'YBY Irrigation',
+			'case_id_brand_code'  => 'IRR',
+			'website_url'         => 'https://ybyirrigation.com/',
+			'inquiry_email_title' => 'Irrigation Project Inquiry',
+		)
+	);
+
+	$irrigation_profile = YBY_Brand_Profile::get_profile();
+
+	harness_assert( 'YBY Irrigation' === YBY_Brand_Profile::get_brand_name(), 'Irrigation profile must retain its configured identity.' );
+	harness_assert( false === str_contains( implode( ' ', $irrigation_profile ), 'YBY Bottle' ), 'Irrigation profile must not leak Bottle identity.' );
+
+	harness_reset_state(
+		array(
+			'site_brand_key'      => 'yby_bottle',
+			'site_brand_name'     => 'YBY Bottle',
+			'case_id_brand_code'  => 'YBC',
+			'website_url'         => 'https://ybybottle.com/',
+			'inquiry_email_title' => 'Bottle Project Inquiry',
+		)
+	);
+
+	$bottle_profile = YBY_Brand_Profile::get_profile();
+
+	harness_assert( 'YBY Bottle' === YBY_Brand_Profile::get_brand_name(), 'Bottle profile must retain its configured identity after Irrigation resolution.' );
+	harness_assert( false === str_contains( implode( ' ', $bottle_profile ), 'YBY Irrigation' ), 'Bottle profile must not retain Irrigation identity across resolutions.' );
 };
 
 $tests['invalid_color_filter_locking'] = static function () {
@@ -258,6 +296,13 @@ $tests['legacy_override_and_recipients'] = static function () {
 	harness_assert( 'owner@example.test' === YBY_Config::get_lead_notification_primary_recipient_email(), 'Valid stored primary recipient must win.' );
 	harness_assert( 'second@example.test' === YBY_Config::get_lead_notification_cc_recipient_emails(), 'Invalid CC addresses must be excluded.' );
 	harness_assert( 'bcc@example.test' === YBY_Config::get_lead_notification_bcc_recipient_emails(), 'Invalid BCC addresses must be excluded.' );
+};
+
+$tests['database_version_unchanged'] = static function () {
+	$plugin_source = file_get_contents( dirname( __DIR__ ) . '/yby-core.php' );
+
+	harness_assert( false !== $plugin_source, 'Plugin bootstrap must remain readable.' );
+	harness_assert( false !== strpos( $plugin_source, "define( 'YBY_DATABASE_VERSION', '1.2.0' );" ), 'Database version must remain 1.2.0.' );
 };
 
 $tests['whatsapp_template_sanitization'] = static function () {

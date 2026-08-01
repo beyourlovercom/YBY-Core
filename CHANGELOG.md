@@ -1,8 +1,39 @@
 # CHANGELOG
 
-## Unreleased
+## v1.5.0 - 2026-08-01
 
-No unreleased changes.
+### Added
+
+- Added the Social Login admin submenu and provider overview.
+- Added the Google settings page.
+- Added secure Google option storage and validation.
+- Added the Google login shortcode and on-demand Google Identity Services button.
+- Added the POST-only Google authentication endpoint.
+- Added local RS256 Google ID Token verification with cached PEM certificates.
+- Added restricted WordPress user registration and login mapped by Google `sub`.
+- Added double-submit CSRF, short-lived nonce, authoritative-email, disabled-role, duplicate-identity, and internal redirect protections.
+- Added optional Google sign-in on the standard WordPress login page.
+- Added the canonical Social Login shortcode and Copy control to the admin overview.
+- Added opt-in verified-email association for existing Subscriber and Customer accounts, with privileged, custom, mixed, and disabled roles blocked.
+- Added opt-in Google One Tap on eligible public pages with same-origin, single-use challenges and asynchronous same-page WordPress authentication.
+- Preserved ordinary public page caching by issuing One Tap challenges after page load.
+- Added the Bottle OEM inquiry preset, governed fields, and profile validation.
+- Added persisted Lead `page_profile` attribution with database version `1.2.0`.
+- Added page-profile-specific Thank You routing and deterministic SDK transport coverage.
+
+### Fixed
+
+- Fixed One Tap session confirmation by validating the returned WordPress logged-in cookie through a dedicated no-store endpoint instead of reusing anonymous challenge issuance.
+- Fixed malformed Page Profile URL acceptance with centralized HTTP(S) and relative-path validation.
+- Fixed WhatsApp project summaries to include only explicitly confirmed fields scoped to the current Case ID.
+- Fixed cross-brand WhatsApp template and email identity leakage.
+- Fixed page-specific Thank You precedence across both Core runtime and Lead SDK loading orders.
+
+### Not yet included
+
+- Client Secret, Google API authorization, and access or refresh token storage.
+- Manual account linking or unlinking and global avatar replacement.
+- Facebook, X, and TikTok authentication.
 
 ## v1.4.0 - 2026-07-29
 

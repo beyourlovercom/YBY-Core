@@ -15,6 +15,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-database.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-field-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-preset-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-manager.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-social-login.php';
 
 /**
  * Activation routines.
@@ -65,6 +66,12 @@ class YBY_Activator {
 		);
 
 		YBY_Inquiry_Manager::install_defaults();
+		$social_options           = YBY_Social_Login::get_options();
+		$social_options['google'] = wp_parse_args(
+			$social_options['google'],
+			YBY_Social_Login::google_defaults()
+		);
+		YBY_Social_Login::save( $social_options );
 		YBY_Database::install();
 	}
 }

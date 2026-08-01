@@ -1,0 +1,57 @@
+name: Andy Core Regression
+
+on:
+  pull_request:
+  push:
+    branches:
+      - feature/andy-core-v1.5.0-bottle-runtime-contract
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: openssl
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4.4.0
+        with:
+          node-version: '20.19.1'
+
+      - name: Verify runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -v
+          php --ini
+          php -m
+          node --version
+          php -r 'echo "openssl=", extension_loaded("openssl") ? "yes" : "no", PHP_EOL; echo "openssl_pkey_new=", function_exists("openssl_pkey_new") ? "yes" : "no", PHP_EOL; if (!extension_loaded("openssl") || !function_exists("openssl_pkey_new")) { exit(1); }'
+
+      - name: PHP lint
+        shell: bash
+        run: |
+          set -euo pipefail
+          git ls-files '*.php' | while IFS= read -r file; do php -l "$file"; done
+
+      - name: PHP harnesses
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in tests/*-harness.php; do php "$file"; done
+
+      - name: JavaScript harnesses
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in tests/*-harness.js; do node "$file"; done

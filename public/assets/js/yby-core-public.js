@@ -23,6 +23,15 @@
   var content = window.YBYContent || data.content || {};
   var template = window.YBYTemplate || data.template || {};
   var readableChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  var whatsAppSummaryStorageKey = "yby_whatsapp_project_summary";
+  var whatsAppSummaryFields = [
+    { key: "country", label: "Country", maxLength: 120 },
+    { key: "crop", label: "Crop", maxLength: 180 },
+    { key: "farm_size", label: "Farm Size", maxLength: 180 },
+    { key: "water_source", label: "Water Source", maxLength: 180 },
+    { key: "recommended_system", label: "Recommended System", maxLength: 180 },
+    { key: "estimated_range", label: "Estimated Range", maxLength: 180 }
+  ];
   var trackingBlockedKeys = {
     name: true,
     first_name: true,
@@ -76,6 +85,72 @@
     try {
       window.sessionStorage.setItem(key, value);
     } catch (error) {}
+  }
+
+  function getSessionJson(key) {
+    var value = getSessionItem(key);
+
+    if (!value) {
+      return {};
+    }
+
+    try {
+      value = JSON.parse(value);
+    } catch (error) {
+      return {};
+    }
+
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  }
+
+  function getConfirmedWhatsAppProjectSummary(summary, confirmedFields) {
+    var input = summary && typeof summary === "object" && !Array.isArray(summary) ? summary : {};
+    var confirmed = Array.isArray(confirmedFields) ? confirmedFields : [];
+    var confirmedLookup = {};
+    var output = {};
+
+    confirmed.forEach(function (key) {
+      var normalizedKey = safeString(key, 80).toLowerCase();
+
+      if (normalizedKey) {
+        confirmedLookup[normalizedKey] = true;
+      }
+    });
+
+    whatsAppSummaryFields.forEach(function (field) {
+      if (confirmedLookup[field.key]) {
+        output[field.key] = safeString(input[field.key], field.maxLength);
+      }
+    });
+
+    return output;
+  }
+
+  function saveConfirmedWhatsAppProjectSummary(caseId, summary, confirmedFields) {
+    var normalizedCaseId = normalizeCaseId(caseId);
+    var payload = {
+      case_id: normalizedCaseId,
+      project_summary: getConfirmedWhatsAppProjectSummary(summary, confirmedFields)
+    };
+
+    setSessionItem(whatsAppSummaryStorageKey, JSON.stringify(payload));
+    return payload.project_summary;
+  }
+
+  function getConfirmedWhatsAppProjectSummaryForCase(caseId) {
+    var stored = getSessionJson(whatsAppSummaryStorageKey);
+    var normalizedCaseId = normalizeCaseId(caseId);
+
+    if (!normalizedCaseId || normalizeCaseId(stored.case_id) !== normalizedCaseId) {
+      return {};
+    }
+
+    return getConfirmedWhatsAppProjectSummary(
+      stored.project_summary,
+      whatsAppSummaryFields.map(function (field) {
+        return field.key;
+      })
+    );
   }
 
   function pushDataLayer(payload) {
@@ -323,41 +398,26 @@
     return stripInternalWhatsAppLines(normalizeWhatsAppMessage(normalizedMessage));
   }
 
-  function getWhatsAppProjectValue(keys, fallback, maxLength) {
-    return getCanonicalString(keys, fallback || "", maxLength || 180);
-  }
-
   function getWhatsAppSummaryFields() {
-    return [
-      {
-        label: "Country",
-        value: getWhatsAppProjectValue("country", runtime.defaultCountry || "", 120)
-      },
-      {
-        label: "Crop",
-        value: getWhatsAppProjectValue("crop", "", 180)
-      },
-      {
-        label: "Farm Size",
-        value: getWhatsAppProjectValue(["farmSize", "farm_size"], "", 180)
-      },
-      {
-        label: "Water Source",
-        value: getWhatsAppProjectValue(["waterSource", "water_source"], "", 180)
-      },
-      {
-        label: "Recommended System",
-        value: getWhatsAppProjectValue(["recommendedSystem", "recommended_system"], "", 180)
-      },
-      {
-        label: "Estimated Range",
-        value: getWhatsAppProjectValue(["estimatedRange", "estimated_range"], "", 180)
-      }
-    ];
+    var summary = getConfirmedWhatsAppProjectSummaryForCase(window.YBYLead.getCaseId());
+
+    return whatsAppSummaryFields.map(function (field) {
+      return {
+        label: field.label,
+        value: summary[field.key] || ""
+      };
+    });
   }
 
   function getRuntimeWhatsAppTemplate() {
-    return normalizeWhatsAppMessage(runtime.whatsappMessageTemplate || "");
+    var template = normalizeWhatsAppMessage(runtime.whatsappMessageTemplate || "");
+    var brandName = getWhatsAppBrandName().toLowerCase();
+
+    if (brandName.indexOf("bottle") !== -1 && /\b(irrigation|farm|crop|water source)\b/i.test(template)) {
+      return "";
+    }
+
+    return template;
   }
 
   function getWhatsAppBrandName() {
@@ -643,6 +703,12 @@
       caseId = window.YBYLead.setCaseId(window.YBYLead.createCaseId());
     }
 
+    saveConfirmedWhatsAppProjectSummary(
+      caseId,
+      safeInput.project_summary,
+      safeInput.project_summary_confirmed_fields
+    );
+
     return {
       first_name: firstName,
       case_id: caseId
@@ -651,7 +717,7 @@
 
   window.YBYLead.buildThankYouUrl = function (caseId) {
     var safeCaseId = buildWhatsAppCaseId(caseId);
-    var thankYouUrl = getBrandRuntimeString("thankYouUrl", leadSession.thankYouUrl || "/", 240) || "/";
+    var thankYouUrl = safeString(pageProfile.thankYouUrl, 240) || getBrandRuntimeString("thankYouUrl", leadSession.thankYouUrl || "/", 240) || "/";
     return appendQueryParam(thankYouUrl, "case_id", safeCaseId);
   };
 
@@ -869,7 +935,9 @@
       buildDefaultWhatsAppMessage: buildDefaultWhatsAppMessage,
       buildWhatsAppTokens: buildWhatsAppTokens,
       getWhatsAppSummaryFields: getWhatsAppSummaryFields,
-      getRuntimeWhatsAppTemplate: getRuntimeWhatsAppTemplate
+      getRuntimeWhatsAppTemplate: getRuntimeWhatsAppTemplate,
+      getConfirmedWhatsAppProjectSummary: getConfirmedWhatsAppProjectSummary,
+      getConfirmedWhatsAppProjectSummaryForCase: getConfirmedWhatsAppProjectSummaryForCase
     };
   }
 

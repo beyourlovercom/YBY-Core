@@ -60,7 +60,26 @@ class YBY_Inquiry_Lead_Mapper {
 			'source_preset'    => substr( sanitize_key( isset( $payload['source_preset'] ) ? $payload['source_preset'] : '' ), 0, 100 ),
 			'source_page'      => substr( sanitize_text_field( isset( $payload['source_page'] ) ? $payload['source_page'] : '' ), 0, 255 ),
 			'form_version'     => $this->sanitize_form_version( isset( $payload['form_version'] ) ? $payload['form_version'] : '' ),
+			'page_profile'     => substr( sanitize_key( isset( $payload['page_profile'] ) ? $payload['page_profile'] : '' ), 0, 100 ),
 		);
+	}
+
+	/**
+	 * Validate that a client-selected preset exists and permits its page profile.
+	 *
+	 * @param string $source_preset Registered preset ID.
+	 * @param string $page_profile Registered page profile ID.
+	 * @return array<string, string>
+	 */
+	public function validate_submission_context( $source_preset, $page_profile ) {
+		$preset = $this->get_valid_preset( $source_preset );
+		if ( ! is_array( $preset ) ) {
+			return array( 'source_preset' => __( 'Invalid inquiry preset', 'yby-core' ) );
+		}
+		if ( ! $this->preset_manager->is_preset_allowed_for_profile( $source_preset, $page_profile ) ) {
+			return array( 'page_profile' => __( 'This inquiry preset is not allowed for the page profile', 'yby-core' ) );
+		}
+		return array();
 	}
 
 	/**

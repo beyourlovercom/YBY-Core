@@ -409,9 +409,15 @@ class YBY_Config {
 	}
 
 	public static function sanitize_absolute_url_value( $value ) {
-		$url = esc_url_raw( (string) $value );
+		$value = trim( (string) $value );
 
-		return self::is_absolute_url( $url ) ? $url : '';
+		if ( '' === $value || preg_match( '/[\x00-\x1F\x7F]/', $value ) ) {
+			return '';
+		}
+
+		$url = esc_url_raw( $value );
+
+		return self::is_valid_absolute_url( $url ) ? $url : '';
 	}
 
 	public static function sanitize_path_or_absolute_url_value( $value, $fallback = '/' ) {
@@ -556,9 +562,68 @@ class YBY_Config {
 	}
 
 	protected static function is_absolute_url( $value ) {
+		return self::is_valid_absolute_url( (string) $value );
+	}
+
+	protected static function is_valid_absolute_url( $value ) {
 		$url = (string) $value;
 
-		return '' !== $url && (bool) preg_match( '#^https?://#i', $url );
+		if ( '' === $url || preg_match( '/[\x00-\x1F\x7F]/', $url ) ) {
+			return false;
+		}
+
+		$parsed = self::parse_url_value( $url );
+
+		if ( false === $parsed || ! is_array( $parsed ) ) {
+			return false;
+		}
+
+		$scheme = isset( $parsed['scheme'] ) ? strtolower( (string) $parsed['scheme'] ) : '';
+		$host   = isset( $parsed['host'] ) ? (string) $parsed['host'] : '';
+
+		if ( ! in_array( $scheme, array( 'http', 'https' ), true ) || '' === $host ) {
+			return false;
+		}
+
+		if ( array_key_exists( 'user', $parsed ) || array_key_exists( 'pass', $parsed ) ) {
+			return false;
+		}
+
+		if ( isset( $parsed['port'] ) ) {
+			$port = (int) $parsed['port'];
+
+			if ( $port < 1 || $port > 65535 ) {
+				return false;
+			}
+		}
+
+		return self::is_valid_url_host( $host );
+	}
+
+	protected static function is_valid_url_host( $host ) {
+		$host = (string) $host;
+
+		if ( '' === $host || preg_match( '/[\s\x00-\x1F\x7F\/\\\\]/', $host ) ) {
+			return false;
+		}
+
+		if ( '[' === substr( $host, 0, 1 ) && ']' === substr( $host, -1 ) ) {
+			$host = substr( $host, 1, -1 );
+		}
+
+		if ( '' === $host || '.' === $host || '..' === $host || false !== strpos( $host, '..' ) ) {
+			return false;
+		}
+
+		if ( 'localhost' === strtolower( $host ) ) {
+			return true;
+		}
+
+		if ( false !== filter_var( $host, FILTER_VALIDATE_IP ) ) {
+			return true;
+		}
+
+		return false !== filter_var( $host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME );
 	}
 
 	protected static function parse_url_value( $value ) {
