@@ -179,7 +179,7 @@ class YBY_Brand_Profile {
 	}
 
 	public static function get_website_url() {
-		return 'https://bottle.example.test/';
+		return 'https://ybybottle.com/';
 	}
 
 	public static function get_phone() {
@@ -207,7 +207,7 @@ class YBY_Brand_Profile {
 	}
 
 	public static function get_inquiry_email_title() {
-		return 'Bottle Website Inquiry';
+		return 'Bottle Project Inquiry';
 	}
 
 	public static function get_primary_color() {
@@ -498,12 +498,14 @@ $tests['bodies_case_id_and_escaping'] = static function () use ( $provider ) {
 	harness_assert( false !== strpos( $plain, 'YBY-CORE-20260720-HARNESS1' ), 'Plain text body must include the Case ID.' );
 	harness_assert( false !== strpos( $html, 'alert(1)Need &amp; review' ), 'HTML body must escape custom field content.' );
 	harness_assert( false !== strpos( $plain, 'alert(1)Need & review' ), 'Plain text body must remain readable after sanitization.' );
-	harness_assert( false !== strpos( $html, 'Bottle Website Inquiry' ), 'HTML body must include the configured inquiry email title.' );
-	harness_assert( false !== strpos( $plain, 'Bottle Website Inquiry' ), 'Plain text body must include the configured inquiry email title.' );
+	harness_assert( false !== strpos( $html, 'Bottle Project Inquiry' ), 'HTML body must include the configured inquiry email title.' );
+	harness_assert( false !== strpos( $plain, 'Bottle Project Inquiry' ), 'Plain text body must include the configured inquiry email title.' );
 	harness_assert( false !== strpos( $html, '#123456' ), 'HTML body must use configured primary brand color.' );
 	harness_assert( false !== strpos( $html, '#654321' ), 'HTML body must use configured secondary brand color.' );
 	harness_assert( false !== strpos( $html, 'YBY Bottle' ), 'HTML body must use configured brand identity.' );
-	harness_assert( false !== strpos( $html, 'https://bottle.example.test/' ), 'HTML body must use configured brand website.' );
+	harness_assert( false !== strpos( $html, 'https://ybybottle.com/' ), 'HTML body must use configured brand website.' );
+	harness_assert( false === strpos( $html, 'YBY Irrigation' ), 'HTML body must not leak Irrigation identity into Bottle email.' );
+	harness_assert( false === strpos( $plain, 'YBY Irrigation' ), 'Plain text body must not leak Irrigation identity into Bottle email.' );
 	harness_assert( false === strpos( $html, '#00754A' ), 'HTML body must not contain deprecated hardcoded green colors.' );
 	harness_assert( false === strpos( $html, '#17211B' ), 'HTML body must not contain deprecated hardcoded dark colors.' );
 };
