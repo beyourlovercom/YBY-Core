@@ -5,6 +5,7 @@ class YBY_Inquiry_Admin {
 	protected $plugin_name;
 	protected $version;
 	protected $page_hook = '';
+	protected static $registered_page_hook = '';
 
 	public function __construct( $plugin_name, $version ) {
 		$this->plugin_name = $plugin_name;
@@ -17,6 +18,7 @@ class YBY_Inquiry_Admin {
 
 	public function add_admin_menu() {
 		$this->page_hook = add_submenu_page( YBY_Project_Studio::menu_slug(), __( 'Inquiry', 'yby-core' ), __( 'Inquiry', 'yby-core' ), 'andy_core_leads_view', self::page_slug(), array( $this, 'render_page' ) );
+		self::$registered_page_hook = $this->page_hook;
 		global $submenu;
 		$parent_slug = YBY_Project_Studio::menu_slug();
 		if ( isset( $submenu[ $parent_slug ] ) ) {
@@ -29,6 +31,15 @@ class YBY_Inquiry_Admin {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Return the admin hook captured during the real menu registration.
+	 *
+	 * @return string
+	 */
+	public static function registered_page_hook() {
+		return self::$registered_page_hook;
 	}
 
 	public function enqueue_assets( $hook_suffix ) {

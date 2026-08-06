@@ -24,6 +24,7 @@ $assert( strpos( $studio, "return 'yby-project-studio'" ) !== false, 'Dedicated 
 $assert( strpos( $studio, '$this->studio_page_hook = add_submenu_page' ) !== false, 'Project Studio must retain the real admin page hook.' );
 $assert( strpos( $studio, "'page' => self::studio_page_slug()" ) !== false, 'Project Studio URLs must use the dedicated submenu slug.' );
 $assert( strpos( $admin, '$this->page_hook = add_submenu_page' ) !== false, 'Inquiry must retain the real admin page hook.' );
+$assert( strpos( $admin, 'self::$registered_page_hook = $this->page_hook' ) !== false, 'Inquiry must retain the registered admin page hook.' );
 $assert( strpos( $admin, '$is_inquiry_request' ) !== false, 'Inquiry asset fallback missing.' );
 $assert( strpos( $settings, 'system-status' ) !== false, 'Settings tab allowlist missing.' );
 $assert( substr_count( $view, 'nav-tab') >= 3, 'General Settings tabs missing.' );

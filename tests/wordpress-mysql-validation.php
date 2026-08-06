@@ -56,10 +56,7 @@ function yby_validation_assert_inquiry_assets( $query, $hook_suffix ) {
 	yby_validation_assert( wp_script_is( 'yby-core-inquiry', 'enqueued' ), 'Inquiry script must be enqueued.' );
 }
 
-$inquiry_admin = new YBY_Inquiry_Admin( 'yby-core', YBY_CORE_VERSION );
-$inquiry_admin->add_admin_menu();
-add_action( 'admin_enqueue_scripts', array( $inquiry_admin, 'enqueue_assets' ) );
-$inquiry_hook = get_plugin_page_hook( YBY_Inquiry_Admin::page_slug(), YBY_Project_Studio::menu_slug() );
+$inquiry_hook = YBY_Inquiry_Admin::registered_page_hook();
 yby_validation_assert( is_string( $inquiry_hook ) && '' !== $inquiry_hook, 'Inquiry page must retain its registered admin hook.' );
 yby_validation_assert_inquiry_assets( array( 'page' => 'andy-core-leads' ), $inquiry_hook );
 yby_validation_assert_inquiry_assets( array( 'page' => 'andy-core-leads', 's' => 'Synthetic' ), $inquiry_hook );
