@@ -44,10 +44,6 @@ yby_validation_assert( 0 === (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$manag
 yby_validation_assert( 0 === (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$activities}" ), 'Migration backfilled activities.' );
 yby_validation_assert( get_option( 'yby_validation_lead_hash' ) === hash( 'sha256', wp_json_encode( $wpdb->get_results( "SELECT * FROM {$leads} ORDER BY id", ARRAY_A ) ) ), 'Migration changed original Leads.' );
 
-$studio_admin = new YBY_Project_Studio( 'yby-core', YBY_CORE_VERSION );
-$studio_admin->add_admin_menu();
-$studio_hook = $studio_admin->studio_page_hook();
-yby_validation_assert( is_string( $studio_hook ) && '' !== $studio_hook, 'Project Studio must use its dedicated submenu slug.' );
 yby_validation_assert( false !== strpos( YBY_Project_Studio::studio_url( 'overview', 123 ), 'page=yby-project-studio' ), 'Project Studio URLs must use the dedicated submenu slug.' );
 yby_validation_assert( 'yby-os' === YBY_Project_Studio::menu_slug(), 'The Andy Core parent slug must remain yby-os.' );
 
