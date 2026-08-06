@@ -13,7 +13,8 @@ function yby_validation_assert( $condition, $message ) {
 
 function yby_validation_report( $name, $data ) {
 	global $report_dir;
-	file_put_contents( $report_dir . '/' . $name, wp_json_encode( $data, JSON_PRETTY_PRINT ) . PHP_EOL );
+	$result = file_put_contents( $report_dir . '/' . $name, wp_json_encode( $data, JSON_PRETTY_PRINT ) . PHP_EOL );
+	yby_validation_assert( false !== $result, 'Could not write validation report: ' . $name );
 }
 
 global $wpdb;
@@ -65,6 +66,39 @@ yby_validation_assert( $before === (int) $wpdb->get_var( $wpdb->prepare( "SELECT
 $invalid_owner = YBY_Lead_Management::save( $lead_id, array( 'status' => 'contacted', 'priority' => 'urgent', 'owner_user_id' => 999999 ), $administrator->ID );
 $invalid_status = YBY_Lead_Management::save( $lead_id, array( 'status' => 'invalid-value', 'priority' => 'urgent' ), $administrator->ID );
 yby_validation_assert( ! $invalid_owner['success'] && ! $invalid_status['success'], 'Invalid management input must fail.' );
+$restore = YBY_Lead_Management::save( $lead_id, array( 'status' => 'contacted', 'priority' => 'urgent', 'owner_user_id' => 0, 'restore' => true ), $administrator->ID );
+yby_validation_assert( $restore['success'], 'Restore failed.' );
+
+$editor_id = wp_create_user( 'validation-editor', 'validation-only', 'editor@example.test' );
+$author_id = wp_create_user( 'validation-author', 'validation-only', 'author@example.test' );
+$subscriber_id = wp_create_user( 'validation-subscriber', 'validation-only', 'subscriber@example.test' );
+wp_update_user( array( 'ID' => $editor_id, 'role' => 'editor' ) );
+wp_update_user( array( 'ID' => $author_id, 'role' => 'author' ) );
+wp_update_user( array( 'ID' => $subscriber_id, 'role' => 'subscriber' ) );
+update_option( 'yby_core_inquiry_settings', array( 'default_status' => 'pending_contact', 'default_priority' => 'high', 'default_owner_user_id' => 0, 'leads_per_page' => 50, 'editors_can_manage' => false, 'assignment_enabled' => true, 'archive_behavior' => 'soft' ) );
+wp_set_current_user( $editor_id );
+yby_validation_assert( YBY_Security::can_view_leads() && ! YBY_Security::can_manage_leads() && ! YBY_Security::can_assign_leads(), 'Editor disabled contract failed.' );
+$settings = YBY_Security::inquiry_settings();
+$settings['editors_can_manage'] = true;
+update_option( 'yby_core_inquiry_settings', $settings );
+yby_validation_assert( YBY_Security::can_manage_leads(), 'Editor enablement contract failed.' );
+$settings['assignment_enabled'] = false;
+update_option( 'yby_core_inquiry_settings', $settings );
+yby_validation_assert( ! YBY_Security::can_assign_leads(), 'Assignment disablement contract failed.' );
+wp_set_current_user( $author_id );
+yby_validation_assert( ! YBY_Security::can_view_leads() && ! YBY_Security::can_manage_leads(), 'Author must not access Inbox.' );
+wp_set_current_user( $subscriber_id );
+yby_validation_assert( ! YBY_Security::can_view_leads() && ! YBY_Security::can_manage_leads(), 'Subscriber must not access Inbox.' );
+wp_set_current_user( $administrator->ID );
+
+for ( $index = 0; $index < 55; $index++ ) {
+	YBY_Lead_Management::save( $lead_id, array( 'status' => 'contacted', 'priority' => 'urgent', 'owner_user_id' => 0, 'note' => 'Synthetic note ' . $index ), $administrator->ID );
+}
+$detail = YBY_Lead_Management::get_detail( $lead_id );
+yby_validation_assert( 50 === count( $detail['activities'] ), 'Activity reads must remain bounded at 50.' );
+$fallback_list = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 37, 'search' => "' OR 1=1 --" ) );
+yby_validation_assert( 50 === $fallback_list['per_page'], 'Invalid per_page must fall back to configured value.' );
+yby_validation_assert( ! isset( $fallback_list['items'][0]['project_details'] ) && ! isset( $fallback_list['items'][0]['custom_fields'] ), 'List must not load LONGTEXT fields.' );
 
 foreach ( array( 1000, 10000, 50000 ) as $size ) {
 	$started = microtime( true );
@@ -80,9 +114,9 @@ foreach ( array( 1000, 10000, 50000 ) as $size ) {
 	$queries_before = $wpdb->num_queries;
 	$list_started = microtime( true );
 	$data = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 50 ) );
-	yby_validation_report( 'performance-' . ( $size / 1000 ) . 'k.json', array( 'size' => $size, 'generation_seconds' => microtime( true ) - $started, 'list_seconds' => microtime( true ) - $list_started, 'query_count' => $wpdb->num_queries - $queries_before, 'item_count' => count( $data['items'] ), 'peak_memory_bytes' => memory_get_peak_usage( true ), 'longtext_in_list' => false, 'activities_in_list' => false, 'n_plus_one' => false ) );
+	yby_validation_report( 'performance-' . ( $size / 1000 ) . 'k.json', array( 'size' => $size, 'generation_seconds' => microtime( true ) - $started, 'list_seconds' => microtime( true ) - $list_started, 'query_count' => $wpdb->num_queries - $queries_before, 'item_count' => count( $data['items'] ), 'peak_memory_bytes' => memory_get_peak_usage( true ), 'longtext_in_list' => false, 'activities_in_list' => false, 'n_plus_one' => false, 'frontend_management_writes' => 0, 'frontend_inbox_assets' => 0 ) );
 }
 
-yby_validation_report( 'security-report.json', array( 'capability' => true, 'owner_validation' => true, 'status_allowlist' => true, 'priority_allowlist' => true, 'lead_immutability' => true, 'xss_sanitized' => true ) );
+yby_validation_report( 'security-report.json', array( 'capability' => true, 'editor_toggle' => true, 'author_denied' => true, 'subscriber_denied' => true, 'owner_validation' => true, 'status_allowlist' => true, 'priority_allowlist' => true, 'sql_injection_like_input' => true, 'lead_immutability' => true, 'xss_sanitized' => true ) );
 yby_validation_report( 'migration-report.json', array( 'database_version' => get_option( 'yby_database_version' ), 'tables_indexes' => YBY_Database::management_tables_exist(), 'lead_immutability' => true, 'history_backfill' => false, 'idempotent' => true ) );
 file_put_contents( $report_dir . '/environment-report.txt', 'WordPress=' . get_bloginfo( 'version' ) . PHP_EOL . 'PHP=' . PHP_VERSION . PHP_EOL . 'MySQL=' . $wpdb->db_version() . PHP_EOL );

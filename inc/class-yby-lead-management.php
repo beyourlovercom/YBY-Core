@@ -138,10 +138,11 @@ class YBY_Lead_Management {
 		if ( ! empty( $data['note'] ) ) {
 			$events[] = array( 'activity_type' => 'note', 'content' => sanitize_textarea_field( $data['note'] ) );
 		}
-		$updates['updated_at'] = $now;
-		if ( ! empty( $events ) ) {
-			$updates['last_activity_at'] = $now;
+		if ( empty( $events ) ) {
+			return array( 'success' => true, 'message' => '' );
 		}
+		$updates['updated_at'] = $now;
+		$updates['last_activity_at'] = $now;
 		$updated = $wpdb->update( YBY_Database::management_table_name(), $updates, array( 'lead_id' => $lead_id ) );
 		if ( false === $updated ) { return array( 'success' => false, 'message' => __( 'Management update failed.', 'yby-core' ) ); }
 		foreach ( $events as $event ) {

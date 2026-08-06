@@ -61,6 +61,7 @@ jobs:
           git archive HEAD | tar -x -C "$RUNNER_TEMP/wordpress/wp-content/plugins/yby-core"
           wp plugin activate yby-core --path="$RUNNER_TEMP/wordpress"
           YBY_VALIDATION_PHASE=validate YBY_VALIDATION_REPORT_DIR="$RUNNER_TEMP/reports" wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-mysql-validation.php" --path="$RUNNER_TEMP/wordpress"
+          ls -la "$RUNNER_TEMP/reports"
       - name: Upload sanitized validation reports
         if: always()
         uses: actions/upload-artifact@v4
