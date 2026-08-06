@@ -1,0 +1,69 @@
+name: Inquiry Inbox WordPress MySQL Validation
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wordpress-mysql:
+    runs-on: ubuntu-24.04
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: yby_validation
+          MYSQL_USER: yby
+          MYSQL_PASSWORD: yby
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli
+          coverage: none
+      - name: Install WP-CLI and WordPress
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          chmod +x /usr/local/bin/wp
+          wp core download --path="$RUNNER_TEMP/wordpress" --version=6.6.2
+          wp config create --path="$RUNNER_TEMP/wordpress" --dbname=yby_validation --dbuser=yby --dbpass=yby --dbhost=127.0.0.1 --skip-check
+          wp core install --path="$RUNNER_TEMP/wordpress" --url=http://validation.test --title=Validation --admin_user=admin --admin_password=validation-only --admin_email=admin@example.test --skip-email
+          wp core version --path="$RUNNER_TEMP/wordpress"
+          php -v
+          mysql --version
+      - name: Install v1.5.0 baseline and seed synthetic Leads
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wordpress/wp-content/plugins/yby-core"
+          git archive 80a04c14da6106e58a837345cdc9bfc3de804984 | tar -x -C "$RUNNER_TEMP/wordpress/wp-content/plugins/yby-core"
+          wp plugin activate yby-core --path="$RUNNER_TEMP/wordpress"
+          wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-mysql-validation.php" --path="$RUNNER_TEMP/wordpress" -- --phase=seed --report-dir="$RUNNER_TEMP/reports"
+      - name: Upgrade to current PR plugin and validate
+        run: |
+          set -euo pipefail
+          wp plugin deactivate yby-core --path="$RUNNER_TEMP/wordpress"
+          rm -rf "$RUNNER_TEMP/wordpress/wp-content/plugins/yby-core"
+          mkdir -p "$RUNNER_TEMP/wordpress/wp-content/plugins/yby-core"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/wordpress/wp-content/plugins/yby-core"
+          wp plugin activate yby-core --path="$RUNNER_TEMP/wordpress"
+          wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-mysql-validation.php" --path="$RUNNER_TEMP/wordpress" -- --phase=validate --report-dir="$RUNNER_TEMP/reports"
+      - name: Upload sanitized validation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inquiry-inbox-wordpress-mysql-reports
+          path: ${{ runner.temp }}/reports
