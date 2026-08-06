@@ -15,7 +15,7 @@ class YBY_Inquiry_Admin {
 	}
 
 	public function add_admin_menu() {
-		add_submenu_page( YBY_Project_Studio::menu_slug(), __( 'Inquiry', 'yby-core' ), __( 'Inquiry', 'yby-core' ), 'manage_options', self::page_slug(), array( $this, 'render_page' ) );
+		add_submenu_page( YBY_Project_Studio::menu_slug(), __( 'Inquiry', 'yby-core' ), __( 'Inquiry', 'yby-core' ), 'andy_core_leads_view', self::page_slug(), array( $this, 'render_page' ) );
 		global $submenu;
 		$parent_slug = YBY_Project_Studio::menu_slug();
 		if ( isset( $submenu[ $parent_slug ] ) ) {
@@ -39,7 +39,7 @@ class YBY_Inquiry_Admin {
 	}
 
 	public function render_page() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! YBY_Security::can_view_leads() ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'yby-core' ) );
 		}
 		$lead_id = absint( $_GET['lead_id'] ?? 0 );
@@ -49,7 +49,7 @@ class YBY_Inquiry_Admin {
 		}
 		$args = array(
 			'page' => absint( $_GET['paged'] ?? 1 ),
-			'per_page' => absint( $_GET['per_page'] ?? 30 ),
+			'per_page' => absint( $_GET['per_page'] ?? YBY_Security::inquiry_settings()['leads_per_page'] ),
 			'search' => sanitize_text_field( wp_unslash( $_GET['s'] ?? '' ) ),
 			'status' => sanitize_key( wp_unslash( $_GET['status'] ?? '' ) ),
 			'priority' => sanitize_key( wp_unslash( $_GET['priority'] ?? '' ) ),
@@ -69,15 +69,23 @@ class YBY_Inquiry_Admin {
 		$lead = YBY_Lead_Management::get_detail( $lead_id );
 		if ( ! $lead ) { wp_die( esc_html__( 'Inquiry not found.', 'yby-core' ) ); }
 		$notice = '';
+		$error = '';
 		if ( isset( $_POST['yby_inquiry_manage_submit'] ) ) {
-			if ( ! current_user_can( 'manage_options' ) ) {
+			if ( ! YBY_Security::can_manage_leads() ) {
 				wp_die( esc_html__( 'You do not have permission to manage inquiries.', 'yby-core' ) );
 			}
 			check_admin_referer( 'yby_inquiry_manage_' . $lead_id, 'yby_inquiry_manage_nonce' );
 			$status = sanitize_key( wp_unslash( $_POST['status'] ?? 'new' ) );
 			$priority = sanitize_key( wp_unslash( $_POST['priority'] ?? 'normal' ) );
-			if ( in_array( $status, YBY_Lead_Management::STATUSES, true ) && in_array( $priority, YBY_Lead_Management::PRIORITIES, true ) ) {
-				YBY_Lead_Management::save( $lead_id, array( 'status' => $status, 'priority' => $priority, 'owner_user_id' => absint( $_POST['owner_user_id'] ?? 0 ), 'next_follow_up_at' => sanitize_text_field( wp_unslash( $_POST['next_follow_up_at'] ?? '' ) ), 'note' => sanitize_textarea_field( wp_unslash( $_POST['note'] ?? '' ) ), 'archived' => ! empty( $_POST['archived'] ), 'restore' => ! empty( $_POST['restore'] ) ), get_current_user_id() );
+			$owner_id = absint( $_POST['owner_user_id'] ?? 0 );
+			$mysql_date = YBY_Lead_Management::normalize_datetime( sanitize_text_field( wp_unslash( $_POST['next_follow_up_at'] ?? '' ) ) );
+			if ( ! in_array( $status, YBY_Lead_Management::STATUSES, true ) ) { $error = __( 'Invalid status.', 'yby-core' ); }
+			elseif ( ! in_array( $priority, YBY_Lead_Management::PRIORITIES, true ) ) { $error = __( 'Invalid priority.', 'yby-core' ); }
+			elseif ( false === $mysql_date ) { $error = __( 'Invalid follow-up date.', 'yby-core' ); }
+			elseif ( ! YBY_Security::can_assign_leads() && $owner_id !== absint( $lead['owner_user_id'] ?? 0 ) ) { $error = __( 'You cannot assign this inquiry.', 'yby-core' ); }
+			elseif ( ( ! empty( $_POST['archived'] ) || ! empty( $_POST['restore'] ) ) && ! YBY_Security::can_archive_leads() ) { $error = __( 'You cannot archive or restore this inquiry.', 'yby-core' ); }
+			else { $result = YBY_Lead_Management::save( $lead_id, array( 'status' => $status, 'priority' => $priority, 'owner_user_id' => $owner_id, 'next_follow_up_at' => $mysql_date, 'note' => sanitize_textarea_field( wp_unslash( $_POST['note'] ?? '' ) ), 'archived' => ! empty( $_POST['archived'] ), 'restore' => ! empty( $_POST['restore'] ) ), get_current_user_id() ); if ( ! $result['success'] ) { $error = $result['message']; } }
+			if ( '' === $error ) {
 				$notice = __( 'Inquiry management saved.', 'yby-core' );
 				$lead = YBY_Lead_Management::get_detail( $lead_id );
 			}

@@ -15,6 +15,19 @@ class YBY_Lead_Management {
 
 	const PRIORITIES = array( 'low', 'normal', 'high', 'urgent' );
 
+	public static function normalize_datetime( $value ) {
+		$value = trim( (string) $value );
+		if ( '' === $value ) { return null; }
+		$date = DateTime::createFromFormat( 'Y-m-d\\TH:i', $value );
+		$errors = DateTime::getLastErrors();
+		return $date && ( false === $errors || ( 0 === $errors['warning_count'] && 0 === $errors['error_count'] ) ) ? $date->format( 'Y-m-d H:i:s' ) : false;
+	}
+
+	public static function format_datetime_local( $value ) {
+		$date = DateTime::createFromFormat( 'Y-m-d H:i:s', (string) $value );
+		return $date ? $date->format( 'Y-m-d\\TH:i' ) : '';
+	}
+
 	public static function ensure( $lead_id ) {
 		global $wpdb;
 		$lead_id = absint( $lead_id );
@@ -27,7 +40,10 @@ class YBY_Lead_Management {
 			return (int) $existing;
 		}
 		$now = current_time( 'mysql' );
-		$wpdb->insert( $table, array( 'lead_id' => $lead_id, 'status' => 'new', 'owner_user_id' => 0, 'priority' => 'normal', 'created_at' => $now, 'updated_at' => $now ), array( '%d', '%s', '%d', '%s', '%s', '%s' ) );
+		$settings = YBY_Security::inquiry_settings();
+		$owner_id = absint( $settings['default_owner_user_id'] );
+		if ( $owner_id && ! get_user_by( 'id', $owner_id ) ) { $owner_id = 0; }
+		$wpdb->insert( $table, array( 'lead_id' => $lead_id, 'status' => $settings['default_status'], 'owner_user_id' => $owner_id, 'priority' => $settings['default_priority'], 'created_at' => $now, 'updated_at' => $now ), array( '%d', '%s', '%d', '%s', '%s', '%s' ) );
 		return (int) $wpdb->insert_id;
 	}
 
@@ -36,7 +52,9 @@ class YBY_Lead_Management {
 		$leads = YBY_Database::leads_table_name();
 		$management = YBY_Database::management_table_name();
 		$page = max( 1, absint( $args['page'] ?? 1 ) );
-		$per_page = min( 100, max( 30, absint( $args['per_page'] ?? 30 ) ) );
+		$settings = YBY_Security::inquiry_settings();
+		$requested_per_page = absint( $args['per_page'] ?? $settings['leads_per_page'] );
+		$per_page = in_array( $requested_per_page, array( 30, 50, 100 ), true ) ? $requested_per_page : $settings['leads_per_page'];
 		$offset = ( $page - 1 ) * $per_page;
 		$where = array( '1=1' );
 		$values = array();
@@ -87,14 +105,14 @@ class YBY_Lead_Management {
 		global $wpdb;
 		$id = self::ensure( $lead_id );
 		if ( ! $id ) {
-			return false;
+			return array( 'success' => false, 'message' => __( 'Inquiry does not exist.', 'yby-core' ) );
 		}
 		$current = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . YBY_Database::management_table_name() . ' WHERE lead_id = %d', $lead_id ), ARRAY_A );
 		if ( ! in_array( $data['status'] ?? $current['status'], self::STATUSES, true ) || ! in_array( $data['priority'] ?? $current['priority'], self::PRIORITIES, true ) ) {
-			return false;
+			return array( 'success' => false, 'message' => __( 'Invalid status or priority.', 'yby-core' ) );
 		}
 		if ( isset( $data['owner_user_id'] ) && absint( $data['owner_user_id'] ) && ! get_user_by( 'id', absint( $data['owner_user_id'] ) ) ) {
-			return false;
+			return array( 'success' => false, 'message' => __( 'Owner does not exist.', 'yby-core' ) );
 		}
 		$now = current_time( 'mysql' );
 		$updates = array();
@@ -103,14 +121,17 @@ class YBY_Lead_Management {
 			if ( array_key_exists( $field, $data ) && (string) $data[ $field ] !== (string) $current[ $field ] ) {
 				$value = 'owner_user_id' === $field ? absint( $data[ $field ] ) : sanitize_text_field( (string) $data[ $field ] );
 				$updates[ $field ] = $value;
-				$events[] = array( 'activity_type' => 'next_follow_up_at' === $field ? 'follow_up_scheduled' : $field . '_changed', 'old_value' => (string) $current[ $field ], 'new_value' => (string) $value );
+				$activity_type = 'next_follow_up_at' === $field ? 'follow_up_scheduled' : ( 'owner_user_id' === $field ? 'owner_changed' : $field . '_changed' );
+				$events[] = array( 'activity_type' => $activity_type, 'old_value' => (string) $current[ $field ], 'new_value' => (string) $value );
 			}
 		}
-		if ( ! empty( $data['archived'] ) ) {
+		if ( ! empty( $data['archived'] ) && empty( $current['archived_at'] ) ) {
+			if ( ! YBY_Security::can_archive_leads() ) { return array( 'success' => false, 'message' => __( 'You cannot archive this inquiry.', 'yby-core' ) ); }
 			$updates['archived_at'] = $now;
 			$events[] = array( 'activity_type' => 'archived' );
 		}
-		if ( ! empty( $data['restore'] ) ) {
+		if ( ! empty( $data['restore'] ) && ! empty( $current['archived_at'] ) ) {
+			if ( ! YBY_Security::can_archive_leads() ) { return array( 'success' => false, 'message' => __( 'You cannot restore this inquiry.', 'yby-core' ) ); }
 			$updates['archived_at'] = null;
 			$events[] = array( 'activity_type' => 'restored' );
 		}
@@ -121,10 +142,11 @@ class YBY_Lead_Management {
 		if ( ! empty( $events ) ) {
 			$updates['last_activity_at'] = $now;
 		}
-		$wpdb->update( YBY_Database::management_table_name(), $updates, array( 'lead_id' => $lead_id ) );
+		$updated = $wpdb->update( YBY_Database::management_table_name(), $updates, array( 'lead_id' => $lead_id ) );
+		if ( false === $updated ) { return array( 'success' => false, 'message' => __( 'Management update failed.', 'yby-core' ) ); }
 		foreach ( $events as $event ) {
 			$wpdb->insert( YBY_Database::activities_table_name(), array_merge( $event, array( 'lead_id' => $lead_id, 'created_by' => absint( $actor ), 'created_at' => $now ) ) );
 		}
-		return true;
+		return array( 'success' => true, 'message' => '' );
 	}
 }

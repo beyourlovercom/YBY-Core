@@ -57,7 +57,7 @@ class YBY_Admin {
 			YBY_Project_Studio::menu_slug(),
 			__( 'Settings', 'yby-core' ),
 			__( 'Settings', 'yby-core' ),
-			'manage_options',
+			'andy_core_settings_manage',
 			YBY_Helpers::admin_page_slug(),
 			array( $this, 'render_settings_page' )
 		);
@@ -195,11 +195,30 @@ class YBY_Admin {
 				'lead_table' => YBY_Database::leads_table_exists(),
 				'management_table' => $tables_ok,
 				'activities_table' => $tables_ok,
+				'index_status' => $tables_ok ? 'verified' : 'attention',
 				'migration_status' => $tables_ok && '1.3.0' === get_option( YBY_Database::VERSION_OPTION, '' ) ? 'ready' : 'attention',
+				'recent_lead_metadata' => $this->recent_lead_metadata(),
+				'management_consistency' => $tables_ok ? 'lazy management enabled' : 'attention',
+				'preset_registry' => 'registered by inquiry preset manager',
+				'thank_you_route' => YBY_Config::get_thank_you_url() ? 'configured' : 'attention',
+				'mail_integration' => YBY_Config::get_lead_notification_primary_recipient_email() ? 'configured' : 'attention',
+				'wordpress_php_database' => $this->environment_summary(),
 				'status' => 'read-only',
 			);
 			set_transient( $cache_key, $status, 45 );
 		}
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/system-status.php';
+	}
+
+	protected function recent_lead_metadata() {
+		global $wpdb;
+		if ( ! YBY_Database::leads_table_exists() ) { return 'unavailable'; }
+		$row = $wpdb->get_row( 'SELECT created_at,source_preset,page_profile FROM ' . YBY_Database::leads_table_name() . ' ORDER BY created_at DESC LIMIT 1', ARRAY_A );
+		return $row ? array( 'created_at' => $row['created_at'], 'source_preset' => $row['source_preset'], 'page_profile' => $row['page_profile'] ) : 'none';
+	}
+
+	protected function environment_summary() {
+		global $wpdb;
+		return array( 'wordpress' => get_bloginfo( 'version' ), 'php' => PHP_VERSION, 'database' => method_exists( $wpdb, 'db_version' ) ? $wpdb->db_version() : 'unknown' );
 	}
 }

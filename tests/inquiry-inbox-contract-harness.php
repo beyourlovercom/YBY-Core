@@ -6,6 +6,7 @@ $admin = file_get_contents( $root . '/admin/class-yby-inquiry-admin.php' );
 $settings = file_get_contents( $root . '/admin/class-yby-admin.php' );
 $view = file_get_contents( $root . '/admin/views/settings-page.php' );
 $list_view = file_get_contents( $root . '/admin/views/inquiry-list.php' );
+$architecture = file_get_contents( $root . '/docs/v1.5.1/ANDY_CORE_V1_5_1_ADMIN_ARCHITECTURE_AUDIT.md' );
 $assert = static function ( $condition, $message ) {
 	if ( ! $condition ) { throw new RuntimeException( $message ); }
 };
@@ -26,4 +27,10 @@ $assert( strpos( $admin, "'archived'" ) !== false, 'Archive filtering contract m
 $assert( strpos( $management, 'archived_at IS NULL' ) !== false, 'Archive filtering SQL missing.' );
 $assert( strpos( $management, 'follow_up_scheduled' ) !== false, 'Follow-up activity contract missing.' );
 $assert( strpos( $list_view, 'paginate_links' ) !== false, 'Inquiry list pagination UI missing.' );
+$assert( strpos( $architecture, 'Project Studio' ) !== false && strpos( $architecture, 'Social Login' ) !== false, 'Admin architecture audit incomplete.' );
+$assert( strpos( $architecture, 'andy_core_leads_view' ) !== false, 'Inquiry capability audit missing.' );
+$assert( strpos( $management, 'normalize_datetime' ) !== false && strpos( $management, 'format_datetime_local' ) !== false, 'Datetime conversion contract missing.' );
+$assert( strpos( $management, "'owner_changed'" ) !== false, 'Owner activity contract missing.' );
+$assert( strpos( $management, "'success' => false" ) !== false, 'Management failure result contract missing.' );
+$assert( strpos( $database, "update_option( self::VERSION_OPTION" ) !== false && strpos( $database, 'management_tables_exist' ) !== false, 'Migration verification contract missing.' );
 echo "PASS inquiry-inbox-contract-harness\n";

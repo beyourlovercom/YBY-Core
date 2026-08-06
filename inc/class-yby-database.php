@@ -44,7 +44,9 @@ class YBY_Database {
 
 		self::create_leads_table();
 		self::create_management_tables();
-		update_option( self::VERSION_OPTION, YBY_DATABASE_VERSION );
+		if ( self::leads_table_exists() && self::management_tables_exist() ) {
+			update_option( self::VERSION_OPTION, YBY_DATABASE_VERSION );
+		}
 	}
 
 	/**

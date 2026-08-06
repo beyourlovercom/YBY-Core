@@ -84,6 +84,7 @@ class YBY_Core {
 	protected function define_system_hooks() {
 		$database = new YBY_Database();
 
+		$this->loader->add_action( 'plugins_loaded', 'YBY_Activator', 'sync_capabilities', 1, 0 );
 		$this->loader->add_action( 'plugins_loaded', $database, 'maybe_upgrade', 5, 0 );
 	}
 
