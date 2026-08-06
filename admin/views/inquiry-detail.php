@@ -8,7 +8,9 @@
 		<p><label>Priority <select name="priority"><?php foreach ( YBY_Lead_Management::PRIORITIES as $value ) : ?><option value="<?php echo esc_attr( $value ); ?>" <?php selected( $lead['priority'] ?: 'normal', $value ); ?>><?php echo esc_html( $value ); ?></option><?php endforeach; ?></select></label></p>
 		<p><label>Owner User ID <input type="number" min="0" name="owner_user_id" value="<?php echo esc_attr( $lead['owner_user_id'] ?? 0 ); ?>"></label></p>
 		<p><label>Next follow-up <input type="datetime-local" name="next_follow_up_at" value="<?php echo esc_attr( $lead['next_follow_up_at'] ?? '' ); ?>"></label></p>
-		<p><label>Note<br><textarea name="note" rows="5"></textarea></label></p><button class="button button-primary" type="submit"><?php esc_html_e( 'Save', 'yby-core' ); ?></button></form>
+		<p><label>Note<br><textarea name="note" rows="5"></textarea></label></p>
+		<?php if ( ! empty( $lead['archived_at'] ) ) : ?><button class="button" name="restore" value="1" type="submit"><?php esc_html_e( 'Restore', 'yby-core' ); ?></button><?php else : ?><button class="button" name="archived" value="1" type="submit"><?php esc_html_e( 'Archive', 'yby-core' ); ?></button><?php endif; ?>
+		<button class="button button-primary" type="submit"><?php esc_html_e( 'Save', 'yby-core' ); ?></button></form>
 		<h2><?php esc_html_e( 'Activity Timeline', 'yby-core' ); ?></h2><?php foreach ( $lead['activities'] as $activity ) : ?><article><strong><?php echo esc_html( $activity['activity_type'] ); ?></strong> <time><?php echo esc_html( $activity['created_at'] ); ?></time><p><?php echo esc_html( $activity['content'] ); ?></p></article><?php endforeach; ?>
 	</section></div>
 </div>

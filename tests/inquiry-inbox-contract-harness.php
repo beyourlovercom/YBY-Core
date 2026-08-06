@@ -18,4 +18,9 @@ $assert( strpos( $management, 'project_details' ) === false, 'Inbox list must no
 $assert( strpos( $admin, \"return 'andy-core-leads'\" ) !== false, 'Inquiry slug missing.' );
 $assert( strpos( $settings, \"system-status\" ) !== false, 'Settings tab allowlist missing.' );
 $assert( substr_count( $view, 'nav-tab') >= 3, 'General Settings tabs missing.' );
+$assert( strpos( $admin, "'owner_user_id'" ) !== false, 'Owner filtering contract missing.' );
+$assert( strpos( $admin, "'page_profile'" ) !== false, 'Page profile filtering contract missing.' );
+$assert( strpos( $admin, "'archived'" ) !== false, 'Archive filtering contract missing.' );
+$assert( strpos( $management, 'archived_at IS NULL' ) !== false, 'Archive filtering SQL missing.' );
+$assert( strpos( $management, 'follow_up_scheduled' ) !== false, 'Follow-up activity contract missing.' );
 echo \"PASS inquiry-inbox-contract-harness\\n\";

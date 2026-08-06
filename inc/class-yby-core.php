@@ -110,11 +110,11 @@ class YBY_Core {
 		$social_login   = new YBY_Social_Login_Admin();
 
 		$this->loader->add_action( 'init', $project_cpt, 'register' );
+		$this->loader->add_action( 'admin_menu', $inquiry_admin, 'add_admin_menu', 20 );
 		$this->loader->add_action( 'admin_menu', $project_studio, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_menu', $brand_os, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_menu', $social_login, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_menu', $admin, 'add_admin_menu' );
-		$this->loader->add_action( 'admin_menu', $inquiry_admin, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $project_studio, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $brand_os, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $social_login, 'enqueue_assets' );

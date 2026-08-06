@@ -160,6 +160,7 @@ class YBY_Admin {
 	}
 
 	protected function render_inquiry_settings() {
+		$tab = 'inquiry';
 		$notice = '';
 		if ( isset( $_POST['yby_inquiry_settings_submit'] ) ) {
 			check_admin_referer( 'yby_inquiry_settings_save', 'yby_inquiry_settings_nonce' );
@@ -182,6 +183,7 @@ class YBY_Admin {
 	}
 
 	protected function render_system_status() {
+		$tab = 'system-status';
 		$status = array(
 			'plugin_version' => YBY_CORE_VERSION,
 			'database_version' => get_option( YBY_Database::VERSION_OPTION, 'unknown' ),

@@ -54,6 +54,14 @@ class YBY_Lead_Management {
 			$where[] = 'COALESCE(m.priority, "normal") = %s';
 			$values[] = $args['priority'];
 		}
+		if ( ! empty( $args['owner_user_id'] ) ) { $where[] = 'COALESCE(m.owner_user_id, 0) = %d'; $values[] = absint( $args['owner_user_id'] ); }
+		if ( '' !== (string) ( $args['country'] ?? '' ) ) { $where[] = 'l.country = %s'; $values[] = sanitize_text_field( $args['country'] ); }
+		if ( '' !== (string) ( $args['source_preset'] ?? '' ) ) { $where[] = 'l.source_preset = %s'; $values[] = sanitize_key( $args['source_preset'] ); }
+		if ( '' !== (string) ( $args['page_profile'] ?? '' ) ) { $where[] = 'l.page_profile = %s'; $values[] = sanitize_key( $args['page_profile'] ); }
+		if ( '' !== (string) ( $args['date_from'] ?? '' ) ) { $where[] = 'l.created_at >= %s'; $values[] = sanitize_text_field( $args['date_from'] ) . ' 00:00:00'; }
+		if ( '' !== (string) ( $args['date_to'] ?? '' ) ) { $where[] = 'l.created_at <= %s'; $values[] = sanitize_text_field( $args['date_to'] ) . ' 23:59:59'; }
+		if ( 'active' === ( $args['archived'] ?? '' ) ) { $where[] = '(m.archived_at IS NULL OR m.archived_at = "0000-00-00 00:00:00")'; }
+		if ( 'archived' === ( $args['archived'] ?? '' ) ) { $where[] = 'm.archived_at IS NOT NULL AND m.archived_at <> "0000-00-00 00:00:00"'; }
 		$where_sql = implode( ' AND ', $where );
 		$count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(1) FROM {$leads} l LEFT JOIN {$management} m ON m.lead_id = l.id WHERE {$where_sql}", $values ) );
 		$sql = "SELECT l.id,l.case_id,l.created_at,l.name,l.company,l.country,l.source_preset,l.page_profile,m.status,m.owner_user_id,m.priority,m.next_follow_up_at,m.last_activity_at,m.archived_at FROM {$leads} l LEFT JOIN {$management} m ON m.lead_id = l.id WHERE {$where_sql} ORDER BY l.created_at DESC LIMIT %d OFFSET %d";
@@ -102,7 +110,7 @@ class YBY_Lead_Management {
 			$updates['archived_at'] = $now;
 			$events[] = array( 'activity_type' => 'archived' );
 		}
-		if ( isset( $data['restore'] ) ) {
+		if ( ! empty( $data['restore'] ) ) {
 			$updates['archived_at'] = null;
 			$events[] = array( 'activity_type' => 'restored' );
 		}

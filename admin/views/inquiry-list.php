@@ -3,9 +3,15 @@
 	<h1><?php esc_html_e( 'Inquiry', 'yby-core' ); ?></h1>
 	<form method="get" class="yby-inquiry-filters">
 		<input type="hidden" name="page" value="<?php echo esc_attr( YBY_Inquiry_Admin::page_slug() ); ?>">
-		<input type="search" name="s" minlength="2" placeholder="<?php esc_attr_e( 'Search Case ID, name, email, WhatsApp, company', 'yby-core' ); ?>" value="<?php echo esc_attr( $args['search'] ); ?>">
+	<input type="search" name="s" minlength="2" placeholder="<?php esc_attr_e( 'Search Case ID, name, email, WhatsApp, company', 'yby-core' ); ?>" value="<?php echo esc_attr( $args['search'] ); ?>">
 		<select name="status"><option value=""><?php esc_html_e( 'All statuses', 'yby-core' ); ?></option><?php foreach ( YBY_Lead_Management::STATUSES as $status ) : ?><option value="<?php echo esc_attr( $status ); ?>" <?php selected( $args['status'], $status ); ?>><?php echo esc_html( $status ); ?></option><?php endforeach; ?></select>
 		<select name="priority"><option value=""><?php esc_html_e( 'All priorities', 'yby-core' ); ?></option><?php foreach ( YBY_Lead_Management::PRIORITIES as $priority ) : ?><option value="<?php echo esc_attr( $priority ); ?>" <?php selected( $args['priority'], $priority ); ?>><?php echo esc_html( $priority ); ?></option><?php endforeach; ?></select>
+		<input name="owner_user_id" type="number" min="0" placeholder="Owner ID" value="<?php echo esc_attr( $args['owner_user_id'] ); ?>">
+		<input name="country" type="text" placeholder="Country" value="<?php echo esc_attr( $args['country'] ); ?>">
+		<input name="source_preset" type="text" placeholder="Preset" value="<?php echo esc_attr( $args['source_preset'] ); ?>">
+		<input name="page_profile" type="text" placeholder="Profile" value="<?php echo esc_attr( $args['page_profile'] ); ?>">
+		<input name="date_from" type="date" value="<?php echo esc_attr( $args['date_from'] ); ?>"><input name="date_to" type="date" value="<?php echo esc_attr( $args['date_to'] ); ?>">
+		<select name="archived"><option value="">All records</option><option value="active" <?php selected( $args['archived'], 'active' ); ?>>Active</option><option value="archived" <?php selected( $args['archived'], 'archived' ); ?>>Archived</option></select>
 		<select name="per_page"><?php foreach ( array( 30, 50, 100 ) as $size ) : ?><option value="<?php echo esc_attr( $size ); ?>" <?php selected( $data['per_page'], $size ); ?>><?php echo esc_html( $size ); ?></option><?php endforeach; ?></select>
 		<button class="button button-primary" type="submit"><?php esc_html_e( 'Search', 'yby-core' ); ?></button>
 	</form>
