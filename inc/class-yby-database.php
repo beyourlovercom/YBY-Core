@@ -94,8 +94,17 @@ class YBY_Database {
 
 	public static function management_tables_exist() {
 		global $wpdb;
-		return self::management_table_name() === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', self::management_table_name() ) )
-			&& self::activities_table_name() === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', self::activities_table_name() ) );
+		$management_exists = self::management_table_name() === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', self::management_table_name() ) );
+		$activities_exists = self::activities_table_name() === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', self::activities_table_name() ) );
+		if ( ! $management_exists || ! $activities_exists ) {
+			return false;
+		}
+		$management_indexes = $wpdb->get_col( 'SHOW INDEX FROM ' . self::management_table_name(), 2 );
+		$activity_indexes = $wpdb->get_col( 'SHOW INDEX FROM ' . self::activities_table_name(), 2 );
+		return in_array( 'lead_id', $management_indexes, true )
+			&& in_array( 'status_archived', $management_indexes, true )
+			&& in_array( 'owner_archived', $management_indexes, true )
+			&& in_array( 'lead_created', $activity_indexes, true );
 	}
 
 	/**

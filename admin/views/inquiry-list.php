@@ -22,4 +22,5 @@
 		<td><a class="button" href="<?php echo esc_url( add_query_arg( array( 'page' => YBY_Inquiry_Admin::page_slug(), 'lead_id' => $item['id'] ), admin_url( 'admin.php' ) ) ); ?>"><?php esc_html_e( 'View', 'yby-core' ); ?></a></td>
 	</tr><?php endforeach; ?></tbody></table>
 	<p><?php echo esc_html( sprintf( __( '%d inquiries', 'yby-core' ), $data['total'] ) ); ?></p>
+	<?php if ( $data['total'] > $data['per_page'] ) : ?><div class="tablenav"><div class="tablenav-pages"><?php echo wp_kses_post( paginate_links( array( 'base' => add_query_arg( 'paged', '%#%' ), 'format' => '', 'current' => $data['page'], 'total' => (int) ceil( $data['total'] / $data['per_page'] ), 'type' => 'plain' ) ) ); ?></div></div><?php endif; ?>
 </div>
