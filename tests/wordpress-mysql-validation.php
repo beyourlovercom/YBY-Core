@@ -3,12 +3,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit( 1 );
 }
 
-$phase = 'validate';
-$report_dir = sys_get_temp_dir();
-foreach ( $_SERVER['argv'] as $argument ) {
-	if ( 0 === strpos( $argument, '--phase=' ) ) { $phase = substr( $argument, 8 ); }
-	if ( 0 === strpos( $argument, '--report-dir=' ) ) { $report_dir = substr( $argument, 13 ); }
-}
+$phase = getenv( 'YBY_VALIDATION_PHASE' ) ?: 'validate';
+$report_dir = getenv( 'YBY_VALIDATION_REPORT_DIR' ) ?: sys_get_temp_dir();
 if ( ! is_dir( $report_dir ) ) { mkdir( $report_dir, 0777, true ); }
 
 function yby_validation_assert( $condition, $message ) {
