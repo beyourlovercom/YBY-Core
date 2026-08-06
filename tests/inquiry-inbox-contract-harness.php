@@ -21,6 +21,7 @@ $assert( strpos( $management, 'project_details' ) === false, 'Inbox list must no
 $assert( strpos( $admin, "return 'andy-core-leads'" ) !== false, 'Inquiry slug missing.' );
 $studio = file_get_contents( $root . '/admin/class-yby-project-studio.php' );
 $assert( strpos( $studio, "return 'yby-project-studio'" ) !== false, 'Dedicated Project Studio submenu slug missing.' );
+$assert( strpos( $studio, '$this->studio_page_hook = add_submenu_page' ) !== false, 'Project Studio must retain the real admin page hook.' );
 $assert( strpos( $studio, "'page' => self::studio_page_slug()" ) !== false, 'Project Studio URLs must use the dedicated submenu slug.' );
 $assert( strpos( $admin, '$this->page_hook = add_submenu_page' ) !== false, 'Inquiry must retain the real admin page hook.' );
 $assert( strpos( $admin, '$is_inquiry_request' ) !== false, 'Inquiry asset fallback missing.' );

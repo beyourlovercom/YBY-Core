@@ -36,6 +36,13 @@ class YBY_Project_Studio {
 	protected $security;
 
 	/**
+	 * Registered Project Studio admin hook.
+	 *
+	 * @var string
+	 */
+	protected $studio_page_hook = '';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $plugin_name Plugin slug.
@@ -81,7 +88,7 @@ class YBY_Project_Studio {
 			58
 		);
 
-		add_submenu_page(
+		$this->studio_page_hook = add_submenu_page(
 			self::menu_slug(),
 			__( 'Project Studio', 'yby-core' ),
 			__( 'Project Studio', 'yby-core' ),
@@ -135,6 +142,15 @@ class YBY_Project_Studio {
 			$this->version,
 			true
 		);
+	}
+
+	/**
+	 * Return the registered Project Studio admin hook.
+	 *
+	 * @return string
+	 */
+	public function studio_page_hook() {
+		return $this->studio_page_hook;
 	}
 
 	/**

@@ -46,8 +46,8 @@ yby_validation_assert( get_option( 'yby_validation_lead_hash' ) === hash( 'sha25
 
 $studio_admin = new YBY_Project_Studio( 'yby-core', YBY_CORE_VERSION );
 $studio_admin->add_admin_menu();
-$studio_hook = YBY_Project_Studio::menu_slug() . '_page_' . YBY_Project_Studio::studio_page_slug();
-yby_validation_assert( isset( $GLOBALS['_registered_pages'][ $studio_hook ] ), 'Project Studio must use its dedicated submenu slug.' );
+$studio_hook = $studio_admin->studio_page_hook();
+yby_validation_assert( is_string( $studio_hook ) && '' !== $studio_hook && isset( $GLOBALS['_registered_pages'][ $studio_hook ] ), 'Project Studio must use its dedicated submenu slug.' );
 yby_validation_assert( false !== strpos( YBY_Project_Studio::studio_url( 'overview', 123 ), 'page=yby-project-studio' ), 'Project Studio URLs must use the dedicated submenu slug.' );
 yby_validation_assert( 'yby-os' === YBY_Project_Studio::menu_slug(), 'The Andy Core parent slug must remain yby-os.' );
 
