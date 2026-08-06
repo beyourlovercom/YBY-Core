@@ -16,7 +16,7 @@ $assert( strpos( $management, 'UNIQUE' ) === false, 'Management service must not
 $assert( strpos( $management, 'LIMIT 50' ) !== false, 'Activities must be bounded.' );
 $assert( strpos( $management, 'project_details' ) === false, 'Inbox list must not load full project details.' );
 $assert( strpos( $admin, "return 'andy-core-leads'" ) !== false, 'Inquiry slug missing.' );
-$assert( strpos( $settings, \"system-status\" ) !== false, 'Settings tab allowlist missing.' );
+$assert( strpos( $settings, 'system-status' ) !== false, 'Settings tab allowlist missing.' );
 $assert( substr_count( $view, 'nav-tab') >= 3, 'General Settings tabs missing.' );
 $assert( strpos( $admin, "'owner_user_id'" ) !== false, 'Owner filtering contract missing.' );
 $assert( strpos( $admin, "'page_profile'" ) !== false, 'Page profile filtering contract missing.' );
