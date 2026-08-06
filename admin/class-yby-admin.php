@@ -107,6 +107,16 @@ class YBY_Admin {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'yby-core' ) );
 		}
 
+		$tab         = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general';
+		$tab         = in_array( $tab, array( 'general', 'inquiry', 'system-status' ), true ) ? $tab : 'general';
+		if ( 'inquiry' === $tab ) {
+			$this->render_inquiry_settings();
+			return;
+		}
+		if ( 'system-status' === $tab ) {
+			$this->render_system_status();
+			return;
+		}
 		$notice      = '';
 		$notice_type = 'success';
 
@@ -147,5 +157,39 @@ class YBY_Admin {
 		$options = YBY_Config::get_options();
 
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/settings-page.php';
+	}
+
+	protected function render_inquiry_settings() {
+		$notice = '';
+		if ( isset( $_POST['yby_inquiry_settings_submit'] ) ) {
+			check_admin_referer( 'yby_inquiry_settings_save', 'yby_inquiry_settings_nonce' );
+			$raw = wp_unslash( $_POST['yby_inquiry_settings'] ?? array() );
+			$raw = is_array( $raw ) ? $raw : array();
+			$options = array(
+				'default_status' => in_array( $raw['default_status'] ?? '', YBY_Lead_Management::STATUSES, true ) ? $raw['default_status'] : 'new',
+				'default_priority' => in_array( $raw['default_priority'] ?? '', YBY_Lead_Management::PRIORITIES, true ) ? $raw['default_priority'] : 'normal',
+				'default_owner_user_id' => absint( $raw['default_owner_user_id'] ?? 0 ),
+				'leads_per_page' => in_array( absint( $raw['leads_per_page'] ?? 30 ), array( 30, 50, 100 ), true ) ? absint( $raw['leads_per_page'] ) : 30,
+				'editors_can_manage' => ! empty( $raw['editors_can_manage'] ),
+				'assignment_enabled' => ! empty( $raw['assignment_enabled'] ),
+				'archive_behavior' => in_array( $raw['archive_behavior'] ?? 'soft', array( 'soft' ), true ) ? $raw['archive_behavior'] : 'soft',
+			);
+			update_option( 'yby_core_inquiry_settings', $options );
+			$notice = __( 'Inquiry settings saved.', 'yby-core' );
+		}
+		$options = wp_parse_args( get_option( 'yby_core_inquiry_settings', array() ), array( 'default_status' => 'new', 'default_priority' => 'normal', 'default_owner_user_id' => 0, 'leads_per_page' => 30, 'editors_can_manage' => false, 'assignment_enabled' => true, 'archive_behavior' => 'soft' ) );
+		include YBY_CORE_PLUGIN_DIR . 'admin/views/inquiry-settings.php';
+	}
+
+	protected function render_system_status() {
+		$status = array(
+			'plugin_version' => YBY_CORE_VERSION,
+			'database_version' => get_option( YBY_Database::VERSION_OPTION, 'unknown' ),
+			'lead_table' => YBY_Database::leads_table_exists(),
+			'management_table' => YBY_Database::management_tables_exist(),
+			'activities_table' => YBY_Database::management_tables_exist(),
+			'status' => 'read-only',
+		);
+		include YBY_CORE_PLUGIN_DIR . 'admin/views/system-status.php';
 	}
 }

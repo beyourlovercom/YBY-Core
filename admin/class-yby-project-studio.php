@@ -141,6 +141,11 @@ class YBY_Project_Studio {
 		$view    = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'list';
 		$post_id = isset( $_GET['post_id'] ) ? absint( $_GET['post_id'] ) : 0;
 
+		if ( ! isset( $_GET['view'] ) && ! $post_id ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=andy-core-leads' ) );
+			exit;
+		}
+
 		if ( 'runtime' === $view && $post_id ) {
 			$this->render_runtime_viewer( $post_id );
 			return;

@@ -11,6 +11,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div class="wrap">
 	<h1><?php echo esc_html__( 'Andy Core', 'yby-core' ); ?></h1>
+	<h2 class="nav-tab-wrapper">
+		<?php foreach ( array( 'general' => 'General', 'inquiry' => 'Inquiry', 'system-status' => 'System Status' ) as $tab_key => $tab_label ) : ?>
+			<a class="nav-tab <?php echo 'general' === $tab_key ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => YBY_Helpers::admin_page_slug(), 'tab' => $tab_key ), admin_url( 'admin.php' ) ) ); ?>"><?php echo esc_html( $tab_label ); ?></a>
+		<?php endforeach; ?>
+	</h2>
 
 	<?php if ( ! empty( $notice ) ) : ?>
 		<div class="notice notice-<?php echo esc_attr( $notice_type ); ?> is-dismissible">
