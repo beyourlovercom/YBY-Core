@@ -5,6 +5,7 @@ $management = file_get_contents( $root . '/inc/class-yby-lead-management.php' );
 $admin = file_get_contents( $root . '/admin/class-yby-inquiry-admin.php' );
 $settings = file_get_contents( $root . '/admin/class-yby-admin.php' );
 $view = file_get_contents( $root . '/admin/views/settings-page.php' );
+$list_view = file_get_contents( $root . '/admin/views/inquiry-list.php' );
 $assert = static function ( $condition, $message ) {
 	if ( ! $condition ) { throw new RuntimeException( $message ); }
 };
@@ -24,5 +25,5 @@ $assert( strpos( $admin, "'page_profile'" ) !== false, 'Page profile filtering c
 $assert( strpos( $admin, "'archived'" ) !== false, 'Archive filtering contract missing.' );
 $assert( strpos( $management, 'archived_at IS NULL' ) !== false, 'Archive filtering SQL missing.' );
 $assert( strpos( $management, 'follow_up_scheduled' ) !== false, 'Follow-up activity contract missing.' );
-$assert( strpos( $view, 'paginate_links' ) !== false, 'Inquiry list pagination UI missing.' );
+$assert( strpos( $list_view, 'paginate_links' ) !== false, 'Inquiry list pagination UI missing.' );
 echo "PASS inquiry-inbox-contract-harness\n";
