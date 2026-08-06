@@ -44,6 +44,10 @@ yby_validation_assert( 0 === (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$manag
 yby_validation_assert( 0 === (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$activities}" ), 'Migration backfilled activities.' );
 yby_validation_assert( get_option( 'yby_validation_lead_hash' ) === hash( 'sha256', wp_json_encode( $wpdb->get_results( "SELECT * FROM {$leads} ORDER BY id", ARRAY_A ) ) ), 'Migration changed original Leads.' );
 
+$validation_administrator = get_user_by( 'login', 'admin' );
+yby_validation_assert( $validation_administrator instanceof WP_User, 'Validation administrator is unavailable.' );
+wp_set_current_user( $validation_administrator->ID );
+
 yby_validation_assert( false !== strpos( YBY_Project_Studio::studio_url( 'overview', 123 ), 'page=yby-project-studio' ), 'Project Studio URLs must use the dedicated submenu slug.' );
 yby_validation_assert( 'yby-os' === YBY_Project_Studio::menu_slug(), 'The Andy Core parent slug must remain yby-os.' );
 
@@ -56,6 +60,9 @@ function yby_validation_assert_inquiry_assets( $query, $hook_suffix ) {
 	yby_validation_assert( wp_script_is( 'yby-core-inquiry', 'enqueued' ), 'Inquiry script must be enqueued.' );
 }
 
+$inquiry_admin = new YBY_Inquiry_Admin( 'yby-core', YBY_CORE_VERSION );
+$inquiry_admin->add_admin_menu();
+add_action( 'admin_enqueue_scripts', array( $inquiry_admin, 'enqueue_assets' ) );
 $inquiry_hook = YBY_Inquiry_Admin::registered_page_hook();
 yby_validation_assert( is_string( $inquiry_hook ) && '' !== $inquiry_hook, 'Inquiry page must retain its registered admin hook.' );
 yby_validation_assert_inquiry_assets( array( 'page' => 'andy-core-leads' ), $inquiry_hook );
