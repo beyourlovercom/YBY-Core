@@ -4,8 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $phase = getenv( 'YBY_VALIDATION_PHASE' ) ?: 'validate';
-$uploads = wp_upload_dir();
-$report_dir = trailingslashit( $uploads['basedir'] ) . 'yby-validation-reports';
+$report_dir = WP_CONTENT_DIR . '/uploads/yby-validation-reports';
 if ( ! is_dir( $report_dir ) ) { mkdir( $report_dir, 0777, true ); }
 
 function yby_validation_assert( $condition, $message ) {
