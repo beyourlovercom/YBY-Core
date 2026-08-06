@@ -4,8 +4,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $phase = getenv( 'YBY_VALIDATION_PHASE' ) ?: 'validate';
-$report_dir = WP_CONTENT_DIR . '/uploads/yby-validation-reports';
-if ( ! is_dir( $report_dir ) ) { mkdir( $report_dir, 0777, true ); }
+$report_dir = getenv( 'YBY_VALIDATION_REPORT_DIR' );
+if ( ! is_string( $report_dir ) || '' === $report_dir ) {
+	throw new RuntimeException( 'YBY_VALIDATION_REPORT_DIR must be provided by the isolated validation runner.' );
+}
+
+if ( ! is_dir( $report_dir ) && ! wp_mkdir_p( $report_dir ) ) {
+	throw new RuntimeException( 'Could not create validation report directory.' );
+}
 
 function yby_validation_assert( $condition, $message ) {
 	if ( ! $condition ) { throw new RuntimeException( $message ); }

@@ -48,10 +48,11 @@ jobs:
       - name: Install v1.5.0 baseline and seed synthetic Leads
         run: |
           set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/reports"
           mkdir -p "$RUNNER_TEMP/wordpress/wp-content/plugins/yby-core"
           git archive 80a04c14da6106e58a837345cdc9bfc3de804984 | tar -x -C "$RUNNER_TEMP/wordpress/wp-content/plugins/yby-core"
           wp plugin activate yby-core --path="$RUNNER_TEMP/wordpress"
-          YBY_VALIDATION_PHASE=seed wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-mysql-validation.php" --path="$RUNNER_TEMP/wordpress"
+          YBY_VALIDATION_PHASE=seed YBY_VALIDATION_REPORT_DIR="$RUNNER_TEMP/reports" wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-mysql-validation.php" --path="$RUNNER_TEMP/wordpress"
       - name: Upgrade to current PR plugin and validate
         run: |
           set -euo pipefail
@@ -60,9 +61,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/wordpress/wp-content/plugins/yby-core"
           git archive HEAD | tar -x -C "$RUNNER_TEMP/wordpress/wp-content/plugins/yby-core"
           wp plugin activate yby-core --path="$RUNNER_TEMP/wordpress"
-          YBY_VALIDATION_PHASE=validate wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-mysql-validation.php" --path="$RUNNER_TEMP/wordpress"
-          mkdir -p "$RUNNER_TEMP/reports"
-          cp "$RUNNER_TEMP/wordpress/wp-content/uploads/yby-validation-reports/"* "$RUNNER_TEMP/reports/"
+          YBY_VALIDATION_PHASE=validate YBY_VALIDATION_REPORT_DIR="$RUNNER_TEMP/reports" wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-mysql-validation.php" --path="$RUNNER_TEMP/wordpress"
           ls -la "$RUNNER_TEMP/reports"
       - name: Upload sanitized validation reports
         if: always()
