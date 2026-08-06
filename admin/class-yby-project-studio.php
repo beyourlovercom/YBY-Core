@@ -57,6 +57,15 @@ class YBY_Project_Studio {
 	}
 
 	/**
+	 * Return the dedicated Project Studio submenu slug.
+	 *
+	 * @return string
+	 */
+	public static function studio_page_slug() {
+		return 'yby-project-studio';
+	}
+
+	/**
 	 * Register Project Studio menu.
 	 *
 	 * @return void
@@ -77,7 +86,7 @@ class YBY_Project_Studio {
 			__( 'Project Studio', 'yby-core' ),
 			__( 'Project Studio', 'yby-core' ),
 			'manage_options',
-			self::menu_slug(),
+			self::studio_page_slug(),
 			array( $this, 'render_project_studio_page' )
 		);
 
@@ -129,6 +138,34 @@ class YBY_Project_Studio {
 	}
 
 	/**
+	 * Keep the Andy Core menu highlighted for the dedicated Studio route.
+	 *
+	 * @param string $parent_file Current parent menu file.
+	 * @return string
+	 */
+	public function filter_parent_file( $parent_file ) {
+		if ( self::studio_page_slug() === ( isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '' ) ) {
+			return self::menu_slug();
+		}
+
+		return $parent_file;
+	}
+
+	/**
+	 * Keep Project Studio highlighted for its dedicated route.
+	 *
+	 * @param string $submenu_file Current submenu file.
+	 * @return string
+	 */
+	public function filter_submenu_file( $submenu_file ) {
+		if ( self::studio_page_slug() === ( isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '' ) ) {
+			return self::studio_page_slug();
+		}
+
+		return $submenu_file;
+	}
+
+	/**
 	 * Render Project Studio page.
 	 *
 	 * @return void
@@ -141,7 +178,8 @@ class YBY_Project_Studio {
 		$view    = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'list';
 		$post_id = isset( $_GET['post_id'] ) ? absint( $_GET['post_id'] ) : 0;
 
-		if ( ! isset( $_GET['view'] ) && ! $post_id ) {
+		$is_parent_request = self::menu_slug() === ( isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '' );
+		if ( $is_parent_request && ! isset( $_GET['view'] ) && ! $post_id ) {
 			wp_safe_redirect( admin_url( 'admin.php?page=andy-core-leads' ) );
 			exit;
 		}
@@ -246,7 +284,7 @@ class YBY_Project_Studio {
 	 */
 	public static function studio_url( $view, $post_id = 0 ) {
 		$args = array(
-			'page' => self::menu_slug(),
+			'page' => self::studio_page_slug(),
 		);
 
 		if ( ! empty( $view ) && 'list' !== $view ) {

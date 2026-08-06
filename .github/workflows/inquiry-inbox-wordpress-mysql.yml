@@ -63,9 +63,21 @@ jobs:
           wp plugin activate yby-core --path="$RUNNER_TEMP/wordpress"
           YBY_VALIDATION_PHASE=validate YBY_VALIDATION_REPORT_DIR="$RUNNER_TEMP/reports" wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-mysql-validation.php" --path="$RUNNER_TEMP/wordpress"
           ls -la "$RUNNER_TEMP/reports"
+      - name: Build Owner UAT RC
+        run: |
+          set -euo pipefail
+          bash scripts/build-v1.5.1-rc.sh
+          unzip -Z1 releases/v1.5.1-rc/andy-core-v1.5.1-rc.zip | awk -F/ 'NF && $1 != "yby-core" { exit 1 }'
+          test -s releases/v1.5.1-rc/SHA256.txt
       - name: Upload sanitized validation reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: inquiry-inbox-wordpress-mysql-reports
           path: ${{ runner.temp }}/reports
+      - name: Upload Owner UAT RC
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: andy-core-v1.5.1-owner-uat-rc
+          path: releases/v1.5.1-rc

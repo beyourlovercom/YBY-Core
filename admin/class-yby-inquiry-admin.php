@@ -4,6 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 class YBY_Inquiry_Admin {
 	protected $plugin_name;
 	protected $version;
+	protected $page_hook = '';
 
 	public function __construct( $plugin_name, $version ) {
 		$this->plugin_name = $plugin_name;
@@ -15,7 +16,7 @@ class YBY_Inquiry_Admin {
 	}
 
 	public function add_admin_menu() {
-		add_submenu_page( YBY_Project_Studio::menu_slug(), __( 'Inquiry', 'yby-core' ), __( 'Inquiry', 'yby-core' ), 'andy_core_leads_view', self::page_slug(), array( $this, 'render_page' ) );
+		$this->page_hook = add_submenu_page( YBY_Project_Studio::menu_slug(), __( 'Inquiry', 'yby-core' ), __( 'Inquiry', 'yby-core' ), 'andy_core_leads_view', self::page_slug(), array( $this, 'render_page' ) );
 		global $submenu;
 		$parent_slug = YBY_Project_Studio::menu_slug();
 		if ( isset( $submenu[ $parent_slug ] ) ) {
@@ -31,7 +32,8 @@ class YBY_Inquiry_Admin {
 	}
 
 	public function enqueue_assets( $hook_suffix ) {
-		if ( YBY_Project_Studio::menu_slug() . '_page_' . self::page_slug() !== $hook_suffix ) {
+		$is_inquiry_request = self::page_slug() === ( isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '' );
+		if ( $this->page_hook !== $hook_suffix && ! $is_inquiry_request ) {
 			return;
 		}
 		wp_enqueue_style( $this->plugin_name . '-inquiry', YBY_CORE_PLUGIN_URL . 'assets/css/yby-inquiry-admin.css', array(), $this->version );

@@ -121,6 +121,8 @@ class YBY_Core {
 		$this->loader->add_action( 'admin_enqueue_scripts', $social_login, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $inquiry_admin, 'enqueue_assets' );
+		$this->loader->add_filter( 'parent_file', $project_studio, 'filter_parent_file' );
+		$this->loader->add_filter( 'submenu_file', $project_studio, 'filter_submenu_file' );
 	}
 
 	/**

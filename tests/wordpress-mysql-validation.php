@@ -44,6 +44,37 @@ yby_validation_assert( 0 === (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$manag
 yby_validation_assert( 0 === (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$activities}" ), 'Migration backfilled activities.' );
 yby_validation_assert( get_option( 'yby_validation_lead_hash' ) === hash( 'sha256', wp_json_encode( $wpdb->get_results( "SELECT * FROM {$leads} ORDER BY id", ARRAY_A ) ) ), 'Migration changed original Leads.' );
 
+do_action( 'admin_menu' );
+$studio_menu = $GLOBALS['submenu'][ YBY_Project_Studio::menu_slug() ] ?? array();
+$studio_entry = array_filter( $studio_menu, static function ( $item ) {
+	return YBY_Project_Studio::studio_page_slug() === $item[2];
+} );
+yby_validation_assert( 1 === count( $studio_entry ), 'Project Studio must use its dedicated submenu slug.' );
+yby_validation_assert( false !== strpos( YBY_Project_Studio::studio_url( 'overview', 123 ), 'page=yby-project-studio' ), 'Project Studio URLs must use the dedicated submenu slug.' );
+yby_validation_assert( 'yby-os' === YBY_Project_Studio::menu_slug(), 'The Andy Core parent slug must remain yby-os.' );
+
+function yby_validation_assert_inquiry_assets( $query, $hook_suffix ) {
+	$_GET = $query;
+	wp_dequeue_style( 'yby-core-inquiry' );
+	wp_dequeue_script( 'yby-core-inquiry' );
+	do_action( 'admin_enqueue_scripts', $hook_suffix );
+	yby_validation_assert( wp_style_is( 'yby-core-inquiry', 'enqueued' ), 'Inquiry stylesheet must be enqueued.' );
+	yby_validation_assert( wp_script_is( 'yby-core-inquiry', 'enqueued' ), 'Inquiry script must be enqueued.' );
+}
+
+$inquiry_hook = get_plugin_page_hook( YBY_Inquiry_Admin::page_slug(), YBY_Project_Studio::menu_slug() );
+yby_validation_assert( is_string( $inquiry_hook ) && '' !== $inquiry_hook, 'Inquiry page must retain its registered admin hook.' );
+yby_validation_assert_inquiry_assets( array( 'page' => 'andy-core-leads' ), $inquiry_hook );
+yby_validation_assert_inquiry_assets( array( 'page' => 'andy-core-leads', 's' => 'Synthetic' ), $inquiry_hook );
+yby_validation_assert_inquiry_assets( array( 'page' => 'andy-core-leads', 'paged' => 2 ), $inquiry_hook );
+yby_validation_assert_inquiry_assets( array( 'page' => 'andy-core-leads', 'lead_id' => 1 ), $inquiry_hook );
+yby_validation_assert_inquiry_assets( array( 'page' => 'andy-core-leads', 'archived' => 'only' ), 'unexpected_hook_suffix' );
+$_GET = array();
+wp_dequeue_style( 'yby-core-inquiry' );
+wp_dequeue_script( 'yby-core-inquiry' );
+do_action( 'wp_enqueue_scripts' );
+yby_validation_assert( ! wp_style_is( 'yby-core-inquiry', 'enqueued' ) && ! wp_script_is( 'yby-core-inquiry', 'enqueued' ), 'Inquiry assets must not load on the frontend.' );
+
 $wpdb->query( "DROP INDEX lead_created ON {$activities}" );
 YBY_Database::install();
 yby_validation_assert( YBY_Database::management_tables_exist(), 'Migration did not repair a missing index.' );
@@ -122,6 +153,6 @@ foreach ( array( 1000, 10000, 50000 ) as $size ) {
 	yby_validation_report( $report_dir, 'performance-' . ( $size / 1000 ) . 'k.json', array( 'size' => $size, 'generation_seconds' => microtime( true ) - $started, 'list_seconds' => microtime( true ) - $list_started, 'query_count' => $wpdb->num_queries - $queries_before, 'item_count' => count( $data['items'] ), 'peak_memory_bytes' => memory_get_peak_usage( true ), 'longtext_in_list' => false, 'activities_in_list' => false, 'n_plus_one' => false, 'frontend_management_writes' => 0, 'frontend_inbox_assets' => 0 ) );
 }
 
-yby_validation_report( $report_dir, 'security-report.json', array( 'capability' => true, 'editor_toggle' => true, 'author_denied' => true, 'subscriber_denied' => true, 'owner_validation' => true, 'status_allowlist' => true, 'priority_allowlist' => true, 'sql_injection_like_input' => true, 'lead_immutability' => true, 'xss_sanitized' => true ) );
+yby_validation_report( $report_dir, 'security-report.json', array( 'capability' => true, 'editor_toggle' => true, 'author_denied' => true, 'subscriber_denied' => true, 'owner_validation' => true, 'status_allowlist' => true, 'priority_allowlist' => true, 'sql_injection_like_input' => true, 'lead_immutability' => true, 'xss_sanitized' => true, 'project_studio_menu' => true, 'inquiry_admin_assets' => true, 'frontend_inquiry_assets' => false ) );
 yby_validation_report( $report_dir, 'migration-report.json', array( 'database_version' => get_option( 'yby_database_version' ), 'tables_indexes' => YBY_Database::management_tables_exist(), 'lead_immutability' => true, 'history_backfill' => false, 'idempotent' => true ) );
 file_put_contents( $report_dir . '/environment-report.txt', 'WordPress=' . get_bloginfo( 'version' ) . PHP_EOL . 'PHP=' . PHP_VERSION . PHP_EOL . 'MySQL=' . $wpdb->db_version() . PHP_EOL );

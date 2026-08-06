@@ -19,6 +19,11 @@ $assert( strpos( $management, 'UNIQUE' ) === false, 'Management service must not
 $assert( strpos( $management, 'LIMIT 50' ) !== false, 'Activities must be bounded.' );
 $assert( strpos( $management, 'project_details' ) === false, 'Inbox list must not load full project details.' );
 $assert( strpos( $admin, "return 'andy-core-leads'" ) !== false, 'Inquiry slug missing.' );
+$studio = file_get_contents( $root . '/admin/class-yby-project-studio.php' );
+$assert( strpos( $studio, "return 'yby-project-studio'" ) !== false, 'Dedicated Project Studio submenu slug missing.' );
+$assert( strpos( $studio, "'page' => self::studio_page_slug()" ) !== false, 'Project Studio URLs must use the dedicated submenu slug.' );
+$assert( strpos( $admin, '$this->page_hook = add_submenu_page' ) !== false, 'Inquiry must retain the real admin page hook.' );
+$assert( strpos( $admin, '$is_inquiry_request' ) !== false, 'Inquiry asset fallback missing.' );
 $assert( strpos( $settings, 'system-status' ) !== false, 'Settings tab allowlist missing.' );
 $assert( substr_count( $view, 'nav-tab') >= 3, 'General Settings tabs missing.' );
 $assert( strpos( $admin, "'owner_user_id'" ) !== false, 'Owner filtering contract missing.' );
