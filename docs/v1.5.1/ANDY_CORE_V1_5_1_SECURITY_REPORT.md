@@ -1,9 +1,13 @@
 # Andy Core v1.5.1 Security Report
 
-## Automated evidence
+## Executed validation
 
-CI passes PHP lint, all PHP harnesses, and all JavaScript harnesses. Static coverage confirms existing REST, Case ID, email, Thank You, Bottle, Irrigation, Social Login, and One Tap contracts remain covered.
+GitHub Actions run `31078688839` validated the feature in isolated WordPress `6.6.2`, PHP `8.3.33`, and MySQL `8.0.46` using synthetic Leads only.
 
-## Owner UAT checks
+The runtime validation passed capability checks for Administrator, Editor (with the runtime toggle), Author, and Subscriber; owner validation; status and priority allowlists; SQL-injection-like list search input; escaped note input; and original-Lead immutability. Editor assignment is disabled by `assignment_enabled`; Author and Subscriber have no Inbox access.
 
-The isolated Dev environment must verify capability and nonce rejection, Lead existence validation, owner validation, status and priority allowlists, tab allowlist fallback, escaped output, SQL-like search input, and read-only original Lead fields. No Production credentials or data are required.
+The admin implementation continues to enforce WordPress capability and nonce checks for management writes, uses the Settings tab allowlist with General fallback, and renders original Lead data read-only. No passwords, tokens, cookies, or customer data are emitted by the validation artifacts.
+
+## Remaining UAT observation
+
+Owner UAT must exercise browser request paths for nonce/CSRF rejection, unauthorized direct URLs, menu visibility, and System Status re-check behavior in the isolated Dev environment. These are manual browser confirmations, not deferred implementation work.
