@@ -10,3 +10,7 @@
 8. Test a restricted role and confirm capability boundaries.
 9. Run existing Bottle and Irrigation regression checks and confirm Lead REST, email, Case ID, and Thank You behavior.
 10. Use the rollback guide if migration or management checks fail. Do not test against Production.
+
+## Delivery
+
+The RC is intended for the isolated Dev URL supplied by the owner. Create a WordPress administrator or approved Editor test user there; do not reuse production credentials. The owner must verify the checklist manually and keep the Draft PR open until acceptance.

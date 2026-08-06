@@ -4,7 +4,7 @@
 
 - Status: resolved for the development baseline
 - Finding: active plugin and documentation metadata identified the v1.5.0 release-freeze state while the feature branch begins v1.5.1 development.
-- Resolution: active declarations now use `1.5.1-dev`; stable product version remains `1.5.0` and database version remains `1.2.0`.
+- Resolution: active declarations now use `1.5.1-dev`; stable product version remains `1.5.0`, while the development migration target is `1.3.0`.
 - Protected: v1.5.0 tag, release notes, release artifacts, REST, Case ID, email, Thank You, Bottle, Irrigation, Social Login, and Google One Tap contracts.
 
 ## R-002 Database Migration Boundary
