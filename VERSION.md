@@ -2,9 +2,9 @@
 
 - Product Name: Andy Core
 - Stable Version: 1.5.0
-- Development Version: None
-- Stable Release Type: Stable
-- Development Status: Release Freeze
+- Development Version: 1.5.1-dev
+- Stable Release Type: Stable baseline
+- Development Status: Inquiry Inbox implementation
 - Technical Namespace: YBY legacy compatibility retained
 - Database Version: 1.2.0
 - Brand Settings Included: Yes
