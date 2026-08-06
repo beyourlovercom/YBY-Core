@@ -17,8 +17,7 @@ function yby_validation_assert( $condition, $message ) {
 	if ( ! $condition ) { throw new RuntimeException( $message ); }
 }
 
-function yby_validation_report( $name, $data ) {
-	global $report_dir;
+function yby_validation_report( $report_dir, $name, $data ) {
 	$result = file_put_contents( $report_dir . '/' . $name, wp_json_encode( $data, JSON_PRETTY_PRINT ) . PHP_EOL );
 	yby_validation_assert( false !== $result, 'Could not write validation report: ' . $name );
 }
@@ -33,7 +32,7 @@ if ( 'seed' === $phase ) {
 	}
 	$hash = hash( 'sha256', wp_json_encode( $wpdb->get_results( "SELECT * FROM {$leads} ORDER BY id", ARRAY_A ) ) );
 	update_option( 'yby_validation_lead_hash', $hash, false );
-	yby_validation_report( 'migration-report.json', array( 'baseline_version' => get_option( 'yby_database_version' ), 'lead_hash' => $hash, 'lead_count' => 2 ) );
+	yby_validation_report( $report_dir, 'migration-report.json', array( 'baseline_version' => get_option( 'yby_database_version' ), 'lead_hash' => $hash, 'lead_count' => 2 ) );
 	exit( 0 );
 }
 
@@ -120,9 +119,9 @@ foreach ( array( 1000, 10000, 50000 ) as $size ) {
 	$queries_before = $wpdb->num_queries;
 	$list_started = microtime( true );
 	$data = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 50 ) );
-	yby_validation_report( 'performance-' . ( $size / 1000 ) . 'k.json', array( 'size' => $size, 'generation_seconds' => microtime( true ) - $started, 'list_seconds' => microtime( true ) - $list_started, 'query_count' => $wpdb->num_queries - $queries_before, 'item_count' => count( $data['items'] ), 'peak_memory_bytes' => memory_get_peak_usage( true ), 'longtext_in_list' => false, 'activities_in_list' => false, 'n_plus_one' => false, 'frontend_management_writes' => 0, 'frontend_inbox_assets' => 0 ) );
+	yby_validation_report( $report_dir, 'performance-' . ( $size / 1000 ) . 'k.json', array( 'size' => $size, 'generation_seconds' => microtime( true ) - $started, 'list_seconds' => microtime( true ) - $list_started, 'query_count' => $wpdb->num_queries - $queries_before, 'item_count' => count( $data['items'] ), 'peak_memory_bytes' => memory_get_peak_usage( true ), 'longtext_in_list' => false, 'activities_in_list' => false, 'n_plus_one' => false, 'frontend_management_writes' => 0, 'frontend_inbox_assets' => 0 ) );
 }
 
-yby_validation_report( 'security-report.json', array( 'capability' => true, 'editor_toggle' => true, 'author_denied' => true, 'subscriber_denied' => true, 'owner_validation' => true, 'status_allowlist' => true, 'priority_allowlist' => true, 'sql_injection_like_input' => true, 'lead_immutability' => true, 'xss_sanitized' => true ) );
-yby_validation_report( 'migration-report.json', array( 'database_version' => get_option( 'yby_database_version' ), 'tables_indexes' => YBY_Database::management_tables_exist(), 'lead_immutability' => true, 'history_backfill' => false, 'idempotent' => true ) );
+yby_validation_report( $report_dir, 'security-report.json', array( 'capability' => true, 'editor_toggle' => true, 'author_denied' => true, 'subscriber_denied' => true, 'owner_validation' => true, 'status_allowlist' => true, 'priority_allowlist' => true, 'sql_injection_like_input' => true, 'lead_immutability' => true, 'xss_sanitized' => true ) );
+yby_validation_report( $report_dir, 'migration-report.json', array( 'database_version' => get_option( 'yby_database_version' ), 'tables_indexes' => YBY_Database::management_tables_exist(), 'lead_immutability' => true, 'history_backfill' => false, 'idempotent' => true ) );
 file_put_contents( $report_dir . '/environment-report.txt', 'WordPress=' . get_bloginfo( 'version' ) . PHP_EOL . 'PHP=' . PHP_VERSION . PHP_EOL . 'MySQL=' . $wpdb->db_version() . PHP_EOL );
