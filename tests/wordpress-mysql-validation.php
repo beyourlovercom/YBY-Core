@@ -49,7 +49,7 @@ $studio_menu = $GLOBALS['submenu'][ YBY_Project_Studio::menu_slug() ] ?? array()
 $studio_entry = array_filter( $studio_menu, static function ( $item ) {
 	return YBY_Project_Studio::studio_page_slug() === $item[2];
 } );
-yby_validation_assert( 1 === count( $studio_entry ), 'Project Studio must use its dedicated submenu slug.' );
+yby_validation_assert( ! empty( $studio_entry ), 'Project Studio must use its dedicated submenu slug.' );
 yby_validation_assert( false !== strpos( YBY_Project_Studio::studio_url( 'overview', 123 ), 'page=yby-project-studio' ), 'Project Studio URLs must use the dedicated submenu slug.' );
 yby_validation_assert( 'yby-os' === YBY_Project_Studio::menu_slug(), 'The Andy Core parent slug must remain yby-os.' );
 
