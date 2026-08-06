@@ -11,7 +11,7 @@
 
 The v1.5.0 release commit carried stable `1.5.0` values in the plugin header and `YBY_CORE_VERSION`, while the development branch initially retained release-freeze metadata. Stage 0 updates the active plugin header, runtime version constant, `VERSION.md`, `README.md`, and `CHANGELOG.md` to `1.5.1-dev`. Historical release notes, tags, and release artifacts remain unchanged.
 
-`YBY_DATABASE_VERSION` remains `1.2.0`; the database declaration will not advance until WP-151C implements and tests the idempotent migration.
+The development branch now declares database version `1.3.0`; WP-151C implements the idempotent management/activity migration. The stable v1.5.0 baseline remains database version `1.2.0`.
 
 ## Scope
 

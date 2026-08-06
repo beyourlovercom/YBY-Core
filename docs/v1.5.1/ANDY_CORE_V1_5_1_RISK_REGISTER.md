@@ -11,7 +11,7 @@
 
 - Status: open until WP-151C
 - Risk: advancing the database version without the tested idempotent migration could create an installation mismatch.
-- Control: keep `YBY_DATABASE_VERSION` at `1.2.0` until the management tables, indexes, migration tests, and rollback behavior are implemented.
+- Control: the development branch advances `YBY_DATABASE_VERSION` to `1.3.0` only with the management/activity tables and idempotent migration; production remains on the v1.5.0 `1.2.0` baseline until an authorized deployment.
 
 ## R-003 Schema Assumptions
 

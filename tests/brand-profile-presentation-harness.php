@@ -302,7 +302,7 @@ $tests['database_version_unchanged'] = static function () {
 	$plugin_source = file_get_contents( dirname( __DIR__ ) . '/yby-core.php' );
 
 	harness_assert( false !== $plugin_source, 'Plugin bootstrap must remain readable.' );
-	harness_assert( false !== strpos( $plugin_source, "define( 'YBY_DATABASE_VERSION', '1.2.0' );" ), 'Database version must remain 1.2.0.' );
+	harness_assert( false !== strpos( $plugin_source, "define( 'YBY_DATABASE_VERSION', '1.3.0' );" ), 'Database version must remain 1.3.0 for the inquiry management migration.' );
 };
 
 $tests['whatsapp_template_sanitization'] = static function () {
