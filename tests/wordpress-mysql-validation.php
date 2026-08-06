@@ -44,12 +44,10 @@ yby_validation_assert( 0 === (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$manag
 yby_validation_assert( 0 === (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$activities}" ), 'Migration backfilled activities.' );
 yby_validation_assert( get_option( 'yby_validation_lead_hash' ) === hash( 'sha256', wp_json_encode( $wpdb->get_results( "SELECT * FROM {$leads} ORDER BY id", ARRAY_A ) ) ), 'Migration changed original Leads.' );
 
-do_action( 'admin_menu' );
-$studio_menu = $GLOBALS['submenu'][ YBY_Project_Studio::menu_slug() ] ?? array();
-$studio_entry = array_filter( $studio_menu, static function ( $item ) {
-	return YBY_Project_Studio::studio_page_slug() === $item[2];
-} );
-yby_validation_assert( ! empty( $studio_entry ), 'Project Studio must use its dedicated submenu slug.' );
+$studio_admin = new YBY_Project_Studio( 'yby-core', YBY_CORE_VERSION );
+$studio_admin->add_admin_menu();
+$studio_hook = get_plugin_page_hook( YBY_Project_Studio::studio_page_slug(), YBY_Project_Studio::menu_slug() );
+yby_validation_assert( is_string( $studio_hook ) && '' !== $studio_hook, 'Project Studio must use its dedicated submenu slug.' );
 yby_validation_assert( false !== strpos( YBY_Project_Studio::studio_url( 'overview', 123 ), 'page=yby-project-studio' ), 'Project Studio URLs must use the dedicated submenu slug.' );
 yby_validation_assert( 'yby-os' === YBY_Project_Studio::menu_slug(), 'The Andy Core parent slug must remain yby-os.' );
 
@@ -62,6 +60,9 @@ function yby_validation_assert_inquiry_assets( $query, $hook_suffix ) {
 	yby_validation_assert( wp_script_is( 'yby-core-inquiry', 'enqueued' ), 'Inquiry script must be enqueued.' );
 }
 
+$inquiry_admin = new YBY_Inquiry_Admin( 'yby-core', YBY_CORE_VERSION );
+$inquiry_admin->add_admin_menu();
+add_action( 'admin_enqueue_scripts', array( $inquiry_admin, 'enqueue_assets' ) );
 $inquiry_hook = get_plugin_page_hook( YBY_Inquiry_Admin::page_slug(), YBY_Project_Studio::menu_slug() );
 yby_validation_assert( is_string( $inquiry_hook ) && '' !== $inquiry_hook, 'Inquiry page must retain its registered admin hook.' );
 yby_validation_assert_inquiry_assets( array( 'page' => 'andy-core-leads' ), $inquiry_hook );
