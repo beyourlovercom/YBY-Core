@@ -42,7 +42,7 @@ class YBY_Lead_Management {
 		$now = current_time( 'mysql' );
 		$settings = YBY_Security::inquiry_settings();
 		$owner_id = absint( $settings['default_owner_user_id'] );
-		if ( ! YBY_Security::is_valid_owner( $owner_id ) ) { $owner_id = 0; }
+		if ( ! YBY_Security::is_assignable_owner( $owner_id ) ) { $owner_id = 0; }
 		$wpdb->insert( $table, array( 'lead_id' => $lead_id, 'status' => $settings['default_status'], 'owner_user_id' => $owner_id, 'priority' => $settings['default_priority'], 'created_at' => $now, 'updated_at' => $now ), array( '%d', '%s', '%d', '%s', '%s', '%s' ) );
 		return (int) $wpdb->insert_id;
 	}
@@ -56,6 +56,9 @@ class YBY_Lead_Management {
 		$requested_per_page = absint( $args['per_page'] ?? $settings['leads_per_page'] );
 		$per_page = in_array( $requested_per_page, array( 30, 50, 100 ), true ) ? $requested_per_page : $settings['leads_per_page'];
 		$offset = ( $page - 1 ) * $per_page;
+		if ( ! YBY_Security::can_view_leads() ) {
+			return array( 'items' => array(), 'total' => 0, 'page' => $page, 'per_page' => $per_page );
+		}
 		$where = array( '1=1' );
 		$values = array();
 		$is_salesperson_scope = YBY_Security::is_salesperson() && ! current_user_can( 'manage_options' );
@@ -110,6 +113,9 @@ class YBY_Lead_Management {
 
 	public static function save( $lead_id, $data, $actor ) {
 		global $wpdb;
+		if ( ! YBY_Security::can_manage_leads() ) {
+			return array( 'success' => false, 'message' => __( 'You cannot manage this inquiry.', 'yby-core' ) );
+		}
 		$id = self::ensure( $lead_id );
 		if ( ! $id ) {
 			return array( 'success' => false, 'message' => __( 'Inquiry does not exist.', 'yby-core' ) );
@@ -118,8 +124,15 @@ class YBY_Lead_Management {
 		if ( ! in_array( $data['status'] ?? $current['status'], self::STATUSES, true ) || ! in_array( $data['priority'] ?? $current['priority'], self::PRIORITIES, true ) ) {
 			return array( 'success' => false, 'message' => __( 'Invalid status or priority.', 'yby-core' ) );
 		}
-		if ( isset( $data['owner_user_id'] ) && ! YBY_Security::is_valid_owner( $data['owner_user_id'] ) ) {
-			return array( 'success' => false, 'message' => __( 'Owner is not an enabled Salesperson.', 'yby-core' ) );
+		if ( isset( $data['owner_user_id'] ) ) {
+			$requested_owner_id = absint( $data['owner_user_id'] );
+			$current_owner_id = absint( $current['owner_user_id'] ?? 0 );
+			if ( $requested_owner_id !== $current_owner_id && ! YBY_Security::can_assign_leads() ) {
+				return array( 'success' => false, 'message' => __( 'You cannot assign this inquiry.', 'yby-core' ) );
+			}
+			if ( ! YBY_Security::is_existing_owner_valid_for_record( $requested_owner_id, $current_owner_id ) ) {
+				return array( 'success' => false, 'message' => __( 'Owner is not an enabled Salesperson.', 'yby-core' ) );
+			}
 		}
 		$now = current_time( 'mysql' );
 		$updates = array();

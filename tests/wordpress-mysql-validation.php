@@ -108,6 +108,7 @@ $before = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$activiti
 YBY_Lead_Management::save( $lead_id, array( 'status' => 'contacted', 'priority' => 'urgent', 'owner_user_id' => 0, 'next_follow_up_at' => '2026-08-06 12:30:00', 'archived' => true ), $administrator->ID );
 yby_validation_assert( $before === (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$activities} WHERE lead_id = %d", $lead_id ) ), 'Archive operation is not idempotent.' );
 
+update_option( 'yby_core_inquiry_settings', array( 'default_status' => 'pending_contact', 'default_priority' => 'high', 'default_owner_user_id' => 0, 'leads_per_page' => 50, 'editors_can_manage' => false, 'assignment_enabled' => true, 'archive_behavior' => 'soft', 'salespeople' => array() ) );
 $invalid_owner = YBY_Lead_Management::save( $lead_id, array( 'status' => 'contacted', 'priority' => 'urgent', 'owner_user_id' => 999999 ), $administrator->ID );
 $invalid_status = YBY_Lead_Management::save( $lead_id, array( 'status' => 'invalid-value', 'priority' => 'urgent' ), $administrator->ID );
 yby_validation_assert( ! $invalid_owner['success'] && ! $invalid_status['success'], 'Invalid management input must fail.' );
@@ -145,37 +146,100 @@ $fallback_list = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page'
 yby_validation_assert( 50 === $fallback_list['per_page'], 'Invalid per_page must fall back to configured value.' );
 yby_validation_assert( ! isset( $fallback_list['items'][0]['project_details'] ) && ! isset( $fallback_list['items'][0]['custom_fields'] ), 'List must not load LONGTEXT fields.' );
 
+$security_gates = array();
 $salesperson_a = wp_create_user( 'validation-sales-a', 'validation-only', 'sales-a@example.test' );
 $salesperson_b = wp_create_user( 'validation-sales-b', 'validation-only', 'sales-b@example.test' );
 wp_update_user( array( 'ID' => $salesperson_a, 'role' => 'salesperson' ) );
 wp_update_user( array( 'ID' => $salesperson_b, 'role' => 'salesperson' ) );
 update_option( 'yby_core_inquiry_salespeople', array( $salesperson_a, $salesperson_b ) );
+update_option( 'yby_core_inquiry_settings', array( 'default_status' => 'pending_contact', 'default_priority' => 'high', 'default_owner_user_id' => 0, 'leads_per_page' => 50, 'editors_can_manage' => false, 'assignment_enabled' => true, 'archive_behavior' => 'soft', 'salespeople' => array( $salesperson_a, $salesperson_b ) ) );
 $lead_b = (int) $wpdb->get_var( "SELECT id FROM {$leads} ORDER BY id DESC LIMIT 1" );
 $wpdb->insert( $leads, array( 'case_id' => 'YBY-VAL-UNASSIGNED-001', 'brand' => 'validation', 'website' => 'http://validation.test', 'source_url' => 'http://validation.test/inquiry', 'name' => 'Synthetic Unassigned', 'company' => 'Synthetic Company', 'country' => 'Testland', 'email' => 'unassigned@example.test', 'source_component' => 'validation', 'source_preset' => 'validation', 'source_page' => 'Validation', 'form_version' => 'test', 'page_profile' => 'validation', 'status' => 'new', 'created_at' => current_time( 'mysql' ) ) );
 $lead_unassigned = (int) $wpdb->insert_id;
-YBY_Lead_Management::save( $lead_id, array( 'owner_user_id' => $salesperson_a, 'status' => 'contacted', 'priority' => 'normal' ), $administrator->ID );
-YBY_Lead_Management::save( $lead_b, array( 'owner_user_id' => $salesperson_b, 'status' => 'contacted', 'priority' => 'normal' ), $administrator->ID );
+$assign_a = YBY_Lead_Management::save( $lead_id, array( 'owner_user_id' => $salesperson_a, 'status' => 'contacted', 'priority' => 'normal' ), $administrator->ID );
+$assign_b = YBY_Lead_Management::save( $lead_b, array( 'owner_user_id' => $salesperson_b, 'status' => 'contacted', 'priority' => 'normal' ), $administrator->ID );
+yby_validation_assert( $assign_a['success'] && $assign_b['success'], 'Initial active salesperson assignments failed.' );
+
+update_option( 'yby_core_inquiry_salespeople', array( $salesperson_a ) );
+update_option( 'yby_core_inquiry_settings', array( 'default_status' => 'pending_contact', 'default_priority' => 'high', 'default_owner_user_id' => $salesperson_b, 'leads_per_page' => 50, 'editors_can_manage' => false, 'assignment_enabled' => true, 'archive_behavior' => 'soft', 'salespeople' => array( $salesperson_a ) ) );
+yby_validation_assert( YBY_Security::is_salesperson( $salesperson_a ) && YBY_Security::is_salesperson( $salesperson_b ) && ! YBY_Security::is_salesperson( $subscriber_id ), 'SALESPERSON_ROLE_IDENTITY_GATE failed.' );
+$security_gates['SALESPERSON_ROLE_IDENTITY_GATE'] = true;
+yby_validation_assert( YBY_Security::is_active_owner( $salesperson_a ) && ! YBY_Security::is_active_owner( $salesperson_b ) && ! YBY_Security::is_active_owner( $administrator->ID ), 'ACTIVE_OWNER_GATE failed.' );
+$security_gates['ACTIVE_OWNER_GATE'] = true;
+yby_validation_assert( 0 === YBY_Security::inquiry_settings()['default_owner_user_id'] && (int) $wpdb->get_var( $wpdb->prepare( "SELECT owner_user_id FROM {$management} WHERE lead_id = %d", $lead_b ) ) === $salesperson_b, 'DEFAULT_OWNER_GATE failed.' );
+$security_gates['DEFAULT_OWNER_GATE'] = true;
+
 wp_set_current_user( $salesperson_a );
 $sales_a_list = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 30 ) );
-yby_validation_assert( 1 === count( $sales_a_list['items'] ) && (int) $sales_a_list['items'][0]['owner_user_id'] === $salesperson_a, 'Salesperson A scope failed.' );
+$sales_a_detail = YBY_Lead_Management::get_detail( $lead_id );
+yby_validation_assert( 1 === count( $sales_a_list['items'] ) && (int) $sales_a_list['items'][0]['owner_user_id'] === $salesperson_a && is_array( $sales_a_detail ) && (int) $sales_a_detail['owner_user_id'] === $salesperson_a, 'SALESPERSON_A_SCOPE_GATE failed.' );
+$security_gates['SALESPERSON_A_SCOPE_GATE'] = true;
 $sales_a_override_list = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 30, 'owner_user_id' => $salesperson_b ) );
-yby_validation_assert( 1 === count( $sales_a_override_list['items'] ) && (int) $sales_a_override_list['items'][0]['owner_user_id'] === $salesperson_a, 'Salesperson A query override failed.' );
-yby_validation_assert( null === YBY_Lead_Management::get_detail( $lead_b ), 'Salesperson A must not access B inquiry directly.' );
+yby_validation_assert( 1 === count( $sales_a_override_list['items'] ) && (int) $sales_a_override_list['items'][0]['owner_user_id'] === $salesperson_a, 'QUERY_OVERRIDE_ISOLATION_GATE failed.' );
+$security_gates['QUERY_OVERRIDE_ISOLATION_GATE'] = true;
+yby_validation_assert( null === YBY_Lead_Management::get_detail( $lead_b ) && null === YBY_Lead_Management::get_detail( $lead_unassigned ), 'DIRECT_LEAD_ACCESS_ISOLATION_GATE failed.' );
+$security_gates['DIRECT_LEAD_ACCESS_ISOLATION_GATE'] = true;
+$security_gates['DIRECT_LEAD_ISOLATION_GATE'] = true;
+$sales_a_write = YBY_Lead_Management::save( $lead_id, array( 'status' => 'following_up', 'priority' => 'normal', 'owner_user_id' => $salesperson_a, 'note' => 'forbidden salesperson note' ), $salesperson_a );
+yby_validation_assert( ! $sales_a_write['success'] && ! YBY_Security::can_manage_leads() && ! YBY_Security::can_assign_leads() && ! YBY_Security::can_archive_leads(), 'Salesperson write scope failed.' );
+
 wp_set_current_user( $salesperson_b );
 $sales_b_list = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 30 ) );
-yby_validation_assert( 1 === count( $sales_b_list['items'] ) && (int) $sales_b_list['items'][0]['owner_user_id'] === $salesperson_b, 'Salesperson B scope failed.' );
+$sales_b_detail = YBY_Lead_Management::get_detail( $lead_b );
+$sales_b_owners = array_map( 'intval', array_column( $sales_b_list['items'], 'owner_user_id' ) );
+yby_validation_assert( 1 === count( $sales_b_list['items'] ) && array( $salesperson_b ) === $sales_b_owners && is_array( $sales_b_detail ) && (int) $sales_b_detail['owner_user_id'] === $salesperson_b && ! YBY_Security::is_active_owner( $salesperson_b ), 'SALESPERSON_B_SCOPE_GATE failed.' );
+$security_gates['SALESPERSON_B_SCOPE_GATE'] = true;
 $sales_b_override_list = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 30, 'owner_user_id' => $salesperson_a ) );
-yby_validation_assert( 1 === count( $sales_b_override_list['items'] ) && (int) $sales_b_override_list['items'][0]['owner_user_id'] === $salesperson_b, 'Salesperson B query override failed.' );
-yby_validation_assert( null === YBY_Lead_Management::get_detail( $lead_id ), 'Salesperson B must not access A inquiry directly.' );
+yby_validation_assert( 1 === count( $sales_b_override_list['items'] ) && (int) $sales_b_override_list['items'][0]['owner_user_id'] === $salesperson_b, 'Inactive salesperson query override failed.' );
+yby_validation_assert( null === YBY_Lead_Management::get_detail( $lead_id ), 'Inactive salesperson must not access A inquiry directly.' );
+
+wp_update_user( array( 'ID' => $salesperson_b, 'role' => 'subscriber' ) );
+clean_user_cache( $salesperson_b );
+wp_set_current_user( 0 );
+wp_set_current_user( $salesperson_b );
+yby_validation_assert( ! YBY_Security::is_salesperson( $salesperson_b ) && ! YBY_Security::can_view_leads() && null === YBY_Lead_Management::get_detail( $lead_b ) && (int) $wpdb->get_var( $wpdb->prepare( "SELECT owner_user_id FROM {$management} WHERE lead_id = %d", $lead_b ) ) === $salesperson_b, 'ROLE_REMOVAL_ACCESS_GATE failed.' );
+$security_gates['ROLE_REMOVAL_ACCESS_GATE'] = true;
+wp_update_user( array( 'ID' => $salesperson_b, 'role' => 'salesperson' ) );
+clean_user_cache( $salesperson_b );
+wp_set_current_user( 0 );
+wp_set_current_user( $salesperson_b );
+$restored_b_list = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 30 ) );
+yby_validation_assert( YBY_Security::is_salesperson( $salesperson_b ) && ! YBY_Security::is_active_owner( $salesperson_b ) && 1 === count( $restored_b_list['items'] ) && (int) $restored_b_list['items'][0]['owner_user_id'] === $salesperson_b && is_array( YBY_Lead_Management::get_detail( $lead_b ) ), 'ROLE_RESTORE_HISTORY_ACCESS_GATE failed.' );
+$security_gates['ROLE_RESTORE_HISTORY_ACCESS_GATE'] = true;
+
+wp_set_current_user( $administrator->ID );
+update_option( 'yby_core_inquiry_salespeople', array( $salesperson_a, $administrator->ID, $subscriber_id, 999999 ) );
+update_option( 'yby_core_inquiry_settings', array( 'default_status' => 'pending_contact', 'default_priority' => 'high', 'default_owner_user_id' => $subscriber_id, 'leads_per_page' => 50, 'editors_can_manage' => false, 'assignment_enabled' => true, 'archive_behavior' => 'soft', 'salespeople' => array( $salesperson_a, $administrator->ID, $subscriber_id, 999999 ) ) );
+yby_validation_assert( array( $salesperson_a ) === YBY_Security::active_owner_ids() && ! YBY_Security::is_active_owner( $subscriber_id ) && 0 === YBY_Security::inquiry_settings()['default_owner_user_id'], 'STALE_ALLOWLIST_SECURITY_GATE failed.' );
+wp_set_current_user( $subscriber_id );
+yby_validation_assert( ! YBY_Security::can_view_leads(), 'Subscriber gained access through stale active-owner option.' );
+$security_gates['STALE_ALLOWLIST_SECURITY_GATE'] = true;
+
 wp_set_current_user( $administrator->ID );
 $admin_list = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 30 ) );
 $admin_owners = array_map( 'intval', array_column( $admin_list['items'], 'owner_user_id' ) );
-yby_validation_assert( in_array( $salesperson_a, $admin_owners, true ) && in_array( $salesperson_b, $admin_owners, true ) && in_array( 0, $admin_owners, true ), 'Administrator must see all inquiries including unassigned.' );
+yby_validation_assert( in_array( $salesperson_a, $admin_owners, true ) && in_array( $salesperson_b, $admin_owners, true ) && in_array( 0, $admin_owners, true ), 'ADMIN_ALL_LEADS_GATE failed.' );
+$security_gates['ADMIN_ALL_LEADS_GATE'] = true;
 $admin_a_list = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 30, 'owner_user_id' => $salesperson_a ) );
 $admin_b_list = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 30, 'owner_user_id' => $salesperson_b ) );
 yby_validation_assert( 1 === count( $admin_a_list['items'] ) && (int) $admin_a_list['items'][0]['owner_user_id'] === $salesperson_a, 'Administrator owner A filter failed.' );
 yby_validation_assert( 1 === count( $admin_b_list['items'] ) && (int) $admin_b_list['items'][0]['owner_user_id'] === $salesperson_b, 'Administrator owner B filter failed.' );
+$inactive_owner_options = YBY_Security::owner_dropdown_options( $salesperson_b );
+$inactive_owner_labels = array_column( $inactive_owner_options, 'label', 'id' );
+yby_validation_assert( isset( $inactive_owner_labels[ $salesperson_b ] ) && false !== strpos( $inactive_owner_labels[ $salesperson_b ], '(Inactive)' ) && (string) $salesperson_b !== $inactive_owner_labels[ $salesperson_b ] && ! in_array( $salesperson_b, array_map( 'intval', array_column( YBY_Security::owner_dropdown_options( 0 ), 'id' ) ), true ), 'OWNER_DROPDOWN_GATE failed.' );
+$security_gates['OWNER_DROPDOWN_GATE'] = true;
+$admin_assign_a = YBY_Lead_Management::save( $lead_unassigned, array( 'owner_user_id' => $salesperson_a, 'status' => 'contacted', 'priority' => 'normal' ), $administrator->ID );
+$admin_assign_inactive_b = YBY_Lead_Management::save( $lead_unassigned, array( 'owner_user_id' => $salesperson_b, 'status' => 'contacted', 'priority' => 'normal' ), $administrator->ID );
+yby_validation_assert( $admin_assign_a['success'] && ! $admin_assign_inactive_b['success'] && (int) $wpdb->get_var( $wpdb->prepare( "SELECT owner_user_id FROM {$management} WHERE lead_id = %d", $lead_unassigned ) ) === $salesperson_a, 'INACTIVE_OWNER_NEW_ASSIGNMENT_DENY_GATE failed.' );
+$security_gates['INACTIVE_OWNER_NEW_ASSIGNMENT_DENY_GATE'] = true;
+$admin_leave_inactive_b = YBY_Lead_Management::save( $lead_b, array( 'owner_user_id' => $salesperson_b, 'status' => 'following_up', 'priority' => 'normal' ), $administrator->ID );
+yby_validation_assert( $admin_leave_inactive_b['success'] && (int) $wpdb->get_var( $wpdb->prepare( "SELECT owner_user_id FROM {$management} WHERE lead_id = %d", $lead_b ) ) === $salesperson_b, 'INACTIVE_OWNER_HISTORY_GATE failed.' );
+$security_gates['INACTIVE_OWNER_HISTORY_GATE'] = true;
+$admin_change_b_to_a = YBY_Lead_Management::save( $lead_b, array( 'owner_user_id' => $salesperson_a, 'status' => 'following_up', 'priority' => 'normal' ), $administrator->ID );
+$admin_assign_back_to_b = YBY_Lead_Management::save( $lead_b, array( 'owner_user_id' => $salesperson_b, 'status' => 'following_up', 'priority' => 'normal' ), $administrator->ID );
+yby_validation_assert( $admin_change_b_to_a['success'] && ! $admin_assign_back_to_b['success'] && (int) $wpdb->get_var( $wpdb->prepare( "SELECT owner_user_id FROM {$management} WHERE lead_id = %d", $lead_b ) ) === $salesperson_a, 'Inactive owner reassignment contract failed.' );
 yby_validation_assert( ! YBY_Security::is_valid_owner( $administrator->ID ) && ! YBY_Security::is_valid_owner( 999999 ), 'Non-salesperson owner accepted.' );
+wp_set_current_user( $administrator->ID );
 
 foreach ( array( 1000, 10000, 50000 ) as $size ) {
 	$started = microtime( true );
@@ -194,6 +258,6 @@ foreach ( array( 1000, 10000, 50000 ) as $size ) {
 	yby_validation_report( $report_dir, 'performance-' . ( $size / 1000 ) . 'k.json', array( 'size' => $size, 'generation_seconds' => microtime( true ) - $started, 'list_seconds' => microtime( true ) - $list_started, 'query_count' => $wpdb->num_queries - $queries_before, 'item_count' => count( $data['items'] ), 'peak_memory_bytes' => memory_get_peak_usage( true ), 'longtext_in_list' => false, 'activities_in_list' => false, 'n_plus_one' => false, 'frontend_management_writes' => 0, 'frontend_inbox_assets' => 0 ) );
 }
 
-yby_validation_report( $report_dir, 'security-report.json', array( 'capability' => true, 'editor_toggle' => true, 'author_denied' => true, 'subscriber_denied' => true, 'owner_validation' => true, 'status_allowlist' => true, 'priority_allowlist' => true, 'sql_injection_like_input' => true, 'lead_immutability' => true, 'xss_sanitized' => true, 'project_studio_menu' => true, 'inquiry_admin_assets' => true, 'frontend_inquiry_assets' => false ) );
+yby_validation_report( $report_dir, 'security-report.json', array_merge( array( 'capability' => true, 'editor_toggle' => true, 'author_denied' => true, 'subscriber_denied' => true, 'owner_validation' => true, 'status_allowlist' => true, 'priority_allowlist' => true, 'sql_injection_like_input' => true, 'lead_immutability' => true, 'xss_sanitized' => true, 'project_studio_menu' => true, 'inquiry_admin_assets' => true, 'frontend_inquiry_assets' => false ), $security_gates ) );
 yby_validation_report( $report_dir, 'migration-report.json', array( 'database_version' => get_option( 'yby_database_version' ), 'tables_indexes' => YBY_Database::management_tables_exist(), 'lead_immutability' => true, 'history_backfill' => false, 'idempotent' => true ) );
 file_put_contents( $report_dir . '/environment-report.txt', 'WordPress=' . get_bloginfo( 'version' ) . PHP_EOL . 'PHP=' . PHP_VERSION . PHP_EOL . 'MySQL=' . $wpdb->db_version() . PHP_EOL );

@@ -2,6 +2,7 @@
 $root = dirname( __DIR__ );
 $database = file_get_contents( $root . '/inc/class-yby-database.php' );
 $management = file_get_contents( $root . '/inc/class-yby-lead-management.php' );
+$security = file_get_contents( $root . '/inc/class-yby-security.php' );
 $admin = file_get_contents( $root . '/admin/class-yby-inquiry-admin.php' );
 $settings = file_get_contents( $root . '/admin/class-yby-admin.php' );
 $view = file_get_contents( $root . '/admin/views/settings-page.php' );
@@ -33,7 +34,8 @@ $detail_view = file_get_contents( $root . '/admin/views/inquiry-detail.php' );
 $settings_view = file_get_contents( $root . '/admin/views/inquiry-settings.php' );
 $css = file_get_contents( $root . '/assets/css/yby-inquiry-admin.css' );
 $assert( strpos( $detail_view, 'yby-inquiry-detail-form' ) !== false && strpos( $detail_view, '<select name="owner_user_id"' ) !== false, 'Follow-up layout or Owner selector missing.' );
-$assert( strpos( $settings_view, 'Salespeople / Inquiry Owners' ) !== false && strpos( $settings_view, 'Unassigned' ) !== false, 'Salespeople settings missing.' );
+$assert( strpos( $detail_view, 'owner_dropdown_options' ) !== false && strpos( $detail_view, 'owner_display_name' ) !== false, 'Owner dropdown display contract missing.' );
+$assert( strpos( $settings_view, 'Active Inquiry Owners' ) !== false && strpos( $settings_view, "'role' => 'salesperson'" ) !== false && strpos( $settings_view, 'Disabling an owner does not remove access' ) !== false && strpos( $settings_view, 'Unassigned' ) !== false, 'Active Inquiry Owners settings missing.' );
 $assert( strpos( $css, 'grid-template-columns:160px' ) !== false && strpos( $css, 'yby-inquiry-actions' ) !== false, 'Follow-up layout CSS missing.' );
 $assert( strpos( $settings, 'system-status' ) !== false, 'Settings tab allowlist missing.' );
 $assert( substr_count( $view, 'nav-tab') >= 3, 'General Settings tabs missing.' );
@@ -48,5 +50,7 @@ $assert( strpos( $architecture, 'andy_core_leads_view' ) !== false, 'Inquiry cap
 $assert( strpos( $management, 'normalize_datetime' ) !== false && strpos( $management, 'format_datetime_local' ) !== false, 'Datetime conversion contract missing.' );
 $assert( strpos( $management, "'owner_changed'" ) !== false, 'Owner activity contract missing.' );
 $assert( strpos( $management, "'success' => false" ) !== false, 'Management failure result contract missing.' );
+$assert( strpos( $management, 'is_existing_owner_valid_for_record' ) !== false && strpos( $management, 'can_manage_leads' ) !== false && strpos( $management, 'can_assign_leads' ) !== false, 'Owner assignment validation split missing.' );
+$assert( strpos( $security, "'salesperson'" ) !== false && strpos( $security, 'active_owner_ids' ) !== false && strpos( $security, 'is_active_owner' ) !== false && strpos( $security, 'is_assignable_owner' ) !== false && strpos( $security, 'is_existing_owner_valid_for_record' ) !== false && strpos( $security, 'is_restricted_salesperson' ) !== false, 'Salesperson role identity and active owner split missing.' );
 $assert( strpos( $database, "update_option( self::VERSION_OPTION" ) !== false && strpos( $database, 'management_tables_exist' ) !== false, 'Migration verification contract missing.' );
 echo "PASS inquiry-inbox-contract-harness\n";
