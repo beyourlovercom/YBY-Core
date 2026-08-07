@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Unreleased - v1.5.1-dev
+
+### In Development
+
+- Establishes the local Inquiry Inbox and follow-up management foundation.
+- Separates Salesperson identity from Active Inquiry Owner assignment eligibility; Salesperson identity now comes from the WordPress `salesperson` role only.
+- Preserves inactive historical inquiry owners while denying new assignments to inactive owners and filtering stale Active Owner settings.
+- Preserves the v1.5.0 Lead REST, Case ID, notification, Thank You, and site-profile contracts.
+
 ## v1.5.0 - 2026-08-01
 
 ### Added

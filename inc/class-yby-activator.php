@@ -22,12 +22,23 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-social-login.php';
  */
 class YBY_Activator {
 
+	public static function sync_capabilities() {
+		$administrator = get_role( 'administrator' );
+		$editor = get_role( 'editor' );
+		$salesperson = get_role( 'salesperson' );
+		if ( ! $salesperson ) { $salesperson = add_role( 'salesperson', 'Salesperson', array( 'read' => true ) ); }
+		if ( $administrator ) { foreach ( array( 'andy_core_leads_view', 'andy_core_leads_manage', 'andy_core_leads_assign', 'andy_core_leads_archive', 'andy_core_settings_manage' ) as $capability ) { $administrator->add_cap( $capability ); } }
+		if ( $editor ) { foreach ( array( 'andy_core_leads_view', 'andy_core_leads_manage', 'andy_core_leads_archive' ) as $capability ) { $editor->add_cap( $capability ); } }
+		if ( $salesperson ) { $salesperson->add_cap( 'andy_core_leads_view' ); }
+	}
+
 	/**
 	 * Activate plugin.
 	 *
 	 * @return void
 	 */
 	public static function activate() {
+		self::sync_capabilities();
 		$existing = get_option( YBY_Helpers::option_key(), array() );
 		$options  = wp_parse_args( is_array( $existing ) ? $existing : array(), YBY_Config::defaults() );
 
