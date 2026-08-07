@@ -25,6 +25,9 @@ $assert( strpos( $studio, '$this->studio_page_hook = add_submenu_page' ) !== fal
 $assert( strpos( $studio, "'page' => self::studio_page_slug()" ) !== false, 'Project Studio URLs must use the dedicated submenu slug.' );
 $assert( strpos( $admin, '$this->page_hook = add_submenu_page' ) !== false, 'Inquiry must retain the real admin page hook.' );
 $assert( strpos( $admin, 'self::$registered_page_hook = $this->page_hook' ) !== false, 'Inquiry must retain the registered admin page hook.' );
+$assert( strpos( $admin, 'filemtime( $file )' ) !== false, 'Inquiry assets must use file modification time for cache busting.' );
+$assert( strpos( $admin, "'assets/css/yby-inquiry-admin.css' )" ) !== false && strpos( $admin, "'assets/js/yby-inquiry-admin.js' )" ) !== false, 'Inquiry CSS and JS must use file-based asset versions.' );
+$assert( strpos( $admin, 'array(), $this->version )' ) === false, 'Inquiry assets must not use the fixed plugin version.' );
 $assert( strpos( $admin, '$is_inquiry_request' ) !== false, 'Inquiry asset fallback missing.' );
 $detail_view = file_get_contents( $root . '/admin/views/inquiry-detail.php' );
 $settings_view = file_get_contents( $root . '/admin/views/inquiry-settings.php' );

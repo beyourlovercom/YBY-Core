@@ -48,13 +48,18 @@ class YBY_Inquiry_Admin {
 		return self::$registered_page_hook;
 	}
 
+	protected function asset_version( $relative_path ) {
+		$file = YBY_CORE_PLUGIN_DIR . ltrim( $relative_path, '/\\' );
+		return is_file( $file ) ? (string) filemtime( $file ) : YBY_CORE_VERSION;
+	}
+
 	public function enqueue_assets( $hook_suffix ) {
 		$is_inquiry_request = self::page_slug() === ( isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '' );
 		if ( $this->page_hook !== $hook_suffix && ! $is_inquiry_request ) {
 			return;
 		}
-		wp_enqueue_style( $this->plugin_name . '-inquiry', YBY_CORE_PLUGIN_URL . 'assets/css/yby-inquiry-admin.css', array(), $this->version );
-		wp_enqueue_script( $this->plugin_name . '-inquiry', YBY_CORE_PLUGIN_URL . 'assets/js/yby-inquiry-admin.js', array(), $this->version, true );
+		wp_enqueue_style( $this->plugin_name . '-inquiry', YBY_CORE_PLUGIN_URL . 'assets/css/yby-inquiry-admin.css', array(), $this->asset_version( 'assets/css/yby-inquiry-admin.css' ) );
+		wp_enqueue_script( $this->plugin_name . '-inquiry', YBY_CORE_PLUGIN_URL . 'assets/js/yby-inquiry-admin.js', array(), $this->asset_version( 'assets/js/yby-inquiry-admin.js' ), true );
 	}
 
 	public function render_page() {

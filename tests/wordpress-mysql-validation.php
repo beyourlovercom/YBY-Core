@@ -65,6 +65,10 @@ function yby_validation_assert_inquiry_assets( $query, $hook_suffix ) {
 	do_action( 'admin_enqueue_scripts', $hook_suffix );
 	yby_validation_assert( wp_style_is( 'yby-core-inquiry', 'enqueued' ), 'Inquiry stylesheet must be enqueued.' );
 	yby_validation_assert( wp_script_is( 'yby-core-inquiry', 'enqueued' ), 'Inquiry script must be enqueued.' );
+	$styles = wp_styles();
+	$scripts = wp_scripts();
+	yby_validation_assert( (string) filemtime( WP_PLUGIN_DIR . '/yby-core/assets/css/yby-inquiry-admin.css' ) === (string) $styles->registered['yby-core-inquiry']->ver, 'Inquiry stylesheet must use its file modification time.' );
+	yby_validation_assert( (string) filemtime( WP_PLUGIN_DIR . '/yby-core/assets/js/yby-inquiry-admin.js' ) === (string) $scripts->registered['yby-core-inquiry']->ver, 'Inquiry script must use its file modification time.' );
 }
 
 $inquiry_hook = YBY_Inquiry_Admin::registered_page_hook();
