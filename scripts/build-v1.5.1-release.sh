@@ -2,9 +2,9 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-output_dir="${root_dir}/releases/v1.5.1-rc"
+output_dir="${RELEASE_OUTPUT_DIR:-${root_dir}/releases/v1.5.1}"
 stage_dir="$(mktemp -d)"
-package_name="andy-core-v1.5.1-rc.zip"
+package_name="andy-core-v1.5.1.zip"
 source_branch="${SOURCE_BRANCH:-${GITHUB_HEAD_REF:-$(git -C "${root_dir}" branch --show-current)}}"
 source_commit="${SOURCE_COMMIT:-$(git -C "${root_dir}" rev-parse HEAD)}"
 
@@ -31,16 +31,23 @@ rm -f "${output_dir}/${package_name}"
 
 sha256sum "${output_dir}/${package_name}" | awk '{print $1}' > "${output_dir}/SHA256.txt"
 {
-  echo '# Andy Core v1.5.1 RC Build'
+  echo '# Andy Core v1.5.1 Build'
   echo
-  echo "Source branch: ${source_branch}"
-  echo "Source commit: ${source_commit}"
-  echo 'Plugin version: 1.5.1'
-  echo 'Database migration target: 1.3.0'
+  echo 'Product: Andy Core'
+  echo 'Version: 1.5.1'
+  echo 'Database Version: 1.3.0'
+  echo 'Build Type: RELEASE'
+  echo "Source Branch: ${source_branch}"
+  echo "Source Commit: ${source_commit}"
   echo "Package: ${package_name}"
   echo "SHA-256: $(cat "${output_dir}/SHA256.txt")"
   echo 'Verification: normalized archive paths use /; the only top-level directory is yby-core/; directories are 0755 and files are 0644 before packaging.'
-  echo 'This is an Owner UAT validation artifact only; it is not the final GitHub Release package, tag, or deployment.'
+  echo 'Final GitHub Release packaging must be regenerated from the final merged main commit; this PR artifact is a release candidate.'
 } > "${output_dir}/BUILD_INFO.md"
 
 zipinfo -1 "${output_dir}/${package_name}" | awk -F/ 'NF && $1 != "yby-core" { exit 1 }'
+zipinfo -1 "${output_dir}/${package_name}" | grep -Fx 'yby-core/yby-core.php' >/dev/null
+if zipinfo -1 "${output_dir}/${package_name}" | grep -E '(^|/)(\.git|\.github|tests|docs|releases)(/|$)' >/dev/null; then
+  echo 'Release package contains excluded development paths.' >&2
+  exit 1
+fi

@@ -4,7 +4,7 @@ Tags: andy-core, yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.5.0
+Stable tag: 1.5.1
 License: Proprietary
 License URI: https://ybyglobal.com/
 
@@ -12,7 +12,17 @@ Core platform plugin for managed WordPress websites, including Case ID, tracking
 
 == Description ==
 
-Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.0 adds secure Google authentication and portable Bottle inquiry runtime support while preserving the existing `yby-core` plugin identity and compatibility contracts.
+Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.1 adds the local Inquiry Inbox and follow-up management layer while preserving the existing `yby-core` plugin identity and compatibility contracts.
+
+Included in v1.5.1:
+
+* Inquiry Inbox with list, search, filters, pagination, and detail views
+* Follow-up Management for status, priority, owner, next follow-up, notes, archive, and restore
+* Active Inquiry Owners configuration scoped to WordPress users with role `salesperson`
+* Salesperson role isolation and historical inactive owner retention
+* Activity Timeline, Inquiry Settings, and read-only System Status
+* Project Studio routing remediation and Inquiry admin asset cache busting
+* Database schema version 1.3.0 adds Inquiry management and Activity tables
 
 Included in v1.5.0:
 
@@ -103,6 +113,16 @@ Lead notifications dispatch through `YBY_Notification_Manager` with the Email pr
 The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Recipient Emails, Reply-To Policy, Lead Email Subject Template, and Email Branding settings. Invalid addresses are ignored.
 
 == Changelog ==
+
+= 1.5.1 =
+
+* Added the local Inquiry Inbox and follow-up management foundation.
+* Added status, priority, owner, next follow-up, archive, restore, notes, and Activity Timeline management for existing Leads.
+* Added Inquiry Settings and read-only System Status tabs.
+* Added Active Inquiry Owners configuration and Salesperson role isolation.
+* Preserved historical inactive owners while denying new assignments to inactive owners.
+* Remediated Project Studio routing and Inquiry admin asset cache busting.
+* Validated the WordPress/MySQL database upgrade to schema version 1.3.0.
 
 = 1.5.0 =
 

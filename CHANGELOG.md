@@ -1,12 +1,23 @@
 # CHANGELOG
 
-## Unreleased - v1.5.1-dev
+## v1.5.1 - 2026-08-07
 
-### In Development
+### Added
 
-- Establishes the local Inquiry Inbox and follow-up management foundation.
-- Separates Salesperson identity from Active Inquiry Owner assignment eligibility; Salesperson identity now comes from the WordPress `salesperson` role only.
-- Preserves inactive historical inquiry owners while denying new assignments to inactive owners and filtering stale Active Owner settings.
+- Added the local Inquiry Inbox and follow-up management foundation.
+- Added status, priority, owner, next follow-up, archive, restore, notes, and Activity Timeline management for existing Leads.
+- Added Inquiry Settings and read-only System Status tabs.
+- Added Active Inquiry Owners configuration for assigning new Inquiries to active Salesperson users.
+- Added WordPress/MySQL validation for the Inquiry management migration and runtime permission gates.
+
+### Fixed
+
+- Separated Salesperson identity from Active Inquiry Owner assignment eligibility; Salesperson identity now comes from the WordPress `salesperson` role only.
+- Preserved inactive historical inquiry owners while denying new assignments to inactive owners and filtering stale Active Owner settings.
+- Remediated Project Studio routing and Inquiry admin asset cache busting.
+
+### Compatibility
+
 - Preserves the v1.5.0 Lead REST, Case ID, notification, Thank You, and site-profile contracts.
 
 ## v1.5.0 - 2026-08-01

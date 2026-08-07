@@ -4,12 +4,26 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `1.5.0`
-- Development version: `1.5.1-dev`
-- Database version: `1.3.0` on the v1.5.1 development branch; v1.5.0 stable remains `1.2.0`
-- Development status: Inquiry Inbox implementation
+- Product version: `1.5.1`
+- Development version: None
+- Database version: `1.3.0`
+- Release status: Stable
 - Plugin path: `yby-core/yby-core.php`
 - Technical namespace: existing `YBY_*` and `yby_*` identifiers retained for compatibility
+
+## v1.5.1 release scope
+
+Version 1.5.1 adds the local Inquiry Inbox and follow-up management layer for existing Leads:
+
+- Inquiry Inbox with list, search, filters, pagination, and detail views
+- Follow-up Management for status, priority, owner, next follow-up, notes, archive, and restore
+- Active Inquiry Owners configuration scoped to WordPress users with role `salesperson`
+- Salesperson role isolation with read-only access only to inquiries assigned to the current user
+- Historical inactive owner retention with `{Display Name} (Inactive)` administrator display
+- Activity Timeline for management events
+- Inquiry Settings and read-only System Status tabs
+- Project Studio routing remediation and Inquiry admin asset cache busting
+- WordPress/MySQL validation for the `1.2.0` to `1.3.0` database upgrade path
 
 ## v1.5.0 release scope
 
@@ -158,7 +172,7 @@ Default settings remain stored under existing option keys, including:
 - `yby_core_options`
 - `yby_lead_notification_primary_recipient_email`
 
-Version 1.5.0 upgrades the database schema to `1.2.0` by adding the nullable `page_profile` Lead column through the existing idempotent database installer.
+Version 1.5.1 upgrades the database schema to `1.3.0` by adding idempotent Inquiry management and Activity tables while preserving existing Lead rows. Version 1.5.0 upgraded the database schema to `1.2.0` by adding the nullable `page_profile` Lead column.
 
 ## Security boundaries
 
@@ -181,7 +195,7 @@ Version 1.5.0 upgrades the database schema to `1.2.0` by adding the nullable `pa
 
 ## Release state
 
-Andy Core v1.5.0 is frozen for release. Production deployment remains a separate, explicitly authorized operation.
+Andy Core v1.5.1 is frozen for release prep. Production deployment remains a separate, explicitly authorized operation.
 
 ## Release process
 
