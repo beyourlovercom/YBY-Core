@@ -48,6 +48,13 @@ $validation_administrator = get_user_by( 'login', 'admin' );
 yby_validation_assert( $validation_administrator instanceof WP_User, 'Validation administrator is unavailable.' );
 wp_set_current_user( $validation_administrator->ID );
 
+$GLOBALS['submenu'] = array();
+do_action( 'admin_menu' );
+$expected_submenus = array( 'andy-core-leads', 'yby-project-studio', 'edit.php?post_type=yby_project', 'yby-brand-os', 'yby-social-login', YBY_Helpers::admin_page_slug() );
+$registered_submenus = array_map( static function ( $item ) { return $item[2]; }, $GLOBALS['submenu'][ YBY_Project_Studio::menu_slug() ] ?? array() );
+yby_validation_assert( $expected_submenus === $registered_submenus, 'Andy Core submenu structure is not exact.' );
+yby_validation_assert( ! in_array( YBY_Project_Studio::menu_slug(), $registered_submenus, true ), 'Duplicate Andy Core submenu must be removed.' );
+
 yby_validation_assert( false !== strpos( YBY_Project_Studio::studio_url( 'overview', 123 ), 'page=yby-project-studio' ), 'Project Studio URLs must use the dedicated submenu slug.' );
 yby_validation_assert( 'yby-os' === YBY_Project_Studio::menu_slug(), 'The Andy Core parent slug must remain yby-os.' );
 
@@ -60,9 +67,6 @@ function yby_validation_assert_inquiry_assets( $query, $hook_suffix ) {
 	yby_validation_assert( wp_script_is( 'yby-core-inquiry', 'enqueued' ), 'Inquiry script must be enqueued.' );
 }
 
-$inquiry_admin = new YBY_Inquiry_Admin( 'yby-core', YBY_CORE_VERSION );
-$inquiry_admin->add_admin_menu();
-add_action( 'admin_enqueue_scripts', array( $inquiry_admin, 'enqueue_assets' ) );
 $inquiry_hook = YBY_Inquiry_Admin::registered_page_hook();
 yby_validation_assert( is_string( $inquiry_hook ) && '' !== $inquiry_hook, 'Inquiry page must retain its registered admin hook.' );
 yby_validation_assert_inquiry_assets( array( 'page' => 'andy-core-leads' ), $inquiry_hook );
@@ -136,6 +140,26 @@ yby_validation_assert( 50 === count( $detail['activities'] ), 'Activity reads mu
 $fallback_list = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 37, 'search' => "' OR 1=1 --" ) );
 yby_validation_assert( 50 === $fallback_list['per_page'], 'Invalid per_page must fall back to configured value.' );
 yby_validation_assert( ! isset( $fallback_list['items'][0]['project_details'] ) && ! isset( $fallback_list['items'][0]['custom_fields'] ), 'List must not load LONGTEXT fields.' );
+
+$salesperson_a = wp_create_user( 'validation-sales-a', 'validation-only', 'sales-a@example.test' );
+$salesperson_b = wp_create_user( 'validation-sales-b', 'validation-only', 'sales-b@example.test' );
+wp_update_user( array( 'ID' => $salesperson_a, 'role' => 'salesperson' ) );
+wp_update_user( array( 'ID' => $salesperson_b, 'role' => 'salesperson' ) );
+update_option( 'yby_core_inquiry_salespeople', array( $salesperson_a, $salesperson_b ) );
+$lead_b = (int) $wpdb->get_var( "SELECT id FROM {$leads} ORDER BY id DESC LIMIT 1" );
+YBY_Lead_Management::save( $lead_id, array( 'owner_user_id' => $salesperson_a, 'status' => 'contacted', 'priority' => 'normal' ), $administrator->ID );
+YBY_Lead_Management::save( $lead_b, array( 'owner_user_id' => $salesperson_b, 'status' => 'contacted', 'priority' => 'normal' ), $administrator->ID );
+wp_set_current_user( $salesperson_a );
+$sales_a_list = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 30 ) );
+yby_validation_assert( 1 === count( $sales_a_list['items'] ) && (int) $sales_a_list['items'][0]['owner_user_id'] === $salesperson_a, 'Salesperson A scope failed.' );
+yby_validation_assert( null === YBY_Lead_Management::get_detail( $lead_b ), 'Salesperson A must not access B inquiry directly.' );
+wp_set_current_user( $salesperson_b );
+$sales_b_list = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 30, 'owner_user_id' => $salesperson_a ) );
+yby_validation_assert( 1 === count( $sales_b_list['items'] ) && (int) $sales_b_list['items'][0]['owner_user_id'] === $salesperson_b, 'Salesperson B scope or query override failed.' );
+wp_set_current_user( $administrator->ID );
+$admin_list = YBY_Lead_Management::list_leads( array( 'page' => 1, 'per_page' => 30 ) );
+yby_validation_assert( count( $admin_list['items'] ) >= 2, 'Administrator must see all inquiries.' );
+yby_validation_assert( ! YBY_Security::is_valid_owner( $administrator->ID ) && ! YBY_Security::is_valid_owner( 999999 ), 'Non-salesperson owner accepted.' );
 
 foreach ( array( 1000, 10000, 50000 ) as $size ) {
 	$started = microtime( true );

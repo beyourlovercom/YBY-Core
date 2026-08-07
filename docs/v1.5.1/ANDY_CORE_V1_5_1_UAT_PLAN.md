@@ -8,8 +8,10 @@
 6. Change status, owner, priority, follow-up, and note; inspect the activity timeline.
 7. Archive and restore; confirm the Lead remains unchanged.
 8. Test a restricted role and confirm capability boundaries.
-9. Run existing Bottle and Irrigation regression checks and confirm Lead REST, email, Case ID, and Thank You behavior.
-10. Use the rollback guide if migration or management checks fail. Do not test against Production.
+9. Configure Salespeople / Inquiry Owners, confirm Owner selects contain only enabled users plus Unassigned, and verify each Salesperson sees only their own assigned inquiries.
+10. Confirm the Andy Core submenu contains exactly Inquiry, Project Studio, Projects, Brand, Social Login, and Settings, with no duplicate Andy Core item.
+11. Run existing Bottle and Irrigation regression checks and confirm Lead REST, email, Case ID, and Thank You behavior.
+12. Use the rollback guide if migration or management checks fail. Do not test against Production.
 
 ## Delivery
 

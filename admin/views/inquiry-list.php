@@ -6,7 +6,7 @@
 	<input type="search" name="s" minlength="2" placeholder="<?php esc_attr_e( 'Search Case ID, name, email, WhatsApp, company', 'yby-core' ); ?>" value="<?php echo esc_attr( $args['search'] ); ?>">
 		<select name="status"><option value=""><?php esc_html_e( 'All statuses', 'yby-core' ); ?></option><?php foreach ( YBY_Lead_Management::STATUSES as $status ) : ?><option value="<?php echo esc_attr( $status ); ?>" <?php selected( $args['status'], $status ); ?>><?php echo esc_html( $status ); ?></option><?php endforeach; ?></select>
 		<select name="priority"><option value=""><?php esc_html_e( 'All priorities', 'yby-core' ); ?></option><?php foreach ( YBY_Lead_Management::PRIORITIES as $priority ) : ?><option value="<?php echo esc_attr( $priority ); ?>" <?php selected( $args['priority'], $priority ); ?>><?php echo esc_html( $priority ); ?></option><?php endforeach; ?></select>
-		<input name="owner_user_id" type="number" min="0" placeholder="Owner ID" value="<?php echo esc_attr( $args['owner_user_id'] ); ?>">
+		<select name="owner_user_id"><option value="0">All Owners</option><?php foreach ( YBY_Security::salesperson_ids() as $user_id ) : $user = get_user_by( 'id', $user_id ); ?><option value="<?php echo esc_attr( $user_id ); ?>" <?php selected( $args['owner_user_id'], $user_id ); ?>><?php echo esc_html( $user->display_name ); ?></option><?php endforeach; ?></select>
 		<input name="country" type="text" placeholder="Country" value="<?php echo esc_attr( $args['country'] ); ?>">
 		<input name="source_preset" type="text" placeholder="Preset" value="<?php echo esc_attr( $args['source_preset'] ); ?>">
 		<input name="page_profile" type="text" placeholder="Profile" value="<?php echo esc_attr( $args['page_profile'] ); ?>">

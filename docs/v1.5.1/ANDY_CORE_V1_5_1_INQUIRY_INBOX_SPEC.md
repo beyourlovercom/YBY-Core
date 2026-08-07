@@ -1,5 +1,9 @@
 # Andy Core v1.5.1 Inquiry Inbox Specification
 
+- Follow-up Management uses a fixed label/control grid on desktop and a single column below 800px.
+- Inquiry Settings provides Salespeople / Inquiry Owners configuration and a shared Owner selector with `Unassigned`.
+- The Andy Core submenu is exactly Inquiry, Project Studio, Projects, Brand, Social Login, and Settings; the auto-generated duplicate parent item is removed.
+
 ## Scope
 
 Local, site-scoped management of the existing `yby_leads` records. The original Lead row remains immutable and is the source of truth.

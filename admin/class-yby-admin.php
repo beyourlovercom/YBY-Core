@@ -170,15 +170,19 @@ class YBY_Admin {
 				'default_status' => in_array( $raw['default_status'] ?? '', YBY_Lead_Management::STATUSES, true ) ? $raw['default_status'] : 'new',
 				'default_priority' => in_array( $raw['default_priority'] ?? '', YBY_Lead_Management::PRIORITIES, true ) ? $raw['default_priority'] : 'normal',
 				'default_owner_user_id' => absint( $raw['default_owner_user_id'] ?? 0 ),
+				'salespeople' => YBY_Security::salesperson_ids( $raw['salespeople'] ?? array() ),
 				'leads_per_page' => in_array( absint( $raw['leads_per_page'] ?? 30 ), array( 30, 50, 100 ), true ) ? absint( $raw['leads_per_page'] ) : 30,
 				'editors_can_manage' => ! empty( $raw['editors_can_manage'] ),
 				'assignment_enabled' => ! empty( $raw['assignment_enabled'] ),
 				'archive_behavior' => in_array( $raw['archive_behavior'] ?? 'soft', array( 'soft' ), true ) ? $raw['archive_behavior'] : 'soft',
 			);
+			if ( ! YBY_Security::is_valid_owner( $options['default_owner_user_id'], $options['salespeople'] ) ) { $options['default_owner_user_id'] = 0; }
+			update_option( 'yby_core_inquiry_salespeople', $options['salespeople'] );
 			update_option( 'yby_core_inquiry_settings', $options );
 			$notice = __( 'Inquiry settings saved.', 'yby-core' );
 		}
-		$options = wp_parse_args( get_option( 'yby_core_inquiry_settings', array() ), array( 'default_status' => 'new', 'default_priority' => 'normal', 'default_owner_user_id' => 0, 'leads_per_page' => 30, 'editors_can_manage' => false, 'assignment_enabled' => true, 'archive_behavior' => 'soft' ) );
+		$options = wp_parse_args( get_option( 'yby_core_inquiry_settings', array() ), array( 'default_status' => 'new', 'default_priority' => 'normal', 'default_owner_user_id' => 0, 'leads_per_page' => 30, 'editors_can_manage' => false, 'assignment_enabled' => true, 'archive_behavior' => 'soft', 'salespeople' => YBY_Security::salesperson_ids() ) );
+		$options['salespeople'] = YBY_Security::salesperson_ids( $options['salespeople'] );
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/inquiry-settings.php';
 	}
 

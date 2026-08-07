@@ -26,6 +26,12 @@ $assert( strpos( $studio, "'page' => self::studio_page_slug()" ) !== false, 'Pro
 $assert( strpos( $admin, '$this->page_hook = add_submenu_page' ) !== false, 'Inquiry must retain the real admin page hook.' );
 $assert( strpos( $admin, 'self::$registered_page_hook = $this->page_hook' ) !== false, 'Inquiry must retain the registered admin page hook.' );
 $assert( strpos( $admin, '$is_inquiry_request' ) !== false, 'Inquiry asset fallback missing.' );
+$detail_view = file_get_contents( $root . '/admin/views/inquiry-detail.php' );
+$settings_view = file_get_contents( $root . '/admin/views/inquiry-settings.php' );
+$css = file_get_contents( $root . '/assets/css/yby-inquiry-admin.css' );
+$assert( strpos( $detail_view, 'yby-inquiry-detail-form' ) !== false && strpos( $detail_view, '<select name="owner_user_id"' ) !== false, 'Follow-up layout or Owner selector missing.' );
+$assert( strpos( $settings_view, 'Salespeople / Inquiry Owners' ) !== false && strpos( $settings_view, 'Unassigned' ) !== false, 'Salespeople settings missing.' );
+$assert( strpos( $css, 'grid-template-columns:160px' ) !== false && strpos( $css, 'yby-inquiry-actions' ) !== false, 'Follow-up layout CSS missing.' );
 $assert( strpos( $settings, 'system-status' ) !== false, 'Settings tab allowlist missing.' );
 $assert( substr_count( $view, 'nav-tab') >= 3, 'General Settings tabs missing.' );
 $assert( strpos( $admin, "'owner_user_id'" ) !== false, 'Owner filtering contract missing.' );

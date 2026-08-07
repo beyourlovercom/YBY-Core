@@ -23,6 +23,12 @@ class YBY_Inquiry_Admin {
 		$parent_slug = YBY_Project_Studio::menu_slug();
 		if ( isset( $submenu[ $parent_slug ] ) ) {
 			foreach ( $submenu[ $parent_slug ] as $index => $item ) {
+				if ( YBY_Project_Studio::menu_slug() === $item[2] ) {
+					unset( $submenu[ $parent_slug ][ $index ] );
+				}
+			}
+			$submenu[ $parent_slug ] = array_values( $submenu[ $parent_slug ] );
+			foreach ( $submenu[ $parent_slug ] as $index => $item ) {
 				if ( self::page_slug() === $item[2] ) {
 					$inquiry = $item;
 					unset( $submenu[ $parent_slug ][ $index ] );
@@ -57,6 +63,7 @@ class YBY_Inquiry_Admin {
 		}
 		$lead_id = absint( $_GET['lead_id'] ?? 0 );
 		if ( $lead_id ) {
+			if ( ! YBY_Security::can_view_lead( $lead_id ) ) { wp_die( esc_html__( 'You do not have permission to access this inquiry.', 'yby-core' ) ); }
 			$this->render_detail( $lead_id );
 			return;
 		}

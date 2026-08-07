@@ -42,7 +42,7 @@ class YBY_Lead_Management {
 		$now = current_time( 'mysql' );
 		$settings = YBY_Security::inquiry_settings();
 		$owner_id = absint( $settings['default_owner_user_id'] );
-		if ( $owner_id && ! get_user_by( 'id', $owner_id ) ) { $owner_id = 0; }
+		if ( ! YBY_Security::is_valid_owner( $owner_id ) ) { $owner_id = 0; }
 		$wpdb->insert( $table, array( 'lead_id' => $lead_id, 'status' => $settings['default_status'], 'owner_user_id' => $owner_id, 'priority' => $settings['default_priority'], 'created_at' => $now, 'updated_at' => $now ), array( '%d', '%s', '%d', '%s', '%s', '%s' ) );
 		return (int) $wpdb->insert_id;
 	}
@@ -58,6 +58,7 @@ class YBY_Lead_Management {
 		$offset = ( $page - 1 ) * $per_page;
 		$where = array( '1=1' );
 		$values = array();
+		if ( YBY_Security::is_salesperson() && ! current_user_can( 'manage_options' ) ) { $where[] = 'm.owner_user_id = %d'; $values[] = get_current_user_id(); }
 		$search = trim( (string) ( $args['search'] ?? '' ) );
 		if ( strlen( $search ) >= 2 ) {
 			$like = '%' . $wpdb->esc_like( $search ) . '%';
@@ -94,7 +95,7 @@ class YBY_Lead_Management {
 		$leads = YBY_Database::leads_table_name();
 		$management = YBY_Database::management_table_name();
 		$lead = $wpdb->get_row( $wpdb->prepare( "SELECT l.*,m.status,m.owner_user_id,m.priority,m.next_follow_up_at,m.last_activity_at,m.archived_at FROM {$leads} l LEFT JOIN {$management} m ON m.lead_id = l.id WHERE l.id = %d", $lead_id ), ARRAY_A );
-		if ( ! $lead ) {
+		if ( ! $lead || ! YBY_Security::can_view_lead( $lead_id ) ) {
 			return null;
 		}
 		$lead['activities'] = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . YBY_Database::activities_table_name() . ' WHERE lead_id = %d ORDER BY created_at DESC,id DESC LIMIT 50', $lead_id ), ARRAY_A );
@@ -111,8 +112,8 @@ class YBY_Lead_Management {
 		if ( ! in_array( $data['status'] ?? $current['status'], self::STATUSES, true ) || ! in_array( $data['priority'] ?? $current['priority'], self::PRIORITIES, true ) ) {
 			return array( 'success' => false, 'message' => __( 'Invalid status or priority.', 'yby-core' ) );
 		}
-		if ( isset( $data['owner_user_id'] ) && absint( $data['owner_user_id'] ) && ! get_user_by( 'id', absint( $data['owner_user_id'] ) ) ) {
-			return array( 'success' => false, 'message' => __( 'Owner does not exist.', 'yby-core' ) );
+		if ( isset( $data['owner_user_id'] ) && ! YBY_Security::is_valid_owner( $data['owner_user_id'] ) ) {
+			return array( 'success' => false, 'message' => __( 'Owner is not an enabled Salesperson.', 'yby-core' ) );
 		}
 		$now = current_time( 'mysql' );
 		$updates = array();
