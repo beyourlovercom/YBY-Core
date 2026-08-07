@@ -58,7 +58,14 @@ class YBY_Lead_Management {
 		$offset = ( $page - 1 ) * $per_page;
 		$where = array( '1=1' );
 		$values = array();
-		if ( YBY_Security::is_salesperson() && ! current_user_can( 'manage_options' ) ) { $where[] = 'm.owner_user_id = %d'; $values[] = get_current_user_id(); }
+		$is_salesperson_scope = YBY_Security::is_salesperson() && ! current_user_can( 'manage_options' );
+		if ( $is_salesperson_scope ) {
+			$where[] = 'm.owner_user_id = %d';
+			$values[] = get_current_user_id();
+		} elseif ( ! empty( $args['owner_user_id'] ) ) {
+			$where[] = 'COALESCE(m.owner_user_id, 0) = %d';
+			$values[] = absint( $args['owner_user_id'] );
+		}
 		$search = trim( (string) ( $args['search'] ?? '' ) );
 		if ( strlen( $search ) >= 2 ) {
 			$like = '%' . $wpdb->esc_like( $search ) . '%';
@@ -73,7 +80,6 @@ class YBY_Lead_Management {
 			$where[] = 'COALESCE(m.priority, "normal") = %s';
 			$values[] = $args['priority'];
 		}
-		if ( ! empty( $args['owner_user_id'] ) ) { $where[] = 'COALESCE(m.owner_user_id, 0) = %d'; $values[] = absint( $args['owner_user_id'] ); }
 		if ( '' !== (string) ( $args['country'] ?? '' ) ) { $where[] = 'l.country = %s'; $values[] = sanitize_text_field( $args['country'] ); }
 		if ( '' !== (string) ( $args['source_preset'] ?? '' ) ) { $where[] = 'l.source_preset = %s'; $values[] = sanitize_key( $args['source_preset'] ); }
 		if ( '' !== (string) ( $args['page_profile'] ?? '' ) ) { $where[] = 'l.page_profile = %s'; $values[] = sanitize_key( $args['page_profile'] ); }
