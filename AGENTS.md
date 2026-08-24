@@ -33,3 +33,13 @@ Prefer local debugging and local evidence whenever the issue can be reproduced l
 Do not commit full WordPress site contents, databases, uploads, caches, migration backups, generated logs, secrets, credentials, or machine-local runtime data to this repository.
 
 GitHub stores source code, tests, documentation, release metadata, and development rules. WordPress site copies are Local/Dev/UAT environments, not source-of-truth Git repositories.
+
+## Local WordPress Runtime Sync
+- Canonical source is always `D:\ai\_repos\YBY-Core`.
+- Do not edit the restored WordPress plugin copy as source code.
+- After source changes, sync runtime files with:
+  `powershell -ExecutionPolicy Bypass -File D:\ai\_system\sync-yby-core-local.ps1`
+- Local runtime target:
+  `D:\ai\devybybottle\app\public\wp-content\plugins\yby-core`
+- Run local browser/UAT only after sync returns `YBY_CORE_LOCAL_SYNC=PASS`.
+- Never copy `.git`, `.github`, docs, tests, releases, or repository-only metadata into the runtime plugin directory.
