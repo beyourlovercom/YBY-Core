@@ -349,6 +349,7 @@ class YBY_Config {
 			'enableTracking'        => self::is_tracking_enabled(),
 			'enableCaseId'          => self::is_case_id_enabled(),
 			'enableCrmWebhook'      => self::is_crm_webhook_enabled(),
+			'brandTheme'            => class_exists( 'YBY_Brand_Profile' ) ? YBY_Brand_Profile::get_theme_config() : array(),
 		);
 	}
 

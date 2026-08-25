@@ -46,6 +46,12 @@ function esc_url_raw( $value ) {
 	return trim( (string) $value );
 }
 
+function sanitize_hex_color( $value ) {
+	$value = trim( (string) $value );
+
+	return preg_match( '/^#[0-9a-fA-F]{3,6}$/', $value ) ? $value : null;
+}
+
 function home_url( $path = '/' ) {
 	return 'https://example.test/' . ltrim( (string) $path, '/' );
 }
@@ -130,6 +136,7 @@ $tests['neutral_profile'] = static function () {
 
 	$site_profile  = YBY_Site_Profile::get_profile();
 	$brand_profile = YBY_Brand_Profile::get_profile();
+	$theme = YBY_Config::get_runtime_config()['brandTheme'];
 
 	harness_assert( 'yby_core' === $site_profile['site_brand_key'], 'Neutral site brand key must fall back to yby_core.' );
 	harness_assert( 'YBY' === $site_profile['site_brand_name'], 'Neutral site brand name must fall back to YBY.' );
@@ -143,6 +150,12 @@ $tests['neutral_profile'] = static function () {
 	harness_assert( '' === YBY_Config::get_lead_notification_cc_recipient_emails(), 'Neutral CC default must be empty.' );
 	harness_assert( '' === YBY_Config::get_lead_notification_bcc_recipient_emails(), 'Neutral BCC default must be empty.' );
 	harness_assert( false === str_contains( implode( ' ', $brand_profile ), 'Irrigation' ), 'Neutral profile must not contain irrigation identity.' );
+	harness_assert( 'YBY' === $theme['brandName'], 'Theme fallback must use Site Profile identity without Brand OS.' );
+	harness_assert( '#1F2937' === $theme['primaryColor'], 'Theme fallback must use profile primary color without Brand OS.' );
+	harness_assert( '12px' === $theme['borderRadius'], 'Theme fallback must provide safe runtime defaults.' );
+	harness_assert( false !== strpos( $theme['brandName'], 'YBY' ), 'Theme fallback must expose a runtime brand contract.' );
+	$public_source = file_get_contents( dirname( __DIR__ ) . '/public/class-yby-public.php' );
+	harness_assert( false !== strpos( (string) $public_source, '--yby-theme-primary' ), 'Public runtime must expose namespaced theme CSS variables.' );
 };
 
 $tests['irrigation_presentation'] = static function () {
@@ -347,6 +360,37 @@ $tests['runtime_secret_and_path_hardening'] = static function () {
 	harness_assert( '/' === YBY_Config::sanitize_path_or_absolute_url_value( 'https:\\evil.example', '/' ), 'Malformed absolute URL must fall back safely.' );
 	harness_assert( 'https://example.test/thank-you/' === YBY_Config::sanitize_path_or_absolute_url_value( 'https://example.test/thank-you/', '/' ), 'HTTPS absolute URLs must remain valid.' );
 	harness_assert( 'http://example.test/return/' === YBY_Config::sanitize_path_or_absolute_url_value( 'http://example.test/return/', '/' ), 'HTTP absolute URLs must remain valid.' );
+};
+
+$tests['brand_os_override_contract'] = static function () {
+	require_once dirname( __DIR__ ) . '/inc/class-yby-brand-os.php';
+	harness_reset_state(
+		array(
+			'site_brand_name'    => 'Canonical Site Brand',
+			'brand_primary_color' => '#123456',
+		),
+		array(
+			YBY_Brand_OS::option_key() => array(
+				'presentation_name' => 'Visual Override',
+				'primary_color'     => '#abcdef',
+				'accent_color'      => 'not-a-color',
+				'border_radius'     => 'expression(alert(1))',
+				'glass_opacity'     => '3',
+				'heading_font'      => 'Arial; color:red',
+			)
+		)
+	);
+
+	$theme = YBY_Brand_Profile::get_theme_config();
+
+	harness_assert( 'Canonical Site Brand' === $theme['brandName'], 'Site Profile identity must outrank Brand OS presentation name.' );
+	harness_assert( '#abcdef' === $theme['primaryColor'], 'Loaded Brand OS must override the profile primary color.' );
+	harness_assert( '#f59e0b' === $theme['accentColor'], 'Invalid Brand OS accent must use its safe default.' );
+	harness_assert( '12px' === $theme['borderRadius'], 'Invalid Brand OS length must use its safe default.' );
+	harness_assert( '1' === $theme['glassOpacity'], 'Brand OS opacity must be clamped.' );
+	harness_assert( 'Canonical Site Brand' === $theme['presentationName'], 'Blank Brand OS presentation name must fall back to the site name.' );
+	harness_assert( '#abcdef' === $theme['ctaBackground'], 'Blank Brand OS CTA background must fall back to the active primary color.' );
+	harness_assert( '' === $theme['headingFont'], 'Unsafe font stack must be rejected before CSS emission.' );
 };
 
 $results = array();

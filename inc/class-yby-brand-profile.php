@@ -128,6 +128,52 @@ class YBY_Brand_Profile {
 		return self::get_profile()['brand_primary_color'];
 	}
 
+	public static function get_theme_config() {
+		$profile = self::get_profile();
+		$theme = array(
+			'presentationName' => $profile['site_brand_name'],
+			'brandName' => $profile['site_brand_name'],
+			'logoDefault' => $profile['email_logo_url'],
+			'logoWhite' => $profile['email_reverse_logo_url'],
+			'logoBlack' => $profile['email_logo_url'],
+			'favicon' => '',
+			'primaryColor' => $profile['brand_primary_color'],
+			'secondaryColor' => $profile['brand_secondary_color'],
+			'accentColor' => $profile['brand_primary_color'],
+			'fontPrimary' => '',
+			'fontSecondary' => '',
+			'ctaBackground' => '',
+			'buttonTextColor' => $profile['brand_primary_text_color'],
+			'headingFont' => '',
+			'bodyFont' => '',
+			'borderRadius' => '12px',
+			'glassOpacity' => '0.82',
+			'subscribeImage' => '',
+		);
+
+		if ( class_exists( 'YBY_Brand_OS' ) ) {
+			$brand_os_theme = YBY_Brand_OS::get_theme_config();
+			if ( is_array( $brand_os_theme ) ) {
+				foreach ( $brand_os_theme as $key => $value ) {
+					if ( '' !== (string) $value ) {
+						$theme[ $key ] = $value;
+					}
+				}
+			}
+		}
+
+		// Site Profile is the identity authority, even when Brand OS is loaded.
+		$theme['brandName'] = $profile['site_brand_name'];
+		if ( '' === (string) $theme['presentationName'] ) {
+			$theme['presentationName'] = $profile['site_brand_name'];
+		}
+		$theme['secondaryColor'] = $profile['brand_secondary_color'];
+		$theme['ctaBackground']  = '' !== (string) $theme['ctaBackground'] ? $theme['ctaBackground'] : $theme['primaryColor'];
+		$theme['buttonTextColor'] = '' !== (string) $theme['buttonTextColor'] ? $theme['buttonTextColor'] : $profile['brand_primary_text_color'];
+
+		return $theme;
+	}
+
 	public static function get_primary_text_color() {
 		return self::get_profile()['brand_primary_text_color'];
 	}

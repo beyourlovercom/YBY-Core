@@ -122,6 +122,7 @@ class YBY_Public {
 	 */
 	protected function build_brand_profile_css() {
 		$profile = YBY_Brand_Profile::get_profile();
+		$theme   = YBY_Brand_Profile::get_theme_config();
 
 		$variables = array(
 			'--yby-inquiry-primary'       => $profile['brand_primary_color'],
@@ -131,6 +132,14 @@ class YBY_Public {
 			'--yby-inquiry-text'          => $profile['brand_text_color'],
 			'--yby-inquiry-muted'         => $profile['brand_muted_text_color'],
 			'--yby-inquiry-border'        => $profile['brand_border_color'],
+			'--yby-theme-primary'         => $theme['primaryColor'],
+			'--yby-theme-accent'          => $theme['accentColor'],
+			'--yby-theme-cta-background'  => $theme['ctaBackground'] ?: $theme['primaryColor'],
+			'--yby-theme-button-text'     => $theme['buttonTextColor'],
+			'--yby-theme-heading-font'    => $theme['headingFont'] ?: 'inherit',
+			'--yby-theme-body-font'       => $theme['bodyFont'] ?: 'inherit',
+			'--yby-theme-border-radius'   => $theme['borderRadius'],
+			'--yby-theme-glass-opacity'   => $theme['glassOpacity'],
 		);
 		$declarations = array();
 
@@ -138,7 +147,7 @@ class YBY_Public {
 			$declarations[] = $name . ':' . $value;
 		}
 
-		return '.yby-inquiry-modal{' . implode( ';', $declarations ) . ';}';
+		return ':root,.yby-inquiry-modal{' . implode( ';', $declarations ) . ';}';
 	}
 
 	/**
