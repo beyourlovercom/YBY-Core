@@ -85,6 +85,12 @@ class YBY_Admin {
 			array(),
 			$this->version
 		);
+		wp_enqueue_style(
+			'yby-inquiry-components',
+			YBY_CORE_PLUGIN_URL . 'public/css/yby-inquiry-components.css',
+			array(),
+			$this->version
+		);
 
 		wp_enqueue_script(
 			$this->plugin_name . '-admin',
@@ -108,13 +114,17 @@ class YBY_Admin {
 		}
 
 		$tab         = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general';
-		$tab         = in_array( $tab, array( 'general', 'inquiry', 'system-status' ), true ) ? $tab : 'general';
+		$tab         = in_array( $tab, array( 'general', 'inquiry', 'popup-preview', 'system-status' ), true ) ? $tab : 'general';
 		if ( 'inquiry' === $tab ) {
 			$this->render_inquiry_settings();
 			return;
 		}
 		if ( 'system-status' === $tab ) {
 			$this->render_system_status();
+			return;
+		}
+		if ( 'popup-preview' === $tab ) {
+			$this->render_popup_preview();
 			return;
 		}
 		$notice      = '';
@@ -157,6 +167,12 @@ class YBY_Admin {
 		$options = YBY_Config::get_options();
 
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/settings-page.php';
+	}
+
+	protected function render_popup_preview() {
+		$manager = new YBY_Inquiry_Manager();
+		$ui      = new YBY_Global_Popup_Dock( $manager, new YBY_Inquiry_Renderer() );
+		$ui->render_admin_preview();
 	}
 
 	protected function render_inquiry_settings() {

@@ -218,6 +218,10 @@ class YBY_Inquiry_Shortcodes {
 		self::$content_render_cache = array();
 	}
 
+	public static function has_deferred_modals() {
+		return ! empty( self::$deferred_modals );
+	}
+
 	/**
 	 * Sanitize shortcode attributes.
 	 *

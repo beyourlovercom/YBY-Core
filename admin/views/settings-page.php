@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="wrap">
 	<h1><?php echo esc_html__( 'Andy Core', 'yby-core' ); ?></h1>
 	<h2 class="nav-tab-wrapper">
-		<?php foreach ( array( 'general' => 'General', 'inquiry' => 'Inquiry', 'system-status' => 'System Status' ) as $tab_key => $tab_label ) : ?>
+		<?php foreach ( array( 'general' => 'General', 'inquiry' => 'Inquiry', 'popup-preview' => 'Popup Preview / Test', 'system-status' => 'System Status' ) as $tab_key => $tab_label ) : ?>
 			<a class="nav-tab <?php echo ( $tab ?? 'general' ) === $tab_key ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => YBY_Helpers::admin_page_slug(), 'tab' => $tab_key ), admin_url( 'admin.php' ) ) ); ?>"><?php echo esc_html( $tab_label ); ?></a>
 		<?php endforeach; ?>
 	</h2>
@@ -29,6 +29,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<h2><?php esc_html_e( 'Site Identity', 'yby-core' ); ?></h2>
 		<table class="form-table" role="presentation">
 			<tbody>
+				<tr>
+					<th scope="row"><label for="yby-popup-image-id"><?php esc_html_e( 'Default Email Subscribe Popup Image', 'yby-core' ); ?></label></th>
+					<td>
+						<input id="yby-popup-image-id" name="yby_core_options[popup_image_id]" type="hidden" value="<?php echo esc_attr( absint( $options['popup_image_id'] ?? 0 ) ); ?>" data-yby-media-type="id">
+						<button type="button" class="button yby-media-button" data-yby-media-target="yby-popup-image-id"><?php esc_html_e( 'Select from Media Library', 'yby-core' ); ?></button>
+						<span class="description"><?php esc_html_e( 'Stored as a Media Library attachment ID and used only by Andy Core popup presentation.', 'yby-core' ); ?></span>
+					</td>
+				</tr>
 				<tr>
 					<th scope="row"><label for="yby-site-brand-key"><?php esc_html_e( 'Site Brand Key', 'yby-core' ); ?></label></th>
 					<td>

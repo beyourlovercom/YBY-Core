@@ -815,6 +815,8 @@
   };
 
   window.YBYThankYou.init = function () {
+    window.YBYThankYou.hydrateGlobalWhatsAppLinks();
+    window.YBYThankYou.bindGlobalWhatsAppLinks();
     if (!isThankYouPage()) {
       return;
     }
@@ -901,6 +903,27 @@
         videoNote.hidden = false;
       }
     }
+  };
+
+  window.YBYThankYou.hydrateGlobalWhatsAppLinks = function () {
+    var links = document.querySelectorAll("[data-yby-global-dock] [data-yby-whatsapp-link]");
+    if (!links.length) return;
+    links.forEach(function (node) {
+      var url = window.YBYThankYou.buildWhatsAppUrl();
+      if (url && /https:\/\/wa\.me\/\d+/.test(url)) node.setAttribute("href", url);
+    });
+  };
+
+  window.YBYThankYou.bindGlobalWhatsAppLinks = function () {
+    if (window.YBYThankYou.globalWhatsAppBound) return;
+    document.addEventListener("click", function (event) {
+      var link = event.target.closest("[data-yby-global-dock] [data-yby-whatsapp-link]");
+      if (!link) return;
+      var href = link.getAttribute("href") || "#";
+      if (href === "#") { event.preventDefault(); return; }
+      window.YBYTracking.clickWhatsApp({ source: link.getAttribute("data-yby-source") || "site_global_whatsapp", page_profile: (window.YBYPageProfile || {}).profileId || "" });
+    });
+    window.YBYThankYou.globalWhatsAppBound = true;
   };
 
   window.YBYThankYou.trackPageView = function () {
