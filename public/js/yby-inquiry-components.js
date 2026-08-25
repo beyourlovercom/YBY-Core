@@ -86,6 +86,9 @@
       120
     );
     modal = modalId ? getModalById(modalId) : getDefaultModal();
+    if (!modal) {
+      modal = getDefaultModal();
+    }
 
     return {
       modal: modal,
@@ -724,6 +727,14 @@
     });
   }
 
+  function preventDuplicateGlobalModal() {
+    var globalModal = document.querySelector(".yby-inquiry-modal--global");
+    var allModals = document.querySelectorAll("[data-yby-inquiry-modal]");
+    if (globalModal && allModals.length > 1 && globalModal.parentNode) {
+      globalModal.parentNode.removeChild(globalModal);
+    }
+  }
+
   function updateStickyCtas() {
     var shouldShow = window.scrollY > 180 && !document.querySelector(".yby-inquiry-modal.is-open");
 
@@ -754,6 +765,7 @@
     }
 
     initForms(document);
+    preventDuplicateGlobalModal();
     initStickyCtas();
 
     return inquiry;

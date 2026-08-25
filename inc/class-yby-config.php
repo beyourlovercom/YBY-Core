@@ -51,6 +51,7 @@ class YBY_Config {
 			'email_footer_copyright'             => '',
 			'email_logo_url'                     => '',
 			'email_reverse_logo_url'             => '',
+			'popup_image_id'                     => 0,
 			'enable_tracking'                    => true,
 			'enable_case_id'                     => true,
 			'enable_crm_webhook'                 => false,
@@ -122,6 +123,7 @@ class YBY_Config {
 			'email_footer_copyright'             => self::sanitize_display_text( $options['email_footer_copyright'] ?? $defaults['email_footer_copyright'] ),
 			'email_logo_url'                     => self::sanitize_absolute_url_value( $options['email_logo_url'] ?? $defaults['email_logo_url'] ),
 			'email_reverse_logo_url'             => self::sanitize_absolute_url_value( $options['email_reverse_logo_url'] ?? $defaults['email_reverse_logo_url'] ),
+			'popup_image_id'                     => absint( $options['popup_image_id'] ?? $defaults['popup_image_id'] ),
 			'enable_tracking'                    => ! empty( $options['enable_tracking'] ),
 			'enable_case_id'                     => ! empty( $options['enable_case_id'] ),
 			'enable_crm_webhook'                 => ! empty( $options['enable_crm_webhook'] ),
@@ -142,6 +144,10 @@ class YBY_Config {
 
 	public static function get_whatsapp_number() {
 		return (string) self::get( 'whatsapp_number' );
+	}
+
+	public static function get_popup_image_id() {
+		return absint( self::get( 'popup_image_id' ) );
 	}
 
 	public static function get_site_brand_key() {

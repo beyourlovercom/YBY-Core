@@ -16,7 +16,8 @@
 
 		frame.on( 'select', function () {
 			var attachment = frame.state().get( 'selection' ).first().toJSON();
-			$( '#' + targetId ).val( attachment.url ).trigger( 'change' );
+			var target = $( '#' + targetId );
+			target.val( target.data( 'yby-media-type' ) === 'id' ? attachment.id : attachment.url ).trigger( 'change' );
 		} );
 
 		frame.open();

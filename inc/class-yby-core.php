@@ -43,6 +43,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-lead-mapper.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-renderer.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-shortcodes.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-global-popup-dock.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-service.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-management.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-rest-controller.php';
@@ -139,6 +140,7 @@ class YBY_Core {
 		$inquiry_manager    = new YBY_Inquiry_Manager();
 		$inquiry_renderer   = new YBY_Inquiry_Renderer();
 		$inquiry_shortcodes = new YBY_Inquiry_Shortcodes( $inquiry_manager, $inquiry_renderer );
+		$global_ui          = new YBY_Global_Popup_Dock( $inquiry_manager, $inquiry_renderer );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
 		$this->loader->add_action( 'rest_api_init', $lead_rest_route, 'register_routes' );
@@ -150,6 +152,7 @@ class YBY_Core {
 		$this->loader->add_action( 'init', $inquiry_shortcodes, 'register', 10, 0 );
 		$this->loader->add_filter( 'the_content', $inquiry_shortcodes, 'capture_modal_shortcodes_in_content', 9, 1 );
 		$this->loader->add_action( 'wp_footer', $inquiry_shortcodes, 'render_deferred_modals', 100, 0 );
+		$this->loader->add_action( 'wp_footer', $global_ui, 'render', 101, 0 );
 	}
 
 	/**
