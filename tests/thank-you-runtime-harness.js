@@ -779,7 +779,12 @@ function testTrackingPiiExclusion() {
 }
 
 function testNonThankYouExclusion() {
-  const bundle = { document: new MockDocument(), nodes: {} };
+  const document = new MockDocument();
+  const whatsappLink = new MockNode();
+
+  document.setSelector("[data-yby-whatsapp-link]", [whatsappLink]);
+
+  const bundle = { document, nodes: { whatsappLink } };
   const runtime = createRuntime({
     documentBundle: bundle,
     pathname: "/plain-page/",
@@ -787,6 +792,36 @@ function testNonThankYouExclusion() {
   });
 
   assert(runtime.dataLayer.length === 0, "Non-Thank You pages must not emit Thank You tracking.");
+}
+
+function testConfiguredThankYouUrlTracking() {
+  const bundle = { document: new MockDocument(), nodes: {} };
+  const runtime = createRuntime({
+    documentBundle: bundle,
+    pathname: "/configured-thank-you/",
+    search: "?case_id=YBY-IRR-20260721-ABC234",
+    runtime: { thankYouUrl: "/configured-thank-you/" },
+    pageProfile: { thankYouUrl: "" }
+  });
+
+  assert(runtime.dataLayer.length === 2, "Configured Thank You URL must emit page_view and generate_lead without markup.");
+  assert(runtime.dataLayer[0].event === "thank_you_page_view", "Configured Thank You URL must emit thank_you_page_view first.");
+  assert(runtime.dataLayer[1].event === "generate_lead", "Configured Thank You URL must emit generate_lead second.");
+}
+
+function testExplicitThankYouMarkupTracking() {
+  const document = new MockDocument();
+  const sentinel = new MockNode();
+
+  document.setSelector("[data-yby-thank-you-page]", [sentinel]);
+
+  const runtime = createRuntime({
+    documentBundle: { document, nodes: { sentinel } },
+    pathname: "/legacy-thank-you-route/",
+    search: "?case_id=YBY-IRR-20260721-ABC234"
+  });
+
+  assert(runtime.dataLayer.length === 2, "Explicit Thank You markup must preserve Thank You tracking on a non-configured route.");
 }
 
 function testInquiryPageExclusion() {
@@ -820,6 +855,8 @@ const tests = [
   ["session_tracking", testSessionStorageHydrationAndTracking],
   ["tracking_pii", testTrackingPiiExclusion],
   ["non_thank_you", testNonThankYouExclusion],
+  ["configured_thank_you_url", testConfiguredThankYouUrlTracking],
+  ["explicit_thank_you_markup", testExplicitThankYouMarkupTracking],
   ["inquiry_exclusion", testInquiryPageExclusion]
 ];
 

@@ -193,20 +193,38 @@
     return candidate.length >= 2 ? candidate : "CORE";
   }
 
-  function isThankYouPage() {
+  function normalizePagePath(value) {
+    var path = safeString(value, 500);
+
+    path = path.replace(/^https?:\/\/[^/]+/i, "").split(/[?#]/)[0] || "/";
+
+    if (path.charAt(0) !== "/") {
+      path = "/" + path;
+    }
+
+    return path.length > 1 ? path.replace(/\/+$/, "") + "/" : "/";
+  }
+
+  function getEffectiveThankYouUrl() {
+    return safeString(pageProfile.thankYouUrl, 240) || getBrandRuntimeString("thankYouUrl", leadSession.thankYouUrl || "/", 240) || "/";
+  }
+
+  function isConfiguredThankYouUrl() {
+    return normalizePagePath(window.location.pathname || "/") === normalizePagePath(getEffectiveThankYouUrl());
+  }
+
+  function hasExplicitThankYouMarkup() {
     return !!document.querySelector(
       [
-        "[data-yby-lead-name]",
+        "[data-yby-thank-you-page]",
         "[data-yby-case-id]",
-        "[data-yby-case-id-input]",
-        "[data-yby-whatsapp-link]",
-        "[data-yby-catalog-link]",
-        "[data-yby-return-link]",
-        "[data-yby-project-form]",
-        "[data-yby-video-frame]",
-        "[data-yby-video-note]"
+        "[data-yby-case-id-input]"
       ].join(", ")
     );
+  }
+
+  function isThankYouPage() {
+    return isConfiguredThankYouUrl() || hasExplicitThankYouMarkup();
   }
 
   function sanitizeTrackingPayload(payload) {
@@ -717,7 +735,7 @@
 
   window.YBYLead.buildThankYouUrl = function (caseId) {
     var safeCaseId = buildWhatsAppCaseId(caseId);
-    var thankYouUrl = safeString(pageProfile.thankYouUrl, 240) || getBrandRuntimeString("thankYouUrl", leadSession.thankYouUrl || "/", 240) || "/";
+    var thankYouUrl = getEffectiveThankYouUrl();
     return appendQueryParam(thankYouUrl, "case_id", safeCaseId);
   };
 
