@@ -3,6 +3,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	define( 'ABSPATH', __DIR__ . DIRECTORY_SEPARATOR );
 }
 
+if ( ! function_exists( 'absint' ) ) {
+	function absint( $maybeint ) {
+		return abs( (int) $maybeint );
+	}
+}
+
 if ( ! defined( 'YBY_CORE_VERSION' ) ) {
 	define( 'YBY_CORE_VERSION', '1.3.0-dev' );
 }

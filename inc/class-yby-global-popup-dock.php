@@ -23,11 +23,13 @@ class YBY_Global_Popup_Dock {
 			return;
 		}
 
-		if ( ! YBY_Inquiry_Shortcodes::has_deferred_modals() ) {
+		$target_id = YBY_Inquiry_Shortcodes::get_compatible_modal_id();
+		if ( '' === $target_id ) {
 			echo $this->render_global_modal(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			$target_id = 'yby-global-inquiry-modal';
 		}
 
-		echo $this->render_dock(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo $this->render_dock( $target_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	public function render_admin_preview() {
@@ -76,9 +78,10 @@ class YBY_Global_Popup_Dock {
 		) );
 	}
 
-	protected function render_dock() {
+	protected function render_dock( $target_id ) {
+		$target_id = preg_replace( '/[^A-Za-z0-9_-]/', '', (string) $target_id );
 		return '<nav class="yby-global-dock" data-yby-global-dock aria-label="' . esc_attr__( 'Contact options', 'yby-core' ) . '">' .
-			'<a class="yby-global-dock__button yby-global-dock__button--quote" href="#yby-global-inquiry-modal" data-yby-inquiry-trigger data-yby-modal-open="yby-global-inquiry-modal" data-yby-source="site_global_free_quote">' . esc_html__( 'Free Quote', 'yby-core' ) . '</a>' .
+			'<a class="yby-global-dock__button yby-global-dock__button--quote" href="#' . esc_attr( $target_id ) . '" data-yby-inquiry-trigger data-yby-modal-open="' . esc_attr( $target_id ) . '" data-yby-source="site_global_free_quote">' . esc_html__( 'Free Quote', 'yby-core' ) . '</a>' .
 			'<a class="yby-global-dock__button yby-global-dock__button--whatsapp" href="#" data-yby-whatsapp-link data-yby-source="site_global_whatsapp" aria-label="' . esc_attr__( 'Contact us on WhatsApp', 'yby-core' ) . '">' . esc_html__( 'WhatsApp', 'yby-core' ) . '</a>' .
 			'</nav>';
 	}

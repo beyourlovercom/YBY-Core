@@ -3,6 +3,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	define( 'ABSPATH', __DIR__ . DIRECTORY_SEPARATOR );
 }
 
+if ( ! function_exists( 'absint' ) ) {
+	function absint( $maybeint ) {
+		return abs( (int) $maybeint );
+	}
+}
+
 $GLOBALS['yby_option_store'] = array();
 $GLOBALS['yby_notifications'] = array();
 

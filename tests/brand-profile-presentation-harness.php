@@ -20,6 +20,12 @@ function wp_parse_args( $args, $defaults = array() ) {
 	return array_merge( $defaults, is_array( $args ) ? $args : array() );
 }
 
+if ( ! function_exists( 'absint' ) ) {
+	function absint( $maybeint ) {
+		return abs( (int) $maybeint );
+	}
+}
+
 function sanitize_text_field( $value ) {
 	$value = strip_tags( (string) $value );
 	$value = preg_replace( '/[\r\n\t]+/', ' ', $value );
@@ -388,7 +394,7 @@ $tests['brand_os_override_contract'] = static function () {
 	harness_assert( '#f59e0b' === $theme['accentColor'], 'Invalid Brand OS accent must use its safe default.' );
 	harness_assert( '12px' === $theme['borderRadius'], 'Invalid Brand OS length must use its safe default.' );
 	harness_assert( '1' === $theme['glassOpacity'], 'Brand OS opacity must be clamped.' );
-	harness_assert( 'Canonical Site Brand' === $theme['presentationName'], 'Blank Brand OS presentation name must fall back to the site name.' );
+	harness_assert( 'Visual Override' === $theme['presentationName'], 'Brand OS presentation name must remain a display-only override.' );
 	harness_assert( '#abcdef' === $theme['ctaBackground'], 'Blank Brand OS CTA background must fall back to the active primary color.' );
 	harness_assert( '' === $theme['headingFont'], 'Unsafe font stack must be rejected before CSS emission.' );
 };

@@ -223,6 +223,24 @@ class YBY_Inquiry_Shortcodes {
 	}
 
 	/**
+	 * Return the first compatible inquiry modal registered for this request.
+	 *
+	 * Deferred modals are rendered by Core's inquiry renderer and therefore
+	 * provide the generic compatibility hand-off for global UI triggers.
+	 *
+	 * @return string
+	 */
+	public static function get_compatible_modal_id() {
+		if ( empty( self::$deferred_modals ) ) {
+			return '';
+		}
+
+		$modal_ids = array_keys( self::$deferred_modals );
+
+		return isset( $modal_ids[0] ) ? (string) $modal_ids[0] : '';
+	}
+
+	/**
 	 * Sanitize shortcode attributes.
 	 *
 	 * @param array<string, mixed> $attributes Raw attributes.

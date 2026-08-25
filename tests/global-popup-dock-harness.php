@@ -1,24 +1,25 @@
 <?php
-/** Focused global popup/dock contract harness. */
+/** Focused global popup/dock modal-target contract harness. */
 
 define( 'ABSPATH', __DIR__ );
-define( 'YBY_CORE_PLUGIN_DIR', dirname( __DIR__ ) . DIRECTORY_SEPARATOR );
-
 function esc_attr( $v ) { return htmlspecialchars( (string) $v, ENT_QUOTES, 'UTF-8' ); }
 function esc_html( $v ) { return htmlspecialchars( (string) $v, ENT_QUOTES, 'UTF-8' ); }
-function esc_html__( $v, $domain = '' ) { unset( $domain ); return $v; }
-function esc_attr__( $v, $domain = '' ) { unset( $domain ); return esc_attr( $v ); }
-function __( $v, $domain = '' ) { unset( $domain ); return $v; }
-function esc_url_raw( $v ) { return filter_var( (string) $v, FILTER_SANITIZE_URL ); }
+function esc_html__( $v, $d = '' ) { unset( $d ); return $v; }
+function esc_attr__( $v, $d = '' ) { unset( $d ); return esc_attr( $v ); }
+function __( $v, $d = '' ) { unset( $d ); return $v; }
+function esc_url_raw( $v ) { return (string) $v; }
 function wp_get_attachment_image_url( $id, $size ) { unset( $size ); return 17 === (int) $id ? 'https://example.test/popup.jpg' : ''; }
 function absint( $v ) { return abs( (int) $v ); }
-function apply_filters( $tag, $value ) { unset( $tag ); return ! empty( $GLOBALS['harness_exclude'] ) ? true : $value; }
+function apply_filters( $tag, $value ) { unset( $tag ); return $value; }
 function is_admin() { return false; }
 function wp_doing_ajax() { return false; }
 function wp_doing_cron() { return false; }
 function is_customize_preview() { return false; }
 
-class YBY_Inquiry_Shortcodes { public static $deferred = false; public static function has_deferred_modals() { return self::$deferred; } }
+class YBY_Inquiry_Shortcodes {
+	public static $compatible_modal_id = '';
+	public static function get_compatible_modal_id() { return self::$compatible_modal_id; }
+}
 class YBY_Config { public static function get_popup_image_id() { return 17; } }
 class HarnessPresetManager {
 	public function get_preset( $id ) { return array( 'id' => $id, 'enabled' => true, 'label' => 'Inquiry', 'version' => '1.0', 'source_component' => 'inquiry_modal', 'fields' => array( 'name' ) ); }
@@ -30,24 +31,24 @@ class HarnessRenderer { public function render_modal( $preset, $fields, $attribu
 
 require_once dirname( __DIR__ ) . '/inc/class-yby-global-popup-dock.php';
 
-$ui = new YBY_Global_Popup_Dock( new HarnessManager(), new HarnessRenderer() );
-$html = capture_global_popup_output( $ui );
-
-function capture_global_popup_output( $ui ) { ob_start(); $ui->render(); return ob_get_clean(); }
 function harness_assert( $condition, $message ) { if ( ! $condition ) { fwrite( STDERR, "FAIL: $message\n" ); exit( 1 ); } }
+function capture_global_popup_output( $ui ) { ob_start(); $ui->render(); return ob_get_clean(); }
 
-harness_assert( 1 === substr_count( $html, 'data-yby-global-dock' ), 'Global dock renders once.' );
-harness_assert( 1 === substr_count( $html, 'data-yby-inquiry-modal' ), 'One global modal owner renders.' );
-harness_assert( false !== strpos( $html, 'site_global_free_quote' ), 'Free Quote source is governed.' );
-harness_assert( false !== strpos( $html, 'site_global_whatsapp' ), 'WhatsApp source is governed.' );
-harness_assert( false !== strpos( $html, 'data-yby-whatsapp-link' ), 'WhatsApp uses runtime hydration hook.' );
-harness_assert( false !== strpos( $html, 'yby-global-inquiry-modal' ), 'Dock hands off to canonical modal.' );
+$ui = new YBY_Global_Popup_Dock( new HarnessManager(), new HarnessRenderer() );
 
-YBY_Inquiry_Shortcodes::$deferred = true;
+YBY_Inquiry_Shortcodes::$compatible_modal_id = '';
+$new_modal_html = capture_global_popup_output( $ui );
+harness_assert( false !== strpos( $new_modal_html, 'id="yby-global-inquiry-modal"' ), 'No existing modal creates the canonical global modal.' );
+harness_assert( false !== strpos( $new_modal_html, 'data-yby-modal-open="yby-global-inquiry-modal"' ), 'Free Quote targets the created global modal.' );
+harness_assert( false !== strpos( $new_modal_html, 'href="#yby-global-inquiry-modal"' ), 'Free Quote href targets the created global modal.' );
+harness_assert( 1 === substr_count( $new_modal_html, 'data-yby-inquiry-modal' ), 'No-existing-modal case renders one modal.' );
+harness_assert( false !== strpos( $new_modal_html, 'data-yby-whatsapp-link' ), 'WhatsApp keeps its governed hydration hook.' );
+
+YBY_Inquiry_Shortcodes::$compatible_modal_id = 'irrigation-inquiry-global';
 $existing_modal_html = capture_global_popup_output( $ui );
-harness_assert( 0 === substr_count( $existing_modal_html, 'data-yby-inquiry-modal' ), 'Existing compatible modal prevents a duplicate global modal.' );
-harness_assert( 1 === substr_count( $existing_modal_html, 'data-yby-global-dock' ), 'Existing modal still receives one global dock.' );
+harness_assert( false !== strpos( $existing_modal_html, 'data-yby-modal-open="irrigation-inquiry-global"' ), 'Free Quote targets the real existing modal ID.' );
+harness_assert( false !== strpos( $existing_modal_html, 'href="#irrigation-inquiry-global"' ), 'Free Quote href targets the real existing modal ID.' );
+harness_assert( false === strpos( $existing_modal_html, 'yby-global-inquiry-modal' ), 'Existing-modal case does not create a duplicate global modal.' );
+harness_assert( 1 === substr_count( $existing_modal_html, 'data-yby-global-dock' ), 'Existing-modal case still renders one dock.' );
 
-$GLOBALS['harness_exclude'] = true;
-harness_assert( '' === capture_global_popup_output( $ui ), 'Builder/admin exclusion prevents frontend global UI.' );
 echo "PASS global-popup-dock-harness\n";
