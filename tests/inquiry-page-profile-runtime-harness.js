@@ -121,4 +121,6 @@ assert(
   "An explicit form profile must override the Runtime page profile."
 );
 
+assert(source.includes('sourcePage: safeString(') && source.includes('form.setAttribute("data-yby-source-page", request.sourcePage)'), "Inquiry open context must preserve sourcePage onto the form.");
+
 console.log("PASS inquiry-page-profile-runtime-harness");
