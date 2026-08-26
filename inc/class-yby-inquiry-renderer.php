@@ -29,6 +29,7 @@ class YBY_Inquiry_Renderer {
 
 		$modal_id      = $this->normalize_modal_id( isset( $attributes['id'] ) ? $attributes['id'] : '' );
 		$title         = isset( $attributes['title'] ) && '' !== $attributes['title'] ? $attributes['title'] : $preset['label'];
+		$subtitle      = isset( $attributes['subtitle'] ) ? (string) $attributes['subtitle'] : '';
 		$submit_label  = isset( $attributes['submit_label'] ) && '' !== $attributes['submit_label'] ? $attributes['submit_label'] : 'Submit Inquiry';
 		$image         = isset( $attributes['image'] ) ? $attributes['image'] : '';
 		$extra_classes = isset( $attributes['class'] ) && is_array( $attributes['class'] ) ? $attributes['class'] : array();
@@ -63,6 +64,9 @@ class YBY_Inquiry_Renderer {
 
 		$output .= '<div class="yby-inquiry-modal__content">';
 		$output .= '<h2 id="' . esc_attr( $title_id ) . '">' . esc_html( $title ) . '</h2>';
+		if ( '' !== $subtitle ) {
+			$output .= '<p class="yby-inquiry-modal__subtitle">' . esc_html( $subtitle ) . '</p>';
+		}
 		$output .= '<form class="yby-inquiry-form" data-yby-inquiry-form data-yby-preset="' . esc_attr( $preset['id'] ) . '" data-yby-contact-requirement="' . esc_attr( isset( $preset['validation']['contact_requirement'] ) ? $preset['validation']['contact_requirement'] : 'none' ) . '" data-yby-form-version="' . esc_attr( $preset['version'] ) . '" data-yby-source-page="' . esc_attr( sanitize_text_field( (string) $title ) ) . '" novalidate>';
 		$output .= $form_markup;
 		$output .= '<div class="yby-inquiry-form__status" data-yby-inquiry-status role="status" aria-live="polite"></div>';

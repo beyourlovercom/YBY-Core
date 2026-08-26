@@ -1,0 +1,11 @@
+const fs = require("fs");
+const js = fs.readFileSync("public/js/yby-global-popup.js", "utf8");
+if (!js.includes("window.YBYPopup")) throw new Error("Popup runtime must expose YBYPopup");
+if (!js.includes('type === "inquiry"') || !js.includes("window.YBYInquiry.open")) throw new Error("Inquiry must delegate to YBYInquiry.open");
+if (!js.includes('closest("[data-yby-popup-open]")')) throw new Error("Subscribe popup trigger contract missing");
+if (!js.includes('matches("[data-yby-subscribe-contract]")')) throw new Error("Subscribe contract missing");
+if (js.includes("data-yby-inquiry-trigger") || js.includes("data-yby-quote-trigger")) throw new Error("Popup runtime must not claim generic Inquiry triggers");
+if (!js.includes("trigger_source") || !js.includes("page_profile")) throw new Error("Popup context contract missing");
+if (!js.includes('event.key === "Escape"') || !js.includes("YBYInquiry.close")) throw new Error("Close/delegation contract missing");
+if (!js.includes("yby_popup_preview") || !js.includes("DOMContentLoaded")) throw new Error("Production preview navigation missing");
+console.log("PASS global-popup-runtime-harness");

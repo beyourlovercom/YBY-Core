@@ -69,12 +69,15 @@ class YBY_Global_Popup_Dock {
 		}
 		$image_id = class_exists( 'YBY_Config' ) ? YBY_Config::get_popup_image_id() : 0;
 		$image    = $image_id && function_exists( 'wp_get_attachment_image_url' ) ? wp_get_attachment_image_url( $image_id, 'large' ) : '';
+		$settings = class_exists( 'YBY_Global_Popup' ) ? YBY_Global_Popup::settings() : array();
+		$image    = ! empty( $settings['inquiry_image'] ) ? $settings['inquiry_image'] : $image;
 		return $this->renderer->render_modal( $preset, $fields, array(
 			'id'           => $id,
-			'title'        => __( 'Tell us about your project', 'yby-core' ),
+			'title'        => ! empty( $settings['inquiry_title'] ) ? $settings['inquiry_title'] : __( 'Tell us about your project', 'yby-core' ),
+			'subtitle'     => isset( $settings['inquiry_subtitle'] ) ? $settings['inquiry_subtitle'] : '',
 			'submit_label' => __( 'Request a Free Quote', 'yby-core' ),
 			'image'        => is_string( $image ) ? esc_url_raw( $image ) : '',
-			'class'        => array( 'yby-inquiry-modal--global' ),
+			'class'        => array( 'yby-inquiry-modal--global', 'yby-global-popup--inquiry' ),
 		) );
 	}
 

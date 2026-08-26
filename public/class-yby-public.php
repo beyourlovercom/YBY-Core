@@ -58,6 +58,7 @@ class YBY_Public {
 			array(),
 			$this->asset_version( 'public/css/yby-inquiry-components.css' )
 		);
+		wp_enqueue_style( 'yby-global-popup', YBY_CORE_PLUGIN_URL . 'public/css/yby-global-popup.css', array( 'yby-inquiry-components' ), $this->asset_version( 'public/css/yby-global-popup.css' ) );
 
 		wp_add_inline_style(
 			'yby-inquiry-components',
@@ -87,6 +88,7 @@ class YBY_Public {
 			$this->asset_version( 'public/js/yby-inquiry-components.js' ),
 			true
 		);
+		wp_enqueue_script( 'yby-global-popup', YBY_CORE_PLUGIN_URL . 'public/js/yby-global-popup.js', array( 'yby-inquiry-components' ), $this->asset_version( 'public/js/yby-global-popup.js' ), true );
 
 		$project      = YBY_Project::get_current_project();
 		$page_profile = YBY_Page_Profile::get_current_profile();
@@ -147,7 +149,12 @@ class YBY_Public {
 			$declarations[] = $name . ':' . $value;
 		}
 
-		return ':root,.yby-inquiry-modal{' . implode( ';', $declarations ) . ';}';
+		return ':root,.yby-inquiry-modal{' . implode( ';', $declarations ) . ';}.yby-global-popup--inquiry{' . implode( ';', array(
+			'--yby-theme-surface:' . $profile['brand_surface_color'],
+			'--yby-theme-text:' . $profile['brand_text_color'],
+			'--yby-theme-border:' . $profile['brand_border_color'],
+			'--yby-theme-overlay:rgba(17,24,39,.72)',
+		) ) . ';}';
 	}
 
 	/**
