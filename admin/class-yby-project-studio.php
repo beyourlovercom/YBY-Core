@@ -138,7 +138,7 @@ class YBY_Project_Studio {
 		wp_enqueue_script(
 			$this->plugin_name . '-admin',
 			YBY_CORE_PLUGIN_URL . 'assets/js/yby-core-admin.js',
-			array(),
+			array( 'jquery' ),
 			$this->version,
 			true
 		);

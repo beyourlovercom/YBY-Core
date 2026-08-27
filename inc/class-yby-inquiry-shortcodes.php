@@ -70,11 +70,22 @@ class YBY_Inquiry_Shortcodes {
 			'yby_inquiry_modal',
 			array( $this, 'render_modal_shortcode' )
 		);
+		add_shortcode( 'yby_inquiry', array( $this, 'render_inline_shortcode' ) );
 
 		add_shortcode(
 			'yby_sticky_cta',
 			array( $this, 'render_sticky_cta_shortcode' )
 		);
+	}
+	public function render_inline_shortcode( $attributes = array(), $content = null, $tag = '' ) {
+		unset( $content, $tag );
+		$attributes = $this->sanitize_shortcode_attributes( $attributes );
+		if ( '' === $attributes['preset'] ) { $attributes['preset'] = $this->get_default_modal_preset( $attributes ); }
+		$preset = $this->inquiry_manager->get_preset_manager()->get_preset( $attributes['preset'] );
+		if ( ! is_array( $preset ) || empty( $preset['enabled'] ) ) { return ''; }
+		$fields = $this->resolve_preset_fields( $preset );
+		$attributes['id'] = $this->generate_unique_modal_id( '' !== $attributes['id'] ? $attributes['id'] : 'yby-inquiry-' . $preset['id'] );
+		return $this->renderer->render_inline( $preset, $fields, $attributes );
 	}
 
 	/**

@@ -188,6 +188,9 @@ $public->enqueue_assets();
 $style  = $GLOBALS['yby_inline_styles']['yby-inquiry-components'];
 $script = $GLOBALS['yby_inline_scripts']['yby-core-public']['data'];
 
+harness_assert( isset( $GLOBALS['yby_enqueued']['style']['yby-global-popup'] ), 'Legacy public runtime must still enqueue the popup stylesheet.' );
+harness_assert( ! isset( $GLOBALS['yby_inline_styles']['yby-global-popup'] ), 'Legacy public runtime must omit popup custom CSS when YBY_Global_Popup is unavailable.' );
+
 harness_assert( false !== strpos( $style, '--yby-inquiry-primary:#8B5E3C' ), 'Inline CSS must include configured primary color.' );
 harness_assert( false !== strpos( $style, '--yby-inquiry-secondary:#1F2937' ), 'Inline CSS must include configured secondary color.' );
 harness_assert( false === strpos( $style, 'javascript:' ), 'Inline CSS must not include unsafe raw values.' );

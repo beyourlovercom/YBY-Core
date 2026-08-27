@@ -53,7 +53,7 @@
   }
 
   function getDefaultModal() {
-    return document.querySelector("[data-yby-inquiry-modal]");
+    return document.getElementById("yby-global-inquiry-popup") || document.querySelector("[data-yby-inquiry-modal]");
   }
 
   function getClosestProfile(trigger) {
@@ -91,6 +91,7 @@
       modal: modal,
       trigger: trigger,
       source: safeString(options.source || (trigger ? trigger.getAttribute("data-yby-source") : ""), 120),
+      sourcePage: safeString(options.sourcePage || (trigger ? trigger.getAttribute("data-yby-source-page") : ""), 255),
       profile: safeString(options.profile || getClosestProfile(trigger), 100)
     };
   }
@@ -104,6 +105,10 @@
       form.setAttribute("data-yby-trigger-source", request.source);
     } else {
       form.removeAttribute("data-yby-trigger-source");
+    }
+
+    if (request.sourcePage) {
+      form.setAttribute("data-yby-source-page", request.sourcePage);
     }
 
     if (request.profile) {
@@ -268,7 +273,7 @@
   function getTrackingPayload(form, extra) {
     var modal = form.closest("[data-yby-inquiry-modal]");
     var base = {
-      source_component: safeString(modal ? modal.getAttribute("data-yby-source-component") : "inquiry_modal", 80),
+      source_component: safeString(form && form.closest("[data-yby-source-component]") ? form.closest("[data-yby-source-component]").getAttribute("data-yby-source-component") : (modal ? modal.getAttribute("data-yby-source-component") : "inquiry_modal"), 80),
       source_preset: safeString(form.getAttribute("data-yby-preset"), 80),
       source_page: getSourcePage(form, modal),
       modal_id: safeString(modal ? modal.id : "", 120),
@@ -461,7 +466,7 @@
     payload.project_details = buildProjectDetails(payload);
     payload.page = safeString(document.title || window.location.pathname, 240);
     payload.source_url = stripHash(window.location.href);
-    payload.source_component = safeString(modal ? modal.getAttribute("data-yby-source-component") : "inquiry_modal", 100);
+    payload.source_component = safeString(form && form.closest("[data-yby-source-component]") ? form.closest("[data-yby-source-component]").getAttribute("data-yby-source-component") : (modal ? modal.getAttribute("data-yby-source-component") : "inquiry_modal"), 100);
     payload.source_preset = safeString(form.getAttribute("data-yby-preset"), 100);
     payload.source_page = getSourcePage(form, modal);
     payload.form_version = safeString(form.getAttribute("data-yby-form-version"), 30);

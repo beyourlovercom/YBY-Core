@@ -128,6 +128,36 @@ class YBY_Brand_Profile {
 		return self::get_profile()['brand_primary_color'];
 	}
 
+	public static function get_theme_config() {
+		$profile = self::get_profile();
+		$theme = array(
+			'brandName' => $profile['site_brand_name'],
+			'logoDefault' => $profile['email_logo_url'],
+			'logoWhite' => $profile['email_reverse_logo_url'],
+			'logoBlack' => $profile['email_logo_url'],
+			'primaryColor' => $profile['brand_primary_color'],
+			'accentColor' => $profile['brand_primary_color'],
+			'ctaBackground' => '',
+			'buttonTextColor' => $profile['brand_primary_text_color'],
+			'headingFont' => '',
+			'bodyFont' => '',
+			'borderRadius' => '12px',
+			'glassOpacity' => '0.82',
+			'subscribeImage' => '',
+		);
+
+		if ( class_exists( 'YBY_Brand_OS' ) ) {
+			$brand_os_theme = YBY_Brand_OS::get_theme_config();
+			$theme = array_merge( $theme, is_array( $brand_os_theme ) ? $brand_os_theme : array() );
+		}
+
+		// Site Profile is the identity authority, even when Brand OS is loaded.
+		$theme['brandName']      = $profile['site_brand_name'];
+		$theme['secondaryColor'] = $profile['brand_secondary_color'];
+
+		return $theme;
+	}
+
 	public static function get_primary_text_color() {
 		return self::get_profile()['brand_primary_text_color'];
 	}

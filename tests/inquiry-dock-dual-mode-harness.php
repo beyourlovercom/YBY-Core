@@ -1,0 +1,21 @@
+<?php
+$root = dirname( __DIR__ );
+$assert = function ( $ok, $message ) { if ( ! $ok ) { fwrite( STDERR, "FAIL {$message}\n" ); exit( 1 ); } };
+$dock = file_get_contents( $root . '/inc/class-yby-global-inquiry-dock.php' );
+$view = file_get_contents( $root . '/admin/views/popup-settings.php' );
+$public = file_get_contents( $root . '/public/class-yby-public.php' );
+$js = file_get_contents( $root . '/public/js/yby-global-inquiry-dock.js' );
+$css = file_get_contents( $root . '/public/css/yby-global-inquiry-dock.css' );
+$assert( false !== strpos( $dock, "'mode' => 'single'" ) && false !== strpos( $dock, "'display_timing' => 'after_first_screen'" ) && false !== strpos( $dock, "'whatsapp_label' => 'WhatsApp'" ), 'Dual mode defaults must be present.' );
+$assert( false !== strpos( $dock, "array( 'single', 'dual' )" ) && false !== strpos( $dock, "array( 'after_first_screen', 'immediate' )" ), 'Mode and timing must be allowlisted.' );
+$assert( false !== strpos( $dock, 'floating_inquiry_dock_inquiry' ) && false !== strpos( $dock, 'floating_inquiry_dock_whatsapp' ) && false === strpos( $dock, 'buildWhatsAppUrl' ), 'Dock must declare the two governed action sources without adding URL authority.' );
+$assert( false !== strpos( $view, 'name="yby_inquiry_dock[mode]"' ) && false !== strpos( $view, 'name="yby_inquiry_dock[display_timing]"' ) && false !== strpos( $view, 'whatsapp_label' ), 'Admin mode, timing, and labels must be editable.' );
+$assert( false !== strpos( $view, '桌面端' ) && false !== strpos( $view, '移动端' ) && false !== strpos( $view, '当前预览' ) && false !== strpos( $view, 'Preview / Test' ), 'Admin previews and test link must remain available when disabled.' );
+$assert( false !== strpos( $public, "'yby-global-inquiry-dock'" ) && false !== strpos( $public, "public/js/yby-global-inquiry-dock.js" ) && false !== strpos( $public, "'yby-global-popup'" ), 'Dock script must be enqueued after its popup dependency.' );
+$assert( false !== strpos( $js, 'mode-dual' ) && false !== strpos( $js, 'after_first_screen' ) && false !== strpos( $js, 'window.innerHeight' ) && false !== strpos( $js, 'buildWhatsAppUrl' ), 'Frontend timing and existing WhatsApp URL runtime contracts missing.' );
+$assert( false !== strpos( $css, 'mode-dual' ) && false !== strpos( $css, 'safe-area-inset-bottom' ) && false !== strpos( $css, 'backdrop-filter' ), 'Dual desktop glass and mobile safe-area styling missing.' );
+$assert( false !== strpos( $dock, "'whatsapp_background_color' => '#25d366'" ) && false !== strpos( $dock, "'whatsapp_text_color' => '#ffffff'" ) && false !== strpos( $dock, "'inquiry_background_color' => ''" ) && false !== strpos( $dock, 'sanitize_hex_color' ), 'Dock color defaults and sanitization missing.' );
+$assert( false !== strpos( $dock, 'build_color_css' ) && false !== strpos( $public, 'YBY_Global_Inquiry_Dock::build_color_css( $dock )' ), 'Governed dock color CSS injection missing.' );
+$assert( false !== strpos( $view, 'type="color"' ) && false !== strpos( $view, 'whatsapp_background_color' ) && false !== strpos( $view, 'inquiry_background_color' ) && false !== strpos( $view, 'data-yby-dock-color' ), 'Clickable dock color controls missing.' );
+$assert( false !== strpos( $css, '--yby-dock-whatsapp-bg' ) && false !== strpos( $css, '--yby-dock-inquiry-bg' ) && false !== strpos( $css, 'yby-floating-color-grid' ), 'Dock button color variables or admin color-grid styling missing.' );
+echo "PASS inquiry-dock-dual-mode-harness\n";

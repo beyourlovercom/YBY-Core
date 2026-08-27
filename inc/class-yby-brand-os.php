@@ -36,6 +36,13 @@ class YBY_Brand_OS {
 	protected $security;
 
 	/**
+	 * Registered Brand admin page hook.
+	 *
+	 * @var string
+	 */
+	protected $page_hook = '';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $plugin_name Plugin slug.
@@ -72,6 +79,7 @@ class YBY_Brand_OS {
 	 */
 	public static function defaults() {
 		return array(
+			'presentation_name'  => '',
 			'logo_default'       => '',
 			'logo_white'         => '',
 			'logo_black'         => '',
@@ -81,6 +89,13 @@ class YBY_Brand_OS {
 			'accent_color'       => '#f59e0b',
 			'font_primary'       => 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
 			'font_secondary'     => 'Georgia, "Times New Roman", serif',
+			'heading_font'       => '',
+			'body_font'          => '',
+			'cta_background'     => '',
+			'button_text_color'  => '',
+			'border_radius'      => '12px',
+			'glass_opacity'      => '0.82',
+			'subscribe_image'    => '',
 			'brand_document_url' => '',
 		);
 	}
@@ -111,6 +126,7 @@ class YBY_Brand_OS {
 		$defaults = self::defaults();
 
 		return array(
+			'presentation_name'  => self::sanitize_presentation_name( $options['presentation_name'] ?? $defaults['presentation_name'] ),
 			'logo_default'       => esc_url_raw( $options['logo_default'] ?? $defaults['logo_default'] ),
 			'logo_white'         => esc_url_raw( $options['logo_white'] ?? $defaults['logo_white'] ),
 			'logo_black'         => esc_url_raw( $options['logo_black'] ?? $defaults['logo_black'] ),
@@ -120,6 +136,13 @@ class YBY_Brand_OS {
 			'accent_color'       => sanitize_hex_color( $options['accent_color'] ?? $defaults['accent_color'] ) ?: $defaults['accent_color'],
 			'font_primary'       => self::sanitize_font_stack( $options['font_primary'] ?? $defaults['font_primary'] ),
 			'font_secondary'     => self::sanitize_font_stack( $options['font_secondary'] ?? $defaults['font_secondary'] ),
+			'heading_font'       => self::sanitize_font_stack( $options['heading_font'] ?? $defaults['heading_font'] ),
+			'body_font'          => self::sanitize_font_stack( $options['body_font'] ?? $defaults['body_font'] ),
+			'cta_background'     => sanitize_hex_color( $options['cta_background'] ?? $defaults['cta_background'] ) ?: '',
+			'button_text_color'  => sanitize_hex_color( $options['button_text_color'] ?? $defaults['button_text_color'] ) ?: '',
+			'border_radius'      => self::sanitize_css_length( $options['border_radius'] ?? $defaults['border_radius'], $defaults['border_radius'] ),
+			'glass_opacity'      => self::sanitize_opacity( $options['glass_opacity'] ?? $defaults['glass_opacity'] ),
+			'subscribe_image'    => esc_url_raw( $options['subscribe_image'] ?? $defaults['subscribe_image'] ),
 			'brand_document_url' => esc_url_raw( $options['brand_document_url'] ?? $defaults['brand_document_url'] ),
 		);
 	}
@@ -139,6 +162,13 @@ class YBY_Brand_OS {
 
 		return $value;
 	}
+
+	protected static function sanitize_presentation_name( $value ) { return substr( sanitize_text_field( (string) $value ), 0, 100 ); }
+	protected static function sanitize_css_length( $value, $fallback ) {
+		$value = trim( (string) $value );
+		return preg_match( '/^(?:0|(?:\d+(?:\.\d+)?)(?:px|rem|em|%)|none)$/', $value ) ? $value : $fallback;
+	}
+	protected static function sanitize_opacity( $value ) { return (string) max( 0, min( 1, (float) $value ) ); }
 
 	/**
 	 * Get one option.
@@ -199,13 +229,33 @@ class YBY_Brand_OS {
 		);
 	}
 
+	public static function get_theme_config() {
+		$options = self::sanitize( self::get_options() );
+
+		return array(
+			'presentationName' => (string) $options['presentation_name'],
+			'logoDefault'      => (string) $options['logo_default'],
+			'logoWhite'        => (string) $options['logo_white'],
+			'logoBlack'        => (string) $options['logo_black'],
+			'primaryColor'     => (string) $options['primary_color'],
+			'accentColor'      => (string) $options['accent_color'],
+			'ctaBackground'    => (string) $options['cta_background'],
+			'buttonTextColor'  => (string) $options['button_text_color'],
+			'headingFont'      => (string) $options['heading_font'],
+			'bodyFont'         => (string) $options['body_font'],
+			'borderRadius'     => (string) $options['border_radius'],
+			'glassOpacity'     => (string) $options['glass_opacity'],
+			'subscribeImage'   => (string) $options['subscribe_image'],
+		);
+	}
+
 	/**
 	 * Register admin submenu.
 	 *
 	 * @return void
 	 */
 	public function add_admin_menu() {
-		add_submenu_page(
+		$this->page_hook = add_submenu_page(
 			YBY_Project_Studio::menu_slug(),
 			__( 'Brand', 'yby-core' ),
 			__( 'Brand', 'yby-core' ),
@@ -216,13 +266,22 @@ class YBY_Brand_OS {
 	}
 
 	/**
+	 * Return the registered Brand admin page hook.
+	 *
+	 * @return string
+	 */
+	public function page_hook() {
+		return $this->page_hook;
+	}
+
+	/**
 	 * Enqueue shared admin assets on this page.
 	 *
 	 * @param string $hook_suffix Admin hook.
 	 * @return void
 	 */
 	public function enqueue_assets( $hook_suffix ) {
-		if ( YBY_Project_Studio::menu_slug() . '_page_' . self::page_slug() !== $hook_suffix ) {
+		if ( $this->page_hook !== $hook_suffix ) {
 			return;
 		}
 
@@ -232,6 +291,16 @@ class YBY_Brand_OS {
 			array(),
 			$this->version
 		);
+
+		wp_enqueue_script(
+			$this->plugin_name . '-admin',
+			YBY_CORE_PLUGIN_URL . 'assets/js/yby-core-admin.js',
+			array( 'jquery' ),
+			$this->version,
+			true
+		);
+
+		wp_enqueue_media();
 	}
 
 	/**
@@ -257,6 +326,7 @@ class YBY_Brand_OS {
 		}
 
 		$options = self::get_options();
+		$theme   = class_exists( 'YBY_Brand_Profile' ) ? YBY_Brand_Profile::get_theme_config() : self::get_theme_config();
 
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/brand-settings.php';
 	}

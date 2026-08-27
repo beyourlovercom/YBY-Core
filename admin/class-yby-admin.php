@@ -47,6 +47,12 @@ class YBY_Admin {
 		$this->security    = new YBY_Security();
 	}
 
+	public function redirect_legacy_inquiry_dock() {
+		if ( ! is_admin() || ! isset( $_GET['page'], $_GET['tab'] ) || YBY_Helpers::admin_page_slug() !== sanitize_key( wp_unslash( $_GET['page'] ) ) || 'inquiry-dock' !== sanitize_key( wp_unslash( $_GET['tab'] ) ) || ! $this->security->can_manage_settings() ) { return; }
+		wp_safe_redirect( add_query_arg( array( 'page' => 'yby-core-popups', 'tab' => 'floating_inquiry' ), admin_url( 'admin.php' ) ) );
+		exit;
+	}
+
 	/**
 	 * Register admin menu.
 	 *
@@ -108,9 +114,13 @@ class YBY_Admin {
 		}
 
 		$tab         = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general';
-		$tab         = in_array( $tab, array( 'general', 'inquiry', 'system-status' ), true ) ? $tab : 'general';
+		$tab         = in_array( $tab, array( 'general', 'inquiry', 'inquiry-notification', 'system-status' ), true ) ? $tab : 'general';
 		if ( 'inquiry' === $tab ) {
 			$this->render_inquiry_settings();
+			return;
+		}
+		if ( 'inquiry-notification' === $tab ) {
+			$this->render_inquiry_notification_settings();
 			return;
 		}
 		if ( 'system-status' === $tab ) {
@@ -123,35 +133,16 @@ class YBY_Admin {
 		if ( isset( $_POST['yby_core_submit'] ) ) {
 			check_admin_referer( 'yby_core_save_settings', 'yby_core_nonce' );
 
-			$raw_options  = wp_unslash( $_POST['yby_core_options'] ?? array() );
-			$options      = YBY_Config::sanitize( is_array( $raw_options ) ? $raw_options : array() );
-			$primary_email = sanitize_email( wp_unslash( $_POST['yby_lead_notification_primary_recipient_email'] ?? '' ) );
-			$cc_emails     = wp_unslash( $_POST['yby_lead_notification_cc_recipient_emails'] ?? '' );
-			$bcc_emails    = wp_unslash( $_POST['yby_lead_notification_bcc_recipient_emails'] ?? '' );
-			$reply_policy  = wp_unslash( $_POST['yby_lead_notification_reply_to_policy'] ?? 'auto' );
-
+			$raw_options = wp_unslash( $_POST['yby_core_options'] ?? array() );
+			$raw_options = is_array( $raw_options ) ? $raw_options : array();
+			$current_options = YBY_Config::get_options();
+			foreach ( array( 'whatsapp_number', 'whatsapp_message_template', 'lead_notification_subject_template', 'inquiry_email_title', 'email_company_name', 'email_company_website' ) as $preserve_key ) {
+				$raw_options[ $preserve_key ] = $current_options[ $preserve_key ];
+			}
+			$options = YBY_Config::sanitize( $raw_options );
 			update_option( YBY_Helpers::option_key(), $options );
-
 			$notice = __( 'Settings saved.', 'yby-core' );
 
-			if ( '' === trim( (string) $primary_email ) ) {
-				update_option( YBY_Helpers::lead_notification_primary_recipient_option_key(), '' );
-			} elseif ( is_email( $primary_email ) ) {
-				update_option( YBY_Helpers::lead_notification_primary_recipient_option_key(), $primary_email );
-			}
-
-			update_option(
-				YBY_Helpers::lead_notification_cc_recipient_option_key(),
-				YBY_Config::sanitize_email_list_value( $cc_emails )
-			);
-			update_option(
-				YBY_Helpers::lead_notification_bcc_recipient_option_key(),
-				YBY_Config::sanitize_email_list_value( $bcc_emails )
-			);
-			update_option(
-				YBY_Helpers::lead_notification_reply_to_policy_option_key(),
-				YBY_Config::sanitize_reply_to_policy( $reply_policy )
-			);
 		}
 
 		$options = YBY_Config::get_options();
@@ -185,6 +176,32 @@ class YBY_Admin {
 		$options['salespeople'] = YBY_Security::active_owner_ids( $options['salespeople'] );
 		if ( ! YBY_Security::is_assignable_owner( $options['default_owner_user_id'], $options['salespeople'] ) ) { $options['default_owner_user_id'] = 0; }
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/inquiry-settings.php';
+	}
+
+
+	protected function render_inquiry_notification_settings() {
+		$tab = 'inquiry-notification';
+		$notice = '';
+		if ( isset( $_POST['yby_inquiry_notification_submit'] ) ) {
+			check_admin_referer( 'yby_inquiry_notification_save', 'yby_inquiry_notification_nonce' );
+			$raw = wp_unslash( $_POST['yby_core_options'] ?? array() );
+			$raw = is_array( $raw ) ? $raw : array();
+			$current = YBY_Config::get_options();
+			$options = YBY_Config::sanitize( array_merge( $current, $raw ) );
+			update_option( YBY_Helpers::option_key(), $options );
+			$primary = sanitize_email( wp_unslash( $_POST['yby_lead_notification_primary_recipient_email'] ?? '' ) );
+			if ( '' === trim( (string) $primary ) ) {
+				update_option( YBY_Helpers::lead_notification_primary_recipient_option_key(), '' );
+			} elseif ( is_email( $primary ) ) {
+				update_option( YBY_Helpers::lead_notification_primary_recipient_option_key(), $primary );
+			}
+			update_option( YBY_Helpers::lead_notification_cc_recipient_option_key(), YBY_Config::sanitize_email_list_value( wp_unslash( $_POST['yby_lead_notification_cc_recipient_emails'] ?? '' ) ) );
+			update_option( YBY_Helpers::lead_notification_bcc_recipient_option_key(), YBY_Config::sanitize_email_list_value( wp_unslash( $_POST['yby_lead_notification_bcc_recipient_emails'] ?? '' ) ) );
+			update_option( YBY_Helpers::lead_notification_reply_to_policy_option_key(), YBY_Config::sanitize_reply_to_policy( wp_unslash( $_POST['yby_lead_notification_reply_to_policy'] ?? 'auto' ) ) );
+			$notice = '询盘通知设置已保存。';
+		}
+		$options = YBY_Config::get_options();
+		include YBY_CORE_PLUGIN_DIR . 'admin/views/inquiry-notification-settings.php';
 	}
 
 	protected function render_system_status() {
