@@ -50,7 +50,7 @@ wp_set_current_user( $validation_administrator->ID );
 
 $GLOBALS['submenu'] = array();
 do_action( 'admin_menu' );
-$expected_submenus = array( 'andy-core-leads', 'yby-project-studio', 'edit.php?post_type=yby_project', 'yby-brand-os', 'yby-social-login', YBY_Helpers::admin_page_slug() );
+$expected_submenus = array( 'andy-core-leads', 'yby-project-studio', 'edit.php?post_type=yby_project', 'yby-brand-os', 'yby-social-login', YBY_Helpers::admin_page_slug(), 'yby-core-popups' );
 $registered_submenus = array_map( static function ( $item ) { return $item[2]; }, $GLOBALS['submenu'][ YBY_Project_Studio::menu_slug() ] ?? array() );
 yby_validation_assert( $expected_submenus === $registered_submenus, 'Andy Core submenu structure is not exact.' );
 yby_validation_assert( ! in_array( YBY_Project_Studio::menu_slug(), $registered_submenus, true ), 'Duplicate Andy Core submenu must be removed.' );
