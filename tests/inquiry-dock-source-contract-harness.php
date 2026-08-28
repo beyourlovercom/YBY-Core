@@ -1,0 +1,24 @@
+<?php
+$root = dirname( __DIR__ );
+$assert = function ( $ok, $message ) { if ( ! $ok ) { fwrite( STDERR, "FAIL {$message}\n" ); exit( 1 ); } };
+$dock = file_get_contents( $root . '/inc/class-yby-global-inquiry-dock.php' );
+$view = file_get_contents( $root . '/admin/views/popup-settings.php' );
+$popup_admin = file_get_contents( $root . '/admin/class-yby-popup-admin.php' );
+$admin = file_get_contents( $root . '/admin/class-yby-admin.php' );
+$core = file_get_contents( $root . '/inc/class-yby-core.php' );
+$css = file_get_contents( $root . '/public/css/yby-global-inquiry-dock.css' );
+$js = file_get_contents( $root . '/public/js/yby-global-popup.js' );
+$settings_views = file_get_contents( $root . '/admin/views/settings-page.php' ) . file_get_contents( $root . '/admin/views/inquiry-settings.php' ) . file_get_contents( $root . '/admin/views/system-status.php' );
+$assert( false !== strpos( $dock, "'enabled' => 0" ) && false !== strpos( $dock, "'label' => 'Inquiry'" ) && false !== strpos( $dock, "'position' => 'bottom-right'" ) && false !== strpos( $dock, "'desktop' => 1" ) && false !== strpos( $dock, "'mobile' => 1" ) && false !== strpos( $dock, "'custom_css' => ''" ), 'Dock defaults contract missing.' );
+$assert( false === strpos( $dock, 'CREATE TABLE' ) && false === strpos( $dock, 'dbDelta' ), 'Dock must not create database tables.' );
+$assert( false !== strpos( $dock, 'data-yby-popup-open="inquiry"' ) && false !== strpos( $dock, 'data-yby-modal-open="yby-global-inquiry-popup"' ) && false !== strpos( $dock, 'data-yby-source="global_inquiry_dock"' ), 'Dock source/delegation attributes missing.' );
+$assert( false !== strpos( $view, "'floating_inquiry' => '悬浮询盘'" ) && strpos( $view, "'floating_inquiry' => '悬浮询盘'" ) < strpos( $view, "'popup_inquiry' => '弹窗询盘'" ), 'Email first tab must be 悬浮询盘.' );
+$assert( false !== strpos( $popup_admin, "\$_GET['tab'] ?? 'floating_inquiry'" ) && false !== strpos( $popup_admin, 'YBY_Global_Inquiry_Dock::OPTION' ), 'Email controller must own dock settings.' );
+$assert( false !== strpos( $popup_admin, "wp_enqueue_style( 'yby-global-inquiry-dock-preview'" ), 'Email page must enqueue dock preview CSS.' );
+$assert( false !== strpos( $view, 'yby_inquiry_dock_submit' ) && false !== strpos( $view, '当前预览' ) && false !== strpos( $view, 'Preview / Test' ) && false !== strpos( $view, 'Custom CSS' ), 'Floating inquiry Email tab controls missing.' );
+$assert( false === strpos( $settings_views, "'inquiry-dock' => 'Inquiry Dock'" ), 'Inquiry Dock must not remain in Settings tabs.' );
+$assert( false !== strpos( $admin, 'redirect_legacy_inquiry_dock' ) && false !== strpos( $admin, "'tab' => 'floating_inquiry'" ) && false !== strpos( $core, "'admin_init', \$admin, 'redirect_legacy_inquiry_dock'" ), 'Legacy Settings URL redirect contract missing.' );
+$assert( preg_match( '/@media\\(min-width:601px\\)\\{[^}]*\\.yby-global-inquiry-dock--desktop-hidden\\{display:none\\}/', $css ) && preg_match( '/@media\\(max-width:600px\\)\\{[^}]*\\.yby-global-inquiry-dock--mobile-hidden\\{display:none\\}/', $css ), 'Visibility must remain breakpoint scoped.' );
+$assert( false !== strpos( $css, '.yby-global-inquiry-dock.yby-global-inquiry-dock--admin-preview{display:block;position:static' ), 'Inline preview contract missing.' );
+$assert( false !== strpos( $js, 'sourcePage = sourcePage || location.pathname' ), 'Inquiry source page pathname fallback missing.' );
+echo "PASS inquiry-dock-source-contract-harness\n";

@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="wrap">
 	<h1><?php echo esc_html__( 'Andy Core', 'yby-core' ); ?></h1>
 	<h2 class="nav-tab-wrapper">
-		<?php foreach ( array( 'general' => 'General', 'inquiry' => 'Inquiry', 'system-status' => 'System Status' ) as $tab_key => $tab_label ) : ?>
+		<?php foreach ( array( 'general' => 'General', 'inquiry' => 'Inquiry', 'inquiry-notification' => '询盘通知', 'system-status' => 'System Status' ) as $tab_key => $tab_label ) : ?>
 			<a class="nav-tab <?php echo ( $tab ?? 'general' ) === $tab_key ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => YBY_Helpers::admin_page_slug(), 'tab' => $tab_key ), admin_url( 'admin.php' ) ) ); ?>"><?php echo esc_html( $tab_label ); ?></a>
 		<?php endforeach; ?>
 	</h2>
@@ -144,76 +144,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<tr>
 					<th scope="row"><label for="yby-default-product-interest"><?php esc_html_e( 'Default Product Interest', 'yby-core' ); ?></label></th>
 					<td><input id="yby-default-product-interest" name="yby_core_options[default_product_interest]" type="text" class="regular-text" value="<?php echo esc_attr( $options['default_product_interest'] ); ?>"></td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="yby-whatsapp-number"><?php esc_html_e( 'WhatsApp Number', 'yby-core' ); ?></label></th>
-					<td><input id="yby-whatsapp-number" name="yby_core_options[whatsapp_number]" type="text" class="regular-text" value="<?php echo esc_attr( $options['whatsapp_number'] ); ?>"></td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="yby-whatsapp-message-template"><?php esc_html_e( 'WhatsApp Message Template', 'yby-core' ); ?></label></th>
-					<td>
-						<textarea id="yby-whatsapp-message-template" name="yby_core_options[whatsapp_message_template]" class="large-text code" rows="8"><?php echo esc_textarea( $options['whatsapp_message_template'] ); ?></textarea>
-						<p class="description"><?php esc_html_e( 'Supported placeholders: {brand_name}, {case_id}, {country}, {crop}, {farm_size}, {water_source}, {recommended_system}, {estimated_range}. Leave empty to use the shared portable default.', 'yby-core' ); ?></p>
-					</td>
-				</tr>
-			</tbody>
-		</table>
-
-		<h2><?php esc_html_e( 'Email Notification', 'yby-core' ); ?></h2>
-		<table class="form-table" role="presentation">
-			<tbody>
-				<tr>
-					<th scope="row"><label for="yby-lead-notification-primary-recipient-email"><?php esc_html_e( 'Primary Recipient Email', 'yby-core' ); ?></label></th>
-					<td><input id="yby-lead-notification-primary-recipient-email" name="yby_lead_notification_primary_recipient_email" type="email" class="regular-text" value="<?php echo esc_attr( YBY_Config::get_lead_notification_primary_recipient_email() ); ?>"></td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="yby-lead-notification-cc-recipient-emails"><?php esc_html_e( 'CC Recipient Emails', 'yby-core' ); ?></label></th>
-					<td>
-						<input id="yby-lead-notification-cc-recipient-emails" name="yby_lead_notification_cc_recipient_emails" type="text" class="regular-text" value="<?php echo esc_attr( YBY_Config::get_lead_notification_cc_recipient_emails() ); ?>">
-						<p class="description"><?php esc_html_e( 'Comma-separated email addresses.', 'yby-core' ); ?></p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="yby-lead-notification-bcc-recipient-emails"><?php esc_html_e( 'BCC Recipient Emails', 'yby-core' ); ?></label></th>
-					<td>
-						<input id="yby-lead-notification-bcc-recipient-emails" name="yby_lead_notification_bcc_recipient_emails" type="text" class="regular-text" value="<?php echo esc_attr( YBY_Config::get_lead_notification_bcc_recipient_emails() ); ?>">
-						<p class="description"><?php esc_html_e( 'Reserved for archive / ERP / AI.', 'yby-core' ); ?></p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="yby-lead-notification-reply-to-policy"><?php esc_html_e( 'Reply-To Policy', 'yby-core' ); ?></label></th>
-					<td>
-						<select id="yby-lead-notification-reply-to-policy" name="yby_lead_notification_reply_to_policy">
-							<option value="auto" <?php selected( YBY_Config::get_lead_notification_reply_to_policy(), 'auto' ); ?>><?php esc_html_e( 'Auto', 'yby-core' ); ?></option>
-							<option value="customer_email_only" <?php selected( YBY_Config::get_lead_notification_reply_to_policy(), 'customer_email_only' ); ?>><?php esc_html_e( 'Customer Email Only', 'yby-core' ); ?></option>
-							<option value="disabled" <?php selected( YBY_Config::get_lead_notification_reply_to_policy(), 'disabled' ); ?>><?php esc_html_e( 'Disabled', 'yby-core' ); ?></option>
-						</select>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="yby-lead-notification-subject-template"><?php esc_html_e( 'Subject Template', 'yby-core' ); ?></label></th>
-					<td>
-						<input id="yby-lead-notification-subject-template" name="yby_core_options[lead_notification_subject_template]" type="text" class="regular-text" value="<?php echo esc_attr( $options['lead_notification_subject_template'] ); ?>">
-						<p class="description"><?php esc_html_e( 'Use placeholders like {case_id}, {name}, {country}, {crop}, {farm_size}, {water_source}, {recommended_system}, {project_id}, {product_interest}, and {source_component}.', 'yby-core' ); ?></p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="yby-inquiry-email-title"><?php esc_html_e( 'Inquiry Email Title', 'yby-core' ); ?></label></th>
-					<td><input id="yby-inquiry-email-title" name="yby_core_options[inquiry_email_title]" type="text" class="regular-text" value="<?php echo esc_attr( $options['inquiry_email_title'] ); ?>"></td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="yby-email-company-name"><?php esc_html_e( 'Legacy Email Company Name Override', 'yby-core' ); ?></label></th>
-					<td>
-						<input id="yby-email-company-name" name="yby_core_options[email_company_name]" type="text" class="regular-text" value="<?php echo esc_attr( $options['email_company_name'] ); ?>">
-						<p class="description"><?php esc_html_e( 'Optional backward-compatible override. Leave blank to use the Site Brand Name.', 'yby-core' ); ?></p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="yby-email-company-website"><?php esc_html_e( 'Legacy Email Company Website Override', 'yby-core' ); ?></label></th>
-					<td>
-						<input id="yby-email-company-website" name="yby_core_options[email_company_website]" type="url" class="regular-text" value="<?php echo esc_attr( $options['email_company_website'] ); ?>">
-						<p class="description"><?php esc_html_e( 'Optional backward-compatible override. Leave blank to use the Canonical Website URL.', 'yby-core' ); ?></p>
-					</td>
 				</tr>
 			</tbody>
 		</table>

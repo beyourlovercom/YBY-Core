@@ -43,6 +43,9 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-lead-mapper.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-renderer.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-shortcodes.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-subscribe-shortcode.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-global-popup.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-global-inquiry-dock.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-service.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-management.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-rest-controller.php';
@@ -50,6 +53,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-inquiry-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-social-login-admin.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-popup-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'public/class-yby-public.php';
 
 /**
@@ -109,6 +113,7 @@ class YBY_Core {
 		$brand_os       = new YBY_Brand_OS( 'yby-core', YBY_CORE_VERSION );
 		$project_studio = new YBY_Project_Studio( 'yby-core', YBY_CORE_VERSION );
 		$social_login   = new YBY_Social_Login_Admin();
+		$popup_admin    = new YBY_Popup_Admin( 'yby-core', YBY_CORE_VERSION );
 
 		$this->loader->add_action( 'init', $project_cpt, 'register' );
 		$this->loader->add_action( 'admin_menu', $inquiry_admin, 'add_admin_menu', 20 );
@@ -116,11 +121,14 @@ class YBY_Core {
 		$this->loader->add_action( 'admin_menu', $brand_os, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_menu', $social_login, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_menu', $admin, 'add_admin_menu' );
+		$this->loader->add_action( 'admin_menu', $popup_admin, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $project_studio, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $brand_os, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $social_login, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $inquiry_admin, 'enqueue_assets' );
+		$this->loader->add_action( 'admin_enqueue_scripts', $popup_admin, 'enqueue_assets' );
+		$this->loader->add_action( 'admin_init', $admin, 'redirect_legacy_inquiry_dock' );
 		$this->loader->add_filter( 'parent_file', $project_studio, 'filter_parent_file' );
 		$this->loader->add_filter( 'submenu_file', $project_studio, 'filter_submenu_file' );
 	}
@@ -139,6 +147,9 @@ class YBY_Core {
 		$inquiry_manager    = new YBY_Inquiry_Manager();
 		$inquiry_renderer   = new YBY_Inquiry_Renderer();
 		$inquiry_shortcodes = new YBY_Inquiry_Shortcodes( $inquiry_manager, $inquiry_renderer );
+		$subscribe_shortcode = new YBY_Subscribe_Shortcode();
+		$global_popup       = new YBY_Global_Popup( $inquiry_manager, $inquiry_renderer );
+		$inquiry_dock       = new YBY_Global_Inquiry_Dock();
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
 		$this->loader->add_action( 'rest_api_init', $lead_rest_route, 'register_routes' );
@@ -148,8 +159,11 @@ class YBY_Core {
 		$this->loader->add_action( 'wp_logout', $google_one_tap, 'suppress_after_logout', 10, 0 );
 		$this->loader->add_action( 'init', $social_shortcodes, 'register', 10, 0 );
 		$this->loader->add_action( 'init', $inquiry_shortcodes, 'register', 10, 0 );
+		$this->loader->add_action( 'init', $subscribe_shortcode, 'register', 10, 0 );
 		$this->loader->add_filter( 'the_content', $inquiry_shortcodes, 'capture_modal_shortcodes_in_content', 9, 1 );
 		$this->loader->add_action( 'wp_footer', $inquiry_shortcodes, 'render_deferred_modals', 100, 0 );
+		$this->loader->add_action( 'wp_footer', $global_popup, 'render', 110, 0 );
+		$this->loader->add_action( 'wp_footer', $inquiry_dock, 'render', 120, 0 );
 	}
 
 	/**
