@@ -5,6 +5,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -43,8 +46,5 @@ jobs:
           files: |
             releases/${{ github.ref_name }}/yby-core-${{ github.ref_name }}.zip
             releases/${{ github.ref_name }}/SHA256.txt
-            RELEASE_NOTES_${{ github.ref_name }}.md
-            UPGRADE_GUIDE_${{ github.ref_name }}.md
-            ROLLBACK_GUIDE_${{ github.ref_name }}.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
