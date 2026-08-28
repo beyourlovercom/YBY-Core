@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## v1.5.2 - 2026-08-28
+
+### Added
+
+- Added Brand & Theme runtime presentation controls for shared multi-site deployment.
+- Added the Email admin hub for floating inquiry, popup inquiry/subscribe, and shortcode management.
+- Added Global Inquiry Popup and Subscribe Popup runtime.
+- Added reusable Inquiry and Subscribe shortcodes, including the minimal Subscribe mode.
+- Added dual-mode global floating inquiry: Mode A single Inquiry and Mode B WhatsApp + Inquiry bottom dock.
+- Added first-screen deferred display, responsive previews, per-button color controls, and site-scoped Custom CSS support.
+- Added Windows local-first sync and runtime UAT helpers.
+
+### Changed
+
+- Centralized WhatsApp and Email Notification configuration under `Settings -> 询盘通知` without changing their underlying option authorities.
+- Reused the existing WhatsApp URL/message runtime for the new floating dock instead of introducing a second WhatsApp configuration path.
+
+### Compatibility
+
+- Preserves database schema version `1.3.0`; this release introduces no database migration.
+- Preserves existing Lead, Inquiry, Case ID, notification, Thank You, WhatsApp, REST, shortcode, and technical namespace contracts.
+
 ## v1.5.1 - 2026-08-07
 
 ### Added

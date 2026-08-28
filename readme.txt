@@ -4,7 +4,7 @@ Tags: andy-core, yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.5.1
+Stable tag: 1.5.2
 License: Proprietary
 License URI: https://ybyglobal.com/
 
@@ -12,7 +12,18 @@ Core platform plugin for managed WordPress websites, including Case ID, tracking
 
 == Description ==
 
-Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.1 adds the local Inquiry Inbox and follow-up management layer while preserving the existing `yby-core` plugin identity and compatibility contracts.
+Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.2 adds portable inquiry and subscribe conversion surfaces plus site-level presentation controls while preserving the existing `yby-core` plugin identity and compatibility contracts.
+
+Included in v1.5.2:
+
+* Brand & Theme runtime presentation controls for shared multi-site deployment
+* Email admin hub for floating inquiry, popup inquiry/subscribe, and shortcode management
+* Global Inquiry Popup and Subscribe Popup runtime
+* Global floating inquiry with Mode A single Inquiry and Mode B WhatsApp + Inquiry bottom dock
+* First-screen deferred display, responsive previews, per-button color controls, and Custom CSS override support
+* Reusable Inquiry and Subscribe shortcodes, including minimal Subscribe mode
+* `Settings -> 询盘通知` centralizes WhatsApp and Email Notification while preserving existing option keys
+* Database schema remains version 1.3.0 with no new migration
 
 Included in v1.5.1:
 
@@ -113,6 +124,15 @@ Lead notifications dispatch through `YBY_Notification_Manager` with the Email pr
 The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Recipient Emails, Reply-To Policy, Lead Email Subject Template, and Email Branding settings. Invalid addresses are ignored.
 
 == Changelog ==
+
+= 1.5.2 =
+
+* Added Brand & Theme runtime presentation controls for shared multi-site deployment.
+* Added the Email admin hub for floating inquiry, popup inquiry/subscribe, and shortcode management.
+* Added Global Inquiry Popup, Subscribe Popup, and reusable Inquiry/Subscribe shortcode runtime.
+* Added dual-mode global floating inquiry with WhatsApp + Inquiry support, deferred display, responsive previews, and per-button colors.
+* Moved WhatsApp and Email Notification settings into `Settings -> 询盘通知` while preserving the existing option authorities.
+* Preserved database schema version 1.3.0 and existing Lead, Inquiry, notification, Case ID, and WhatsApp contracts.
 
 = 1.5.1 =
 
