@@ -33,7 +33,7 @@ $runtime_files = $collect_files(
 		$root . '/VERSION.md',
 		$root . '/CHANGELOG.md',
 		$root . '/readme.txt',
-		$root . '/scripts/build-v1.5.1-release.sh',
+		$root . '/scripts/build-v1.5.2-release.sh',
 		$root . '/admin',
 		$root . '/assets',
 		$root . '/inc',
@@ -46,16 +46,16 @@ $runtime_files = $collect_files(
 $assert = static function ( $condition, $message ) {
 	if ( ! $condition ) { throw new RuntimeException( $message ); }
 };
-$assert( false !== strpos( $plugin, 'Version:           1.5.1' ), 'PLUGIN_HEADER_VERSION_GATE failed.' );
-$assert( false !== strpos( $plugin, "define( 'YBY_CORE_VERSION', '1.5.1' );" ), 'CORE_CONSTANT_VERSION_GATE failed.' );
+$assert( false !== strpos( $plugin, 'Version:           1.5.2' ), 'PLUGIN_HEADER_VERSION_GATE failed.' );
+$assert( false !== strpos( $plugin, "define( 'YBY_CORE_VERSION', '1.5.2' );" ), 'CORE_CONSTANT_VERSION_GATE failed.' );
 $assert( false !== strpos( $plugin, "define( 'YBY_DATABASE_VERSION', '1.3.0' );" ), 'DATABASE_VERSION_GATE failed.' );
-$assert( false !== strpos( $version, 'Stable Version: 1.5.1' ) && false !== strpos( $version, 'Development Version: None' ) && false !== strpos( $version, 'Stable Release Type: Stable' ), 'VERSION_MD_GATE failed.' );
-$assert( false !== strpos( $readme, 'Product version: `1.5.1`' ) && false !== strpos( $readme, 'Database version: `1.3.0`' ), 'README_VERSION_GATE failed.' );
-$assert( false !== strpos( $wp_readme, 'Stable tag: 1.5.1' ), 'README_STABLE_TAG_GATE failed.' );
-$assert( false !== strpos( $changelog, '## v1.5.1 - 2026-08-07' ), 'CHANGELOG_RELEASE_GATE failed.' );
+$assert( false !== strpos( $version, 'Stable Version: 1.5.2' ) && false !== strpos( $version, 'Development Version: None' ) && false !== strpos( $version, 'Stable Release Type: Stable' ), 'VERSION_MD_GATE failed.' );
+$assert( false !== strpos( $readme, 'Product version: `1.5.2`' ) && false !== strpos( $readme, 'Database version: `1.3.0`' ), 'README_VERSION_GATE failed.' );
+$assert( false !== strpos( $wp_readme, 'Stable tag: 1.5.2' ), 'README_STABLE_TAG_GATE failed.' );
+$assert( false !== strpos( $changelog, '## v1.5.2 - 2026-08-28' ), 'CHANGELOG_RELEASE_GATE failed.' );
 foreach ( $runtime_files as $file ) {
 	if ( is_file( $file ) ) {
-		$assert( false === strpos( file_get_contents( $file ), '1.5.1-dev' ), 'DEV_VERSION_STRING_GATE failed in ' . basename( $file ) );
+		$assert( false === strpos( file_get_contents( $file ), '1.5.2-dev' ), 'DEV_VERSION_STRING_GATE failed in ' . basename( $file ) );
 	}
 }
 echo "PASS release-metadata-harness\n";

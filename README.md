@@ -4,12 +4,27 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `1.5.1`
+- Product version: `1.5.2`
 - Development version: None
 - Database version: `1.3.0`
 - Release status: Stable
 - Plugin path: `yby-core/yby-core.php`
 - Technical namespace: existing `YBY_*` and `yby_*` identifiers retained for compatibility
+
+## v1.5.2 release scope
+
+Version 1.5.2 adds portable inquiry and subscribe conversion surfaces plus site-level presentation controls while preserving the existing Lead, Inquiry, notification, and database contracts:
+
+- Brand & Theme runtime presentation controls for shared multi-site deployment
+- Email admin hub for floating inquiry, popup inquiry/subscribe, and shortcode management
+- Global Inquiry Popup and Subscribe Popup runtime
+- Global floating inquiry with Mode A single Inquiry button and Mode B WhatsApp + Inquiry bottom dock
+- first-screen deferred display, responsive previews, per-button color controls, and Custom CSS override support
+- reusable Inquiry and Subscribe shortcodes, including the minimal Subscribe mode
+- centralized `Settings -> 询盘通知` management for WhatsApp and Email Notification using the existing option authorities
+- existing WhatsApp URL/message runtime reused without a second configuration authority
+- Windows local-first sync and runtime UAT helpers for repeatable development verification
+- database schema remains `1.3.0`; no migration is introduced by this release
 
 ## v1.5.1 release scope
 
