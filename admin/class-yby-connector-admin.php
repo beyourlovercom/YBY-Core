@@ -13,6 +13,18 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Connector foundation admin controller.
  */
 class YBY_Connector_Admin {
+	private static $revealed_secret = '';
+
+	public function handle_secret_action() {
+		if ( ! isset( $_POST['yby_connector_secret_action'] ) || ! current_user_can( 'manage_options' ) ) { return; }
+		check_admin_referer( 'yby_connector_secret', 'yby_connector_secret_nonce' );
+		$secret = YBY_Connector::generate_secret();
+		if ( false === $secret ) { return; }
+		self::$revealed_secret = $secret;
+	}
+
+	public static function revealed_secret() { return self::$revealed_secret; }
+
 	public function render_page() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( '你没有权限访问此页面。', 'yby-core' ) );
@@ -38,6 +50,7 @@ class YBY_Connector_Admin {
 		$status    = YBY_Connector::status();
 		$providers = YBY_Connector::provider_statuses();
 		$endpoints = YBY_Connector::endpoint_statuses();
+		$revealed_secret = self::revealed_secret();
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/connector-page.php';
 	}
 }
