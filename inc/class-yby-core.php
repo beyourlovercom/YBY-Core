@@ -49,11 +49,13 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-global-inquiry-dock.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-service.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-management.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-rest-controller.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-connector.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-inquiry-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-social-login-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-popup-admin.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-connector-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'public/class-yby-public.php';
 
 /**

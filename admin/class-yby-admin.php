@@ -114,13 +114,17 @@ class YBY_Admin {
 		}
 
 		$tab         = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general';
-		$tab         = in_array( $tab, array( 'general', 'inquiry', 'inquiry-notification', 'system-status' ), true ) ? $tab : 'general';
+		$tab         = in_array( $tab, array( 'general', 'inquiry', 'inquiry-notification', 'wp-api', 'system-status' ), true ) ? $tab : 'general';
 		if ( 'inquiry' === $tab ) {
 			$this->render_inquiry_settings();
 			return;
 		}
 		if ( 'inquiry-notification' === $tab ) {
 			$this->render_inquiry_notification_settings();
+			return;
+		}
+		if ( 'wp-api' === $tab ) {
+			( new YBY_Connector_Admin() )->render_page();
 			return;
 		}
 		if ( 'system-status' === $tab ) {

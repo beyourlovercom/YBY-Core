@@ -1,5 +1,32 @@
-/*
- * YBY Core admin CSS
- *
- * MVP intentionally keeps admin styling minimal.
- */
+.yby-connector-kicker { color: #50575e; font-size: 15px; }
+.yby-connector-kicker span { margin-left: 12px; color: #8c8f94; }
+.yby-connector-status-grid { display: grid; grid-template-columns: repeat(4, minmax(160px, 1fr)); gap: 14px; margin: 20px 0; max-width: 1180px; }
+.yby-connector-card, .yby-connector-panel { background: #fff; border: 1px solid #dcdcde; border-radius: 4px; padding: 18px; box-sizing: border-box; }
+.yby-connector-card h2 { margin: 0 0 12px; font-size: 14px; }
+.yby-connector-card strong { display: block; color: #2271b1; }
+.yby-connector-card small { display: block; margin-top: 8px; color: #646970; }
+.yby-connector-columns { display: grid; grid-template-columns: minmax(440px, 1fr) minmax(360px, 1fr); gap: 18px; max-width: 1180px; align-items: start; }
+.yby-connector-panel h2 { margin-top: 0; }
+.yby-connector-self-check { display: flex; align-items: center; gap: 12px; }
+.yby-connector-self-check span { color: #646970; font-size: 12px; }
+.yby-connector-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.yby-connector-fields label { display: flex; flex-direction: column; gap: 7px; font-weight: 600; }
+.yby-connector-fields input[type="text"], .yby-connector-fields input[type="url"] { width: 100%; max-width: none; }
+.yby-connector-fields input[type="checkbox"] { align-self: flex-start; }
+.yby-connector-fields small, .yby-connector-security-note { color: #646970; font-weight: 400; }
+.yby-connector-security-note { border-left: 3px solid #f59e0b; padding-left: 12px; }
+@media (max-width: 900px) { .yby-connector-status-grid, .yby-connector-columns, .yby-connector-fields { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .yby-connector-status-grid, .yby-connector-columns, .yby-connector-fields { grid-template-columns: 1fr; } }
+.yby-connector-header { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; max-width: 1180px; }
+.yby-connector-header h2 { margin: 18px 0 4px; font-size: 23px; }
+.yby-connector-header-actions { display: flex; align-items: center; gap: 10px; padding-top: 10px; }
+.yby-connector-header-actions .yby-connector-self-check { margin: 0; }
+
+@media (max-width: 782px) { .yby-connector-header { flex-direction: column; } .yby-connector-header-actions { flex-wrap: wrap; padding-top: 0; } }
+
+.yby-status-badge { display: inline-flex; align-items: center; width: fit-content; min-height: 26px; padding: 0 9px; border: 1px solid transparent; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1; }
+.yby-status-ready { color: #0a6b37; background: #edfaef; border-color: #b8e6c2; }
+.yby-status-disabled { color: #50575e; background: #f0f0f1; border-color: #c3c4c7; }
+.yby-status-error { color: #b32d2e; background: #fcf0f1; border-color: #f0b7b8; }
+.yby-status-missing { color: #8a4b00; background: #fff7e6; border-color: #f0cf8e; }
+.yby-status-neutral { color: #50575e; background: #f6f7f7; border-color: #dcdcde; }
