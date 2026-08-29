@@ -76,12 +76,15 @@ class YBY_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook_suffix ) {
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 		$allowed_hooks = array(
 			'toplevel_page_' . YBY_Project_Studio::menu_slug(),
 			YBY_Project_Studio::menu_slug() . '_page_' . YBY_Helpers::admin_page_slug(),
 		);
 
-		if ( ! in_array( $hook_suffix, $allowed_hooks, true ) ) {
+		// The Settings tab is identified by its page slug; this remains reliable
+		// when WordPress supplies a different submenu hook suffix.
+		if ( YBY_Helpers::admin_page_slug() !== $page && ! in_array( $hook_suffix, $allowed_hooks, true ) ) {
 			return;
 		}
 

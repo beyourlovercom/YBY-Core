@@ -1,28 +1,26 @@
-.yby-connector-kicker { color: #50575e; font-size: 15px; }
-.yby-connector-kicker span { margin-left: 12px; color: #8c8f94; }
-.yby-connector-status-grid { display: grid; grid-template-columns: repeat(4, minmax(160px, 1fr)); gap: 14px; margin: 20px 0; max-width: 1180px; }
-.yby-connector-card, .yby-connector-panel { background: #fff; border: 1px solid #dcdcde; border-radius: 4px; padding: 18px; box-sizing: border-box; }
-.yby-connector-card h2 { margin: 0 0 12px; font-size: 14px; }
-.yby-connector-card strong { display: block; color: #2271b1; }
-.yby-connector-card small { display: block; margin-top: 8px; color: #646970; }
-.yby-connector-columns { display: grid; grid-template-columns: minmax(440px, 1fr) minmax(360px, 1fr); gap: 18px; max-width: 1180px; align-items: start; }
-.yby-connector-panel h2 { margin-top: 0; }
-.yby-connector-self-check { display: flex; align-items: center; gap: 12px; }
-.yby-connector-self-check span { color: #646970; font-size: 12px; }
-.yby-connector-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.yby-connector-kicker { color: #50575e; font-size: 13px; margin: 6px 0 16px; }
+.yby-connector-card, .yby-connector-panel { background: #fff; border: 1px solid #dcdcde; border-radius: 8px; box-shadow: 0 1px 2px rgba(0, 0, 0, .04); padding: 16px; box-sizing: border-box; }
+.yby-connector-columns { display: grid; grid-template-columns: minmax(0, 43fr) minmax(0, 57fr); gap: 20px; max-width: 1400px; align-items: start; }
+.yby-connector-side { display: grid; gap: 18px; align-content: start; }
+.yby-connector-panel h2 { margin: 0; font-size: 16px; line-height: 1.4; }
+.yby-connector-panel-description { color: #646970; font-size: 13px; margin: 4px 0 16px; }
+.yby-connector-fields { display: grid; gap: 14px; }
 .yby-connector-fields label { display: flex; flex-direction: column; gap: 7px; font-weight: 600; }
+.yby-connector-fields .yby-connector-toggle { gap: 4px; }
+.yby-connector-toggle > span { display: flex; align-items: center; gap: 7px; }
+.yby-connector-toggle strong { font-weight: 600; }
 .yby-connector-fields input[type="text"], .yby-connector-fields input[type="url"] { width: 100%; max-width: none; }
-.yby-connector-fields input[type="checkbox"] { align-self: flex-start; }
+.yby-connector-fields input[readonly] { background: #f6f7f7; color: #646970; }
+.yby-connector-fields input[type="checkbox"] { margin: 0; }
 .yby-connector-fields small, .yby-connector-security-note { color: #646970; font-weight: 400; }
-.yby-connector-security-note { border-left: 3px solid #f59e0b; padding-left: 12px; }
-@media (max-width: 900px) { .yby-connector-status-grid, .yby-connector-columns, .yby-connector-fields { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 600px) { .yby-connector-status-grid, .yby-connector-columns, .yby-connector-fields { grid-template-columns: 1fr; } }
-.yby-connector-header { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; max-width: 1180px; }
-.yby-connector-header h2 { margin: 18px 0 4px; font-size: 23px; }
-.yby-connector-header-actions { display: flex; align-items: center; gap: 10px; padding-top: 10px; }
-.yby-connector-header-actions .yby-connector-self-check { margin: 0; }
-
-@media (max-width: 782px) { .yby-connector-header { flex-direction: column; } .yby-connector-header-actions { flex-wrap: wrap; padding-top: 0; } }
+.yby-connector-security-note { background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 6px; padding: 10px 12px; margin: 18px 0 0; }
+.yby-connector-form-actions { display: flex; gap: 8px; margin-top: 20px; }
+.yby-connector-provider-row { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 10px 0; border-top: 1px solid #f0f0f1; }
+.yby-connector-provider-row:first-of-type { border-top: 0; padding-top: 0; }
+.yby-connector-provider-row > span:last-child { display: flex; align-items: center; gap: 8px; }
+.yby-connector-provider-row small { color: #646970; }
+@media (max-width: 900px) { .yby-connector-columns { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .yby-connector-provider-row { align-items: flex-start; flex-direction: column; gap: 8px; } }
 
 .yby-status-badge { display: inline-flex; align-items: center; width: fit-content; min-height: 26px; padding: 0 9px; border: 1px solid transparent; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1; }
 .yby-status-ready { color: #0a6b37; background: #edfaef; border-color: #b8e6c2; }

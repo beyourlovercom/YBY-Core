@@ -68,9 +68,9 @@ class YBY_Connector {
 
 	public static function status_label( $status ) {
 		$labels = array(
-			'Connector Disabled' => '已关闭',
-			'Configuration Error' => '待配置',
-			'Provider Missing' => '缺少组件',
+			'Connector Disabled' => '未启用',
+			'Configuration Error' => '配置错误',
+			'Provider Missing' => '未安装',
 			'Ready' => '正常',
 		);
 		return $labels[ $status ] ?? $status;

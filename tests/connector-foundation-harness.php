@@ -22,12 +22,12 @@ connector_assert( false !== strpos( $core, "inc/class-yby-connector.php" ) && fa
 connector_assert( false === strpos( $admin, 'add_submenu_page' ), 'WP-API must not register a standalone submenu.' );
 connector_assert( false !== strpos( $settings_admin, "'wp-api'" ) && false !== strpos( $settings_admin, 'YBY_Connector_Admin' ), 'WP-API must render as a Settings tab.' );
 connector_assert( false !== strpos( $admin, "current_user_can( 'manage_options' )" ) && false !== strpos( $admin, 'check_admin_referer' ), 'Admin access and nonce gates must remain present.' );
-connector_assert( false !== strpos( $view, '<h2>WP-API</h2>' ) && false !== strpos( $view, 'ERP 接口设置' ) && false !== strpos( $view, 'Andy Core v1.5.3' ), 'Connector header must show the approved identity.' );
+connector_assert( false !== strpos( $view, '<h1>WP-API</h1>' ) && false !== strpos( $view, 'ERP 接口设置 · Andy Core v1.5.3' ), 'Connector header must show the approved identity.' );
 connector_assert( false !== strpos( $view, '测试连接' ) && false !== strpos( $view, '保存设置' ), 'Connector actions must be visible.' );
 connector_assert( false !== strpos( $view, '协议版本' ) && false !== strpos( $view, 'readonly' ), 'Read-only foundation identity fields must be rendered.' );
 connector_assert( false === strpos( $view, 'shared_secret' ) && false === strpos( $view, 'Shared Secret' ), 'M1 must not render a secret field.' );
 connector_assert( 'yby_core_connector_options' === YBY_Connector::OPTION, 'Connector must use a dedicated option namespace.' );
-connector_assert( '已关闭' === YBY_Connector::status_label( 'Connector Disabled' ) && '正常' === YBY_Connector::status_label( 'Ready' ), 'Chinese status labels must be concise and truthful.' );
+connector_assert( '未启用' === YBY_Connector::status_label( 'Connector Disabled' ) && '配置错误' === YBY_Connector::status_label( 'Configuration Error' ) && '未安装' === YBY_Connector::status_label( 'Provider Missing' ) && '正常' === YBY_Connector::status_label( 'Ready' ), 'Chinese status labels must match the frozen mapping.' );
 connector_assert( false === strpos( $view, 'Version not available' ), 'ERP Connector must not show a meaningless unavailable-version line.' );
 connector_assert( 'Connector Disabled' === YBY_Connector::status(), 'Disabled status must be truthful by default.' );
 connector_assert( 'Configuration Error' === YBY_Connector::status( array( 'enabled' => true, 'connection_key' => '', 'key_id' => '' ) ), 'Enabled incomplete identity must be Configuration Error.' );
