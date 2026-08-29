@@ -25,13 +25,15 @@ connector_assert( false !== strpos( $admin, "current_user_can( 'manage_options' 
 connector_assert( false !== strpos( $view, '<h1>WP-API</h1>' ) && false !== strpos( $view, 'ERP 接口设置 · Andy Core v1.5.3' ), 'Connector header must show the approved identity.' );
 connector_assert( false !== strpos( $view, '测试连接' ) && false !== strpos( $view, '保存设置' ), 'Connector actions must be visible.' );
 connector_assert( false !== strpos( $view, '协议版本' ) && false !== strpos( $view, 'readonly' ), 'Read-only foundation identity fields must be rendered.' );
-connector_assert( false === strpos( $view, 'shared_secret' ) && false === strpos( $view, 'Shared Secret' ), 'M1 must not render a secret field.' );
+connector_assert( false !== strpos( $view, '安全密钥' ) && false !== strpos( $view, 'yby_connector_secret_nonce' ), 'M2 must provide a gated secret lifecycle action.' );
 connector_assert( 'yby_core_connector_options' === YBY_Connector::OPTION, 'Connector must use a dedicated option namespace.' );
+connector_assert( 'andy-core/v1/erp' === YBY_Connector::REST_NAMESPACE, 'Connector REST namespace must match the canonical v1.5.3 contract.' );
 connector_assert( '未启用' === YBY_Connector::status_label( 'Connector Disabled' ) && '配置错误' === YBY_Connector::status_label( 'Configuration Error' ) && '未安装' === YBY_Connector::status_label( 'Provider Missing' ) && '正常' === YBY_Connector::status_label( 'Ready' ), 'Chinese status labels must match the frozen mapping.' );
+connector_assert( '未开放' === YBY_Connector::status_label( 'Not Available' ) && 'neutral' === YBY_Connector::status_class( 'Not Available' ), 'Not Available must use the neutral status presentation.' );
 connector_assert( false === strpos( $view, 'Version not available' ), 'ERP Connector must not show a meaningless unavailable-version line.' );
 connector_assert( 'Connector Disabled' === YBY_Connector::status(), 'Disabled status must be truthful by default.' );
 connector_assert( 'Configuration Error' === YBY_Connector::status( array( 'enabled' => true, 'connection_key' => '', 'key_id' => '' ) ), 'Enabled incomplete identity must be Configuration Error.' );
-connector_assert( 'Ready' === YBY_Connector::status( array( 'enabled' => true, 'connection_key' => 'connection-key-123', 'key_id' => 'primary' ) ), 'Valid identity must be Ready without claiming a live ERP connection.' );
+connector_assert( 'Configuration Error' === YBY_Connector::status( array( 'enabled' => true, 'connection_key' => 'connection-key-123', 'key_id' => 'primary' ) ), 'Identity without a configured secret must remain a Configuration Error.' );
 connector_assert( 'beyourlover.com' === YBY_Connector::sanitize( array( 'connection_key' => 'beyourlover.com' ) )['connection_key'], 'Canonical domain-style Connection Key must be accepted.' );
 connector_assert( '' === YBY_Connector::sanitize( array( 'connection_key' => 'bad key', 'key_id' => 'bad space' ) )['connection_key'], 'Connection Key must reject whitespace.' );
 connector_assert( '' === YBY_Connector::sanitize( array( 'connection_key' => '<b>beyourlover.com</b>' ) )['connection_key'], 'Connection Key must reject HTML.' );
@@ -55,8 +57,9 @@ foreach ( $endpoints as $endpoint ) { $actual_routes[] = $endpoint['method'] . '
 sort( $expected_routes ); sort( $actual_routes );
 connector_assert( $expected_routes === $actual_routes, 'Endpoint table must contain exactly the ten approved routes and no others.' );
 connector_assert( 'Connector Disabled' === $endpoints['health']['status'], 'Disabled connector health must report Connector Disabled.' );
-connector_assert( 'Provider Missing' === $endpoints['affiliate_snapshot']['status'], 'Absent provider rows must report Provider Missing first.' );
-connector_assert( false === $endpoints['health']['available'] && false === $endpoints['affiliate_snapshot']['available'], 'Disabled and provider-missing rows must remain unavailable.' );
+connector_assert( 'Not Available' === $endpoints['affiliate_snapshot']['status'], 'Unimplemented business rows must stay Not Available even when providers are absent.' );
+connector_assert( false === $endpoints['health']['available'] && false === $endpoints['affiliate_snapshot']['available'], 'Disabled health and unimplemented business rows must remain unavailable.' );
+foreach ( $endpoints as $name => $endpoint ) { if ( 'health' !== $name ) { connector_assert( 'Not Available' === $endpoint['status'], 'Business rows must always report Not Available.' ); } }
 define( 'WC_VERSION', '9.9.9' );
 define( 'AFFILIATEWP_VERSION', '2.0.0' );
 $providers = YBY_Connector::provider_statuses();
@@ -64,12 +67,12 @@ connector_assert( 'Ready' === $providers['woocommerce']['status'] && '9.9.9' ===
 connector_assert( 'Ready' === $providers['affiliatewp']['status'] && '2.0.0' === $providers['affiliatewp']['version'], 'AffiliateWP provider-present detection must expose its real version.' );
 $options['yby_core_connector_options'] = array( 'enabled' => false, 'connection_key' => 'connection-key-123', 'key_id' => 'primary' );
 $endpoints = YBY_Connector::endpoint_statuses();
-foreach ( $endpoints as $endpoint ) { connector_assert( false === $endpoint['available'] && 'Connector Disabled' === $endpoint['status'], 'Provider-present rows must report Connector Disabled when the connector is disabled.' ); }
+foreach ( $endpoints as $name => $endpoint ) { connector_assert( false === $endpoint['available'] && ( 'health' === $name ? 'Connector Disabled' : 'Not Available' ) === $endpoint['status'], 'Disabled connector health and business row statuses must remain distinct.' ); }
 $options['yby_core_connector_options'] = array( 'enabled' => true, 'connection_key' => 'connection-key-123', 'key_id' => 'primary' );
 $endpoints = YBY_Connector::endpoint_statuses();
-foreach ( $endpoints as $endpoint ) { connector_assert( false === $endpoint['available'] && 'Configuration Error' === $endpoint['status'], 'M1 routes must remain Configuration Error and unavailable pending security/route implementation.' ); }
+foreach ( $endpoints as $name => $endpoint ) { connector_assert( false === $endpoint['available'] && ( 'health' === $name ? 'Configuration Error' : 'Not Available' ) === $endpoint['status'], 'Incomplete connector health and business row statuses must remain distinct.' ); }
 connector_assert( 'Connector Disabled' === YBY_Connector::status( array( 'enabled' => false, 'connection_key' => 'connection-key-123', 'key_id' => 'primary' ) ), 'Disabled connector state must take precedence over complete identity.' );
 connector_assert( 'Configuration Error' === YBY_Connector::status( array( 'enabled' => true, 'connection_key' => 'connection-key-123', 'key_id' => '' ) ), 'Enabled incomplete identity must remain Configuration Error.' );
 connector_assert( false !== strpos( $admin, "check_admin_referer( 'yby_connector_save', 'yby_connector_nonce' )" ) && false !== strpos( $admin, "check_admin_referer( 'yby_connector_self_check', 'yby_connector_check_nonce' )" ), 'Save and self-check must use distinct nonce actions.' );
-connector_assert( false === strpos( $admin, 'shared_secret' ) && false === strpos( $view, 'shared_secret' ) && false === strpos( $view, 'Shared Secret' ), 'M1 must not store or render a shared secret.' );
+connector_assert( false !== strpos( $admin, 'generate_secret' ) && false !== strpos( $view, '安全密钥' ), 'M2 must provide secret generation without rendering stored values.' );
 echo "Connector foundation harness passed.\n";

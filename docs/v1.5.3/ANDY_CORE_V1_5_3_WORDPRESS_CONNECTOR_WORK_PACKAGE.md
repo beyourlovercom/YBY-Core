@@ -1,11 +1,11 @@
-# Andy Core v1.5.3 — BYL ERP WordPress Connector Work Package
+# Andy Core v1.5.3 鈥?BYL ERP WordPress Connector Work Package
 
-Status: M1 COMPLETE / VALIDATION PASS / OWNER VISUAL UAT PENDING (M2 NOT STARTED)
+Status: M1 COMPLETE / M2 SECURITY CANARY OWNER UAT PASS / DELIVERY GATE PENDING
 Contract ID: ANDY-CORE-V1.5.3-WORDPRESS-CONNECTOR
 Baseline release: Andy Core v1.5.2
-Branch: `feature/andy-core-v1.5.3-wordpress-connector`
-Worktree: `D:\ai\_worktrees\YBY-Core-v153-wordpress-connector`
-Base HEAD: `44b71dbab8627d019d16216d057e98d2add742da`
+Branch: `feature/andy-core-v1.5.3-wordpress-connector-m2-security`
+Worktree: `D:\ai\_worktrees\YBY-Core-v153-wordpress-connector-m2`
+Base HEAD: `cd1badd9812ccab4cbc0cc3edd46379441390d75`
 Released v1.5.2 tag: `073ef9d34bbd5bfda1db7ca52caf358f7e6ade87`
 Database baseline: `1.3.0`
 
@@ -37,7 +37,7 @@ Current module directory is lightweight documentation; do not force a new `src/`
 
 ## Current local-UAT status
 
-The dedicated BeYourLover local site now provides the real provider stack for Connector UAT. WordPress 7.1, WooCommerce 10.9.4, AffiliateWP 2.35.0, and the local Andy Core M1 runtime are available at `https://localdev.beyourlover.com`. Provider-absent behavior remains covered by the focused harness. Owner visual UAT is still pending.
+The dedicated BeYourLover local site provides the real provider stack for Connector UAT. WordPress 7.1, WooCommerce 10.9.4, AffiliateWP 2.35.0, and the local Andy Core M2 security-canary runtime are available at `https://localdev.beyourlover.com`. Provider-absent behavior remains covered by focused harnesses. Owner visual UAT passed.
 
 ## Stop gate
 
@@ -67,6 +67,15 @@ A dedicated local BeYourLover WordPress environment has been inserted before M1 
 - Full-provider local runtime evidence: `https://localdev.beyourlover.com` returned WordPress 7.1, WooCommerce 10.9.4, AffiliateWP 2.35.0, Andy Core 1.5.2 with Connector loaded, all three provider cards `Ready`, exactly ten contract rows, and every row unavailable while Connector is disabled.
 - Validation evidence: focused Connector harness passed; all five JavaScript harnesses passed; all PHP harnesses passed with the repository-equivalent Windows accommodations: `google-auth-harness.php` passed under Local PHP 8.2 with its bundled OpenSSL configuration, and the unchanged Brand admin harness passed from an LF-normalized temporary copy (the native Windows checkout false-negative is line-ending-only; both referenced source blobs exactly match base `44b71db`). PHP lint passed for 85 plugin/test PHP files, `git diff --check` passed, release metadata harness passed, and changed-file credential scan returned no secret patterns. Release metadata remains plugin/header `1.5.2`, `YBY_CORE_VERSION` `1.5.2`, `YBY_DATABASE_VERSION` `1.3.0`, with baseline `VERSION.md` development state.
 
-### M2 next step
+## M2 security canary implementation evidence (2026-08-29)
 
-Implement the security milestone: HMAC-SHA256 V1 request authentication, nonce/replay protection, and the secure credential lifecycle, with focused tests and local UAT before any provider mutations or external calls.
+- Added HMAC-SHA256 V1 authentication using Connection Key, Key ID, timestamp, nonce, and SHA256(body) canonical signing. Timestamp tolerance is +/-300 seconds; nonces are replay-protected; per-key rate limiting is bounded. HTTPS is required.
+- Added Shared Secret generation/rotation gated by `manage_options` and a dedicated nonce. The secret is encrypted at rest using authenticated encrypt-then-MAC storage derived from WordPress salts, stored non-autoload, and shown only in the immediate generation response.
+- Registered exactly one Connector REST canary: `GET /wp-json/andy-core/v1/erp/health`. The other nine contract endpoints remain unregistered and render as neutral gray `Not Available` / `未开放`.
+- Local real-endpoint UAT passed: valid signed request -> HTTP 200 / `Ready`; replay -> HTTP 409 `yby_nonce_replayed`; bad signature -> HTTP 401 `yby_signature_invalid`; stale timestamp -> HTTP 401 `yby_timestamp_invalid`; obsolete `/wp-json/yby/v1/health` -> HTTP 404.
+- Validation passed: Connector foundation harness, Connector security harness, all five JavaScript harnesses, 18 direct PHP regression harnesses plus the unchanged Windows LF-normalized Brand admin equivalent, PHP lint including the new security harness, and `git diff --check`.
+- Owner visual UAT passed after the nine intentionally unopened business rows were corrected to gray `未开放`. No provider snapshot/mutation implementation, external ERP call, database schema/version change, production deployment, tag, or release is included in M2.
+
+### Post-M2 gate
+
+M2 security canary is local Owner-UAT PASS. Stop before merge/deploy/release; proceed to the next provider/data milestone only after delivery and explicit Owner authorization.

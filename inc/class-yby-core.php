@@ -116,6 +116,7 @@ class YBY_Core {
 		$project_studio = new YBY_Project_Studio( 'yby-core', YBY_CORE_VERSION );
 		$social_login   = new YBY_Social_Login_Admin();
 		$popup_admin    = new YBY_Popup_Admin( 'yby-core', YBY_CORE_VERSION );
+		$connector_admin = new YBY_Connector_Admin();
 
 		$this->loader->add_action( 'init', $project_cpt, 'register' );
 		$this->loader->add_action( 'admin_menu', $inquiry_admin, 'add_admin_menu', 20 );
@@ -131,6 +132,7 @@ class YBY_Core {
 		$this->loader->add_action( 'admin_enqueue_scripts', $inquiry_admin, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $popup_admin, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_init', $admin, 'redirect_legacy_inquiry_dock' );
+		$this->loader->add_action( 'admin_init', $connector_admin, 'handle_secret_action' );
 		$this->loader->add_filter( 'parent_file', $project_studio, 'filter_parent_file' );
 		$this->loader->add_filter( 'submenu_file', $project_studio, 'filter_submenu_file' );
 	}
@@ -152,11 +154,13 @@ class YBY_Core {
 		$subscribe_shortcode = new YBY_Subscribe_Shortcode();
 		$global_popup       = new YBY_Global_Popup( $inquiry_manager, $inquiry_renderer );
 		$inquiry_dock       = new YBY_Global_Inquiry_Dock();
+		$connector_route    = new YBY_Connector();
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
 		$this->loader->add_action( 'rest_api_init', $lead_rest_route, 'register_routes' );
 		$this->loader->add_action( 'rest_api_init', $google_auth_route, 'register_routes' );
 		$this->loader->add_action( 'rest_api_init', $google_one_tap, 'register_routes' );
+		$this->loader->add_action( 'rest_api_init', $connector_route, 'register_routes' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $google_one_tap, 'enqueue_runtime', 20, 0 );
 		$this->loader->add_action( 'wp_logout', $google_one_tap, 'suppress_after_logout', 10, 0 );
 		$this->loader->add_action( 'init', $social_shortcodes, 'register', 10, 0 );

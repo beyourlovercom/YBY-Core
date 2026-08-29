@@ -1,0 +1,62 @@
+<?php
+/** Focused M2 connector transport/authentication security harness. */
+define( 'ABSPATH', __DIR__ );
+define( 'AUTH_KEY', 'auth-test-salt' );
+define( 'SECURE_AUTH_KEY', 'secure-test-salt' );
+define( 'LOGGED_IN_KEY', 'logged-test-salt' );
+define( 'NONCE_KEY', 'nonce-test-salt' );
+$options = array(); $autoload_flags = array(); $transients = array(); $routes = array(); $https = true;
+function get_option( $key, $default = false ) { global $options; return array_key_exists( $key, $options ) ? $options[ $key ] : $default; }
+function add_option( $key, $value, $deprecated = '', $autoload = true ) { global $options, $autoload_flags; $options[ $key ] = $value; $autoload_flags[ $key ] = $autoload; return true; }
+function update_option( $key, $value, $autoload = null ) { global $options, $autoload_flags; $options[ $key ] = $value; if ( null !== $autoload ) { $autoload_flags[ $key ] = $autoload; } return true; }
+function is_ssl() { global $https; return $https; }
+function get_bloginfo( $show = '' ) { return '7.1'; }
+function get_transient( $key ) { global $transients; return $transients[ $key ] ?? false; }
+function set_transient( $key, $value, $ttl ) { global $transients; $transients[ $key ] = $value; return true; }
+function register_rest_route( $namespace, $route, $args ) { global $routes; $routes[ $namespace . $route ] = $args; }
+function wp_json_encode( $value ) { return json_encode( $value ); }
+class WP_Error { public $code; public function __construct( $code ) { $this->code = $code; } }
+require_once dirname( __DIR__ ) . '/inc/class-yby-connector.php';
+function security_assert( $condition, $message ) { if ( ! $condition ) { fwrite( STDERR, "FAIL: {$message}\n" ); exit( 1 ); } }
+if ( ! function_exists( 'openssl_encrypt' ) ) { security_assert( false === YBY_Connector::generate_secret(), 'Secret generation must fail closed when the encryption backend is unavailable.' ); echo "Connector M2 security harness skipped crypto-dependent cases.\n"; exit( 0 ); }
+class Security_Request {
+	public $headers; public $body = ''; public $method = 'GET'; public $route = '/andy-core/v1/erp/health';
+	public function __construct( $headers ) { $this->headers = $headers; }
+	public function get_header( $name ) { return $this->headers[ $name ] ?? ''; }
+	public function get_method() { return $this->method; }
+	public function get_route() { return $this->route; }
+	public function get_body() { return $this->body; }
+}
+YBY_Connector::save( array( 'enabled' => true, 'connection_key' => 'example.test', 'key_id' => 'primary' ) );
+security_assert( false === $autoload_flags[ YBY_Connector::OPTION ], 'Main connector option must not autoload.' );
+$secret = YBY_Connector::generate_secret();
+security_assert( is_string( $secret ) && strlen( $secret ) >= 32, 'Secret generation must return a one-time value.' );
+security_assert( false === $autoload_flags[ YBY_Connector::SECRET_OPTION ], 'Secret option must not autoload.' );
+security_assert( get_option( YBY_Connector::SECRET_OPTION )['ciphertext'] !== $secret, 'Secret option must not contain plaintext.' );
+$valid_stored_secret = get_option( YBY_Connector::SECRET_OPTION );
+$stored_secret = $valid_stored_secret; $stored_secret['ciphertext'] = '%%%'; $options[ YBY_Connector::SECRET_OPTION ] = $stored_secret; security_assert( false === YBY_Connector::secret_configured(), 'Invalid ciphertext must fail closed.' );
+$stored_secret = $valid_stored_secret; $stored_secret['iv'] = array( 'invalid' ); $options[ YBY_Connector::SECRET_OPTION ] = $stored_secret; security_assert( false === YBY_Connector::secret_configured(), 'Invalid IV type must fail closed.' );
+$stored_secret = $valid_stored_secret; $stored_secret['mac'] = array( 'invalid' ); $options[ YBY_Connector::SECRET_OPTION ] = $stored_secret; security_assert( false === YBY_Connector::secret_configured(), 'Invalid MAC type must fail closed.' );
+$options[ YBY_Connector::SECRET_OPTION ] = $valid_stored_secret;
+$canonical = YBY_Connector::canonical_string( 'post', '/andy-core/v1/erp/health', '1700000000', 'nonce-12345678', 'example.test', 'primary', '' );
+security_assert( "POST\n/andy-core/v1/erp/health\n1700000000\nnonce-12345678\nexample.test\nprimary\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" === $canonical, 'Canonical signing string must be exact.' );
+$timestamp = (string) time(); $nonce = 'nonce-12345678';
+$headers = array( 'X-YBY-Connection-Key' => 'example.test', 'X-YBY-Key-Id' => 'primary', 'X-YBY-Timestamp' => $timestamp, 'X-YBY-Nonce' => $nonce );
+$headers['X-YBY-Signature'] = YBY_Connector::sign( 'GET', '/andy-core/v1/erp/health', $timestamp, $nonce, 'example.test', 'primary', '', $secret );
+security_assert( true === YBY_Connector::authenticate( new Security_Request( $headers ) ), 'Valid HMAC request must authenticate.' );
+$replay = YBY_Connector::authenticate( new Security_Request( $headers ) ); security_assert( $replay instanceof WP_Error && 'yby_nonce_replayed' === $replay->code, 'Replayed nonce must be rejected.' );
+$bad = $headers; $bad['X-YBY-Nonce'] = 'nonce-bad-123456'; $bad['X-YBY-Signature'] = 'bad'; security_assert( 'yby_signature_invalid' === YBY_Connector::authenticate( new Security_Request( $bad ) )->code, 'Bad signature must be rejected.' );
+$stale = $headers; $stale['X-YBY-Nonce'] = 'nonce-stale-123456'; $stale['X-YBY-Timestamp'] = (string) ( time() - 301 ); $stale['X-YBY-Signature'] = YBY_Connector::sign( 'GET', '/andy-core/v1/erp/health', $stale['X-YBY-Timestamp'], $stale['X-YBY-Nonce'], 'example.test', 'primary', '', $secret ); security_assert( 'yby_timestamp_invalid' === YBY_Connector::authenticate( new Security_Request( $stale ) )->code, 'Stale timestamp must be rejected.' );
+$future = $stale; $future['X-YBY-Nonce'] = 'nonce-future-123456'; $future['X-YBY-Timestamp'] = (string) ( time() + 301 ); $future['X-YBY-Signature'] = YBY_Connector::sign( 'GET', '/andy-core/v1/erp/health', $future['X-YBY-Timestamp'], $future['X-YBY-Nonce'], 'example.test', 'primary', '', $secret ); security_assert( 'yby_timestamp_invalid' === YBY_Connector::authenticate( new Security_Request( $future ) )->code, 'Future timestamp must be rejected.' );
+$wrong = $headers; $wrong['X-YBY-Nonce'] = 'nonce-wrong-123456'; $wrong['X-YBY-Connection-Key'] = 'other.test'; security_assert( 'yby_identity_invalid' === YBY_Connector::authenticate( new Security_Request( $wrong ) )->code, 'Wrong identity must be rejected.' );
+$https = false; security_assert( 'yby_https_required' === YBY_Connector::authenticate( new Security_Request( $headers ) )->code, 'HTTPS must be enforced.' ); $https = true;
+$old_secret = $secret; $transients = array(); $new_secret = YBY_Connector::generate_secret(); security_assert( is_string( $new_secret ) && $new_secret !== $old_secret, 'Secret rotation must produce a new secret.' );
+$rotated_old = $headers; $rotated_old['X-YBY-Nonce'] = 'nonce-old-123456'; $rotated_old['X-YBY-Signature'] = YBY_Connector::sign( 'GET', '/andy-core/v1/erp/health', $timestamp, $rotated_old['X-YBY-Nonce'], 'example.test', 'primary', '', $old_secret ); security_assert( 'yby_signature_invalid' === YBY_Connector::authenticate( new Security_Request( $rotated_old ) )->code, 'Old secret must fail after rotation.' );
+$rotated_new = $headers; $rotated_new['X-YBY-Nonce'] = 'nonce-new-123456'; $rotated_new['X-YBY-Signature'] = YBY_Connector::sign( 'GET', '/andy-core/v1/erp/health', $timestamp, $rotated_new['X-YBY-Nonce'], 'example.test', 'primary', '', $new_secret ); security_assert( true === YBY_Connector::authenticate( new Security_Request( $rotated_new ) ), 'New secret must authenticate after rotation.' );
+$transients = array(); for ( $i = 0; $i < YBY_Connector::RATE_LIMIT_MAX_REQUESTS; $i++ ) { $r = new Security_Request( $headers ); $r->headers['X-YBY-Nonce'] = 'nonce-rate-' . str_pad( (string) $i, 8, '0', STR_PAD_LEFT ); $r->headers['X-YBY-Signature'] = YBY_Connector::sign( 'GET', '/andy-core/v1/erp/health', $timestamp, $r->headers['X-YBY-Nonce'], 'example.test', 'primary', '', $new_secret ); YBY_Connector::authenticate( $r ); } $limited = new Security_Request( $headers ); $limited->headers['X-YBY-Nonce'] = 'nonce-rate-final'; $limited->headers['X-YBY-Signature'] = YBY_Connector::sign( 'GET', '/andy-core/v1/erp/health', $timestamp, $limited->headers['X-YBY-Nonce'], 'example.test', 'primary', '', $new_secret ); security_assert( 'yby_rate_limited' === YBY_Connector::authenticate( $limited )->code, 'Per-key rate limit must be bounded.' );
+YBY_Connector::register_routes(); security_assert( 1 === count( $routes ) && isset( $routes['andy-core/v1/erp/health'] ) && 'GET' === $routes['andy-core/v1/erp/health']['methods'], 'M2 must register exactly one secured GET health route.' );
+$endpoint_statuses = YBY_Connector::endpoint_statuses(); security_assert( 10 === count( $endpoint_statuses ) && true === $endpoint_statuses['health']['available'], 'Configured HTTPS health canary must be available.' ); foreach ( $endpoint_statuses as $name => $endpoint ) { if ( 'health' !== $name ) { security_assert( false === $endpoint['available'] && 'Not Available' === $endpoint['status'] && 'neutral' === YBY_Connector::status_class( $endpoint['status'] ), 'Business routes must always remain neutral and unavailable.' ); } }
+$health = YBY_Connector::health(); foreach ( array( $new_secret, 'ciphertext', 'iv', 'mac', 'nonce', 'signature' ) as $forbidden ) { security_assert( false === strpos( strtolower( wp_json_encode( $health ) ), strtolower( $forbidden ) ), 'Health response must not expose secret material or auth fields.' ); }
+$source = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-connector.php' ); $view = file_get_contents( dirname( __DIR__ ) . '/admin/views/connector-page.php' ); $admin = file_get_contents( dirname( __DIR__ ) . '/admin/class-yby-connector-admin.php' );
+security_assert( false === strpos( $view, 'SECRET_OPTION' ) && false === strpos( $view, 'get_option(' ), 'Admin view must not render the stored secret option.' ); security_assert( false !== strpos( $admin, "current_user_can( 'manage_options' )" ) && false !== strpos( $admin, "check_admin_referer( 'yby_connector_secret'" ), 'Secret generation must be manage_options and nonce gated.' ); security_assert( false !== strpos( $source, 'base64_decode' ) && false !== strpos( $source, 'hash_equals' ), 'Source must retain strict decode and constant-time MAC checks.' );
+echo "Connector M2 security harness passed.\n";

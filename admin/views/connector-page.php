@@ -24,9 +24,16 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 					<label><span>站点地址</span><input type="url" value="<?php echo esc_attr( YBY_Connector::site_url() ); ?>" readonly></label>
 					<label><span>连接标识</span><input id="yby-connector-key" maxlength="128" name="yby_connector_options[connection_key]" type="text" value="<?php echo esc_attr( $options['connection_key'] ); ?>" autocomplete="off"><small>例如：beyourlover.com</small></label>
 					<label><span>协议版本</span><input type="text" value="1" readonly></label>
-					<label><span>密钥 ID</span><input id="yby-connector-key-id" maxlength="64" name="yby_connector_options[key_id]" type="text" value="<?php echo esc_attr( $options['key_id'] ); ?>" autocomplete="off"><small>下一阶段安全验证使用。</small></label>
+					<label><span>密钥 ID</span><input id="yby-connector-key-id" maxlength="64" name="yby_connector_options[key_id]" type="text" value="<?php echo esc_attr( $options['key_id'] ); ?>" autocomplete="off"><small>当前用于接口签名身份验证。</small></label>
 				</div>
-				<p class="yby-connector-security-note">安全密钥将在下一阶段配置；当前不会连接 ERP。</p>
+				<p class="yby-connector-security-note">M2 已启用接口安全验证；当前仅开放健康检查。</p>
+				<div class="yby-connector-secret-panel">
+					<h2>安全密钥</h2>
+					<p>密钥使用站点盐加密保存，仅在生成/轮换后显示一次。</p>
+					<?php if ( $revealed_secret ) : ?><p><strong>请立即复制此密钥：</strong> <code><?php echo esc_html( $revealed_secret ); ?></code></p><?php endif; ?>
+					<?php wp_nonce_field( 'yby_connector_secret', 'yby_connector_secret_nonce' ); ?>
+					<button type="submit" class="button" name="yby_connector_secret_action" value="generate">生成 / 轮换密钥</button>
+				</div>
 				<div class="yby-connector-form-actions">
 					<button type="submit" class="button" name="yby_connector_self_check">测试连接</button>
 					<button type="submit" class="button button-primary" name="yby_connector_submit" value="1">保存设置</button>
@@ -46,7 +53,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 			<section class="yby-connector-panel">
 				<h2>接口状态</h2>
-				<p class="yby-connector-panel-description">M1 仅展示合同接口，当前均未开放。</p>
+				<p class="yby-connector-panel-description">M2 已启用；配置完成后仅开放 /health，其他业务接口尚未开放。</p>
 				<table class="widefat striped"><thead><tr><th>接口</th><th>方法</th><th>状态</th></tr></thead><tbody>
 				<?php foreach ( $endpoints as $endpoint ) : ?><tr><td><?php echo esc_html( $endpoint['path'] ); ?></td><td><?php echo esc_html( $endpoint['method'] ); ?></td><td><span class="yby-status-badge yby-status-<?php echo esc_attr( YBY_Connector::status_class( $endpoint['status'] ) ); ?>"><?php echo esc_html( YBY_Connector::status_label( $endpoint['status'] ) ); ?></span></td></tr><?php endforeach; ?>
 				</tbody></table>

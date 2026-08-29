@@ -14,7 +14,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class YBY_Connector {
 	const OPTION = 'yby_core_connector_options';
+	const SECRET_OPTION = 'yby_core_connector_secret';
 	const CONTRACT_VERSION = '1';
+	const TIMESTAMP_TOLERANCE = 300;
+	const NONCE_TTL = 600;
+	const RATE_LIMIT_WINDOW = 60;
+	const RATE_LIMIT_MAX_REQUESTS = 60;
+	const REST_NAMESPACE = 'andy-core/v1/erp';
 
 	public static function defaults() {
 		return array(
@@ -23,6 +29,108 @@ class YBY_Connector {
 			'key_id'         => '',
 		);
 	}
+
+	/**
+	 * Canonical signing string: METHOD + "\n" + PATH + "\n" + TIMESTAMP +
+	 * "\n" + NONCE + "\n" + CONNECTION_KEY + "\n" + KEY_ID + "\n" + SHA256(BODY).
+	 */
+	public static function canonical_string( $method, $path, $timestamp, $nonce, $connection_key, $key_id, $body = '' ) {
+		return strtoupper( (string) $method ) . "\n" . (string) $path . "\n" . (string) $timestamp . "\n" . (string) $nonce . "\n" . (string) $connection_key . "\n" . (string) $key_id . "\n" . hash( 'sha256', (string) $body );
+	}
+
+	public static function sign( $method, $path, $timestamp, $nonce, $connection_key, $key_id, $body, $secret ) {
+		return hash_hmac( 'sha256', self::canonical_string( $method, $path, $timestamp, $nonce, $connection_key, $key_id, $body ), (string) $secret );
+	}
+
+	public static function secret_configured() { return '' !== self::get_secret(); }
+
+	/** Generate/rotate and return the secret only to the immediate admin response. */
+	public static function generate_secret() {
+		$secret = function_exists( 'wp_generate_password' ) ? wp_generate_password( 64, true, true ) : bin2hex( random_bytes( 32 ) );
+		return self::store_secret( $secret ) ? $secret : false;
+	}
+
+	private static function get_secret() {
+		$stored = get_option( self::SECRET_OPTION, array() );
+		if ( ! is_array( $stored ) || empty( $stored['ciphertext'] ) || empty( $stored['iv'] ) ) { return ''; }
+		return self::decrypt_secret( $stored['ciphertext'], $stored['iv'] );
+	}
+
+	private static function store_secret( $secret ) {
+		$encrypted = self::encrypt_secret( $secret );
+		if ( false === $encrypted ) { return false; }
+		$stored = array( 'ciphertext' => $encrypted['ciphertext'], 'iv' => $encrypted['iv'], 'mac' => $encrypted['mac'], 'version' => 1 );
+		return false === get_option( self::SECRET_OPTION, false ) ? add_option( self::SECRET_OPTION, $stored, '', false ) : update_option( self::SECRET_OPTION, $stored, false );
+	}
+
+	private static function encryption_key() {
+		$salts = array();
+		foreach ( array( 'AUTH_KEY', 'SECURE_AUTH_KEY', 'LOGGED_IN_KEY', 'NONCE_KEY' ) as $constant ) {
+			if ( ! defined( $constant ) || '' === constant( $constant ) ) { return ''; }
+			$salts[] = constant( $constant );
+		}
+		return hash( 'sha256', implode( '|', $salts ), true );
+	}
+
+	private static function encrypt_secret( $secret ) {
+		$key = self::encryption_key();
+		if ( ! function_exists( 'openssl_encrypt' ) || '' === $key ) { return false; }
+		$iv = function_exists( 'random_bytes' ) ? random_bytes( 16 ) : openssl_random_pseudo_bytes( 16 );
+		$ciphertext = openssl_encrypt( (string) $secret, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv );
+		if ( false === $ciphertext ) { return false; }
+		$ciphertext = base64_encode( $ciphertext );
+		$encoded_iv = base64_encode( $iv );
+		return array( 'ciphertext' => $ciphertext, 'iv' => $encoded_iv, 'mac' => hash_hmac( 'sha256', $encoded_iv . '|' . $ciphertext, $key ) );
+	}
+
+	private static function decrypt_secret( $ciphertext, $iv ) {
+		$key = self::encryption_key();
+		if ( ! function_exists( 'openssl_decrypt' ) || '' === $key ) { return ''; }
+		$stored = get_option( self::SECRET_OPTION, array() );
+		if ( ! is_string( $ciphertext ) || ! is_string( $iv ) || ! is_array( $stored ) || ! is_string( $stored['mac'] ?? null ) || '' === $stored['mac'] || ! hash_equals( $stored['mac'], hash_hmac( 'sha256', $iv . '|' . $ciphertext, $key ) ) ) { return ''; }
+		$decoded_ciphertext = base64_decode( (string) $ciphertext, true );
+		$decoded_iv = base64_decode( (string) $iv, true );
+		if ( false === $decoded_ciphertext || '' === $decoded_ciphertext || false === $decoded_iv || 16 !== strlen( $decoded_iv ) ) { return ''; }
+		$plain = openssl_decrypt( $decoded_ciphertext, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $decoded_iv );
+		return false === $plain ? '' : (string) $plain;
+	}
+
+	public static function authenticate( $request ) {
+		if ( ! self::is_https() ) { return new WP_Error( 'yby_https_required', 'HTTPS is required.', array( 'status' => 403 ) ); }
+		$options = self::get_options();
+		$secret = self::get_secret();
+		$headers = array();
+		foreach ( array( 'connection_key' => 'X-YBY-Connection-Key', 'key_id' => 'X-YBY-Key-Id', 'timestamp' => 'X-YBY-Timestamp', 'nonce' => 'X-YBY-Nonce', 'signature' => 'X-YBY-Signature' ) as $key => $header ) { $headers[ $key ] = self::request_header( $request, $header ); }
+		if ( empty( $options['enabled'] ) || ! self::has_identity( $options ) || '' === $secret || $headers['connection_key'] !== $options['connection_key'] || $headers['key_id'] !== $options['key_id'] ) { return new WP_Error( 'yby_identity_invalid', 'Request identity is invalid.', array( 'status' => 401 ) ); }
+		if ( ! ctype_digit( $headers['timestamp'] ) || abs( time() - (int) $headers['timestamp'] ) > self::TIMESTAMP_TOLERANCE ) { return new WP_Error( 'yby_timestamp_invalid', 'Request timestamp is stale or invalid.', array( 'status' => 401 ) ); }
+		if ( ! preg_match( '/^[A-Za-z0-9._:-]{8,128}$/', $headers['nonce'] ) || '' === $headers['signature'] ) { return new WP_Error( 'yby_request_invalid', 'Request authentication fields are invalid.', array( 'status' => 401 ) ); }
+		$expected = self::sign( self::request_method( $request ), self::request_path( $request ), $headers['timestamp'], $headers['nonce'], $headers['connection_key'], $headers['key_id'], self::request_body( $request ), $secret );
+		if ( ! hash_equals( $expected, $headers['signature'] ) ) { return new WP_Error( 'yby_signature_invalid', 'Request signature is invalid.', array( 'status' => 401 ) ); }
+		$nonce_key = 'yby_conn_nonce_' . hash( 'sha256', $headers['key_id'] . ':' . $headers['nonce'] );
+		if ( get_transient( $nonce_key ) ) { return new WP_Error( 'yby_nonce_replayed', 'Request nonce has already been used.', array( 'status' => 409 ) ); }
+		$rate_key = 'yby_conn_rate_' . hash( 'sha256', $headers['key_id'] );
+		$count = (int) get_transient( $rate_key );
+		if ( $count >= self::RATE_LIMIT_MAX_REQUESTS ) { return new WP_Error( 'yby_rate_limited', 'Rate limit exceeded.', array( 'status' => 429 ) ); }
+		set_transient( $nonce_key, 1, self::NONCE_TTL );
+		set_transient( $rate_key, $count + 1, self::RATE_LIMIT_WINDOW );
+		return true;
+	}
+
+	public static function is_https() { return function_exists( 'is_ssl' ) && is_ssl(); }
+
+	public static function register_routes() {
+		register_rest_route( self::REST_NAMESPACE, '/health', array( 'methods' => 'GET', 'callback' => array( __CLASS__, 'health' ), 'permission_callback' => array( __CLASS__, 'authenticate' ) ) );
+	}
+
+	public static function health() {
+		$options = self::get_options();
+		return array( 'connector' => 'Andy Core', 'version' => defined( 'YBY_CORE_VERSION' ) ? YBY_CORE_VERSION : '1.5.3', 'contract_version' => self::CONTRACT_VERSION, 'status' => self::status( $options ), 'provider' => self::provider_statuses()['wordpress'] );
+	}
+
+	private static function request_header( $request, $name ) { return is_object( $request ) && method_exists( $request, 'get_header' ) ? trim( (string) $request->get_header( $name ) ) : ''; }
+	private static function request_method( $request ) { return is_object( $request ) && method_exists( $request, 'get_method' ) ? $request->get_method() : 'GET'; }
+	private static function request_path( $request ) { return is_object( $request ) && method_exists( $request, 'get_route' ) ? $request->get_route() : '/wp-json/' . self::REST_NAMESPACE . '/health'; }
+	private static function request_body( $request ) { return is_object( $request ) && method_exists( $request, 'get_body' ) ? $request->get_body() : ''; }
 
 	public static function get_options() {
 		$stored = get_option( self::OPTION, array() );
@@ -58,6 +166,9 @@ class YBY_Connector {
 		if ( ! self::has_identity( $options ) ) {
 			return 'Configuration Error';
 		}
+		if ( ! self::secret_configured() ) {
+			return 'Configuration Error';
+		}
 		return 'Ready';
 	}
 
@@ -73,11 +184,12 @@ class YBY_Connector {
 			'Provider Missing' => '未安装',
 			'Ready' => '正常',
 		);
+		$labels['Not Available'] = '未开放';
 		return $labels[ $status ] ?? $status;
 	}
 
 	public static function status_class( $status ) {
-		$classes = array( 'Connector Disabled' => 'disabled', 'Configuration Error' => 'error', 'Provider Missing' => 'missing', 'Ready' => 'ready' );
+		$classes = array( 'Connector Disabled' => 'disabled', 'Configuration Error' => 'error', 'Provider Missing' => 'missing', 'Ready' => 'ready', 'Not Available' => 'neutral' );
 		return $classes[ $status ] ?? 'neutral';
 	}
 
@@ -104,6 +216,18 @@ class YBY_Connector {
 			'payout_complete'     => array( 'label' => '完成结算', 'method' => 'POST', 'path' => '/payouts/complete', 'providers' => array( 'affiliatewp' ) ),
 		);
 		foreach ( $endpoints as &$endpoint ) {
+			if ( '/health' === $endpoint['path'] && 'Ready' === $connector_status && self::is_https() ) {
+				$endpoint['status'] = 'Ready';
+				$endpoint['available'] = true;
+				unset( $endpoint['providers'] );
+				continue;
+			}
+			if ( '/health' !== $endpoint['path'] ) {
+				$endpoint['status'] = 'Not Available';
+				$endpoint['available'] = false;
+				unset( $endpoint['providers'] );
+				continue;
+			}
 			$provider_missing = false;
 			foreach ( $endpoint['providers'] as $provider ) {
 				if ( ! self::provider_available( $provider ) ) {
