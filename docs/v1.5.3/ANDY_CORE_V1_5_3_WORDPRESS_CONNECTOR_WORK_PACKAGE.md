@@ -1,11 +1,11 @@
 # Andy Core v1.5.3 鈥?BYL ERP WordPress Connector Work Package
 
-Status: M1 COMPLETE / M2 SECURITY CANARY OWNER UAT PASS / DELIVERY GATE PENDING
+Status: M1 COMPLETE / M2 SECURITY CANARY COMPLETE / M2.1 CONTRACT ALIGNMENT LOCAL UAT PASS / DELIVERY GATE PENDING
 Contract ID: ANDY-CORE-V1.5.3-WORDPRESS-CONNECTOR
 Baseline release: Andy Core v1.5.2
-Branch: `feature/andy-core-v1.5.3-wordpress-connector-m2-security`
-Worktree: `D:\ai\_worktrees\YBY-Core-v153-wordpress-connector-m2`
-Base HEAD: `cd1badd9812ccab4cbc0cc3edd46379441390d75`
+Branch: `feature/andy-core-v1.5.3-wordpress-connector-m2-contract-alignment`
+Worktree: `D:\ai\_worktrees\YBY-Core-v153-wordpress-connector-m2-contract`
+Base HEAD: `fb8577fd8b92433d068c523df770dd4c109ce098`
 Released v1.5.2 tag: `073ef9d34bbd5bfda1db7ca52caf358f7e6ade87`
 Database baseline: `1.3.0`
 
@@ -79,3 +79,14 @@ A dedicated local BeYourLover WordPress environment has been inserted before M1 
 ### Post-M2 gate
 
 M2 security canary is local Owner-UAT PASS. Stop before merge/deploy/release; proceed to the next provider/data milestone only after delivery and explicit Owner authorization.
+## M2.1 canonical contract alignment evidence (2026-08-29)
+
+- Reconciled the merged M2 security canary with the Owner-approved HMAC V1 contract before opening provider/data endpoints. Canonical signing is now `METHOD + PATH_WITH_QUERY + TIMESTAMP + NONCE + CONNECTION_KEY + IDEMPOTENCY_KEY + SHA256(RAW_BODY)`; Key ID remains a required credential selector but is not a canonical payload slot.
+- `X-YBY-Signature-Version: v1` is mandatory. `X-YBY-Idempotency-Key` canonicalizes to an empty slot for `GET /health`; future mutation endpoints must require it. The exact raw request URI including query order is signed and is not normalized or rebuilt.
+- `GET /wp-json/andy-core/v1/erp/health` now returns the standard V1 success envelope with `ok`, `contract_version`, non-empty `request_id`, exact `connection_key`, and `data`. Authentication failures are converted to the standard error envelope with stable codes including `AUTH_INVALID`, `REPLAY_DETECTED`, `CONTRACT_VERSION_UNSUPPORTED`, and `RATE_LIMITED`.
+- Real Local UAT passed: valid V1 request -> HTTP 200/envelope; missing signature version -> HTTP 400 `CONTRACT_VERSION_UNSUPPORTED`; bad signature -> HTTP 401 `AUTH_INVALID`; replay -> HTTP 409 `REPLAY_DETECTED`; exact signed query order -> HTTP 200.
+- Focused Connector foundation/security harnesses, five JavaScript harnesses, 18 direct PHP regression harnesses, unchanged Brand-source equivalence, PHP lint 86/86, and `git diff --check` passed. No UI layout, provider snapshot/mutation, DB schema, production deployment, tag, or release change is included.
+
+### Post-M2.1 gate
+
+After this alignment is delivered, the next milestone is the read-only provider snapshot layer: Affiliates, Coupons, Referrals, and Payouts. Mutations and idempotency storage remain later milestones.
