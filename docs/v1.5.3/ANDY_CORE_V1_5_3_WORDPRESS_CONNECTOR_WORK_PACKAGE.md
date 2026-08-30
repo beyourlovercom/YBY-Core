@@ -116,6 +116,13 @@ After M3 delivery and explicit Owner merge authorization, the next bounded Andy 
 - Focused Connector Foundation, M2 Security, M3 Snapshot, and M3.1 Subscriber Snapshot harnesses passed. PHP lint passed for the complete tree, JavaScript regressions passed, and the unchanged historical Brand admin harness passed from an LF-normalized copy with its source files identical to `origin/main`.
 - M3.1 adds no ERP code, mutation endpoint, provider write, database schema/version change, production deployment, tag, or release.
 
+## M3.1A Subscriber Snapshot contract alignment evidence (2026-08-30)
+
+- Added exactly one subscriber item field: `external_subscription_id`.
+- The ID is frozen as `elementor_signup:` plus `hash('sha256', connection_key . "\n" . normalized_email)`, using the existing sanitized Connector `connection_key` and normalized lowercase-trimmed email. It is independent of submission IDs, signup repetition, dedupe aggregation, cursor pagination, and `updated_after` filtering.
+- Focused subscriber snapshot coverage verifies non-empty prefixing, exact formula, same-input stability, different-site separation, dedupe/repeated-row stability, cursor/`updated_after` stability, and absence of plaintext email in the ID. No routes, mutations, DB/schema/version changes, ERP changes, or release/deploy actions are included.
+- Real HTTPS HMAC Local UAT passed across 5 pages: 422/422 subscriber items had non-empty external_subscription_id, COUNT(DISTINCT external_subscription_id)=422, COUNT(DISTINCT normalized email)=422, the exact formula matched every item, and repeated plus updated_after requests preserved the same ID.
+
 ### Post-M3.1 gate
 
 After delivery and explicit Owner merge authorization, return to ERP Marketing M1.0A for real `/sync/wpapi` Subscriber synchronization UAT. Shopify CSV and manual CSV source merging remain ERP responsibilities, not Andy Core responsibilities.

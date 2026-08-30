@@ -13,10 +13,11 @@ function subscriber_assert( $condition, $message ) {
 	if ( ! $condition ) { fwrite( STDERR, "FAIL: {$message}\n" ); exit( 1 ); }
 }
 class YBY_Connector {
+	public static $connection_key = 'beyourlover.com';
 	public static function timestamp( $value ) {
 		$time = strtotime( $value ); return false === $time ? false : $time;
 	}
-	public static function get_options() { return array( 'connection_key' => 'beyourlover.com' ); }
+	public static function get_options() { return array( 'connection_key' => self::$connection_key ); }
 }
 
 class Subscriber_Fake_DB {
@@ -48,6 +49,9 @@ subscriber_assert( ! is_wp_error( $result ), 'Subscriber snapshot should succeed
 subscriber_assert( 1 === count( $result['items'] ), 'limit must bound subscriber rows.' );
 $item = $result['items'][0];
 subscriber_assert( 'user@example.com' === $item['email'], 'Email must be normalized.' );
+subscriber_assert( is_string( $item['external_subscription_id'] ) && 0 === strpos( $item['external_subscription_id'], 'elementor_signup:' ), 'External subscription ID must be non-empty and prefixed.' );
+subscriber_assert( 'elementor_signup:' . hash( 'sha256', "beyourlover.com\nuser@example.com" ) === $item['external_subscription_id'], 'External subscription ID must use the exact deterministic formula.' );
+subscriber_assert( false === strpos( $item['external_subscription_id'], 'user@example.com' ), 'External subscription ID must not embed the plaintext email.' );
 subscriber_assert( 'subscribed' === $item['status'], 'Status must be subscribed.' );
 subscriber_assert( 'wordpress_elementor_signup' === $item['consent_source'], 'Consent source must be stable.' );
 subscriber_assert( 'beyourlover.com' === $item['source_site'], 'Source site must use Connector connection key.' );
@@ -76,6 +80,20 @@ $query['cursor_key'] = 'user@example.com';
 YBY_Subscriber_Snapshot::snapshot( $query );
 subscriber_assert( false !== strpos( $wpdb->prepared_sql, 'LOWER(TRIM(v.value)) > %s' ), 'Cursor must use normalized-email keyset pagination.' );
 subscriber_assert( in_array( 'user@example.com', $wpdb->prepared_args, true ), 'Cursor key must be a prepared value.' );
+$wpdb->rows = array(
+	(object) array( 'email_normalized' => ' User@Example.COM ', 'first_signup_gmt' => '2025-01-02 03:04:05', 'latest_signup_gmt' => '2025-05-06 07:08:09' ),
+	(object) array( 'email_normalized' => 'z@example.com', 'first_signup_gmt' => '2025-02-02 03:04:05', 'latest_signup_gmt' => '2025-06-06 07:08:09' ),
+);
+$stable = YBY_Subscriber_Snapshot::snapshot( array( 'limit' => 1, 'offset' => 0, 'cursor_key' => null, 'updated_after' => null ) );
+subscriber_assert( $stable['items'][0]['external_subscription_id'] === $item['external_subscription_id'], 'Repeated snapshot rows must retain the same external subscription ID.' );
+$cursor_stable = YBY_Subscriber_Snapshot::snapshot( array( 'limit' => 1, 'offset' => 0, 'cursor_key' => 'user@example.com', 'updated_after' => null ) );
+subscriber_assert( $cursor_stable['items'][0]['external_subscription_id'] === $item['external_subscription_id'], 'Cursor pagination must not change the external subscription ID.' );
+$updated_stable = YBY_Subscriber_Snapshot::snapshot( array( 'limit' => 1, 'offset' => 0, 'cursor_key' => null, 'updated_after' => '2026-01-02T03:04:05Z' ) );
+subscriber_assert( $updated_stable['items'][0]['external_subscription_id'] === $item['external_subscription_id'], 'updated_after filtering must not change the external subscription ID.' );
+YBY_Connector::$connection_key = 'another-site.example';
+$different_site = YBY_Subscriber_Snapshot::snapshot( array( 'limit' => 1, 'offset' => 0, 'cursor_key' => null, 'updated_after' => null ) );
+subscriber_assert( $different_site['items'][0]['external_subscription_id'] !== $item['external_subscription_id'], 'Different connection keys must produce different external subscription IDs.' );
+YBY_Connector::$connection_key = 'beyourlover.com';
 $wpdb->missing_schema = true;
 $missing = YBY_Subscriber_Snapshot::snapshot( $query );
 subscriber_assert( is_wp_error( $missing ) && 'PROVIDER_UNAVAILABLE' === $missing->code, 'Missing subscriber schema must fail gracefully.' );

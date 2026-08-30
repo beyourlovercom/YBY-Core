@@ -66,6 +66,7 @@ class YBY_Subscriber_Snapshot {
 		}
 
 		$options = YBY_Connector::get_options();
+		$connection_key = (string) ( $options['connection_key'] ?? '' );
 		$items = array();
 		foreach ( array_slice( $rows, 0, $query['limit'] ) as $row ) {
 			$email = strtolower( trim( (string) ( $row->email_normalized ?? '' ) ) );
@@ -76,11 +77,12 @@ class YBY_Subscriber_Snapshot {
 			}
 			$items[] = array(
 				'email' => $email,
+				'external_subscription_id' => 'elementor_signup:' . hash( 'sha256', $connection_key . "\n" . $email ),
 				'status' => 'subscribed',
 				'consent_source' => self::CONSENT_SOURCE,
 				'subscribed_at' => $first,
 				'status_updated_at' => $latest,
-				'source_site' => (string) ( $options['connection_key'] ?? '' ),
+				'source_site' => $connection_key,
 				'provider' => self::PROVIDER,
 			);
 		}
