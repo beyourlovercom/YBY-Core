@@ -1,11 +1,11 @@
 # Andy Core v1.5.3 鈥?BYL ERP WordPress Connector Work Package
 
-Status: M1 COMPLETE / M2 COMPLETE / M2.1 COMPLETE / M3 SNAPSHOTS LOCAL UAT PASS / DELIVERY GATE PENDING
+Status: M1 COMPLETE / M2 COMPLETE / M2.1 COMPLETE / M3 COMPLETE / M3.1 SUBSCRIBER SNAPSHOT LOCAL UAT PASS / DELIVERY GATE PENDING
 Contract ID: ANDY-CORE-V1.5.3-WORDPRESS-CONNECTOR
 Baseline release: Andy Core v1.5.2
-Branch: `feature/andy-core-v1.5.3-wordpress-connector-m3-snapshots`
-Worktree: `D:\ai\_worktrees\YBY-Core-v153-wordpress-connector-m3`
-Base HEAD: `3312351ec5924ee6613c36f16e1fc35b61cb1472`
+Branch: `feature/andy-core-v1.5.3-wordpress-connector-m3.1-subscribers`
+Worktree: `D:\\ai\\_worktrees\\YBY-Core-v153-wordpress-connector-m31-subscribers`
+Base HEAD: `fbb0ff5c934537fd5739f93adbb30b65ebab6e50`
 Released v1.5.2 tag: `073ef9d34bbd5bfda1db7ca52caf358f7e6ade87`
 Database baseline: `1.3.0`
 
@@ -103,3 +103,19 @@ After this alignment is delivered, the next milestone is the read-only provider 
 ### Post-M3 gate
 
 After M3 delivery and explicit Owner merge authorization, the next bounded Andy Core increment is M3.1 Subscriber Snapshot: a HMAC-protected read-only `/snapshot/subscribers` adapter over the confirmed WordPress Elementor signup authority, with normalized-email dedupe and no ERP-side source-merging logic inside Andy Core.
+
+## M3.1 WordPress Subscriber Snapshot evidence (2026-08-30)
+
+- Added one HMAC-protected read-only GET route: `/snapshot/subscribers`. Connector REST surface is now exactly six GET routes: `/health` plus Affiliates, Coupons, Referrals, Payouts, and Subscribers. The existing five POST contract rows remain unregistered and `Not Available`.
+- Subscriber authority is read-only WordPress Elementor submission data in `{$wpdb->prefix}e_submissions` and `{$wpdb->prefix}e_submissions_values`. Only `Singup` / `signup` forms are included; `New Form` and other forms are excluded.
+- Real Local database audit confirmed 518 signup submissions, 422 unique normalized non-empty emails, 57 duplicate-email groups, 96 extra duplicate submissions, zero empty emails, and a maximum of 10 submissions for one email.
+- Subscriber normalization is `trim + lowercase`; one API item is emitted per normalized email. `subscribed_at` is the first signup `created_at_gmt`; `status_updated_at` is the latest signup `created_at_gmt`.
+- Output mapping is fixed to `status=subscribed`, `consent_source=wordpress_elementor_signup`, `provider=wordpress`, and `source_site=<Connector Connection Key>`. Elementor is not exposed as the provider.
+- Pagination uses an opaque resource-bound normalized-email keyset cursor. `updated_after` filters on the latest signup timestamp so a later repeat signup is re-emitted while the original first signup timestamp is preserved.
+- Real HTTPS HMAC Local UAT passed end to end: the API returned exactly 422 unique subscribers across 5 pages, exactly matching the normalized WordPress authority set; the email with 10 submissions appeared exactly once. A midpoint `updated_after` check returned exactly 210 expected subscribers across 3 pages, and a future cutoff returned zero rows.
+- Focused Connector Foundation, M2 Security, M3 Snapshot, and M3.1 Subscriber Snapshot harnesses passed. PHP lint passed for the complete tree, JavaScript regressions passed, and the unchanged historical Brand admin harness passed from an LF-normalized copy with its source files identical to `origin/main`.
+- M3.1 adds no ERP code, mutation endpoint, provider write, database schema/version change, production deployment, tag, or release.
+
+### Post-M3.1 gate
+
+After delivery and explicit Owner merge authorization, return to ERP Marketing M1.0A for real `/sync/wpapi` Subscriber synchronization UAT. Shopify CSV and manual CSV source merging remain ERP responsibilities, not Andy Core responsibilities.

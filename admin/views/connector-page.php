@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 					<label><span>协议版本</span><input type="text" value="1" readonly></label>
 					<label><span>密钥 ID</span><input id="yby-connector-key-id" maxlength="64" name="yby_connector_options[key_id]" type="text" value="<?php echo esc_attr( $options['key_id'] ); ?>" autocomplete="off"><small>当前用于接口签名身份验证。</small></label>
 				</div>
-				<p class="yby-connector-security-note">M3 已启用接口安全验证与只读快照；写入接口尚未开放。</p>
+				<p class="yby-connector-security-note">M3.1 已启用接口安全验证与只读快照；写入接口尚未开放。</p>
 				<div class="yby-connector-secret-panel">
 					<h2>安全密钥</h2>
 					<p>密钥使用站点盐加密保存，仅在生成/轮换后显示一次。</p>
@@ -53,7 +53,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 			<section class="yby-connector-panel">
 				<h2>接口状态</h2>
-				<p class="yby-connector-panel-description">M3 已开放 /health 与 4 个只读快照接口；5 个写入接口尚未开放。</p>
+				<p class="yby-connector-panel-description">M3.1 已开放 /health 与 5 个只读快照接口；5 个写入接口尚未开放。</p>
 				<table class="widefat striped"><thead><tr><th>接口</th><th>方法</th><th>状态</th></tr></thead><tbody>
 				<?php foreach ( $endpoints as $endpoint ) : ?><tr><td><?php echo esc_html( $endpoint['path'] ); ?></td><td><?php echo esc_html( $endpoint['method'] ); ?></td><td><span class="yby-status-badge yby-status-<?php echo esc_attr( YBY_Connector::status_class( $endpoint['status'] ) ); ?>"><?php echo esc_html( YBY_Connector::status_label( $endpoint['status'] ) ); ?></span></td></tr><?php endforeach; ?>
 				</tbody></table>

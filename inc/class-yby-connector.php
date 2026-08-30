@@ -9,6 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once __DIR__ . '/class-yby-subscriber-snapshot.php';
+
 /**
  * Connector foundation settings and truthful environment detection.
  */
@@ -128,7 +130,7 @@ class YBY_Connector {
 
 	public static function register_routes() {
 		register_rest_route( self::REST_NAMESPACE, '/health', array( 'methods' => 'GET', 'callback' => array( __CLASS__, 'dispatch_health' ), 'permission_callback' => '__return_true' ) );
-		foreach ( array( 'affiliates', 'coupons', 'referrals', 'payouts' ) as $resource ) {
+		foreach ( array( 'affiliates', 'coupons', 'referrals', 'payouts', 'subscribers' ) as $resource ) {
 			register_rest_route( self::REST_NAMESPACE, '/snapshot/' . $resource, array( 'methods' => 'GET', 'callback' => array( __CLASS__, 'dispatch_snapshot' ), 'permission_callback' => '__return_true' ) );
 		}
 	}
@@ -139,13 +141,13 @@ class YBY_Connector {
 		return self::health( $request );
 	}
 
-	/** Dispatch one of the four read-only provider snapshots after HMAC auth. */
+	/** Dispatch one of the read-only Connector snapshots after HMAC auth. */
 	public static function dispatch_snapshot( $request ) {
 		$auth = self::authenticate( $request );
 		if ( is_wp_error( $auth ) ) { return self::error_response( $auth, $request ); }
 		$route = is_object( $request ) && method_exists( $request, 'get_route' ) ? (string) $request->get_route() : '';
 		$resource = basename( trim( $route, '/' ) );
-		if ( ! in_array( $resource, array( 'affiliates', 'coupons', 'referrals', 'payouts' ), true ) ) {
+		if ( ! in_array( $resource, array( 'affiliates', 'coupons', 'referrals', 'payouts', 'subscribers' ), true ) ) {
 			return self::error_response( new WP_Error( 'VALIDATION_FAILED', 'Snapshot resource is not supported.', array( 'status' => 400, 'retryable' => false ) ), $request );
 		}
 		$result = self::snapshot( $resource, $request );
@@ -165,6 +167,7 @@ class YBY_Connector {
 			if ( ! self::provider_available( 'woocommerce' ) || ! function_exists( 'get_posts' ) || ! class_exists( 'WC_Coupon' ) ) { return self::provider_unavailable(); }
 			return self::coupon_snapshot( $query );
 		}
+		if ( 'subscribers' === $resource ) { return YBY_Subscriber_Snapshot::snapshot( $query ); }
 		return new WP_Error( 'VALIDATION_FAILED', 'Snapshot resource is not supported.', array( 'status' => 400, 'retryable' => false ) );
 	}
 
@@ -183,20 +186,23 @@ class YBY_Connector {
 			return new WP_Error( 'VALIDATION_FAILED', 'limit must be a positive bounded integer.', array( 'status' => 400, 'retryable' => false ) );
 		}
 		$cursor = $get( 'cursor' );
-		$offset = 0;
+		$offset = 0; $cursor_key = null;
 		if ( null !== $cursor && '' !== $cursor ) {
 			if ( ! is_scalar( $cursor ) ) { return new WP_Error( 'VALIDATION_FAILED', 'cursor is invalid.', array( 'status' => 400, 'retryable' => false ) ); }
 			$decoded = base64_decode( strtr( (string) $cursor, '-_', '+/' ), true );
 			$state = false === $decoded ? null : json_decode( $decoded, true );
-			if ( ! is_array( $state ) || ! isset( $state['resource'], $state['offset'] ) || $state['resource'] !== $resource || ! ctype_digit( (string) $state['offset'] ) ) { return new WP_Error( 'VALIDATION_FAILED', 'cursor is invalid.', array( 'status' => 400, 'retryable' => false ) ); }
-			$offset = (int) $state['offset'];
+			if ( 'subscribers' === $resource ) {
+				if ( ! is_array( $state ) || 'subscribers' !== ( $state['resource'] ?? '' ) || ! isset( $state['email'] ) || ! is_string( $state['email'] ) || '' === $state['email'] || $state['email'] !== strtolower( trim( $state['email'] ) ) ) { return new WP_Error( 'VALIDATION_FAILED', 'cursor is invalid.', array( 'status' => 400, 'retryable' => false ) ); }
+				$cursor_key = $state['email'];
+			} elseif ( ! is_array( $state ) || ! isset( $state['resource'], $state['offset'] ) || $state['resource'] !== $resource || ! ctype_digit( (string) $state['offset'] ) ) { return new WP_Error( 'VALIDATION_FAILED', 'cursor is invalid.', array( 'status' => 400, 'retryable' => false ) ); }
+			else { $offset = (int) $state['offset']; }
 		}
 		$updated_after = $get( 'updated_after' );
 		if ( null !== $updated_after && '' !== $updated_after ) {
 			if ( ! is_scalar( $updated_after ) || false === self::iso_timestamp( (string) $updated_after ) ) { return new WP_Error( 'VALIDATION_FAILED', 'updated_after must be ISO-8601.', array( 'status' => 400, 'retryable' => false ) ); }
 			$updated_after = (string) $updated_after;
 		} else { $updated_after = null; }
-		return array( 'resource' => $resource, 'limit' => (int) $limit, 'offset' => $offset, 'updated_after' => $updated_after );
+		return array( 'resource' => $resource, 'limit' => (int) $limit, 'offset' => $offset, 'cursor_key' => $cursor_key, 'updated_after' => $updated_after );
 	}
 
 	private static function iso_timestamp( $value ) {
@@ -204,6 +210,8 @@ class YBY_Connector {
 		try { $date = new DateTime( $value ); } catch ( Exception $e ) { return false; }
 		return $date instanceof DateTime ? $date->getTimestamp() : false;
 	}
+
+	public static function timestamp( $value ) { return self::iso_timestamp( $value ); }
 
 	private static function snapshot_cursor( $resource, $offset ) {
 		$json = function_exists( 'wp_json_encode' ) ? wp_json_encode( array( 'resource' => $resource, 'offset' => (int) $offset ) ) : json_encode( array( 'resource' => $resource, 'offset' => (int) $offset ) );
@@ -364,6 +372,7 @@ class YBY_Connector {
 	public static function endpoint_statuses() {
 		$connector_status = self::status();
 		$endpoints = array(
+			'subscriber_snapshot' => array( 'label' => '订阅用户快照', 'method' => 'GET', 'path' => '/snapshot/subscribers', 'providers' => array( 'wordpress' ) ),
 			'health'              => array( 'label' => '运行状态', 'method' => 'GET', 'path' => '/health', 'providers' => array() ),
 			'affiliate_snapshot'  => array( 'label' => '分销商快照', 'method' => 'GET', 'path' => '/snapshot/affiliates', 'providers' => array( 'affiliatewp' ) ),
 			'coupon_snapshot'     => array( 'label' => '优惠券快照', 'method' => 'GET', 'path' => '/snapshot/coupons', 'providers' => array( 'woocommerce' ) ),
@@ -375,7 +384,7 @@ class YBY_Connector {
 			'coupon_provision'    => array( 'label' => '创建优惠券', 'method' => 'POST', 'path' => '/coupons/provision', 'providers' => array( 'woocommerce', 'affiliatewp' ) ),
 			'payout_complete'     => array( 'label' => '完成结算', 'method' => 'POST', 'path' => '/payouts/complete', 'providers' => array( 'affiliatewp' ) ),
 		);
-		$implemented = array( '/health', '/snapshot/affiliates', '/snapshot/coupons', '/snapshot/referrals', '/snapshot/payouts' );
+		$implemented = array( '/health', '/snapshot/affiliates', '/snapshot/coupons', '/snapshot/referrals', '/snapshot/payouts', '/snapshot/subscribers' );
 		foreach ( $endpoints as &$endpoint ) {
 			if ( ! in_array( $endpoint['path'], $implemented, true ) ) {
 				$endpoint['status'] = 'Not Available'; $endpoint['available'] = false; unset( $endpoint['providers'] ); continue;
