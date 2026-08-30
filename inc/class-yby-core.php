@@ -53,6 +53,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-connector.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-connector-idempotency.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-connector-audit.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-connector-affiliate-bindings.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-connector-coupon-bindings.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-inquiry-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';

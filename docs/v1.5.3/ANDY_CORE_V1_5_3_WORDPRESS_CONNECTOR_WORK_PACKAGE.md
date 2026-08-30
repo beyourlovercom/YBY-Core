@@ -1,11 +1,11 @@
 # Andy Core v1.5.3 鈥?BYL ERP WordPress Connector Work Package
 
-Status: M5 AFFILIATE LOCAL UAT PASS / DELIVERY GATE PENDING
+Status: M6 COUPON LOCAL UAT PASS / DELIVERY GATE PENDING
 Contract ID: ANDY-CORE-V1.5.3-WORDPRESS-CONNECTOR
 Baseline release: Andy Core v1.5.2
-Branch: `feature/andy-core-v1.5.3-wordpress-connector-m5-affiliate`
-Worktree: `D:\\ai\\_worktrees\\YBY-Core-v153-wordpress-connector-m5-affiliate`
-Base HEAD: `438de43aa2bdddbc540a837ce69837271f8a952e`
+Branch: `feature/andy-core-v1.5.3-wordpress-connector-m6-coupon`
+Worktree: `D:\\ai\\_worktrees\\YBY-Core-v153-wordpress-connector-m6-coupon`
+Base HEAD: `bb8aab47cea3ab221f4b4343104b3293b055808d`
 Released v1.5.2 tag: `073ef9d34bbd5bfda1db7ca52caf358f7e6ade87`
 Database baseline: `1.3.0`
 M4 pre-release database metadata: `1.3.0` (global `1.4.0` bump reserved for final v1.5.3 release prep)
@@ -149,7 +149,7 @@ M4 is ready for delivery review. The next bounded Andy Core increment may implem
 
 ## M5 Affiliate provisioning/status evidence (2026-08-30)
 
-- Added exactly two HMAC-authenticated, idempotent POST routes: `/affiliates/provision` and `/affiliates/{affiliate_id}/status`. The six existing GET routes remain unchanged; `/coupons/check`, `/coupons/provision`, and `/payouts/complete` remain `Not Available`.
+- Added exactly two HMAC-authenticated, idempotent POST routes: `/affiliates/provision` and `/affiliates/{affiliate_id}/status`. The six existing GET routes remain unchanged; at the M5 checkpoint the Coupon/Payout POST rows remained `Not Available` (M6 adds only the two Coupon routes).
 - Provisioning validates the approved `active` request, reuses exact-email WordPress users and existing AffiliateWP affiliates, creates new users with only the `subscriber` role and generated passwords, and never returns or audits passwords.
 - AffiliateWP 2.35.0 supported functions are used for lookup/add/status changes, with exact provider read-back before success. Existing bound identities are reused without undoing later explicit status operations.
 - Added the non-PII `{$wpdb->prefix}yby_connector_affiliate_bindings` table under the existing `YBY_Database`/`dbDelta` authority with unique `(connection_key, erp_kol_id)` and `(connection_key, affiliate_id)` conflict guards. Global `YBY_DATABASE_VERSION` remains `1.3.0`.
@@ -158,3 +158,12 @@ M4 is ready for delivery review. The next bounded Andy Core increment may implem
 - Real UAT found and source fixes closed two production-behavior defects: same-second MySQL renew with affected-rows `=0` now uses authoritative owner/state/expiry readback; AffiliateWP 2.35.0 object identity now uses `affiliate_id`, and mutation readback uses canonical ID extraction.
 - Focused M1-M5 Connector harnesses, PHP lint for changed PHP, five JavaScript syntax checks, release metadata, `git diff --check`, and changed-file secret scan pass. Standalone `wordpress-mysql-validation.php` requires its isolated validation runner and report directory and was not runnable directly.
 - M5 remains local/uncommitted only. Status is M5 Affiliate Local UAT PASS / Delivery Gate Pending. Local runtime sync was performed only for Local UAT; no ERP changes, Dev/production deployment, tag, release, commit, push, or PR were performed.
+
+## M6 Coupon Check / Provision / Affiliate Binding implementation (2026-08-30)
+
+- Added exactly two HMAC-authenticated REST routes: `/coupons/check` (read-only POST without an idempotency key) and `/coupons/provision` (durable M4 idempotent mutation requiring an idempotency key). The six GET routes and two M5 Affiliate POST routes remain in scope; `/payouts/complete` remains unregistered and `Not Available`.
+- Coupon conflict identity is `trim + case-insensitive lowercase`; WooCommerce Coupon remains provider truth. Existing coupons are never adopted, overwritten, or transferred, and conflict responses expose only safe coupon/Affiliate facts.
+- Provisioning uses a durable globally unique normalized-code lease/finalization table, exact AffiliateWP ID validation, WooCommerce `WC_Coupon` CRUD, the installed AffiliateWP Woo binding key `affwp_discount_affiliate`, ownership renewal, compensation guards, and provider/binding read-back before success. Global database version remains `1.3.0` pending final v1.5.3 release preparation.
+- Safe idempotency replay fields and audit targets include only the compact coupon/Affiliate facts required for ERP replay; no raw request, credentials, secrets, or unrestricted coupon payload is stored.
+- REAL Local HTTPS HMAC UAT passed on `https://localdev.beyourlover.com` with WordPress 7.1, WooCommerce 10.9.4, and AffiliateWP 2.35.0: check-without-idempotency, provision-idempotency requirement, initial provision, exact replay, changed-body conflict, different-key global Coupon conflict, conflict replay 409, cross-connection conflict, invalid-expiry rejection, Affiliate binding read-back, durable idempotency/audit/binding evidence, synthetic cleanup, Connector-state restore, and baseline-count restore all PASS.
+- Final cleanup verified WP Users `6051`, Woo Coupons `2827`, Affiliates `1758`, and all M4/M5/M6 Connector technical tables returned to zero rows. Local runtime contains the exact reviewed M6 build only; no Dev/production deployment, tag, or release is included.
