@@ -38,6 +38,8 @@ class YBY_Database {
 
 	const CONNECTOR_AFFILIATE_BINDINGS_TABLE = 'yby_connector_affiliate_bindings';
 
+	const CONNECTOR_COUPON_BINDINGS_TABLE = 'yby_connector_coupon_bindings';
+
 	/**
 	 * Install or upgrade plugin database tables.
 	 *
@@ -116,20 +118,26 @@ class YBY_Database {
 		return $wpdb->prefix . self::CONNECTOR_AFFILIATE_BINDINGS_TABLE;
 	}
 
+	public static function connector_coupon_bindings_table_name() {
+		global $wpdb;
+		return $wpdb->prefix . self::CONNECTOR_COUPON_BINDINGS_TABLE;
+	}
+
 	public static function connector_tables_exist() {
 		global $wpdb;
 		$idempotency = self::connector_idempotency_table_name();
 		$audit       = self::connector_audit_table_name();
 		$bindings    = self::connector_affiliate_bindings_table_name();
-		if ( $idempotency !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $idempotency ) ) || $audit !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $audit ) ) || $bindings !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $bindings ) ) ) {
+		$coupons     = self::connector_coupon_bindings_table_name();
+		if ( $idempotency !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $idempotency ) ) || $audit !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $audit ) ) || $bindings !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $bindings ) ) || $coupons !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $coupons ) ) ) {
 			return false;
 		}
-		$required = array( $idempotency => array( 'mutation_identity', 'state_expires', 'connection_action' ), $audit => array( 'request_id', 'connection_action', 'created_at' ), $bindings => array( 'connection_kol', 'connection_affiliate' ) );
+		$required = array( $idempotency => array( 'mutation_identity', 'state_expires', 'connection_action' ), $audit => array( 'request_id', 'connection_action', 'created_at' ), $bindings => array( 'connection_kol', 'connection_affiliate' ), $coupons => array( 'normalized_code', 'coupon_id', 'state_expires' ) );
 		foreach ( $required as $table => $names ) {
 			$found = array();
 			foreach ( (array) $wpdb->get_results( 'SHOW INDEX FROM ' . $table, ARRAY_A ) as $index ) {
 				if ( ! empty( $index['Key_name'] ) ) { $found[ $index['Key_name'] ] = true; }
-				if ( in_array( $index['Key_name'] ?? '', array( 'mutation_identity', 'connection_kol', 'connection_affiliate' ), true ) && '0' !== (string) ( $index['Non_unique'] ?? '1' ) ) { return false; }
+				if ( in_array( $index['Key_name'] ?? '', array( 'mutation_identity', 'connection_kol', 'connection_affiliate', 'normalized_code', 'coupon_id' ), true ) && '0' !== (string) ( $index['Non_unique'] ?? '1' ) ) { return false; }
 			}
 			foreach ( $names as $name ) { if ( empty( $found[ $name ] ) ) { return false; } }
 		}
@@ -279,6 +287,7 @@ class YBY_Database {
 		$idempotency = self::connector_idempotency_table_name();
 		$audit       = self::connector_audit_table_name();
 		$bindings    = self::connector_affiliate_bindings_table_name();
+		$coupons     = self::connector_coupon_bindings_table_name();
 		$idempotency_sql = "CREATE TABLE {$idempotency} (
 			id bigint unsigned NOT NULL AUTO_INCREMENT,
 			connection_key varchar(128) NOT NULL,
@@ -334,5 +343,24 @@ class YBY_Database {
 			UNIQUE KEY connection_affiliate (connection_key, affiliate_id)
 		) {$charset_collate};";
 		dbDelta( $bindings_sql );
+		$coupons_sql = "CREATE TABLE {$coupons} (
+			id bigint unsigned NOT NULL AUTO_INCREMENT,
+			connection_key varchar(128) NOT NULL,
+			normalized_code varchar(255) NOT NULL,
+			exact_code varchar(255) NOT NULL,
+			coupon_id bigint unsigned NULL,
+			affiliate_id bigint unsigned NULL,
+			erp_kol_id bigint unsigned NULL,
+			state varchar(20) NOT NULL DEFAULT 'processing',
+			lease_owner_hash char(64) NULL,
+			lease_expires_at datetime NULL,
+			created_at datetime NOT NULL,
+			updated_at datetime NOT NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY normalized_code (normalized_code),
+			UNIQUE KEY coupon_id (coupon_id),
+			KEY state_expires (state, lease_expires_at)
+		) {$charset_collate};";
+		dbDelta( $coupons_sql );
 	}
 }
