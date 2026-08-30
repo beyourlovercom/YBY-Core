@@ -133,6 +133,179 @@ class YBY_Connector {
 		foreach ( array( 'affiliates', 'coupons', 'referrals', 'payouts', 'subscribers' ) as $resource ) {
 			register_rest_route( self::REST_NAMESPACE, '/snapshot/' . $resource, array( 'methods' => 'GET', 'callback' => array( __CLASS__, 'dispatch_snapshot' ), 'permission_callback' => '__return_true' ) );
 		}
+		register_rest_route( self::REST_NAMESPACE, '/affiliates/provision', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_affiliate_provision' ), 'permission_callback' => '__return_true' ) );
+		register_rest_route( self::REST_NAMESPACE, '/affiliates/(?P<affiliate_id>\\d+)/status', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_affiliate_status' ), 'permission_callback' => '__return_true' ) );
+	}
+
+	public static function dispatch_affiliate_provision( $request ) {
+		return self::dispatch_mutation( $request, 'affiliate.provision', '/affiliates/provision', 'provision' );
+	}
+
+	public static function dispatch_affiliate_status( $request ) {
+		return self::dispatch_mutation( $request, 'affiliate.status', '/affiliates/{affiliate_id}/status', 'status' );
+	}
+
+	private static function dispatch_mutation( $request, $action, $endpoint, $operation ) {
+		$auth = self::authenticate( $request );
+		if ( is_wp_error( $auth ) ) { return self::error_response( $auth, $request ); }
+		$request_id = self::request_id();
+		$idempotency_key = self::request_header( $request, 'X-YBY-Idempotency-Key' );
+		if ( '' === $idempotency_key ) { return self::mutation_failure( 'VALIDATION_FAILED', 'X-YBY-Idempotency-Key is required.', 400, false, $request, $request_id, $endpoint, $idempotency_key ); }
+		$body = self::json_params( $request );
+		$input = 'provision' === $operation ? self::validate_provision_input( $request, $body ) : self::validate_status_input( $request, $body );
+		if ( is_wp_error( $input ) ) { return self::mutation_failure( $input->get_error_code(), $input->get_error_message(), 400, false, $request, $request_id, $endpoint, $idempotency_key ); }
+		if ( ! self::affiliate_provider_ready( $operation ) ) { return self::mutation_failure( 'PROVIDER_UNAVAILABLE', 'The required provider is unavailable.', 503, true, $request, $request_id, $endpoint, $idempotency_key, $input ); }
+		if ( 'status' === $operation && ! array_key_exists( $input['status'], affwp_get_affiliate_statuses() ) ) { return self::mutation_failure( 'VALIDATION_FAILED', 'Affiliate status is not supported.', 400, false, $request, $request_id, $endpoint, $idempotency_key, $input ); }
+		$begin = YBY_Connector_Idempotency::begin( self::request_header( $request, 'X-YBY-Connection-Key' ), $action, $idempotency_key, $input );
+		if ( is_wp_error( $begin ) ) { return self::mutation_failure( $begin->get_error_code(), $begin->get_error_message(), self::error_status( $begin ), ! empty( $begin->get_error_data()['retryable'] ), $request, $request_id, $endpoint, $idempotency_key, $input ); }
+		if ( 'replay' === $begin['status'] ) { self::audit( $request, $request_id, $endpoint, $idempotency_key, $begin['record']['result'], 'OK', true, false ); return self::mutation_success( $begin['record']['result'], $request, $request_id ); }
+		if ( 'failed' === $begin['status'] ) { $failed_code = $begin['record']['failure_code']; return self::mutation_failure( $failed_code, 'The previous mutation failed.', self::failure_replay_status( $failed_code ), false, $request, $request_id, $endpoint, $idempotency_key, $input ); }
+		$result = 'provision' === $operation ? self::provision_affiliate( $input ) : self::set_affiliate_status( $input );
+		if ( is_wp_error( $result ) ) {
+			$retryable = ! empty( $result->get_error_data()['retryable'] );
+			YBY_Connector_Idempotency::fail( $begin['id'], $result->get_error_code(), $retryable );
+			return self::mutation_failure( $result->get_error_code(), $result->get_error_message(), self::error_status( $result ), $retryable, $request, $request_id, $endpoint, $idempotency_key, $input, $result );
+		}
+		if ( ! YBY_Connector_Idempotency::succeed( $begin['id'], $result ) ) { return self::mutation_failure( 'IDEMPOTENCY_UNAVAILABLE', 'Could not persist mutation result.', 503, true, $request, $request_id, $endpoint, $idempotency_key, $input ); }
+		self::audit( $request, $request_id, $endpoint, $idempotency_key, $result, 'OK', true, false );
+		return self::mutation_success( $result, $request, $request_id );
+	}
+
+	private static function provision_affiliate( $input ) {
+		$connection = $input['connection_key']; $kol = $input['erp_kol_id'];
+		$owner_hash = self::provision_lease_owner();
+		$reservation = YBY_Connector_Affiliate_Bindings::reserve( $connection, $kol, $owner_hash );
+		if ( is_wp_error( $reservation ) ) { return $reservation; }
+		if ( 'ready' === $reservation['status'] ) { return self::read_bound_result( $reservation['row'], false, false ); }
+		if ( 'busy' === $reservation['status'] ) { return new WP_Error( 'PROVISION_IN_PROGRESS', 'Affiliate provisioning for this ERP KOL is already processing.', array( 'status' => 409, 'retryable' => true ) ); }
+		$lease_failure = function () use ( $connection, $kol, $owner_hash ) {
+			YBY_Connector_Affiliate_Bindings::release( $connection, $kol, $owner_hash );
+			return new WP_Error( 'PROVISION_IN_PROGRESS', 'Affiliate provisioning reservation was lost; retry safely.', array( 'status' => 503, 'retryable' => true ) );
+		};
+		$provider_failure = function ( $code, $message ) use ( $connection, $kol, $owner_hash ) { YBY_Connector_Affiliate_Bindings::release( $connection, $kol, $owner_hash ); return self::provider_failure( $code, $message ); };
+		if ( ! YBY_Connector_Affiliate_Bindings::renew( $connection, $kol, $owner_hash ) ) { return $lease_failure(); }
+		$user = get_user_by( 'email', $input['email'] ); $created_user = false;
+		if ( ! $user ) {
+			$base = sanitize_user( $input['preferred_username'], true );
+			if ( '' === $base ) { return $provider_failure( 'PROVIDER_WRITE_FAILED', 'Username could not be resolved.' ); }
+			$username = self::resolve_username( $base, $connection, $kol );
+			if ( false === $username ) { return $provider_failure( 'PROVIDER_WRITE_FAILED', 'Username could not be resolved safely.' ); }
+			if ( ! YBY_Connector_Affiliate_Bindings::renew( $connection, $kol, $owner_hash ) ) { return $lease_failure(); }
+			$password = wp_generate_password( 32, true, true );
+			$user_id = wp_insert_user( array( 'user_login' => substr( $username, 0, 60 ), 'user_pass' => $password, 'user_email' => $input['email'], 'display_name' => $input['display_name'], 'role' => 'subscriber' ) );
+			unset( $password );
+			if ( is_wp_error( $user_id ) ) { return $provider_failure( 'PROVIDER_WRITE_FAILED', 'WordPress user creation failed.' ); }
+			$user = get_user_by( 'id', $user_id ); $created_user = true;
+		}
+		if ( ! $user || empty( $user->ID ) ) { return $provider_failure( 'PROVIDER_READBACK_FAILED', 'WordPress user read-back failed.' ); }
+		$affiliate = function_exists( 'affwp_get_affiliate_by' ) ? affwp_get_affiliate_by( 'user_id', (int) $user->ID ) : false;
+		$created_affiliate = false;
+		if ( is_wp_error( $affiliate ) || ! $affiliate ) {
+			if ( ! YBY_Connector_Affiliate_Bindings::renew( $connection, $kol, $owner_hash ) ) { return $lease_failure(); }
+			$affiliate_id = affwp_add_affiliate( array( 'user_id' => (int) $user->ID, 'status' => 'active', 'payment_email' => $input['payment_email'] ) );
+			if ( ! $affiliate_id ) { return $provider_failure( 'PROVIDER_WRITE_FAILED', 'Affiliate creation failed.' ); }
+			$affiliate = affwp_get_affiliate( $affiliate_id ); $created_affiliate = true;
+		}
+		$affiliate_id = self::affiliate_id_from_object( $affiliate );
+		if ( ! $affiliate || null === $affiliate_id || $affiliate_id < 1 ) { return $provider_failure( 'PROVIDER_READBACK_FAILED', 'Affiliate read-back failed.' ); }
+		$other = YBY_Connector_Affiliate_Bindings::by_affiliate( $connection, $affiliate_id );
+		if ( $other && (int) $other['erp_kol_id'] !== $kol ) { YBY_Connector_Affiliate_Bindings::release( $connection, $kol, $owner_hash ); return new WP_Error( 'AFFILIATE_ID_CONFLICT', 'Affiliate is already bound to another ERP KOL.', array( 'status' => 409, 'retryable' => false ) ); }
+		if ( 'active' !== (string) $affiliate->status ) {
+			// Only an unbound affiliate may be brought to the ERP-approved active state.
+			if ( ! $other && function_exists( 'affwp_set_affiliate_status' ) && ( ! YBY_Connector_Affiliate_Bindings::renew( $connection, $kol, $owner_hash ) || ! affwp_set_affiliate_status( $affiliate_id, 'active' ) ) ) { return $provider_failure( 'PROVIDER_WRITE_FAILED', 'Affiliate status update failed.' ); }
+		}
+		$affiliate = affwp_get_affiliate( $affiliate_id );
+		$expected_status = $other && $affiliate ? (string) $affiliate->status : 'active';
+		if ( ! $affiliate || self::affiliate_id_from_object( $affiliate ) !== $affiliate_id || $expected_status !== (string) $affiliate->status ) { return $provider_failure( 'PROVIDER_READBACK_FAILED', 'Affiliate provider read-back did not match.' ); }
+		$stored = YBY_Connector_Affiliate_Bindings::finalize( $connection, $kol, $owner_hash, (int) $user->ID, $affiliate_id );
+		if ( ! $stored ) { $stored = YBY_Connector_Affiliate_Bindings::by_kol( $connection, $kol ); }
+		if ( ! $stored || 'ready' !== (string) ( $stored['state'] ?? '' ) ) { return new WP_Error( 'PROVISION_IN_PROGRESS', 'Affiliate provisioning reservation was taken over; retry safely.', array( 'status' => 503, 'retryable' => true ) ); }
+		if ( (int) $stored['affiliate_id'] !== $affiliate_id ) { return new WP_Error( 'AFFILIATE_ID_CONFLICT', 'Affiliate binding could not be established safely.', array( 'status' => 409, 'retryable' => false ) ); }
+		return array( 'wp_user_id' => (int) $user->ID, 'affiliate_id' => $affiliate_id, 'affiliate_status' => $expected_status, 'created_user' => $created_user, 'created_affiliate' => $created_affiliate );
+	}
+
+	private static function provision_lease_owner() {
+		$entropy = function_exists( 'random_bytes' ) ? random_bytes( 32 ) : uniqid( 'yby-', true );
+		return hash( 'sha256', (string) $entropy . microtime( true ) );
+	}
+
+	private static function read_bound_result( $binding, $created_user, $created_affiliate ) {
+		$affiliate = affwp_get_affiliate( (int) $binding['affiliate_id'] );
+		$user = get_user_by( 'id', (int) $binding['wp_user_id'] );
+		$affiliate_id = self::affiliate_id_from_object( $affiliate );
+		if ( ! $affiliate || ! $user || null === $affiliate_id || $affiliate_id !== (int) $binding['affiliate_id'] || (int) $affiliate->user_id !== (int) $binding['wp_user_id'] ) { return self::provider_failure( 'PROVIDER_READBACK_FAILED', 'Bound provider identity read-back failed.' ); }
+		return array( 'wp_user_id' => (int) $user->ID, 'affiliate_id' => $affiliate_id, 'affiliate_status' => (string) $affiliate->status, 'created_user' => (bool) $created_user, 'created_affiliate' => (bool) $created_affiliate );
+	}
+
+	private static function set_affiliate_status( $input ) {
+		$id = $input['affiliate_id']; $affiliate = affwp_get_affiliate( $id );
+		if ( ! $affiliate ) { return new WP_Error( 'AFFILIATE_NOT_FOUND', 'Affiliate was not found.', array( 'status' => 404, 'retryable' => false ) ); }
+		if ( (string) $affiliate->status !== $input['status'] && ( ! function_exists( 'affwp_set_affiliate_status' ) || ! affwp_set_affiliate_status( $id, $input['status'] ) ) ) { return self::provider_failure( 'PROVIDER_WRITE_FAILED', 'Affiliate status update failed.' ); }
+		$read = affwp_get_affiliate( $id );
+		if ( ! $read || self::affiliate_id_from_object( $read ) !== $id || (string) $read->status !== $input['status'] ) { return self::provider_failure( 'PROVIDER_READBACK_FAILED', 'Affiliate status read-back did not match.' ); }
+		return array( 'affiliate_id' => $id, 'status' => (string) $read->status );
+	}
+
+	private static function affiliate_id_from_object( $affiliate ) {
+		if ( ! is_object( $affiliate ) ) { return null; }
+		if ( isset( $affiliate->affiliate_id ) ) { return (int) $affiliate->affiliate_id; }
+		if ( isset( $affiliate->ID ) ) { return (int) $affiliate->ID; }
+		return null;
+	}
+
+	private static function affiliate_provider_ready( $operation ) {
+		if ( ! self::provider_available( 'affiliatewp' ) || ! function_exists( 'affiliate_wp' ) || ! is_object( affiliate_wp() ) || ! function_exists( 'affwp_get_affiliate' ) || ! function_exists( 'affwp_set_affiliate_status' ) || ! function_exists( 'affwp_get_affiliate_statuses' ) ) { return false; }
+		return 'status' === $operation || ( function_exists( 'affwp_get_affiliate_by' ) && function_exists( 'affwp_add_affiliate' ) );
+	}
+
+	private static function resolve_username( $base, $connection, $kol ) {
+		$seed = substr( hash( 'sha256', $connection . ':' . $kol ), 0, 12 );
+		$candidates = array( $base . '-' . $kol, $base . '-' . $seed, $base . '-' . $kol . '-' . substr( $seed, 0, 6 ), $base . '-' . $seed . '-1', $base . '-' . $seed . '-2' );
+		foreach ( $candidates as $candidate ) { $candidate = substr( $candidate, 0, 60 ); if ( '' !== $candidate && ! username_exists( $candidate ) ) { return $candidate; } }
+		return false;
+	}
+
+	private static function failure_replay_status( $code ) {
+		if ( 'AFFILIATE_NOT_FOUND' === $code ) { return 404; }
+		if ( in_array( $code, array( 'IDEMPOTENCY_CONFLICT', 'AFFILIATE_ID_CONFLICT' ), true ) ) { return 409; }
+		return in_array( $code, array( 'PROVIDER_UNAVAILABLE', 'PROVIDER_WRITE_FAILED', 'PROVIDER_READBACK_FAILED', 'IDEMPOTENCY_UNAVAILABLE', 'AFFILIATE_BINDING_UNAVAILABLE', 'PROVISION_IN_PROGRESS' ), true ) ? 503 : 400;
+	}
+
+	private static function validate_provision_input( $request, $body ) {
+		$required = array( 'erp_kol_id', 'email', 'display_name', 'preferred_username', 'requested_affiliate_status', 'payment_email' );
+		if ( ! is_array( $body ) || array_diff( $required, array_keys( $body ) ) || array_diff( array_keys( $body ), $required ) || 6 !== count( $body ) || 'active' !== (string) $body['requested_affiliate_status'] ) { return self::validation_error(); }
+		foreach ( array( 'email', 'display_name', 'preferred_username', 'requested_affiliate_status', 'payment_email' ) as $field ) { if ( ! isset( $body[ $field ] ) || ! is_scalar( $body[ $field ] ) ) { return self::validation_error(); } }
+		$kol = $body['erp_kol_id'];
+		if ( ! ( is_int( $kol ) || ( is_string( $kol ) && ctype_digit( $kol ) ) ) || (int) $kol < 1 || (int) $kol > PHP_INT_MAX ) { return self::validation_error(); }
+		$email = trim( (string) $body['email'] ); $payment = trim( (string) $body['payment_email'] );
+		if ( ! is_email( $email ) || ! is_email( $payment ) ) { return self::validation_error(); }
+		$display = trim( wp_strip_all_tags( (string) $body['display_name'] ) ); $username = trim( (string) $body['preferred_username'] );
+		if ( '' === $display || strlen( $display ) > 120 || '' === $username || strlen( $username ) > 60 || ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]*$/', $username ) ) { return self::validation_error(); }
+		return array( 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'erp_kol_id' => (int) $kol, 'email' => strtolower( $email ), 'display_name' => $display, 'preferred_username' => $username, 'requested_affiliate_status' => 'active', 'payment_email' => strtolower( $payment ) );
+	}
+
+	private static function validate_status_input( $request, $body ) {
+		$id = is_object( $request ) && method_exists( $request, 'get_param' ) ? $request->get_param( 'affiliate_id' ) : null;
+		if ( ! ( is_int( $id ) || ( is_string( $id ) && ctype_digit( $id ) ) ) || (int) $id < 1 || ! is_array( $body ) || 1 !== count( $body ) || ! array_key_exists( 'status', $body ) || ! is_scalar( $body['status'] ) || '' === (string) $body['status'] ) { return self::validation_error(); }
+		return array( 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'affiliate_id' => (int) $id, 'status' => (string) $body['status'] );
+	}
+
+	private static function validation_error() { return new WP_Error( 'VALIDATION_FAILED', 'Request syntax or values are invalid.', array( 'status' => 400, 'retryable' => false ) ); }
+	private static function provider_failure( $code, $message ) { return new WP_Error( $code, $message, array( 'status' => 503, 'retryable' => true ) ); }
+	private static function json_params( $request ) {
+		if ( is_object( $request ) && method_exists( $request, 'get_json_params' ) ) { $params = $request->get_json_params(); return is_array( $params ) ? $params : array(); }
+		$decoded = json_decode( self::request_body( $request ), true ); return is_array( $decoded ) ? $decoded : array();
+	}
+	private static function error_status( $error ) { $data = $error->get_error_data(); if ( is_array( $data ) && isset( $data['status'] ) ) { return (int) $data['status']; } return in_array( $error->get_error_code(), array( 'IDEMPOTENCY_CONFLICT', 'AFFILIATE_ID_CONFLICT' ), true ) ? 409 : 400; }
+	private static function mutation_success( $data, $request, $request_id ) { return array( 'ok' => true, 'contract_version' => self::CONTRACT_VERSION, 'request_id' => $request_id, 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'data' => $data ); }
+	private static function mutation_failure( $code, $message, $status, $retryable, $request, $request_id, $endpoint, $idempotency_key, $input = array(), $error = null ) {
+		self::audit( $request, $request_id, $endpoint, $idempotency_key, $input, $code, false, $retryable );
+		return new WP_REST_Response( array( 'ok' => false, 'contract_version' => self::CONTRACT_VERSION, 'request_id' => $request_id, 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'code' => $code, 'message' => $message, 'retryable' => (bool) $retryable ), (int) $status );
+	}
+	private static function audit( $request, $request_id, $endpoint, $idempotency_key, $result, $code, $success, $retryable ) {
+		$targets = array();
+		foreach ( array( 'wp_user_id', 'affiliate_id' ) as $key ) { if ( isset( $result[ $key ] ) && is_scalar( $result[ $key ] ) ) { $targets[ $key ] = array( (int) $result[ $key ] ); } }
+		YBY_Connector_Audit::record( array( 'request_id' => $request_id, 'key_id' => self::request_header( $request, 'X-YBY-Key-Id' ), 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'endpoint_action' => $endpoint, 'idempotency_key_hash' => YBY_Connector_Idempotency::key_hash( $idempotency_key ), 'target_provider_ids' => $targets, 'result_code' => $code, 'success' => $success, 'retryable' => $retryable ) );
 	}
 
 	public static function dispatch_health( $request ) {
@@ -238,7 +411,7 @@ class YBY_Connector {
 	}
 
 	private static function affiliate_item( $affiliate ) {
-		$id = isset( $affiliate->ID ) ? $affiliate->ID : ( $affiliate->affiliate_id ?? null );
+		$id = self::affiliate_id_from_object( $affiliate );
 		$user_id = isset( $affiliate->user_id ) ? $affiliate->user_id : 0;
 		$user = $user_id && function_exists( 'get_userdata' ) ? get_userdata( $user_id ) : false;
 		return array( 'affiliate_id' => $id, 'user_id' => $user_id, 'username' => $user ? (string) $user->user_login : null, 'display_name' => $user ? (string) $user->display_name : (string) ( $affiliate->name ?? '' ), 'email' => $user ? (string) $user->user_email : null, 'status' => (string) ( $affiliate->status ?? '' ), 'rate' => function_exists( 'affwp_get_affiliate_rate' ) ? affwp_get_affiliate_rate( $affiliate ) : null, 'rate_type' => function_exists( 'affwp_get_affiliate_rate_type' ) ? affwp_get_affiliate_rate_type( $affiliate ) : null, 'payment_email' => function_exists( 'affwp_get_affiliate_payment_email' ) ? affwp_get_affiliate_payment_email( $affiliate ) : null, 'registered_at' => self::provider_date( $affiliate->date_registered ?? null ), 'provider_modified_at' => self::provider_date( $affiliate->date_modified ?? null ) );
@@ -384,7 +557,7 @@ class YBY_Connector {
 			'coupon_provision'    => array( 'label' => '创建优惠券', 'method' => 'POST', 'path' => '/coupons/provision', 'providers' => array( 'woocommerce', 'affiliatewp' ) ),
 			'payout_complete'     => array( 'label' => '完成结算', 'method' => 'POST', 'path' => '/payouts/complete', 'providers' => array( 'affiliatewp' ) ),
 		);
-		$implemented = array( '/health', '/snapshot/affiliates', '/snapshot/coupons', '/snapshot/referrals', '/snapshot/payouts', '/snapshot/subscribers' );
+		$implemented = array( '/health', '/snapshot/affiliates', '/snapshot/coupons', '/snapshot/referrals', '/snapshot/payouts', '/snapshot/subscribers', '/affiliates/provision', '/affiliates/{affiliate_id}/status' );
 		foreach ( $endpoints as &$endpoint ) {
 			if ( ! in_array( $endpoint['path'], $implemented, true ) ) {
 				$endpoint['status'] = 'Not Available'; $endpoint['available'] = false; unset( $endpoint['providers'] ); continue;
