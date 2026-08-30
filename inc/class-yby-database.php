@@ -36,6 +36,8 @@ class YBY_Database {
 
 	const CONNECTOR_AUDIT_TABLE = 'yby_connector_audit';
 
+	const CONNECTOR_AFFILIATE_BINDINGS_TABLE = 'yby_connector_affiliate_bindings';
+
 	/**
 	 * Install or upgrade plugin database tables.
 	 *
@@ -109,23 +111,46 @@ class YBY_Database {
 		return $wpdb->prefix . self::CONNECTOR_AUDIT_TABLE;
 	}
 
+	public static function connector_affiliate_bindings_table_name() {
+		global $wpdb;
+		return $wpdb->prefix . self::CONNECTOR_AFFILIATE_BINDINGS_TABLE;
+	}
+
 	public static function connector_tables_exist() {
 		global $wpdb;
 		$idempotency = self::connector_idempotency_table_name();
 		$audit       = self::connector_audit_table_name();
-		if ( $idempotency !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $idempotency ) ) || $audit !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $audit ) ) ) {
+		$bindings    = self::connector_affiliate_bindings_table_name();
+		if ( $idempotency !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $idempotency ) ) || $audit !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $audit ) ) || $bindings !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $bindings ) ) ) {
 			return false;
 		}
-		$required = array( $idempotency => array( 'mutation_identity', 'state_expires', 'connection_action' ), $audit => array( 'request_id', 'connection_action', 'created_at' ) );
+		$required = array( $idempotency => array( 'mutation_identity', 'state_expires', 'connection_action' ), $audit => array( 'request_id', 'connection_action', 'created_at' ), $bindings => array( 'connection_kol', 'connection_affiliate' ) );
 		foreach ( $required as $table => $names ) {
 			$found = array();
 			foreach ( (array) $wpdb->get_results( 'SHOW INDEX FROM ' . $table, ARRAY_A ) as $index ) {
 				if ( ! empty( $index['Key_name'] ) ) { $found[ $index['Key_name'] ] = true; }
-				if ( 'mutation_identity' === ( $index['Key_name'] ?? '' ) && '0' !== (string) ( $index['Non_unique'] ?? '1' ) ) { return false; }
+				if ( in_array( $index['Key_name'] ?? '', array( 'mutation_identity', 'connection_kol', 'connection_affiliate' ), true ) && '0' !== (string) ( $index['Non_unique'] ?? '1' ) ) { return false; }
 			}
 			foreach ( $names as $name ) { if ( empty( $found[ $name ] ) ) { return false; } }
 		}
+		$columns = array();
+		foreach ( (array) $wpdb->get_results( 'SHOW COLUMNS FROM ' . $bindings, ARRAY_A ) as $column ) { if ( ! empty( $column['Field'] ) ) { $columns[ $column['Field'] ] = true; } }
+		foreach ( array( 'state', 'lease_owner_hash', 'lease_expires_at' ) as $column ) { if ( empty( $columns[ $column ] ) ) { return false; } }
 		return true;
+	}
+
+	public static function connector_affiliate_bindings_table_exists() {
+		global $wpdb;
+		$table = self::connector_affiliate_bindings_table_name();
+		if ( $table !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) ) { return false; }
+		$found = array();
+		foreach ( (array) $wpdb->get_results( 'SHOW INDEX FROM ' . $table, ARRAY_A ) as $index ) {
+			if ( ! empty( $index['Key_name'] ) ) { $found[ $index['Key_name'] ] = true; }
+		}
+		if ( ! isset( $found['connection_kol'], $found['connection_affiliate'] ) ) { return false; }
+		$columns = array();
+		foreach ( (array) $wpdb->get_results( 'SHOW COLUMNS FROM ' . $table, ARRAY_A ) as $column ) { if ( ! empty( $column['Field'] ) ) { $columns[ $column['Field'] ] = true; } }
+		return isset( $columns['state'], $columns['lease_owner_hash'], $columns['lease_expires_at'] );
 	}
 
 	public static function management_tables_exist() {
@@ -253,6 +278,7 @@ class YBY_Database {
 		$charset_collate = $wpdb->get_charset_collate();
 		$idempotency = self::connector_idempotency_table_name();
 		$audit       = self::connector_audit_table_name();
+		$bindings    = self::connector_affiliate_bindings_table_name();
 		$idempotency_sql = "CREATE TABLE {$idempotency} (
 			id bigint unsigned NOT NULL AUTO_INCREMENT,
 			connection_key varchar(128) NOT NULL,
@@ -292,5 +318,21 @@ class YBY_Database {
 		) {$charset_collate};";
 		dbDelta( $idempotency_sql );
 		dbDelta( $audit_sql );
+		$bindings_sql = "CREATE TABLE {$bindings} (
+			id bigint unsigned NOT NULL AUTO_INCREMENT,
+			connection_key varchar(128) NOT NULL,
+			erp_kol_id bigint unsigned NOT NULL,
+			wp_user_id bigint unsigned NULL,
+			affiliate_id bigint unsigned NULL,
+			state varchar(20) NOT NULL DEFAULT 'processing',
+			lease_owner_hash char(64) NULL,
+			lease_expires_at datetime NULL,
+			created_at datetime NOT NULL,
+			updated_at datetime NOT NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY connection_kol (connection_key, erp_kol_id),
+			UNIQUE KEY connection_affiliate (connection_key, affiliate_id)
+		) {$charset_collate};";
+		dbDelta( $bindings_sql );
 	}
 }

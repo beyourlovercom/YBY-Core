@@ -1,11 +1,11 @@
 # Andy Core v1.5.3 鈥?BYL ERP WordPress Connector Work Package
 
-Status: M1 COMPLETE / M2 COMPLETE / M2.1 COMPLETE / M3 COMPLETE / M3.1 COMPLETE / M4 IDEMPOTENCY + AUDIT LOCAL UAT PASS / DELIVERY GATE PENDING
+Status: M5 AFFILIATE LOCAL UAT PASS / DELIVERY GATE PENDING
 Contract ID: ANDY-CORE-V1.5.3-WORDPRESS-CONNECTOR
 Baseline release: Andy Core v1.5.2
-Branch: `feature/andy-core-v1.5.3-wordpress-connector-m4-idempotency-audit`
-Worktree: `D:\\ai\\_worktrees\\YBY-Core-v153-wordpress-connector-m4-idempotency-audit`
-Base HEAD: `204c79e16c9b22241ac6c6ec1e17b803810f062a`
+Branch: `feature/andy-core-v1.5.3-wordpress-connector-m5-affiliate`
+Worktree: `D:\\ai\\_worktrees\\YBY-Core-v153-wordpress-connector-m5-affiliate`
+Base HEAD: `438de43aa2bdddbc540a837ce69837271f8a952e`
 Released v1.5.2 tag: `073ef9d34bbd5bfda1db7ca52caf358f7e6ade87`
 Database baseline: `1.3.0`
 M4 pre-release database metadata: `1.3.0` (global `1.4.0` bump reserved for final v1.5.3 release prep)
@@ -38,7 +38,7 @@ Current module directory is lightweight documentation; do not force a new `src/`
 
 ## Current local-UAT status
 
-The dedicated BeYourLover local site provides the real provider stack for Connector UAT. WordPress 7.1, WooCommerce 10.9.4, AffiliateWP 2.35.0, and the local Andy Core M2 security-canary runtime are available at `https://localdev.beyourlover.com`. Provider-absent behavior remains covered by focused harnesses. Owner visual UAT passed.
+The dedicated BeYourLover local site provides the real provider stack for Connector UAT. WordPress 7.1, WooCommerce 10.9.4, AffiliateWP 2.35.0, and the local Andy Core M5 candidate runtime are available at `https://localdev.beyourlover.com`. Provider-absent behavior remains covered by focused harnesses. Owner visual UAT passed.
 
 ## Stop gate
 
@@ -52,7 +52,7 @@ A dedicated local BeYourLover WordPress environment has been inserted before M1 
 - URL: `https://localdev.beyourlover.com`
 - WordPress baseline: 7.1
 - The restored BeYourLover local runtime exposes WooCommerce 10.9.4 and AffiliateWP 2.35.0 as active providers.
-- Andy Core M1 is installed and activated locally for visual UAT while the plugin release metadata remains 1.5.2 / DB 1.3.0.
+- The current Andy Core M5 candidate is synced into this Local-only runtime for UAT while plugin release metadata remains 1.5.2 / DB 1.3.0.
 - No production site or ERP environment is involved in this UAT runtime.
 - It is a runtime/UAT environment only; Andy Core source authority remains the isolated v1.5.3 Git worktree.
 
@@ -146,3 +146,15 @@ After delivery and explicit Owner merge authorization, return to ERP Marketing M
 ### Post-M4 gate
 
 M4 is ready for delivery review. The next bounded Andy Core increment may implement the first provider mutation only after this foundation is delivered and a new Owner authorization is given. Merge remains a separate explicit Owner gate.
+
+## M5 Affiliate provisioning/status evidence (2026-08-30)
+
+- Added exactly two HMAC-authenticated, idempotent POST routes: `/affiliates/provision` and `/affiliates/{affiliate_id}/status`. The six existing GET routes remain unchanged; `/coupons/check`, `/coupons/provision`, and `/payouts/complete` remain `Not Available`.
+- Provisioning validates the approved `active` request, reuses exact-email WordPress users and existing AffiliateWP affiliates, creates new users with only the `subscriber` role and generated passwords, and never returns or audits passwords.
+- AffiliateWP 2.35.0 supported functions are used for lookup/add/status changes, with exact provider read-back before success. Existing bound identities are reused without undoing later explicit status operations.
+- Added the non-PII `{$wpdb->prefix}yby_connector_affiliate_bindings` table under the existing `YBY_Database`/`dbDelta` authority with unique `(connection_key, erp_kol_id)` and `(connection_key, affiliate_id)` conflict guards. Global `YBY_DATABASE_VERSION` remains `1.3.0`.
+- M4 idempotency replay storage is extended only with `created_user` and `created_affiliate`; replay storage and audit contain no email, display name, payment email, password, or raw request body. Mutation attempts use one request ID across response and audit.
+- REAL Local HTTPS HMAC UAT passed on `https://localdev.beyourlover.com` with WordPress 7.1, AffiliateWP 2.35.0, and WooCommerce 10.9.4: `INITIAL_PROVISION=PASS`, `EXACT_RETRY=PASS`, `DIFFERENT_KEY_STABLE_IDENTITY=PASS`, `DURABLE_BINDING=PASS`, `STATUS_INACTIVE_ACTIVE=PASS`, `IDEMPOTENCY_AUDIT=PASS`, `SYNTHETIC_CLEANUP=PASS`, `CONNECTOR_STATE_RESTORED=PASS`, `M5_REAL_UAT=PASS`.
+- Real UAT found and source fixes closed two production-behavior defects: same-second MySQL renew with affected-rows `=0` now uses authoritative owner/state/expiry readback; AffiliateWP 2.35.0 object identity now uses `affiliate_id`, and mutation readback uses canonical ID extraction.
+- Focused M1-M5 Connector harnesses, PHP lint for changed PHP, five JavaScript syntax checks, release metadata, `git diff --check`, and changed-file secret scan pass. Standalone `wordpress-mysql-validation.php` requires its isolated validation runner and report directory and was not runnable directly.
+- M5 remains local/uncommitted only. Status is M5 Affiliate Local UAT PASS / Delivery Gate Pending. Local runtime sync was performed only for Local UAT; no ERP changes, Dev/production deployment, tag, release, commit, push, or PR were performed.

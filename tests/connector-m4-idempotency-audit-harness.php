@@ -61,8 +61,8 @@ $idempotency_source = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-co
 $connector_source = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-connector.php' );
 $routes = substr( $connector_source, strpos( $connector_source, 'public static function register_routes' ), strpos( $connector_source, 'public static function dispatch_health' ) - strpos( $connector_source, 'public static function register_routes' ) );
 m4_assert( false !== strpos( $idempotency_source, 'min( 1000' ), 'Cleanup must retain a hard upper bound.' );
-m4_assert( false === strpos( $routes, "methods' => 'POST'" ) && false === strpos( $routes, "'methods' => WP_REST_Server::CREATABLE" ), 'M4 must not register POST routes.' );
-foreach ( array( 'wp_remote_', 'wp_insert_user', 'wp_update_user', 'wp_insert_post', 'wp_update_post', 'affwp_add_', 'wc_create_coupon' ) as $mutation ) { m4_assert( false === strpos( $connector_source, $mutation ), 'M4 must not mutate providers: ' . $mutation ); }
+m4_assert( false !== strpos( $routes, "methods' => 'POST'" ), 'M5 mutation routes are registered after the M4 foundation.' );
+foreach ( array( 'wp_remote_', 'wp_insert_post', 'wp_update_post', 'wc_create_coupon' ) as $mutation ) { m4_assert( false === strpos( $connector_source, $mutation ), 'M4/M5 connector must not perform out-of-scope mutation: ' . $mutation ); }
 $source = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-database.php' );
 m4_assert( false !== strpos( $source, 'UNIQUE KEY mutation_identity' ) && substr_count( $source, 'dbDelta(' ) >= 4, 'Migration must use a unique DB key and idempotent dbDelta.' );
 echo "Connector M4 idempotency/audit harness passed.\n";
