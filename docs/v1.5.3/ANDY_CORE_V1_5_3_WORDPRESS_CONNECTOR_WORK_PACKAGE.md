@@ -1,11 +1,11 @@
 # Andy Core v1.5.3 鈥?BYL ERP WordPress Connector Work Package
 
-Status: M1 COMPLETE / M2 SECURITY CANARY COMPLETE / M2.1 CONTRACT ALIGNMENT LOCAL UAT PASS / DELIVERY GATE PENDING
+Status: M1 COMPLETE / M2 COMPLETE / M2.1 COMPLETE / M3 SNAPSHOTS LOCAL UAT PASS / DELIVERY GATE PENDING
 Contract ID: ANDY-CORE-V1.5.3-WORDPRESS-CONNECTOR
 Baseline release: Andy Core v1.5.2
-Branch: `feature/andy-core-v1.5.3-wordpress-connector-m2-contract-alignment`
-Worktree: `D:\ai\_worktrees\YBY-Core-v153-wordpress-connector-m2-contract`
-Base HEAD: `fb8577fd8b92433d068c523df770dd4c109ce098`
+Branch: `feature/andy-core-v1.5.3-wordpress-connector-m3-snapshots`
+Worktree: `D:\ai\_worktrees\YBY-Core-v153-wordpress-connector-m3`
+Base HEAD: `3312351ec5924ee6613c36f16e1fc35b61cb1472`
 Released v1.5.2 tag: `073ef9d34bbd5bfda1db7ca52caf358f7e6ade87`
 Database baseline: `1.3.0`
 
@@ -90,3 +90,16 @@ M2 security canary is local Owner-UAT PASS. Stop before merge/deploy/release; pr
 ### Post-M2.1 gate
 
 After this alignment is delivered, the next milestone is the read-only provider snapshot layer: Affiliates, Coupons, Referrals, and Payouts. Mutations and idempotency storage remain later milestones.
+
+## M3 read-only Provider Snapshot evidence (2026-08-30)
+
+- Registered exactly four additional HMAC-protected read-only GET routes: `/snapshot/affiliates`, `/snapshot/coupons`, `/snapshot/referrals`, and `/snapshot/payouts`. Together with `/health`, M3 exposes exactly five Connector GET routes. The five POST contract rows remain unregistered and `Not Available`.
+- Snapshot queries accept bounded `limit`, opaque resource-bound `cursor`, and ISO-8601 `updated_after`. Invalid query input returns stable `VALIDATION_FAILED`; missing AffiliateWP/WooCommerce providers return `PROVIDER_UNAVAILABLE`.
+- AffiliateWP 2.35.0 native read APIs are used for affiliates, referrals, and payouts. WooCommerce 10.9.4 coupon objects are used for coupon mapping. M3 performs no provider mutation and introduces no Connector database schema.
+- Local real-provider HMAC UAT passed on `localdev.beyourlover.com`: all four snapshot routes returned HTTP 200 with real provider rows; cursor pagination returned distinct sequential affiliate records; future `updated_after` filtering returned zero rows for all four resources as expected.
+- Focused Connector Foundation, M2 Security, M3 Snapshot, and M3 Provider Mapping harnesses passed. JavaScript harnesses passed 5/5. Google Auth passed with the Local PHP OpenSSL configuration; the unchanged Brand harness passed from an LF-normalized copy with source equivalence to `origin/main`.
+- M3 does not include Subscriber Snapshot, mutations, idempotency storage, ERP code, version/database bumps, production deployment, tag, or release.
+
+### Post-M3 gate
+
+After M3 delivery and explicit Owner merge authorization, the next bounded Andy Core increment is M3.1 Subscriber Snapshot: a HMAC-protected read-only `/snapshot/subscribers` adapter over the confirmed WordPress Elementor signup authority, with normalized-email dedupe and no ERP-side source-merging logic inside Andy Core.

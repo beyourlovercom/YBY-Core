@@ -20,6 +20,7 @@ class YBY_Connector {
 	const NONCE_TTL = 600;
 	const RATE_LIMIT_WINDOW = 60;
 	const RATE_LIMIT_MAX_REQUESTS = 60;
+	const SNAPSHOT_MAX_LIMIT = 100;
 	const REST_NAMESPACE = 'andy-core/v1/erp';
 
 	public static function defaults() {
@@ -127,12 +128,139 @@ class YBY_Connector {
 
 	public static function register_routes() {
 		register_rest_route( self::REST_NAMESPACE, '/health', array( 'methods' => 'GET', 'callback' => array( __CLASS__, 'dispatch_health' ), 'permission_callback' => '__return_true' ) );
+		foreach ( array( 'affiliates', 'coupons', 'referrals', 'payouts' ) as $resource ) {
+			register_rest_route( self::REST_NAMESPACE, '/snapshot/' . $resource, array( 'methods' => 'GET', 'callback' => array( __CLASS__, 'dispatch_snapshot' ), 'permission_callback' => '__return_true' ) );
+		}
 	}
 
 	public static function dispatch_health( $request ) {
 		$auth = self::authenticate( $request );
 		if ( is_wp_error( $auth ) ) { return self::error_response( $auth, $request ); }
 		return self::health( $request );
+	}
+
+	/** Dispatch one of the four read-only provider snapshots after HMAC auth. */
+	public static function dispatch_snapshot( $request ) {
+		$auth = self::authenticate( $request );
+		if ( is_wp_error( $auth ) ) { return self::error_response( $auth, $request ); }
+		$route = is_object( $request ) && method_exists( $request, 'get_route' ) ? (string) $request->get_route() : '';
+		$resource = basename( trim( $route, '/' ) );
+		if ( ! in_array( $resource, array( 'affiliates', 'coupons', 'referrals', 'payouts' ), true ) ) {
+			return self::error_response( new WP_Error( 'VALIDATION_FAILED', 'Snapshot resource is not supported.', array( 'status' => 400, 'retryable' => false ) ), $request );
+		}
+		$result = self::snapshot( $resource, $request );
+		if ( is_wp_error( $result ) ) { return self::error_response( $result, $request ); }
+		return array( 'ok' => true, 'contract_version' => self::CONTRACT_VERSION, 'request_id' => self::request_id(), 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'data' => $result );
+	}
+
+	/** Read-only provider snapshot entry point. */
+	public static function snapshot( $resource, $request = null ) {
+		$query = self::snapshot_query( $request, $resource );
+		if ( is_wp_error( $query ) ) { return $query; }
+		if ( 'affiliates' === $resource || 'referrals' === $resource || 'payouts' === $resource ) {
+			if ( ! self::provider_available( 'affiliatewp' ) || ! function_exists( 'affiliate_wp' ) ) { return self::provider_unavailable(); }
+			return self::affiliatewp_snapshot( $resource, $query );
+		}
+		if ( 'coupons' === $resource ) {
+			if ( ! self::provider_available( 'woocommerce' ) || ! function_exists( 'get_posts' ) || ! class_exists( 'WC_Coupon' ) ) { return self::provider_unavailable(); }
+			return self::coupon_snapshot( $query );
+		}
+		return new WP_Error( 'VALIDATION_FAILED', 'Snapshot resource is not supported.', array( 'status' => 400, 'retryable' => false ) );
+	}
+
+	private static function provider_unavailable() {
+		return new WP_Error( 'PROVIDER_UNAVAILABLE', 'The required provider is unavailable.', array( 'status' => 503, 'retryable' => true ) );
+	}
+
+	private static function snapshot_query( $request, $resource ) {
+		$get = function ( $key ) use ( $request ) {
+			if ( is_object( $request ) && method_exists( $request, 'get_param' ) ) { return $request->get_param( $key ); }
+			return isset( $_GET[ $key ] ) ? ( function_exists( 'wp_unslash' ) ? wp_unslash( $_GET[ $key ] ) : $_GET[ $key ] ) : null;
+		};
+		$limit = $get( 'limit' );
+		if ( null === $limit || '' === $limit ) { $limit = 50; }
+		if ( ! is_scalar( $limit ) || ! ctype_digit( (string) $limit ) || (int) $limit < 1 || (int) $limit > self::SNAPSHOT_MAX_LIMIT ) {
+			return new WP_Error( 'VALIDATION_FAILED', 'limit must be a positive bounded integer.', array( 'status' => 400, 'retryable' => false ) );
+		}
+		$cursor = $get( 'cursor' );
+		$offset = 0;
+		if ( null !== $cursor && '' !== $cursor ) {
+			if ( ! is_scalar( $cursor ) ) { return new WP_Error( 'VALIDATION_FAILED', 'cursor is invalid.', array( 'status' => 400, 'retryable' => false ) ); }
+			$decoded = base64_decode( strtr( (string) $cursor, '-_', '+/' ), true );
+			$state = false === $decoded ? null : json_decode( $decoded, true );
+			if ( ! is_array( $state ) || ! isset( $state['resource'], $state['offset'] ) || $state['resource'] !== $resource || ! ctype_digit( (string) $state['offset'] ) ) { return new WP_Error( 'VALIDATION_FAILED', 'cursor is invalid.', array( 'status' => 400, 'retryable' => false ) ); }
+			$offset = (int) $state['offset'];
+		}
+		$updated_after = $get( 'updated_after' );
+		if ( null !== $updated_after && '' !== $updated_after ) {
+			if ( ! is_scalar( $updated_after ) || false === self::iso_timestamp( (string) $updated_after ) ) { return new WP_Error( 'VALIDATION_FAILED', 'updated_after must be ISO-8601.', array( 'status' => 400, 'retryable' => false ) ); }
+			$updated_after = (string) $updated_after;
+		} else { $updated_after = null; }
+		return array( 'resource' => $resource, 'limit' => (int) $limit, 'offset' => $offset, 'updated_after' => $updated_after );
+	}
+
+	private static function iso_timestamp( $value ) {
+		if ( ! is_string( $value ) || ! preg_match( '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/', $value ) ) { return false; }
+		try { $date = new DateTime( $value ); } catch ( Exception $e ) { return false; }
+		return $date instanceof DateTime ? $date->getTimestamp() : false;
+	}
+
+	private static function snapshot_cursor( $resource, $offset ) {
+		$json = function_exists( 'wp_json_encode' ) ? wp_json_encode( array( 'resource' => $resource, 'offset' => (int) $offset ) ) : json_encode( array( 'resource' => $resource, 'offset' => (int) $offset ) );
+		return rtrim( strtr( base64_encode( $json ), '+/', '-_' ), '=' );
+	}
+
+	private static function snapshot_result( $items, $query, $has_more ) {
+		return array( 'items' => array_slice( $items, 0, $query['limit'] ), 'next_cursor' => $has_more ? self::snapshot_cursor( $query['resource'], $query['offset'] + $query['limit'] ) : null );
+	}
+
+	private static function affiliatewp_snapshot( $resource, $query ) {
+		$provider = affiliate_wp();
+		if ( ! is_object( $provider ) || ! isset( $provider->affiliates ) ) { return self::provider_unavailable(); }
+		$collection = 'affiliates' === $resource ? $provider->affiliates : ( 'referrals' === $resource ? $provider->referrals : ( isset( $provider->affiliates->payouts ) ? $provider->affiliates->payouts : null ) );
+		$method = 'affiliates' === $resource ? 'get_affiliates' : ( 'referrals' === $resource ? 'get_referrals' : 'get_payouts' );
+		if ( ! is_object( $collection ) || ! method_exists( $collection, $method ) ) { return self::provider_unavailable(); }
+		$args = array( 'number' => $query['limit'] + 1, 'offset' => $query['offset'], 'order' => 'ASC', 'orderby' => 'affiliates' === $resource ? 'affiliate_id' : ( 'referrals' === $resource ? 'referral_id' : 'payout_id' ) );
+		if ( $query['updated_after'] ) { $after = gmdate( 'Y-m-d H:i:s', self::iso_timestamp( $query['updated_after'] ) + 1 ); if ( 'affiliates' === $resource ) { $args['date_registered'] = array( 'start' => $after ); } else { $args['date'] = array( 'start' => $after ); } }
+		$objects = $collection->{$method}( $args );
+		if ( ! is_array( $objects ) ) { return self::provider_unavailable(); }
+		$items = array();
+		foreach ( $objects as $object ) { $items[] = 'affiliates' === $resource ? self::affiliate_item( $object ) : ( 'referrals' === $resource ? self::referral_item( $object ) : self::payout_item( $object ) ); }
+		return self::snapshot_result( $items, $query, count( $objects ) > $query['limit'] );
+	}
+
+	private static function affiliate_item( $affiliate ) {
+		$id = isset( $affiliate->ID ) ? $affiliate->ID : ( $affiliate->affiliate_id ?? null );
+		$user_id = isset( $affiliate->user_id ) ? $affiliate->user_id : 0;
+		$user = $user_id && function_exists( 'get_userdata' ) ? get_userdata( $user_id ) : false;
+		return array( 'affiliate_id' => $id, 'user_id' => $user_id, 'username' => $user ? (string) $user->user_login : null, 'display_name' => $user ? (string) $user->display_name : (string) ( $affiliate->name ?? '' ), 'email' => $user ? (string) $user->user_email : null, 'status' => (string) ( $affiliate->status ?? '' ), 'rate' => function_exists( 'affwp_get_affiliate_rate' ) ? affwp_get_affiliate_rate( $affiliate ) : null, 'rate_type' => function_exists( 'affwp_get_affiliate_rate_type' ) ? affwp_get_affiliate_rate_type( $affiliate ) : null, 'payment_email' => function_exists( 'affwp_get_affiliate_payment_email' ) ? affwp_get_affiliate_payment_email( $affiliate ) : null, 'registered_at' => self::provider_date( $affiliate->date_registered ?? null ), 'provider_modified_at' => self::provider_date( $affiliate->date_modified ?? null ) );
+	}
+
+	private static function referral_item( $referral ) {
+		return array( 'referral_id' => $referral->ID ?? ( $referral->referral_id ?? null ), 'affiliate_id' => $referral->affiliate_id ?? null, 'context' => (string) ( $referral->context ?? '' ), 'reference' => (string) ( $referral->reference ?? '' ), 'amount' => (string) ( $referral->amount ?? '' ), 'currency' => (string) ( $referral->currency ?? '' ), 'status' => (string) ( $referral->status ?? '' ), 'description' => isset( $referral->description ) ? (string) $referral->description : null, 'referred_at' => self::provider_date( $referral->date ?? null ), 'payout_id' => $referral->payout_id ?? null );
+	}
+
+	private static function payout_item( $payout ) {
+		$referral_ids = array();
+		if ( function_exists( 'affwp_get_payout_referrals' ) ) { foreach ( (array) affwp_get_payout_referrals( $payout ) as $referral ) { $referral_ids[] = $referral->ID ?? ( $referral->referral_id ?? null ); } }
+		$currency = isset( $payout->currency ) ? (string) $payout->currency : ( function_exists( 'affwp_get_currency' ) ? (string) affwp_get_currency() : '' );
+		return array( 'payout_id' => $payout->ID ?? ( $payout->payout_id ?? null ), 'affiliate_id' => $payout->affiliate_id ?? null, 'referral_ids' => $referral_ids, 'amount' => (string) ( $payout->amount ?? '' ), 'currency' => $currency, 'payout_method' => (string) ( $payout->payout_method ?? '' ), 'status' => (string) ( $payout->status ?? '' ), 'date' => self::provider_date( $payout->date ?? null ) );
+	}
+
+	private static function coupon_snapshot( $query ) {
+		$args = array( 'post_type' => 'shop_coupon', 'post_status' => 'any', 'posts_per_page' => $query['limit'] + 1, 'offset' => $query['offset'], 'orderby' => 'ID', 'order' => 'ASC', 'fields' => 'ids', 'no_found_rows' => true );
+		if ( $query['updated_after'] ) { $args['date_query'] = array( array( 'column' => 'post_modified_gmt', 'after' => gmdate( 'Y-m-d H:i:s', self::iso_timestamp( $query['updated_after'] ) ), 'inclusive' => false ) ); }
+		$ids = get_posts( $args );
+		if ( ! is_array( $ids ) ) { return self::provider_unavailable(); }
+		$items = array();
+		foreach ( $ids as $id ) { $coupon = new WC_Coupon( $id ); $code = (string) $coupon->get_code(); $linked = null; if ( function_exists( 'affwp_get_coupon' ) ) { $affiliate_coupon = affwp_get_coupon( $code ); $linked = $affiliate_coupon && isset( $affiliate_coupon->affiliate_id ) ? (int) $affiliate_coupon->affiliate_id : null; } if ( null === $linked && self::provider_available( 'affiliatewp' ) && function_exists( 'get_post_meta' ) ) { $legacy_link = get_post_meta( (int) $id, 'affwp_discount_affiliate', true ); $linked = is_numeric( $legacy_link ) && (int) $legacy_link > 0 ? (int) $legacy_link : null; } $modified = method_exists( $coupon, 'get_date_modified' ) ? $coupon->get_date_modified() : null; $items[] = array( 'coupon_id' => $coupon->get_id(), 'code' => $code, 'normalized_code' => strtolower( trim( $code ) ), 'discount_type' => (string) $coupon->get_discount_type(), 'amount' => (string) $coupon->get_amount(), 'status' => (string) $coupon->get_status(), 'date_expires' => self::provider_date( $coupon->get_date_expires() ), 'linked_affiliate_id' => $linked, 'provider_modified_at' => self::provider_date( $modified ) ); }
+		return self::snapshot_result( $items, $query, count( $ids ) > $query['limit'] );
+	}
+
+	private static function provider_date( $value ) {
+		if ( $value instanceof DateTimeInterface ) { return $value->format( DateTime::ATOM ); }
+		if ( is_string( $value ) && '' !== $value && false !== strtotime( $value ) ) { return gmdate( 'c', strtotime( $value ) ); }
+		return null;
 	}
 
 	public static function health( $request = null ) {
@@ -247,34 +375,17 @@ class YBY_Connector {
 			'coupon_provision'    => array( 'label' => '创建优惠券', 'method' => 'POST', 'path' => '/coupons/provision', 'providers' => array( 'woocommerce', 'affiliatewp' ) ),
 			'payout_complete'     => array( 'label' => '完成结算', 'method' => 'POST', 'path' => '/payouts/complete', 'providers' => array( 'affiliatewp' ) ),
 		);
+		$implemented = array( '/health', '/snapshot/affiliates', '/snapshot/coupons', '/snapshot/referrals', '/snapshot/payouts' );
 		foreach ( $endpoints as &$endpoint ) {
-			if ( '/health' === $endpoint['path'] && 'Ready' === $connector_status && self::is_https() ) {
-				$endpoint['status'] = 'Ready';
-				$endpoint['available'] = true;
-				unset( $endpoint['providers'] );
-				continue;
-			}
-			if ( '/health' !== $endpoint['path'] ) {
-				$endpoint['status'] = 'Not Available';
-				$endpoint['available'] = false;
-				unset( $endpoint['providers'] );
-				continue;
+			if ( ! in_array( $endpoint['path'], $implemented, true ) ) {
+				$endpoint['status'] = 'Not Available'; $endpoint['available'] = false; unset( $endpoint['providers'] ); continue;
 			}
 			$provider_missing = false;
-			foreach ( $endpoint['providers'] as $provider ) {
-				if ( ! self::provider_available( $provider ) ) {
-					$provider_missing = true;
-					break;
-				}
-			}
-			if ( $provider_missing ) {
-				$endpoint['status'] = 'Provider Missing';
-			} elseif ( 'Connector Disabled' === $connector_status ) {
-				$endpoint['status'] = 'Connector Disabled';
-			} else {
-				$endpoint['status'] = 'Configuration Error';
-			}
-			$endpoint['available'] = false;
+			foreach ( $endpoint['providers'] as $provider ) { if ( ! self::provider_available( $provider ) ) { $provider_missing = true; break; } }
+			if ( $provider_missing ) { $endpoint['status'] = 'Provider Missing'; $endpoint['available'] = false; }
+			elseif ( 'Ready' === $connector_status && self::is_https() ) { $endpoint['status'] = 'Ready'; $endpoint['available'] = true; }
+			elseif ( 'Connector Disabled' === $connector_status ) { $endpoint['status'] = 'Connector Disabled'; $endpoint['available'] = false; }
+			else { $endpoint['status'] = 'Configuration Error'; $endpoint['available'] = false; }
 			unset( $endpoint['providers'] );
 		}
 		unset( $endpoint );
