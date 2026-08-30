@@ -217,17 +217,18 @@ class YBY_Admin {
 		$cache_key = 'yby_core_system_status';
 		$status = $refresh ? false : get_transient( $cache_key );
 		if ( false === $status ) {
-			$tables_ok = YBY_Database::management_tables_exist();
+			$management_tables_ok = YBY_Database::management_tables_exist();
+			$connector_tables_ok = YBY_Database::connector_tables_exist();
 			$status = array(
 				'plugin_version' => YBY_CORE_VERSION,
 				'database_version' => get_option( YBY_Database::VERSION_OPTION, 'unknown' ),
 				'lead_table' => YBY_Database::leads_table_exists(),
-				'management_table' => $tables_ok,
-				'activities_table' => $tables_ok,
-				'index_status' => $tables_ok ? 'verified' : 'attention',
-				'migration_status' => $tables_ok && '1.3.0' === get_option( YBY_Database::VERSION_OPTION, '' ) ? 'ready' : 'attention',
+				'management_table' => $management_tables_ok,
+				'activities_table' => $management_tables_ok,
+				'index_status' => $management_tables_ok && $connector_tables_ok ? 'verified' : 'attention',
+				'migration_status' => $management_tables_ok && $connector_tables_ok && YBY_DATABASE_VERSION === get_option( YBY_Database::VERSION_OPTION, '' ) ? 'ready' : 'attention',
 				'recent_lead_metadata' => $this->recent_lead_metadata(),
-				'management_consistency' => $tables_ok ? 'lazy management enabled' : 'attention',
+				'management_consistency' => $management_tables_ok ? 'lazy management enabled' : 'attention',
 				'preset_registry' => 'registered by inquiry preset manager',
 				'thank_you_route' => YBY_Config::get_thank_you_url() ? 'configured' : 'attention',
 				'mail_integration' => YBY_Config::get_lead_notification_primary_recipient_email() ? 'configured' : 'attention',

@@ -1,13 +1,14 @@
 # Andy Core v1.5.3 鈥?BYL ERP WordPress Connector Work Package
 
-Status: M1 COMPLETE / M2 COMPLETE / M2.1 COMPLETE / M3 COMPLETE / M3.1 SUBSCRIBER SNAPSHOT LOCAL UAT PASS / DELIVERY GATE PENDING
+Status: M1 COMPLETE / M2 COMPLETE / M2.1 COMPLETE / M3 COMPLETE / M3.1 COMPLETE / M4 IDEMPOTENCY + AUDIT LOCAL UAT PASS / DELIVERY GATE PENDING
 Contract ID: ANDY-CORE-V1.5.3-WORDPRESS-CONNECTOR
 Baseline release: Andy Core v1.5.2
-Branch: `feature/andy-core-v1.5.3-wordpress-connector-m3.1-subscribers`
-Worktree: `D:\\ai\\_worktrees\\YBY-Core-v153-wordpress-connector-m31-subscribers`
-Base HEAD: `fbb0ff5c934537fd5739f93adbb30b65ebab6e50`
+Branch: `feature/andy-core-v1.5.3-wordpress-connector-m4-idempotency-audit`
+Worktree: `D:\\ai\\_worktrees\\YBY-Core-v153-wordpress-connector-m4-idempotency-audit`
+Base HEAD: `204c79e16c9b22241ac6c6ec1e17b803810f062a`
 Released v1.5.2 tag: `073ef9d34bbd5bfda1db7ca52caf358f7e6ade87`
 Database baseline: `1.3.0`
+M4 database target: `1.4.0`
 
 ## Authority
 
@@ -126,3 +127,21 @@ After M3 delivery and explicit Owner merge authorization, the next bounded Andy 
 ### Post-M3.1 gate
 
 After delivery and explicit Owner merge authorization, return to ERP Marketing M1.0A for real `/sync/wpapi` Subscriber synchronization UAT. Shopify CSV and manual CSV source merging remain ERP responsibilities, not Andy Core responsibilities.
+
+## M4 Mutation Idempotency + Audit foundation evidence (2026-08-30)
+
+- Base authority is merged `origin/main` commit `204c79e16c9b22241ac6c6ec1e17b803810f062a` (PR #20). M4 uses isolated branch `feature/andy-core-v1.5.3-wordpress-connector-m4-idempotency-audit` and does not reopen M3/M3.1 snapshot behavior.
+- Added durable tables `{$wpdb->prefix}yby_connector_idempotency` and `{$wpdb->prefix}yby_connector_audit` under the existing `YBY_Database` / `dbDelta` migration authority. Internal database schema advances from `1.3.0` to `1.4.0`; plugin/header `YBY_CORE_VERSION` remains `1.5.2` until the final v1.5.3 release gate.
+- Idempotency identity is database-serialized by a unique SHA-256 mutation identity derived from `connection_key + action_key + SHA256(idempotency key)`. Plaintext idempotency keys are never persisted.
+- The reusable storage service supports first acquire, in-progress duplicate rejection, exact-success logical replay, materially-different request conflict, retryable failure reacquire, deterministic non-retryable failure, and bounded expired-record cleanup.
+- Request fingerprints are deterministic across associative key ordering while preserving JSON value types, so integer/string, boolean/string, and null/string identities do not collapse.
+- Persisted replay results use an explicit compact allowlist for provider IDs/status/result facts. Email, display name, payment data, secrets, passwords, auth headers, tokens, credentials, and unrestricted payload are not stored by default.- Audit storage records the canonical safe fields required for later mutations: request ID, non-secret Key ID, Connection Key, endpoint/action, idempotency-key hash reference, actor `ERP trusted system`, explicitly allowlisted target provider IDs, result code, success/failure, retryability, and UTC timestamp.
+- Local migration-cycle UAT explicitly reset only the two empty M4 Connector test tables and `yby_database_version` to `1.3.0`, then executed the real migration: `LOCAL_1_3_TO_1_4_MIGRATION=PASS`, `MIGRATION_IDEMPOTENT=PASS`, `CORE_DATA_IMMUTABILITY=PASS`.
+- Corrected-runtime Local DB UAT passed again after the fresh migration: Connector tables/indexes valid, first acquire/in-progress duplicate/success replay/conflict/retryable failure/non-retryable failure/audit flows passed, existing Lead/Management/Activity hashes were unchanged, and every synthetic M4 UAT row was removed.
+- Regression evidence: 22/23 PHP harnesses passed directly. The only native Windows failure was the known CRLF-sensitive Brand admin source assertion; all four referenced Brand runtime source files exactly match `origin/main`, and the LF-normalized equivalent harness passed. JavaScript harnesses passed 5/5. Google Auth passed under the Local bundled OpenSSL config. PHP lint passed 93/93. `git diff --check` passed.
+- Boundary scan confirms `inc/class-yby-connector.php` is byte-equivalent to `origin/main` for M4, no M4 runtime file registers a REST route, and no AffiliateWP/WooCommerce/WordPress provider mutation call or outbound ERP request was introduced. The five POST contract rows remain `Not Available`.
+- M4 is Local-only. No Dev/production deployment, ERP change, provider mutation, tag, publish, or release is included.
+
+### Post-M4 gate
+
+M4 is ready for delivery review. The next bounded Andy Core increment may implement the first provider mutation only after this foundation is delivered and a new Owner authorization is given. Merge remains a separate explicit Owner gate.

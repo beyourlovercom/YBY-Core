@@ -48,8 +48,8 @@ $assert = static function ( $condition, $message ) {
 };
 $assert( false !== strpos( $plugin, 'Version:           1.5.2' ), 'PLUGIN_HEADER_VERSION_GATE failed.' );
 $assert( false !== strpos( $plugin, "define( 'YBY_CORE_VERSION', '1.5.2' );" ), 'CORE_CONSTANT_VERSION_GATE failed.' );
-$assert( false !== strpos( $plugin, "define( 'YBY_DATABASE_VERSION', '1.3.0' );" ), 'DATABASE_VERSION_GATE failed.' );
-$assert( false !== strpos( $version, 'Stable Version: 1.5.2' ) && false !== strpos( $version, 'Development Version: None' ) && false !== strpos( $version, 'Stable Release Type: Stable' ), 'VERSION_MD_GATE failed.' );
+$assert( false !== strpos( $plugin, "define( 'YBY_DATABASE_VERSION', '1.4.0' );" ), 'DATABASE_VERSION_GATE failed.' );
+$assert( false !== strpos( $version, 'Stable Version: 1.5.2' ) && false !== strpos( $version, 'Development Version: None' ) && false !== strpos( $version, 'Stable Release Type: Stable' ) && false !== strpos( $version, 'Database Version: 1.4.0' ) && false !== strpos( $version, 'Stable v1.5.2 Database Version: 1.3.0' ), 'VERSION_MD_GATE failed.' );
 $assert( false !== strpos( $readme, 'Product version: `1.5.2`' ) && false !== strpos( $readme, 'Database version: `1.3.0`' ), 'README_VERSION_GATE failed.' );
 $assert( false !== strpos( $wp_readme, 'Stable tag: 1.5.2' ), 'README_STABLE_TAG_GATE failed.' );
 $assert( false !== strpos( $changelog, '## v1.5.2 - 2026-08-28' ), 'CHANGELOG_RELEASE_GATE failed.' );

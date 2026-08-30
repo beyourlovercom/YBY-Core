@@ -38,8 +38,9 @@ if ( 'seed' === $phase ) {
 
 $management = YBY_Database::management_table_name();
 $activities = YBY_Database::activities_table_name();
-yby_validation_assert( '1.3.0' === get_option( 'yby_database_version' ), 'Database upgrade did not complete.' );
+yby_validation_assert( '1.4.0' === get_option( 'yby_database_version' ), 'Database upgrade did not complete.' );
 yby_validation_assert( YBY_Database::management_tables_exist(), 'Management tables or indexes missing.' );
+yby_validation_assert( YBY_Database::connector_tables_exist(), 'Connector idempotency/audit tables or unique index missing.' );
 yby_validation_assert( 0 === (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$management}" ), 'Migration backfilled management records.' );
 yby_validation_assert( 0 === (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$activities}" ), 'Migration backfilled activities.' );
 yby_validation_assert( get_option( 'yby_validation_lead_hash' ) === hash( 'sha256', wp_json_encode( $wpdb->get_results( "SELECT * FROM {$leads} ORDER BY id", ARRAY_A ) ) ), 'Migration changed original Leads.' );

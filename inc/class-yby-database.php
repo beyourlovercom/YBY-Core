@@ -32,6 +32,10 @@ class YBY_Database {
 
 	const ACTIVITIES_TABLE = 'yby_lead_activities';
 
+	const CONNECTOR_IDEMPOTENCY_TABLE = 'yby_connector_idempotency';
+
+	const CONNECTOR_AUDIT_TABLE = 'yby_connector_audit';
+
 	/**
 	 * Install or upgrade plugin database tables.
 	 *
@@ -44,7 +48,8 @@ class YBY_Database {
 
 		self::create_leads_table();
 		self::create_management_tables();
-		if ( self::leads_table_exists() && self::management_tables_exist() ) {
+		self::create_connector_tables();
+		if ( self::leads_table_exists() && self::management_tables_exist() && self::connector_tables_exist() ) {
 			update_option( self::VERSION_OPTION, YBY_DATABASE_VERSION );
 		}
 	}
@@ -94,6 +99,35 @@ class YBY_Database {
 		return $wpdb->prefix . self::ACTIVITIES_TABLE;
 	}
 
+	public static function connector_idempotency_table_name() {
+		global $wpdb;
+		return $wpdb->prefix . self::CONNECTOR_IDEMPOTENCY_TABLE;
+	}
+
+	public static function connector_audit_table_name() {
+		global $wpdb;
+		return $wpdb->prefix . self::CONNECTOR_AUDIT_TABLE;
+	}
+
+	public static function connector_tables_exist() {
+		global $wpdb;
+		$idempotency = self::connector_idempotency_table_name();
+		$audit       = self::connector_audit_table_name();
+		if ( $idempotency !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $idempotency ) ) || $audit !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $audit ) ) ) {
+			return false;
+		}
+		$required = array( $idempotency => array( 'mutation_identity', 'state_expires', 'connection_action' ), $audit => array( 'request_id', 'connection_action', 'created_at' ) );
+		foreach ( $required as $table => $names ) {
+			$found = array();
+			foreach ( (array) $wpdb->get_results( 'SHOW INDEX FROM ' . $table, ARRAY_A ) as $index ) {
+				if ( ! empty( $index['Key_name'] ) ) { $found[ $index['Key_name'] ] = true; }
+				if ( 'mutation_identity' === ( $index['Key_name'] ?? '' ) && '0' !== (string) ( $index['Non_unique'] ?? '1' ) ) { return false; }
+			}
+			foreach ( $names as $name ) { if ( empty( $found[ $name ] ) ) { return false; } }
+		}
+		return true;
+	}
+
 	public static function management_tables_exist() {
 		global $wpdb;
 		$management_exists = self::management_table_name() === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', self::management_table_name() ) );
@@ -121,7 +155,7 @@ class YBY_Database {
 			return true;
 		}
 
-		return ! self::leads_table_exists() || ! self::management_tables_exist();
+		return ! self::leads_table_exists() || ! self::management_tables_exist() || ! self::connector_tables_exist();
 	}
 
 	/**
@@ -211,5 +245,52 @@ class YBY_Database {
 		) {$charset_collate};";
 		dbDelta( $management_sql );
 		dbDelta( $activities_sql );
+	}
+
+	protected static function create_connector_tables() {
+		global $wpdb;
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		$charset_collate = $wpdb->get_charset_collate();
+		$idempotency = self::connector_idempotency_table_name();
+		$audit       = self::connector_audit_table_name();
+		$idempotency_sql = "CREATE TABLE {$idempotency} (
+			id bigint unsigned NOT NULL AUTO_INCREMENT,
+			connection_key varchar(128) NOT NULL,
+			action_key varchar(128) NOT NULL,
+			idempotency_key_hash char(64) NOT NULL,
+			mutation_identity_hash char(64) NOT NULL,
+			request_fingerprint char(64) NOT NULL,
+			state varchar(20) NOT NULL,
+			safe_result text NULL,
+			failure_code varchar(80) NOT NULL DEFAULT '',
+			retryable tinyint(1) NOT NULL DEFAULT 0,
+			created_at datetime NOT NULL,
+			updated_at datetime NOT NULL,
+			expires_at datetime NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY mutation_identity (mutation_identity_hash),
+			KEY state_expires (state, expires_at),
+			KEY connection_action (connection_key, action_key)
+		) {$charset_collate};";
+		$audit_sql = "CREATE TABLE {$audit} (
+			id bigint unsigned NOT NULL AUTO_INCREMENT,
+			request_id varchar(80) NOT NULL,
+			key_id varchar(64) NOT NULL DEFAULT '',
+			connection_key varchar(128) NOT NULL,
+			endpoint_action varchar(160) NOT NULL,
+			idempotency_key_hash char(64) NOT NULL DEFAULT '',
+			actor varchar(40) NOT NULL DEFAULT 'ERP trusted system',
+			target_provider_ids text NULL,
+			result_code varchar(80) NOT NULL DEFAULT '',
+			success tinyint(1) NOT NULL DEFAULT 0,
+			retryable tinyint(1) NOT NULL DEFAULT 0,
+			created_at datetime NOT NULL,
+			PRIMARY KEY (id),
+			KEY request_id (request_id),
+			KEY connection_action (connection_key, endpoint_action),
+			KEY created_at (created_at)
+		) {$charset_collate};";
+		dbDelta( $idempotency_sql );
+		dbDelta( $audit_sql );
 	}
 }
