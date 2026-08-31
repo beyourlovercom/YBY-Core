@@ -27,7 +27,7 @@ Before declaring a release package `release-ready`, `validated`, or `safe to upl
 Validation command:
 
 ```bash
-unzip -l yby-core-vX.X.X.zip
+unzip -l andy-core-vX.X.X.zip
 ```
 
 Expected output example:

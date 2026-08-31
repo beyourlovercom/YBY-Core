@@ -13,7 +13,8 @@ Development
 -> SHA256 Generation
 -> Git Commit
 -> Git Tag
--> GitHub Release
+-> Tagged Build Artifact
+-> Explicit Owner GitHub Release Authorization
 -> Production Upload
 
 ## Required release documentation
@@ -45,9 +46,9 @@ Hard rule:
 
 ## ZIP packaging standard
 
-Release package name:
+Stable release package name:
 
-- `yby-core-vX.X.X.zip`
+- `andy-core-vX.X.X.zip`
 
 ZIP root structure:
 
@@ -68,7 +69,7 @@ Forbidden:
 Validation:
 
 ```bash
-unzip -l yby-core-vX.X.X.zip
+unzip -l andy-core-vX.X.X.zip
 ```
 
 The package must contain:
@@ -84,7 +85,7 @@ Every release package must generate:
 Command:
 
 ```bash
-sha256sum yby-core-vX.X.X.zip > SHA256.txt
+sha256sum andy-core-vX.X.X.zip > SHA256.txt
 ```
 
 ## Version management
@@ -114,6 +115,12 @@ Tag message:
 
 - `YBY Core vX.X.X Stable Release`
 
+## Tag and GitHub Release authorization gates
+
+Creating or pushing `vX.X.X` is an explicit Owner authorization for the tag only. The tag workflow validates PHP, derives the version from the tag, requires `scripts/build-vX.X.X-release.sh`, invokes it with `BUILD_CONTEXT=FINAL_RELEASE` and `RELEASE_OUTPUT_DIR=releases/vX.X.X`, validates the resulting package, and uploads `releases/vX.X.X` as an Actions artifact.
+
+The tag workflow must not create or update a GitHub Release. Publishing a GitHub Release is a separate explicit Owner authorization gate after the tagged build artifact and release validation have passed. Only then may the package, checksum, and release documentation be attached to the GitHub Release.
+
 ## GitHub Release standard
 
 Each GitHub Release must include:
@@ -128,16 +135,18 @@ Each GitHub Release must include:
 
 Create `.github/workflows/release.yml` with a `push` trigger for tags matching `v*`.
 
-The workflow should:
+The tag-build workflow should:
 
 - Check out the repository
 - Set up PHP
 - Run PHP syntax validation
-- Build the ZIP package
-- Generate the SHA256 checksum
-- Upload release artifacts
+- Require and invoke `scripts/build-vX.X.X-release.sh` with final-release context
+- Build `releases/vX.X.X/andy-core-vX.X.X.zip`
+- Validate the ZIP root, exclusions, and version metadata
+- Upload `releases/vX.X.X` only as an Actions artifact
+- Never call `softprops/action-gh-release` or publish/update a GitHub Release
 
 ## Current stable release
 
-- Stable version: `YBY Core v1.1.1`
-- Brand Settings: included and verified
+- Stable version: `YBY Core v1.5.2`
+- Stable package baseline: `andy-core-v1.5.2.zip`

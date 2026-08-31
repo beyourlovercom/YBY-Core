@@ -4,12 +4,26 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `1.5.2`
+- Product version: `1.5.3`
 - Development version: None
-- Database version: `1.3.0`
+- Database version: `1.4.0`
 - Release status: Stable
 - Plugin path: `yby-core/yby-core.php`
 - Technical namespace: existing `YBY_*` and `yby_*` identifiers retained for compatibility
+
+## v1.5.3 release scope
+
+Version 1.5.3 adds the bounded WordPress Connector surface for BYL ERP integration while preserving existing Andy Core contracts:
+
+- WP-API settings tab with truthful connection, security, and provider health status
+- HMAC-SHA256 V1 authentication with signature, replay, rate-limit, and mutation idempotency protections
+- Safe audit records and provider-safe behavior when WooCommerce or AffiliateWP is unavailable
+- Five provider snapshots: affiliates, coupons, referrals, payouts, and subscribers
+- Affiliate provisioning and status mutation with canonical provider read-back
+- Coupon check and provision with conflict protection and canonical WooCommerce code read-back
+- Payout completion reconciliation in AffiliateWP for ERP-completed manual PayPal payouts; Andy Core does not transfer money through PayPal
+- Fixed WooCommerce coupon canonical readback handling
+- Database schema version `1.4.0` for Connector persistence
 
 ## v1.5.2 release scope
 

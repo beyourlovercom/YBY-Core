@@ -1,4 +1,4 @@
-name: Release YBY Core
+name: Build Tagged YBY Core Release
 
 on:
   push:
@@ -6,14 +6,16 @@ on:
       - "v*"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
+  tagged-release-package:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -23,28 +25,40 @@ jobs:
       - name: PHP syntax validation
         run: find . -name "*.php" -print0 | xargs -0 -n1 php -l
 
-      - name: Build release package
+      - name: Build and validate tagged release package
+        shell: bash
         run: |
-          set -e
+          set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
           release_dir="releases/v${version}"
-          stage_dir="$(mktemp -d)"
-          mkdir -p "${stage_dir}/yby-core"
-          for item in yby-core.php readme.txt README.md CHANGELOG.md VERSION.md uninstall.php; do
-            cp "$item" "${stage_dir}/yby-core/"
+          builder="scripts/build-v${version}-release.sh"
+          package="${release_dir}/andy-core-v${version}.zip"
+          test -f "${builder}"
+          BUILD_CONTEXT=FINAL_RELEASE RELEASE_OUTPUT_DIR="${release_dir}" SOURCE_BRANCH="tag:${GITHUB_REF_NAME}" SOURCE_COMMIT="${GITHUB_SHA}" bash "${builder}"
+          test -s "${package}"
+          test -s "${release_dir}/SHA256.txt"
+          test -s "${release_dir}/BUILD_INFO.md"
+          for doc in "RELEASE_NOTES_v${version}.md" "UPGRADE_GUIDE_v${version}.md" "ROLLBACK_GUIDE_v${version}.md"; do
+            test -s "${doc}"
+            cp "${doc}" "${release_dir}/"
           done
-          for dir in admin assets inc languages modules public templates; do
-            cp -R "$dir" "${stage_dir}/yby-core/"
-          done
-          mkdir -p "${release_dir}"
-          (cd "${stage_dir}" && zip -r "${GITHUB_WORKSPACE}/${release_dir}/yby-core-v${version}.zip" yby-core)
-          sha256sum "${release_dir}/yby-core-v${version}.zip" > "${release_dir}/SHA256.txt"
+          unzip -Z1 "${package}" | awk -F/ 'NF && $1 != "yby-core" { exit 1 }'
+          unzip -Z1 "${package}" | grep -Fx 'yby-core/yby-core.php'
+          ! unzip -Z1 "${package}" | grep -E '(^|/)(\.git|\.github|tests|docs|releases)(/|$)'
+          unzip -p "${package}" yby-core/yby-core.php | grep -F "Version:           ${version}"
+          unzip -p "${package}" yby-core/yby-core.php | grep -F "define( 'YBY_CORE_VERSION', '${version}' );"
+          unzip -p "${package}" yby-core/readme.txt | grep -F "Stable tag: ${version}"
+          expected_sha="$(cat "${release_dir}/SHA256.txt")"
+          actual_sha="$(sha256sum "${package}" | awk '{print $1}')"
+          test "${expected_sha}" = "${actual_sha}"
+          grep -F 'Build Context: FINAL_RELEASE' "${release_dir}/BUILD_INFO.md"
+          grep -F 'PHP Lint: PASS' "${release_dir}/BUILD_INFO.md"
+          grep -F 'git diff --check: PASS' "${release_dir}/BUILD_INFO.md"
 
-      - name: Upload release artifacts
-        uses: softprops/action-gh-release@v2
+      - name: Upload tagged build evidence
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            releases/${{ github.ref_name }}/yby-core-${{ github.ref_name }}.zip
-            releases/${{ github.ref_name }}/SHA256.txt
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: andy-core-${{ github.ref_name }}-tagged-build
+          path: releases/${{ github.ref_name }}
+          if-no-files-found: error
+          retention-days: 30

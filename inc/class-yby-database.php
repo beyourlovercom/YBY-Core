@@ -147,6 +147,16 @@ class YBY_Database {
 			}
 			foreach ( $names as $name ) { if ( empty( $found[ $name ] ) ) { return false; } }
 		}
+		$m7_indexes = array( $payouts => array( 'connection_request', 'payout_id', 'state_expires' ), $claims => array( 'referral_id', 'payout_request' ) );
+		foreach ( $m7_indexes as $table => $names ) {
+			$found = array();
+			foreach ( (array) $wpdb->get_results( 'SHOW INDEX FROM ' . $table, ARRAY_A ) as $index ) {
+				$key_name = $index['Key_name'] ?? '';
+				if ( '' !== $key_name ) { $found[ $key_name ] = true; }
+				if ( in_array( $key_name, array( 'connection_request', 'payout_id', 'referral_id' ), true ) && '0' !== (string) ( $index['Non_unique'] ?? '1' ) ) { return false; }
+			}
+			foreach ( $names as $name ) { if ( empty( $found[ $name ] ) ) { return false; } }
+		}
 		$columns = array();
 		foreach ( (array) $wpdb->get_results( 'SHOW COLUMNS FROM ' . $bindings, ARRAY_A ) as $column ) { if ( ! empty( $column['Field'] ) ) { $columns[ $column['Field'] ] = true; } }
 		foreach ( array( 'state', 'lease_owner_hash', 'lease_expires_at' ) as $column ) { if ( empty( $columns[ $column ] ) ) { return false; } }
