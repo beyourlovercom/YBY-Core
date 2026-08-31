@@ -137,6 +137,7 @@ class YBY_Connector {
 		register_rest_route( self::REST_NAMESPACE, '/affiliates/(?P<affiliate_id>\\d+)/status', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_affiliate_status' ), 'permission_callback' => '__return_true' ) );
 		register_rest_route( self::REST_NAMESPACE, '/coupons/check', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_coupon_check' ), 'permission_callback' => '__return_true' ) );
 		register_rest_route( self::REST_NAMESPACE, '/coupons/provision', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_coupon_provision' ), 'permission_callback' => '__return_true' ) );
+		register_rest_route( self::REST_NAMESPACE, '/payouts/complete', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_payout_complete' ), 'permission_callback' => '__return_true' ) );
 	}
 
 	public static function dispatch_coupon_check( $request ) {
@@ -160,6 +161,38 @@ class YBY_Connector {
 
 	public static function dispatch_affiliate_status( $request ) {
 		return self::dispatch_mutation( $request, 'affiliate.status', '/affiliates/{affiliate_id}/status', 'status' );
+	}
+
+	public static function dispatch_payout_complete( $request ) {
+		$auth = self::authenticate( $request ); if ( is_wp_error( $auth ) ) { return self::error_response( $auth, $request ); }
+		$request_id = self::request_id(); $endpoint = '/payouts/complete'; $key = self::request_header( $request, 'X-YBY-Idempotency-Key' );
+		if ( '' === $key ) { return self::mutation_failure( 'VALIDATION_FAILED', 'X-YBY-Idempotency-Key is required.', 400, false, $request, $request_id, $endpoint, $key ); }
+		$input = self::validate_payout_input( $request, self::json_params( $request ) );
+		if ( is_wp_error( $input ) ) { return self::mutation_failure( $input->get_error_code(), $input->get_error_message(), 400, false, $request, $request_id, $endpoint, $key ); }
+		$begin = YBY_Connector_Idempotency::begin( $input['connection_key'], 'payout.complete', $key, $input );
+		if ( is_wp_error( $begin ) ) { return self::mutation_failure( $begin->get_error_code(), $begin->get_error_message(), self::error_status( $begin ), ! empty( $begin->get_error_data()['retryable'] ), $request, $request_id, $endpoint, $key, $input ); }
+		if ( 'replay' === $begin['status'] ) { return self::mutation_success( $begin['record']['result'], $request, $request_id ); }
+		if ( 'failed' === $begin['status'] ) { $failed_code = $begin['record']['failure_code']; return self::mutation_failure( $failed_code, 'The previous mutation failed.', self::failure_replay_status( $failed_code ), false, $request, $request_id, $endpoint, $key, $input ); }
+		$finish = function ( $code, $message, $status, $retryable, $error = null ) use ( $begin, $request, $request_id, $endpoint, $key, $input ) { YBY_Connector_Idempotency::fail( $begin['id'], $code, $retryable ); return self::mutation_failure( $code, $message, $status, $retryable, $request, $request_id, $endpoint, $key, $input, $error ); };
+		if ( ! self::payout_provider_ready() ) { return $finish( 'PROVIDER_UNAVAILABLE', 'AffiliateWP payout provider is unavailable.', 503, true ); }
+		$fingerprint = YBY_Connector_Idempotency::fingerprint( $input ); $owner = hash( 'sha256', $request_id . ':' . microtime( true ) );
+		$binding = YBY_Connector_Payout_Bindings::reserve( $input['connection_key'], (string) $input['erp_payout_request_id'], $fingerprint, $owner );
+		if ( is_wp_error( $binding ) ) { return $finish( $binding->get_error_code(), $binding->get_error_message(), self::error_status( $binding ), ! empty( $binding->get_error_data()['retryable'] ), $binding ); }
+		if ( 'busy' === $binding['status'] ) { return $finish( 'PAYOUT_IN_PROGRESS', 'This ERP payout request is already processing.', 409, true ); }
+		$row = $binding['row']; $payout_id = absint( $row['payout_id'] ?? 0 );
+		if ( ! $payout_id && 'acquired' === $binding['status'] ) { $recovered = self::recover_payout( $input ); if ( is_wp_error( $recovered ) ) { return $finish( $recovered->get_error_code(), $recovered->get_error_message(), self::error_status( $recovered ), ! empty( $recovered->get_error_data()['retryable'] ), $recovered ); } if ( $recovered ) { $payout_id = $recovered; if ( ! YBY_Connector_Payout_Bindings::set_payout( $input['connection_key'], (string) $input['erp_payout_request_id'], $owner, $payout_id ) ) { return $finish( 'PROVIDER_SYNC_FAILED', 'Recovered payout identity could not be persisted.', 503, true ); } } }
+		if ( $payout_id ) { if ( 'ready' !== $binding['status'] && ! YBY_Connector_Payout_Bindings::renew( $input['connection_key'], (string) $input['erp_payout_request_id'], $owner ) ) { return $finish( 'PAYOUT_IN_PROGRESS', 'Payout reconciliation lease was lost.', 503, true ); } $result = self::reconcile_payout( $input, $payout_id ); if ( is_wp_error( $result ) ) { return $finish( $result->get_error_code(), $result->get_error_message(), self::error_status( $result ), true, $result ); } if ( 'ready' !== $binding['status'] && ! YBY_Connector_Payout_Bindings::finalize( $input['connection_key'], (string) $input['erp_payout_request_id'], $owner, $payout_id ) ) { return $finish( 'PROVIDER_SYNC_FAILED', 'Payout reconciliation finalization needs retry.', 503, true ); } if ( ! YBY_Connector_Idempotency::succeed( $begin['id'], $result ) ) { return $finish( 'IDEMPOTENCY_UNAVAILABLE', 'Could not persist mutation result.', 503, true ); } self::audit( $request, $request_id, $endpoint, $key, $result, 'OK', true, false ); return self::mutation_success( $result, $request, $request_id ); }
+		$provider_check = self::validate_payout_provider_inputs( $input ); if ( is_wp_error( $provider_check ) ) { return $finish( $provider_check->get_error_code(), $provider_check->get_error_message(), self::error_status( $provider_check ), false, $provider_check ); }
+		$claimed = array(); foreach ( $input['referral_ids'] as $referral_id ) { if ( ! YBY_Connector_Payout_Bindings::claim( $input['connection_key'], (string) $input['erp_payout_request_id'], $referral_id ) ) { YBY_Connector_Payout_Bindings::release_claims( $input['connection_key'], (string) $input['erp_payout_request_id'], $claimed ); YBY_Connector_Payout_Bindings::release_processing( $input['connection_key'], (string) $input['erp_payout_request_id'], $owner ); return $finish( 'REFERRAL_NOT_ELIGIBLE', 'A referral is already claimed by another payout request.', 409, false ); } $claimed[] = $referral_id; }
+		if ( ! YBY_Connector_Payout_Bindings::renew( $input['connection_key'], (string) $input['erp_payout_request_id'], $owner ) ) { YBY_Connector_Payout_Bindings::release_claims( $input['connection_key'], (string) $input['erp_payout_request_id'], $claimed ); YBY_Connector_Payout_Bindings::release_processing( $input['connection_key'], (string) $input['erp_payout_request_id'], $owner ); return $finish( 'PAYOUT_IN_PROGRESS', 'Payout reservation lease was lost.', 503, true ); }
+		$created = affwp_add_payout( array( 'affiliate_id' => $input['affiliate_id'], 'referrals' => $input['referral_ids'], 'amount' => $input['amount'], 'payout_method' => 'manual', 'status' => 'paid', 'date' => $input['paid_at'] ) );
+		$payout_id = is_object( $created ) ? self::payout_id_from_object( $created ) : absint( $created );
+		if ( ! $payout_id || ! YBY_Connector_Payout_Bindings::set_payout( $input['connection_key'], (string) $input['erp_payout_request_id'], $owner, $payout_id ) ) { $adopted = self::recover_payout( $input ); if ( ! is_wp_error( $adopted ) && $adopted && YBY_Connector_Payout_Bindings::set_payout( $input['connection_key'], (string) $input['erp_payout_request_id'], $owner, $adopted ) ) { $payout_id = $adopted; } else { return $finish( 'PROVIDER_SYNC_FAILED', 'Provider payout was created but its Connector identity could not be reconciled.', 503, true, is_wp_error( $adopted ) ? $adopted : null ); } }
+		$result = self::reconcile_payout( $input, $payout_id );
+		if ( is_wp_error( $result ) ) { return $finish( $result->get_error_code(), $result->get_error_message(), self::error_status( $result ), true, $result ); }
+		if ( ! YBY_Connector_Payout_Bindings::finalize( $input['connection_key'], (string) $input['erp_payout_request_id'], $owner, $payout_id ) ) { return $finish( 'PROVIDER_SYNC_FAILED', 'Payout was paid but Connector finalization needs retry.', 503, true ); }
+		if ( ! YBY_Connector_Idempotency::succeed( $begin['id'], $result ) ) { return $finish( 'IDEMPOTENCY_UNAVAILABLE', 'Could not persist mutation result.', 503, true ); }
+		self::audit( $request, $request_id, $endpoint, $key, $result, 'OK', true, false ); return self::mutation_success( $result, $request, $request_id );
 	}
 
 	private static function dispatch_mutation( $request, $action, $endpoint, $operation ) {
@@ -338,8 +371,70 @@ class YBY_Connector {
 	private static function failure_replay_status( $code ) {
 		if ( 'AFFILIATE_NOT_FOUND' === $code ) { return 404; }
 		if ( in_array( $code, array( 'IDEMPOTENCY_CONFLICT', 'AFFILIATE_ID_CONFLICT', 'COUPON_CONFLICT' ), true ) ) { return 409; }
-		return in_array( $code, array( 'PROVIDER_UNAVAILABLE', 'PROVIDER_WRITE_FAILED', 'PROVIDER_READBACK_FAILED', 'IDEMPOTENCY_UNAVAILABLE', 'AFFILIATE_BINDING_UNAVAILABLE', 'PROVISION_IN_PROGRESS' ), true ) ? 503 : 400;
+		return in_array( $code, array( 'PROVIDER_UNAVAILABLE', 'PROVIDER_WRITE_FAILED', 'PROVIDER_READBACK_FAILED', 'PROVIDER_SYNC_FAILED', 'IDEMPOTENCY_UNAVAILABLE', 'AFFILIATE_BINDING_UNAVAILABLE', 'PROVISION_IN_PROGRESS', 'PAYOUT_IN_PROGRESS' ), true ) ? 503 : 400;
 	}
+
+	private static function validate_payout_input( $request, $body ) {
+		$required = array( 'erp_payout_request_id', 'affiliate_id', 'referral_ids', 'amount', 'currency', 'payout_method', 'paypal_transaction_id', 'paid_at' );
+		if ( ! is_array( $body ) || count( $body ) !== count( $required ) || array_diff( $required, array_keys( $body ) ) || array_diff( array_keys( $body ), $required ) ) { return self::validation_error(); }
+		foreach ( array( 'erp_payout_request_id', 'affiliate_id' ) as $key ) { if ( ! ( is_int( $body[ $key ] ) || ( is_string( $body[ $key ] ) && ctype_digit( $body[ $key ] ) ) ) || (int) $body[ $key ] < 1 ) { return self::validation_error(); } }
+		if ( ! is_array( $body['referral_ids'] ) || count( $body['referral_ids'] ) < 1 || count( $body['referral_ids'] ) > 100 ) { return self::validation_error(); }
+		$ids = array(); foreach ( $body['referral_ids'] as $id ) { if ( ! ( is_int( $id ) || ( is_string( $id ) && ctype_digit( $id ) ) ) || (int) $id < 1 ) { return self::validation_error(); } $ids[] = (int) $id; } if ( count( array_unique( $ids ) ) !== count( $ids ) ) { return self::validation_error(); } sort( $ids, SORT_NUMERIC );
+		if ( ! is_scalar( $body['amount'] ) || ! preg_match( '/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/', (string) $body['amount'] ) || '0' === self::canonical_decimal( $body['amount'] ) ) { return self::validation_error(); }
+		if ( ! is_string( $body['currency'] ) || ! preg_match( '/^[A-Z]{3}$/', $body['currency'] ) || ! is_string( $body['payout_method'] ) || 'paypal_manual' !== $body['payout_method'] || ! is_scalar( $body['paypal_transaction_id'] ) || '' === trim( (string) $body['paypal_transaction_id'] ) || strlen( (string) $body['paypal_transaction_id'] ) > 255 || ! is_string( $body['paid_at'] ) || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $body['paid_at'] ) ) { return self::validation_error(); }
+		$date = DateTimeImmutable::createFromFormat( '!Y-m-d', $body['paid_at'] ); if ( ! $date || $date->format( 'Y-m-d' ) !== $body['paid_at'] ) { return self::validation_error(); }
+		return array( 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'erp_payout_request_id' => (int) $body['erp_payout_request_id'], 'affiliate_id' => (int) $body['affiliate_id'], 'referral_ids' => $ids, 'amount' => self::canonical_decimal( $body['amount'] ), 'currency' => $body['currency'], 'payout_method' => 'paypal_manual', 'paypal_transaction_id' => (string) $body['paypal_transaction_id'], 'paid_at' => $body['paid_at'] );
+	}
+
+	private static function payout_provider_ready() { return self::provider_available( 'affiliatewp' ) && function_exists( 'affwp_get_affiliate' ) && function_exists( 'affwp_add_payout' ) && function_exists( 'affwp_set_referral_status' ) && function_exists( 'affiliate_wp' ) && is_object( affiliate_wp() ) && isset( affiliate_wp()->referrals ) && method_exists( affiliate_wp()->referrals, 'update' ) && ( function_exists( 'affwp_get_payout' ) || isset( affiliate_wp()->affiliates->payouts ) ) && isset( affiliate_wp()->affiliates->payouts ) && is_object( affiliate_wp()->affiliates->payouts ) && method_exists( affiliate_wp()->affiliates->payouts, 'get_payouts' ); }
+	private static function payout_id_from_object( $payout ) { return is_object( $payout ) ? absint( $payout->payout_id ?? ( $payout->ID ?? ( $payout->id ?? 0 ) ) ) : 0; }
+	private static function referral_id_from_object( $referral ) { return is_object( $referral ) ? absint( $referral->referral_id ?? ( $referral->ID ?? ( $referral->id ?? 0 ) ) ) : 0; }
+	private static function provider_referral( $id ) { if ( function_exists( 'affwp_get_referral' ) ) { return affwp_get_referral( $id ); } $provider = affiliate_wp(); return isset( $provider->referrals ) && method_exists( $provider->referrals, 'get' ) ? $provider->referrals->get( $id ) : false; }
+	private static function provider_payout( $id ) { if ( function_exists( 'affwp_get_payout' ) ) { return affwp_get_payout( $id ); } $provider = affiliate_wp(); return isset( $provider->affiliates->payouts ) && method_exists( $provider->affiliates->payouts, 'get' ) ? $provider->affiliates->payouts->get( $id ) : false; }
+	private static function recover_payout( $input ) {
+		$ids = array(); $evidence = false;
+		$provider = function_exists( 'affiliate_wp' ) ? affiliate_wp() : null; $collection = is_object( $provider ) && isset( $provider->affiliates->payouts ) ? $provider->affiliates->payouts : null;
+		if ( ! is_object( $collection ) || ! method_exists( $collection, 'get_payouts' ) ) { return new WP_Error( 'PROVIDER_SYNC_FAILED', 'Payout recovery collection is unavailable.', array( 'status' => 503, 'retryable' => true ) ); }
+		$found = $collection->get_payouts( array( 'number' => 0, 'affiliate_id' => $input['affiliate_id'], 'payout_method' => 'manual', 'status' => 'paid', 'date' => $input['paid_at'] ) );
+		if ( ! is_array( $found ) ) { return new WP_Error( 'PROVIDER_SYNC_FAILED', 'Payout recovery collection read-back is unavailable.', array( 'status' => 503, 'retryable' => true ) ); }
+		foreach ( $found as $payout ) { $id = is_object( $payout ) ? self::payout_id_from_object( $payout ) : absint( $payout ); if ( $id ) { $evidence = true; $ids[] = $id; } }
+		foreach ( $input['referral_ids'] as $referral_id ) { $referral = self::provider_referral( $referral_id ); if ( ! $referral ) { return new WP_Error( 'PROVIDER_SYNC_FAILED', 'Referral recovery read-back is unavailable.', array( 'status' => 503, 'retryable' => true ) ); } if ( ! empty( $referral->payout_id ) ) { $evidence = true; $ids[] = absint( $referral->payout_id ); } }
+		$ids = array_values( array_unique( array_filter( $ids ) ) );
+		if ( ! $ids ) { return false; }
+		$matches = array(); foreach ( $ids as $id ) { if ( self::payout_matches_request( $input, $id, true ) ) { $matches[] = $id; } }
+		if ( 1 === count( $matches ) ) { return (int) $matches[0]; }
+		return new WP_Error( 'PROVIDER_SYNC_FAILED', $evidence ? 'Provider payout recovery is ambiguous or not exact.' : 'Provider payout recovery could not be proven exact.', array( 'status' => 503, 'retryable' => true ) );
+	}
+	private static function payout_referral_ids( $payout ) {
+		$refs = array();
+		if ( is_object( $payout ) && method_exists( $payout, 'get_referral_ids' ) ) { $refs = (array) $payout->get_referral_ids(); }
+		elseif ( is_object( $payout ) && isset( $payout->referrals ) ) { $refs = is_array( $payout->referrals ) ? $payout->referrals : explode( ',', (string) $payout->referrals ); }
+		elseif ( function_exists( 'affwp_get_payout_referrals' ) ) { $refs = (array) affwp_get_payout_referrals( $payout ); }
+		$ids = array(); foreach ( $refs as $ref ) { $ids[] = is_object( $ref ) ? self::referral_id_from_object( $ref ) : absint( $ref ); }
+		$ids = array_values( array_filter( $ids ) ); sort( $ids, SORT_NUMERIC ); return $ids;
+	}
+	private static function payout_matches_request( $input, $payout_id, $recovery = false ) {
+		$payout = self::provider_payout( $payout_id ); if ( ! $payout || self::payout_id_from_object( $payout ) !== (int) $payout_id || (int) ( $payout->affiliate_id ?? 0 ) !== $input['affiliate_id'] || self::canonical_decimal( (string) ( $payout->amount ?? '' ) ) !== $input['amount'] || 'manual' !== (string) ( $payout->payout_method ?? '' ) || 'paid' !== strtolower( (string) ( $payout->status ?? '' ) ) || self::payout_local_date( $payout->date ?? '' ) !== $input['paid_at'] ) { return false; }
+		if ( self::payout_referral_ids( $payout ) !== $input['referral_ids'] ) { return false; }
+		foreach ( $input['referral_ids'] as $id ) { $ref = self::provider_referral( $id ); $ref_payout_id = $ref ? (int) ( $ref->payout_id ?? 0 ) : 0; $ref_status = $ref ? strtolower( (string) ( $ref->status ?? '' ) ) : ''; if ( ! $ref || (int) ( $ref->affiliate_id ?? 0 ) !== $input['affiliate_id'] || strtoupper( (string) ( $ref->currency ?? '' ) ) !== $input['currency'] || ( ! $recovery && $ref_payout_id !== (int) $payout_id ) || ( $recovery && $ref_payout_id && $ref_payout_id !== (int) $payout_id ) || ( ! $recovery && 'paid' !== $ref_status ) || ( $recovery && ! in_array( $ref_status, array( 'unpaid', 'paid' ), true ) ) ) { return false; } }
+		return true;
+	}
+	private static function payout_local_date( $value ) { if ( $value instanceof DateTimeInterface ) { $value = $value->format( 'Y-m-d H:i:s' ); } $value = (string) $value; return function_exists( 'get_date_from_gmt' ) ? substr( get_date_from_gmt( $value, 'Y-m-d H:i:s' ), 0, 10 ) : substr( $value, 0, 10 ); }
+	private static function validate_payout_provider_inputs( $input ) {
+		$affiliate = affwp_get_affiliate( $input['affiliate_id'] ); if ( ! $affiliate || self::affiliate_id_from_object( $affiliate ) !== $input['affiliate_id'] ) { return new WP_Error( 'AFFILIATE_NOT_FOUND', 'Affiliate was not found.', array( 'status' => 404, 'retryable' => false ) ); }
+		$sum = '0'; foreach ( $input['referral_ids'] as $id ) { $referral = self::provider_referral( $id ); if ( ! $referral || self::referral_id_from_object( $referral ) !== $id || (int) ( $referral->affiliate_id ?? 0 ) !== $input['affiliate_id'] || 'unpaid' !== strtolower( (string) ( $referral->status ?? '' ) ) || ! empty( $referral->payout_id ) || strtoupper( (string) ( $referral->currency ?? '' ) ) !== $input['currency'] ) { return new WP_Error( 'REFERRAL_NOT_ELIGIBLE', 'Referral set is not wholly eligible for this payout.', array( 'status' => 409, 'retryable' => false ) ); } $sum = self::decimal_add( $sum, (string) ( $referral->amount ?? '' ) ); }
+		if ( $sum !== $input['amount'] ) { return new WP_Error( 'VALIDATION_FAILED', 'Referral amount sum does not equal payout amount.', array( 'status' => 400, 'retryable' => false ) ); } return true;
+	}
+	private static function reconcile_payout( $input, $payout_id ) {
+		$payout = self::provider_payout( $payout_id ); if ( ! $payout ) { return self::provider_failure( 'PROVIDER_SYNC_FAILED', 'Payout read-back is unavailable.' ); }
+		$ids = array(); if ( function_exists( 'affwp_get_payout_referrals' ) ) { foreach ( (array) affwp_get_payout_referrals( $payout ) as $ref ) { $ids[] = self::referral_id_from_object( $ref ); } } elseif ( isset( $payout->referrals ) ) { $ids = array_map( 'absint', is_array( $payout->referrals ) ? $payout->referrals : explode( ',', (string) $payout->referrals ) ); } sort( $ids, SORT_NUMERIC );
+		$amount = self::canonical_decimal( (string) ( $payout->amount ?? '' ) ); $date = self::payout_local_date( $payout->date ?? '' );
+		if ( self::payout_id_from_object( $payout ) !== (int) $payout_id || (int) ( $payout->affiliate_id ?? 0 ) !== $input['affiliate_id'] || $amount !== $input['amount'] || 'manual' !== (string) ( $payout->payout_method ?? '' ) || 'paid' !== strtolower( (string) ( $payout->status ?? '' ) ) || $date !== $input['paid_at'] ) { return self::provider_failure( 'PROVIDER_SYNC_FAILED', 'Payout provider read-back does not match the exact request.' ); }
+		foreach ( $input['referral_ids'] as $id ) { $ref = self::provider_referral( $id ); if ( ! $ref || strtoupper( (string) ( $ref->currency ?? '' ) ) !== $input['currency'] || (int) ( $ref->payout_id ?? 0 ) !== (int) $payout_id || 'paid' !== strtolower( (string) ( $ref->status ?? '' ) ) ) { $provider = affiliate_wp(); $updated = isset( $provider->referrals ) && method_exists( $provider->referrals, 'update' ) ? $provider->referrals->update( $id, array( 'payout_id' => $payout_id ), '', 'referral' ) : false; $status_updated = affwp_set_referral_status( $id, 'paid' ); if ( ! $updated && ! $status_updated ) { return self::provider_failure( 'PROVIDER_SYNC_FAILED', 'Referral payout repair could not be applied.' ); } $ref = self::provider_referral( $id ); } if ( ! $ref || strtoupper( (string) ( $ref->currency ?? '' ) ) !== $input['currency'] || (int) ( $ref->payout_id ?? 0 ) !== (int) $payout_id || 'paid' !== strtolower( (string) ( $ref->status ?? '' ) ) ) { return self::provider_failure( 'PROVIDER_SYNC_FAILED', 'Referral payout read-back needs retry.' ); } }
+		$payout = self::provider_payout( $payout_id ); $final_ids = array(); if ( function_exists( 'affwp_get_payout_referrals' ) ) { foreach ( (array) affwp_get_payout_referrals( $payout ) as $ref ) { $final_ids[] = self::referral_id_from_object( $ref ); } } sort( $final_ids, SORT_NUMERIC ); if ( $final_ids !== $input['referral_ids'] ) { return self::provider_failure( 'PROVIDER_SYNC_FAILED', 'Payout referral read-back needs retry.' ); }
+		return array( 'payout_id' => (int) $payout_id, 'affiliate_id' => $input['affiliate_id'], 'referral_ids' => $input['referral_ids'], 'amount' => $input['amount'], 'currency' => $input['currency'], 'payout_method' => 'paypal_manual', 'status' => 'paid', 'date' => $input['paid_at'] );
+	}
+	private static function decimal_add( $left, $right ) { $a = explode( '.', self::canonical_decimal( $left ) ); $b = explode( '.', self::canonical_decimal( $right ) ); $scale = max( strlen( $a[1] ?? '' ), strlen( $b[1] ?? '' ) ); $ai = (int) ( $a[0] . str_pad( $a[1] ?? '', $scale, '0' ) ); $bi = (int) ( $b[0] . str_pad( $b[1] ?? '', $scale, '0' ) ); $sum = (string) ( $ai + $bi ); if ( $scale ) { $sum = str_pad( $sum, $scale + 1, '0', STR_PAD_LEFT ); $sum = substr( $sum, 0, -$scale ) . '.' . substr( $sum, -$scale ); } return self::canonical_decimal( $sum ); }
 
 	private static function validate_provision_input( $request, $body ) {
 		$required = array( 'erp_kol_id', 'email', 'display_name', 'preferred_username', 'requested_affiliate_status', 'payment_email' );
@@ -388,7 +483,7 @@ class YBY_Connector {
 	}
 	private static function audit( $request, $request_id, $endpoint, $idempotency_key, $result, $code, $success, $retryable ) {
 		$targets = array();
-		foreach ( array( 'wp_user_id', 'affiliate_id', 'coupon_id' ) as $key ) { if ( isset( $result[ $key ] ) && is_scalar( $result[ $key ] ) ) { $targets[ $key ] = array( (int) $result[ $key ] ); } }
+		foreach ( array( 'wp_user_id', 'affiliate_id', 'coupon_id', 'payout_id', 'referral_id', 'referral_ids' ) as $key ) { if ( isset( $result[ $key ] ) && is_scalar( $result[ $key ] ) ) { $targets[ $key ] = array( (int) $result[ $key ] ); } elseif ( isset( $result[ $key ] ) && is_array( $result[ $key ] ) ) { $targets[ $key ] = array_map( 'absint', array_slice( $result[ $key ], 0, 20 ) ); } }
 		YBY_Connector_Audit::record( array( 'request_id' => $request_id, 'key_id' => self::request_header( $request, 'X-YBY-Key-Id' ), 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'endpoint_action' => $endpoint, 'idempotency_key_hash' => YBY_Connector_Idempotency::key_hash( $idempotency_key ), 'target_provider_ids' => $targets, 'result_code' => $code, 'success' => $success, 'retryable' => $retryable ) );
 	}
 
@@ -641,7 +736,7 @@ class YBY_Connector {
 			'coupon_provision'    => array( 'label' => '创建优惠券', 'method' => 'POST', 'path' => '/coupons/provision', 'providers' => array( 'woocommerce', 'affiliatewp' ) ),
 			'payout_complete'     => array( 'label' => '完成结算', 'method' => 'POST', 'path' => '/payouts/complete', 'providers' => array( 'affiliatewp' ) ),
 		);
-		$implemented = array( '/health', '/snapshot/affiliates', '/snapshot/coupons', '/snapshot/referrals', '/snapshot/payouts', '/snapshot/subscribers', '/affiliates/provision', '/affiliates/{affiliate_id}/status', '/coupons/check', '/coupons/provision' );
+		$implemented = array( '/health', '/snapshot/affiliates', '/snapshot/coupons', '/snapshot/referrals', '/snapshot/payouts', '/snapshot/subscribers', '/affiliates/provision', '/affiliates/{affiliate_id}/status', '/coupons/check', '/coupons/provision', '/payouts/complete' );
 		foreach ( $endpoints as &$endpoint ) {
 			if ( ! in_array( $endpoint['path'], $implemented, true ) ) {
 				$endpoint['status'] = 'Not Available'; $endpoint['available'] = false; unset( $endpoint['providers'] ); continue;

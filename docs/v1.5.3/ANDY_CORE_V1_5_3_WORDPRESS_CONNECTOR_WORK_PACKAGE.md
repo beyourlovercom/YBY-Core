@@ -1,11 +1,11 @@
 # Andy Core v1.5.3 鈥?BYL ERP WordPress Connector Work Package
 
-Status: M6 COUPON LOCAL UAT PASS / DELIVERY GATE PENDING
+Status: M7 PAYOUT COMPLETE LOCAL UAT PASS / DELIVERY GATE PENDING
 Contract ID: ANDY-CORE-V1.5.3-WORDPRESS-CONNECTOR
 Baseline release: Andy Core v1.5.2
-Branch: `feature/andy-core-v1.5.3-wordpress-connector-m6-coupon`
-Worktree: `D:\\ai\\_worktrees\\YBY-Core-v153-wordpress-connector-m6-coupon`
-Base HEAD: `bb8aab47cea3ab221f4b4343104b3293b055808d`
+Branch: `feature/andy-core-v1.5.3-wordpress-connector-m7-payout`
+Worktree: `D:\\ai\\_worktrees\\YBY-Core-v153-wordpress-connector-m7-payout`
+Base HEAD: `24d3b5fef1ad8e732abd747a29650a7a63b903da`
 Released v1.5.2 tag: `073ef9d34bbd5bfda1db7ca52caf358f7e6ade87`
 Database baseline: `1.3.0`
 M4 pre-release database metadata: `1.3.0` (global `1.4.0` bump reserved for final v1.5.3 release prep)
@@ -167,3 +167,22 @@ M4 is ready for delivery review. The next bounded Andy Core increment may implem
 - Safe idempotency replay fields and audit targets include only the compact coupon/Affiliate facts required for ERP replay; no raw request, credentials, secrets, or unrestricted coupon payload is stored.
 - REAL Local HTTPS HMAC UAT passed on `https://localdev.beyourlover.com` with WordPress 7.1, WooCommerce 10.9.4, and AffiliateWP 2.35.0: check-without-idempotency, provision-idempotency requirement, initial provision, exact replay, changed-body conflict, different-key global Coupon conflict, conflict replay 409, cross-connection conflict, invalid-expiry rejection, Affiliate binding read-back, durable idempotency/audit/binding evidence, synthetic cleanup, Connector-state restore, and baseline-count restore all PASS.
 - Final cleanup verified WP Users `6051`, Woo Coupons `2827`, Affiliates `1758`, and all M4/M5/M6 Connector technical tables returned to zero rows. Local runtime contains the exact reviewed M6 build only; no Dev/production deployment, tag, or release is included.
+
+## M7 Payout Complete Mutation evidence (2026-08-31)
+
+- Added exactly one final HMAC-authenticated mutation route: `POST /payouts/complete`. The Connector surface is now the complete frozen contract of 11 routes: six GET routes and five POST routes. No additional endpoint was introduced.
+- The endpoint records an ERP-completed manual PayPal payout in AffiliateWP; Andy Core never sends money to PayPal. Input requires the exact ERP payout request identity, AffiliateWP Affiliate ID, canonical Referral ID set, amount/currency, `payout_method=paypal_manual`, non-empty PayPal transaction reference, and local `paid_at` date. The PayPal transaction reference participates in request identity but is never persisted, audited, logged, or returned.
+- M4 durable idempotency remains authoritative. Same header idempotency key + identical request replays the prior result; same key + materially different valid request returns `IDEMPOTENCY_CONFLICT`; a different header key with the same `erp_payout_request_id` reuses the same durable provider payout identity and cannot create a second payout.
+- Added `yby_connector_payout_bindings` and `yby_connector_payout_claims` through existing `YBY_Database` / `dbDelta` conventions. Bindings enforce unique `(connection_key, erp_payout_request_id)` and unique `payout_id`; claims enforce global unique `referral_id`. Pre-release global `YBY_DATABASE_VERSION` remains intentionally frozen at `1.3.0`; table-existence checks trigger idempotent install while the final v1.5.3 database metadata bump remains reserved for release prep.
+- Provider creation uses AffiliateWP 2.35.0 supported APIs and a durable processing/provider-created/ready lease lifecycle. Referral claims prevent overlapping payout requests. Success requires exact provider read-back of payout ID, Affiliate, canonical amount, `manual` provider method, `paid` status, WordPress-local paid date, and exact canonical Referral set.
+- Crash recovery is provider-evidence based and does not use a latest-N scan. Recovery unions nonzero Referral payout IDs with AffiliateWP payout-row candidates narrowed by Affiliate, `manual`, `paid`, and WordPress-local payout date, then adopts only when exactly one candidate satisfies the full exact matcher. Zero or multiple exact matches fail closed with `PROVIDER_SYNC_FAILED`; unrelated same-day payouts do not block a unique exact match, while any requested Referral pointing to a different nonzero payout remains a hard mismatch.
+- Partial and zero-Referral-write recovery are covered. If a real AffiliateWP payout row exists but one or all Referral rows were not yet updated before a crash, the Connector can adopt the unique exact payout, repair Referral `payout_id` plus `paid` status through AffiliateWP APIs, perform strict final read-back, and finalize the binding without creating a second payout.
+- Independent source regression passed after the final real-UAT fix: Connector Foundation, M2 Security, M3 Snapshot, M3 Provider Mapping, M3.1 Subscriber Snapshot, M4 Idempotency/Audit, M5 Affiliate, M6 Coupon, and M7 Payout harnesses all passed with the exact Local PHP 8.2.29 / Local php.ini / bundled OpenSSL runtime. Changed PHP lint, release-metadata harness, all five JavaScript harnesses, sensitive-persistence scan, and `git diff --check` passed. The only recurring runtime noise is the known missing Local `php_imagick.dll` startup warning.
+- Local schema verification passed: payout bindings table, payout claims table, required unique/index keys, and `connector_tables_exist()` all passed. Worktree-to-Local runtime hashes matched for the reviewed runtime files; after the final exact-match correction, `inc/class-yby-connector.php` worktree/Local SHA256 was `187E839E6A45FED8A1A4385F77EEDF60B1E35CE84788181E3AC65DB1B2FCA6FF`.
+- REAL Local HTTPS HMAC UAT passed on `https://localdev.beyourlover.com`: `FIRST_CREATE=PASS`, `SAME_KEY_REPLAY=PASS`, `DIFFERENT_KEY_SAME_ERP=PASS`, `SAME_KEY_DIFFERENT_ERP=PASS`, `ZERO_REFERRAL_WRITE_RECOVERY=PASS`, `TRANSACTION_ID_NON_PERSISTENCE=PASS`, `M7_REAL_HTTPS_HMAC_UAT=PASS`.
+- The real zero-write UAT used an isolated temporary WordPress User, AffiliateWP Affiliate and four temporary Referrals, pre-created the second AffiliateWP payout row, reset both of its Referrals to `unpaid` / `payout_id=0`, and then proved the signed endpoint adopted the original payout, repaired both Referrals, and created no duplicate. All synthetic payout/referral/user and Connector technical rows were deleted afterward: temporary users `0`, temporary M7 referrals `0`, payout idempotency rows `0`, payout bindings rows `0`, payout claims rows `0`.
+- M7 remains Local-only. No Dev/production deployment, tag, release, or merge is included in this work package. Delivery stops at the PR/Owner merge authorization gate.
+
+### Post-M7 gate
+
+M7 is ready for delivery review. After commit/push/PR and CI review, merge remains a separate explicit Owner authorization. Dev/production deployment, final database metadata bump, tag, and release remain outside this gate.
