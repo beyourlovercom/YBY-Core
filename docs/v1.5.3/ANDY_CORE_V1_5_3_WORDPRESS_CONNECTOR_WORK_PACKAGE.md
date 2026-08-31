@@ -1,16 +1,18 @@
 # Andy Core v1.5.3 鈥?BYL ERP WordPress Connector Work Package
 
-Status: M8 FULL CONNECTOR LOCAL UAT PASS / OWNER VISUAL UAT PASS / DELIVERY GATE PENDING
+Status: RELEASE PREP LOCAL DB + RC PACKAGE VERIFICATION PASS / DELIVERY GATE PENDING
 Contract ID: ANDY-CORE-V1.5.3-WORDPRESS-CONNECTOR
 Baseline release: Andy Core v1.5.2
-Branch: `feature/andy-core-v1.5.3-wordpress-connector-m8-full-uat`
-Worktree: `D:\\ai\\_worktrees\\YBY-Core-v153-wordpress-connector-m8-full-uat`
-Base HEAD: `50771bc1f1be70300270539e5d92612824996768`
+Branch: `feature/andy-core-v1.5.3-release-prep`
+Worktree: `D:\\ai\\_worktrees\\YBY-Core-v153-release-prep`
+Base HEAD: canonical `main@649ed71d3ecb37e37999682e30e88af8199e7e88`
 Released v1.5.2 tag: `073ef9d34bbd5bfda1db7ca52caf358f7e6ade87`
-Database baseline: `1.3.0`
+Pre-release database baseline: `1.3.0`; Release Prep target: `1.4.0`
 M4 pre-release database metadata: `1.3.0` (global `1.4.0` bump reserved for final v1.5.3 release prep)
 
 ## Authority
+
+Release-prep authority: canonical `main@649ed71d3ecb37e37999682e30e88af8199e7e88`; this worktree is limited to release preparation and validation.
 
 Owner-approved canonical functional contract: `Andy_Core_v1.5.3_WordPress_Connector_Full_Spec.md` supplied 2026-08-29.
 Developer handoff contract: `Andy_Core_v1.5.3_Developer_Handoff_Prompt.md` supplied 2026-08-29.
@@ -38,11 +40,11 @@ Current module directory is lightweight documentation; do not force a new `src/`
 
 ## Current local-UAT status
 
-The dedicated BeYourLover local site provides the real provider stack for Connector UAT. WordPress 7.1, WooCommerce 10.9.4, AffiliateWP 2.35.0, and the local Andy Core M5 candidate runtime are available at `https://localdev.beyourlover.com`. Provider-absent behavior remains covered by focused harnesses. Owner visual UAT passed.
+The dedicated BeYourLover local site provides the real provider stack for Connector UAT. WordPress 7.1, WooCommerce 10.9.4, AffiliateWP 2.35.0, and the M8-approved Connector runtime are available at `https://localdev.beyourlover.com`. The Release Prep candidate bootstrap is now synced locally at plugin/core `1.5.3` and database authority `1.4.0`; migration UAT passed without business-data or schema drift. Provider-absent behavior remains covered by focused harnesses. Owner visual UAT passed.
 
 ## Stop gate
 
-Delivery target is `OWNER UAT READY` with exact evidence. Stop before merge/deploy/release.
+Delivery target is Release Prep candidate delivery with exact evidence. Stop before merge/tag/release/deploy without Owner authorization.
 
 ## Local full-provider UAT environment
 
@@ -52,7 +54,7 @@ A dedicated local BeYourLover WordPress environment has been inserted before M1 
 - URL: `https://localdev.beyourlover.com`
 - WordPress baseline: 7.1
 - The restored BeYourLover local runtime exposes WooCommerce 10.9.4 and AffiliateWP 2.35.0 as active providers.
-- The current Andy Core M5 candidate is synced into this Local-only runtime for UAT while plugin release metadata remains 1.5.2 / DB 1.3.0.
+- The M8-approved Connector runtime remains the Local business-runtime baseline; Release Prep synced only the reviewed `yby-core.php` metadata bootstrap, producing plugin/core `1.5.3` and database authority `1.4.0` with the Connector runtime otherwise semantically unchanged.
 - No production site or ERP environment is involved in this UAT runtime.
 - It is a runtime/UAT environment only; Andy Core source authority remains the isolated v1.5.3 Git worktree.
 
@@ -200,3 +202,19 @@ M7 is ready for delivery review. After commit/push/PR and CI review, merge remai
 - Security/storage checks passed in real UAT: Shared Secret, PayPal transaction reference, synthetic email, and password were absent from Connector technical persistence; audit rows were present; disabling the Connector succeeded while Inquiry and Sticky CTA shortcodes remained registered.
 - Synthetic cleanup and exact baseline restoration passed. Before/after counts were identical: Users `6051`, Coupons `2827`, Affiliates `1758`, Referrals `3299`, Payouts `1550`, Leads `0`; all Connector idempotency/audit/binding/claim tables returned to zero rows; `yby_*` options count remained `13` with identical SHA256 `6394dd2a070107160ad45c13fabb028567d992d1219f5c4fe0ac7227f7df9dc5`; database metadata remained `1.3.0`.
 - Owner WP-API admin-page visual UAT passed on 2026-08-31. The five-tab layout, WP-API content, complete 6 GET + 5 POST endpoint presentation, Connection/Security/Provider status presentation, and page interaction were accepted by the Owner. No Dev/production deployment, version bump, database metadata bump, package build, tag, release, or merge is included in M8; merge remains a separate explicit Owner authorization.
+
+## v1.5.3 Release Prep evidence (2026-08-31)
+
+- Release Prep authority is canonical `main@649ed71d3ecb37e37999682e30e88af8199e7e88` on isolated branch `feature/andy-core-v1.5.3-release-prep`. Plugin header and `YBY_CORE_VERSION` are `1.5.3`; `YBY_DATABASE_VERSION` is `1.4.0`.
+- Release metadata is aligned across `VERSION.md`, `README.md`, `readme.txt`, and `CHANGELOG.md`; WordPress metadata is `Stable tag: 1.5.3` and `Tested up to: 7.1`. Historical v1.5.2 and older release sections remain intact.
+- Release validation contracts now assert product `1.5.3` / DB `1.4.0`; the isolated WordPress/MySQL validation expects the final `1.4.0` schema authority while preserving its historical seed baseline.
+- Release Prep review closed a DB readiness false-positive: `connector_tables_exist()` now requires M7 payout indexes `connection_request`, `payout_id`, `state_expires`, `referral_id`, and `payout_request`, and requires `connection_request`, `payout_id`, and `referral_id` to be UNIQUE. The isolated WordPress/MySQL validation explicitly asserts the same real-MySQL index contract.
+- Added `scripts/build-v1.5.3-release.sh`, the required v1.5.3 Release Notes / Upgrade Guide / Rollback Guide, and advanced PR package validation to `releases/v1.5.3/andy-core-v1.5.3.zip`. Release Prep found that the historical tag-triggered `release.yml` hand-built the wrong package name and automatically attempted GitHub Release publication; it now uses the version builder, validates the final tagged artifact, and uploads only `releases/v${version}` as an Actions artifact. Tag creation and GitHub Release publication remain separate explicit Owner authorization gates.
+- Independent Release Prep regression passed with Local PHP 8.2.29 + Local php.ini/OpenSSL: all directly executable PHP harnesses passed except the unchanged known Windows CRLF-sensitive Brand source assertion; the LF-normalized equivalent passed. All five JavaScript harnesses passed, all 99 repository PHP files linted, release metadata passed, and `git diff --check` passed.
+- Local package-candidate staging/build verification passed outside the repository. The Windows Git Bash installation lacks native `zip`, so a repository-external temporary Python `zipfile` shim supplied only that missing executable; the official builder still controlled staging and exclusions, while Git Bash `zipinfo`, `unzip`, and `sha256sum` independently verified the archive. Latest independently verified local pre-commit package SHA-256 is `e2fac704d017e78737ebfca6d5ca8cf805494a670133911b9f08bad9a6a82fa0`; the generated `releases/v1.5.3/` directory remains untracked and this is clearly non-final evidence, not a GitHub Release hash.
+- The v1.5.3 builder now fails closed before `mktemp`, output-directory creation, staging, or packaging unless source metadata exactly reports plugin header/Core `1.5.3`, database `1.4.0`, and WordPress `Stable tag: 1.5.3`. A repository-external negative test changed `YBY_CORE_VERSION` to `9.9.9`; the builder exited `1`, created no output directory, and created no ZIP.
+- Release Prep Local DB migration UAT was re-established against the current candidate. Local `yby-core.php` already matched the 1.5.3 candidate at SHA-256 `BF4940BEE6041DBF16F53EEE846FAC5E3FC6082F655EE14395504E66A01F5F8C`; the newly reviewed `inc/class-yby-database.php` readiness fix was synced and matched at SHA-256 `ECA5E404131259C072865900B0EF2FB12F856EF4E41B27D54C159F16E2569688`.
+- Local was already at stored `yby_database_version=1.4.0` when this Release Prep review resumed, so migration evidence was not accepted by assumption. A controlled Local-only schema cycle explicitly reset only that version option to `1.3.0`, executed the real `YBY_Database::install()` path back to `1.4.0`, then executed it twice more to prove idempotency. `connector_tables_exist()` and the M7 index readiness gate passed; a normalized `SHOW CREATE TABLE` hash across the six Connector tables remained `4d2f06b13bac554677fe092266a30208ef7c0fc90a8084e2fa8690969458deaf`.
+- Business and integration baselines were unchanged by the migration: Users `6051`, Coupons `2827`, Affiliates `1758`, Referrals `3299`, Payouts `1550`, Leads/Management/Activities `0`; every Connector technical table remained at `0` rows. Excluding the intentionally changed DB-version option, the `yby_*` options count remained `12` and SHA-256 remained `6477798aa14b8dd657ad42bd266422193606dfad398aeab95fdc67961b834473`.
+- GPT independent pre-delivery revalidation repeated the Release Prep gates on the same working tree: PHP regression passed with the fixed Local PHP/OpenSSL environment except the unchanged Windows CRLF-sensitive Brand assertion, whose LF-normalized canonical equivalent passed; all five JavaScript harnesses passed; all 99 PHP files linted; release metadata and `git diff --check` passed. A second controlled Local DB replay again proved `1.3.0 -> 1.4.0` plus two idempotent installs with zero business/integration drift and a stable independently normalized six-table schema hash `eb41dd3e140604814fd5f7754106cbc393c7871883685d8aa79dc2f83647a10c`. The repository-external RC build passed with 103 packaged files and SHA-256 `e2fac704d017e78737ebfca6d5ca8cf805494a670133911b9f08bad9a6a82fa0`; the separate negative metadata fixture exited `1` before creating an output directory.
+- No Dev/production deployment, merge, tag, GitHub Release, or final publication is included in Release Prep. Final native Ubuntu package verification will run again on the exact PR HEAD before any merge authorization gate.

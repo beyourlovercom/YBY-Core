@@ -2,17 +2,28 @@
 Contributors: ybyglobal
 Tags: andy-core, yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
-Tested up to: 6.6
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.5.2
+Stable tag: 1.5.3
 License: Proprietary
 License URI: https://ybyglobal.com/
 
-Core platform plugin for managed WordPress websites, including Case ID, tracking, configuration, lead sessions, governed lead email delivery, and inquiry runtime.
+Core platform plugin for managed WordPress websites, including Case ID, tracking, configuration, lead sessions, governed lead email delivery, inquiry runtime, and the bounded WordPress Connector.
 
 == Description ==
 
-Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.2 adds portable inquiry and subscribe conversion surfaces plus site-level presentation controls while preserving the existing `yby-core` plugin identity and compatibility contracts.
+Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.3 adds the bounded WordPress Connector for WP-API settings, HMAC-protected snapshots and provider mutations while preserving the existing `yby-core` plugin identity and compatibility contracts.
+
+Included in v1.5.3:
+
+* WP-API settings tab with truthful health and provider-safe status behavior
+* HMAC/signature, replay, rate-limit, mutation idempotency, and safe audit protections
+* Affiliates, Coupons, Referrals, Payouts, and Subscribers provider snapshots
+* Affiliate provision/status, Coupon check/provision, and payout-complete reconciliation
+* Canonical provider read-back, including WooCommerce coupon code normalization
+* Database schema version 1.4.0 for Connector persistence
+
+Andy Core records ERP-completed manual PayPal payouts in AffiliateWP; it does not transfer money through PayPal. ERP policy logic remains outside this plugin.
 
 Included in v1.5.2:
 
@@ -124,6 +135,16 @@ Lead notifications dispatch through `YBY_Notification_Manager` with the Email pr
 The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Recipient Emails, Reply-To Policy, Lead Email Subject Template, and Email Branding settings. Invalid addresses are ignored.
 
 == Changelog ==
+
+= 1.5.3 =
+
+* Added the bounded WP-API WordPress Connector settings tab and truthful connection, security, and provider health presentation.
+* Added HMAC/signature validation, replay protection, rate limiting, mutation idempotency, and safe audit persistence.
+* Added Affiliates, Coupons, Referrals, Payouts, and Subscribers snapshots with provider-safe unavailable behavior.
+* Added Affiliate provision/status, Coupon check/provision, and payout-complete reconciliation with canonical provider read-back.
+* Fixed WooCommerce coupon code canonical readback handling when the provider normalizes code casing.
+* Updated the database schema version to 1.4.0 for Connector persistence.
+* Andy Core records ERP-completed manual PayPal payouts in AffiliateWP; it does not transfer money through PayPal, and ERP policy logic remains out of scope.
 
 = 1.5.2 =
 

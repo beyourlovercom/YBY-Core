@@ -16,7 +16,9 @@ Prepare a governed YBY Core package for validation before any production deploym
 8. Generate release notes, compatibility notes, verification checklist, and manifest.
 9. Commit release-engineering outputs explicitly.
 10. Push the release-preparation branch.
-11. Stop before deployment, tagging, or GitHub Release publication.
+11. Obtain explicit Owner authorization to create/push the stable tag.
+12. Let the tag workflow build and validate the final package as an Actions artifact; it must not publish a GitHub Release.
+13. Stop before GitHub Release publication and deployment. Those are separate explicit Owner authorization gates.
 
 ## Guardrails
 
@@ -24,4 +26,5 @@ Prepare a governed YBY Core package for validation before any production deploym
 - Do not use `git add .` or `git add -A`.
 - Do not commit unrelated bootstrap or local-environment files.
 - Do not upload directly to WordPress during release preparation.
-- Do not publish a GitHub Release until production verification is complete.
+- GitHub Release publication and production deployment each require separate explicit Owner authorization; neither authorizes or implies the other, and this process does not establish an order between them.
+- A tag build is not a GitHub Release. Never treat the Actions artifact from `.github/workflows/release.yml` as publication authorization.

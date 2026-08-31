@@ -17,6 +17,26 @@ function yby_validation_assert( $condition, $message ) {
 	if ( ! $condition ) { throw new RuntimeException( $message ); }
 }
 
+function yby_validation_assert_m7_indexes() {
+	global $wpdb;
+	$tables = array(
+		YBY_Database::connector_payout_bindings_table_name() => array( 'connection_request', 'payout_id', 'state_expires' ),
+		YBY_Database::connector_payout_claims_table_name()   => array( 'referral_id', 'payout_request' ),
+	);
+	$unique = array( 'connection_request', 'payout_id', 'referral_id' );
+	foreach ( $tables as $table => $required ) {
+		$found = array();
+		foreach ( (array) $wpdb->get_results( 'SHOW INDEX FROM ' . $table, ARRAY_A ) as $index ) {
+			$key_name = $index['Key_name'] ?? '';
+			if ( '' !== $key_name ) { $found[ $key_name ] = true; }
+			if ( in_array( $key_name, $unique, true ) ) {
+				yby_validation_assert( '0' === (string) ( $index['Non_unique'] ?? '1' ), 'M7 index must be UNIQUE: ' . $table . '.' . $key_name );
+			}
+		}
+		foreach ( $required as $name ) { yby_validation_assert( ! empty( $found[ $name ] ), 'M7 index is missing: ' . $table . '.' . $name ); }
+	}
+}
+
 function yby_validation_report( $report_dir, $name, $data ) {
 	$result = file_put_contents( $report_dir . '/' . $name, wp_json_encode( $data, JSON_PRETTY_PRINT ) . PHP_EOL );
 	yby_validation_assert( false !== $result, 'Could not write validation report: ' . $name );
@@ -38,9 +58,10 @@ if ( 'seed' === $phase ) {
 
 $management = YBY_Database::management_table_name();
 $activities = YBY_Database::activities_table_name();
-yby_validation_assert( '1.3.0' === get_option( 'yby_database_version' ), 'Database schema authority must remain on the frozen v1.5.2 metadata during M4 pre-release work.' );
+yby_validation_assert( '1.4.0' === get_option( 'yby_database_version' ), 'Database schema authority must be 1.4.0 for the v1.5.3 Connector release.' );
 yby_validation_assert( YBY_Database::management_tables_exist(), 'Management tables or indexes missing.' );
 yby_validation_assert( YBY_Database::connector_tables_exist(), 'Connector idempotency/audit tables or unique index missing.' );
+yby_validation_assert_m7_indexes();
 yby_validation_assert( 0 === (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$management}" ), 'Migration backfilled management records.' );
 yby_validation_assert( 0 === (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$activities}" ), 'Migration backfilled activities.' );
 yby_validation_assert( get_option( 'yby_validation_lead_hash' ) === hash( 'sha256', wp_json_encode( $wpdb->get_results( "SELECT * FROM {$leads} ORDER BY id", ARRAY_A ) ) ), 'Migration changed original Leads.' );

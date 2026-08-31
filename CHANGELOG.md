@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v1.5.3 - 2026-08-31
+
+### Added
+
+- Added the WP-API settings tab with truthful connection, security, and provider health status.
+- Added HMAC/signature validation, replay protection, rate limiting, mutation idempotency, and safe audit persistence.
+- Added five provider snapshots: affiliates, coupons, referrals, payouts, and subscribers.
+- Added Affiliate provision/status, Coupon check/provision, and payout-complete reconciliation endpoints.
+
+### Fixed
+
+- Added provider-safe behavior when WooCommerce or AffiliateWP is unavailable.
+- Fixed WooCommerce coupon code canonical readback when the provider normalizes code casing.
+
+### Compatibility
+
+- Updated the database schema version to `1.4.0` for Connector persistence.
+- Payout completion records an ERP-completed manual PayPal payout in AffiliateWP; Andy Core does not transfer money through PayPal.
+- ERP policy logic remains outside Andy Core.
+
 ## v1.5.2 - 2026-08-28
 
 ### Added

@@ -42,7 +42,7 @@ Required example:
 Before declaring a package release-ready, validated, or safe to upload, run:
 
 ```bash
-unzip -l yby-core-vX.X.X.zip
+unzip -l andy-core-vX.X.X.zip
 ```
 
 Expected output example:
@@ -78,8 +78,10 @@ Include only the governed runtime payload:
 - `templates/`
 - `languages/`
 - `README.md`
+- `VERSION.md`
 - `CHANGELOG.md`
 - `readme.txt`
+- `uninstall.php`
 
 ## Exclusions
 
