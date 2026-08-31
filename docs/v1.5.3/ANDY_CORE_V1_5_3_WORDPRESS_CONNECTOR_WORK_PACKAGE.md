@@ -1,6 +1,6 @@
 # Andy Core v1.5.3 鈥?BYL ERP WordPress Connector Work Package
 
-Status: M8 FULL CONNECTOR LOCAL UAT PASS / OWNER VISUAL UAT PENDING
+Status: M8 FULL CONNECTOR LOCAL UAT PASS / OWNER VISUAL UAT PASS / DELIVERY GATE PENDING
 Contract ID: ANDY-CORE-V1.5.3-WORDPRESS-CONNECTOR
 Baseline release: Andy Core v1.5.2
 Branch: `feature/andy-core-v1.5.3-wordpress-connector-m8-full-uat`
@@ -199,4 +199,4 @@ M7 is ready for delivery review. After commit/push/PR and CI review, merge remai
 - Final Referral verification used an independent authoritative read of `affiliate_wp_referrals` because the CLI UAT process had cached pre-HTTPS AffiliateWP Referral objects while the signed mutation ran in a separate Local web PHP process. Both synthetic Referrals were confirmed `paid` with the exact returned payout ID. This changed only the UAT verification method, not product code.
 - Security/storage checks passed in real UAT: Shared Secret, PayPal transaction reference, synthetic email, and password were absent from Connector technical persistence; audit rows were present; disabling the Connector succeeded while Inquiry and Sticky CTA shortcodes remained registered.
 - Synthetic cleanup and exact baseline restoration passed. Before/after counts were identical: Users `6051`, Coupons `2827`, Affiliates `1758`, Referrals `3299`, Payouts `1550`, Leads `0`; all Connector idempotency/audit/binding/claim tables returned to zero rows; `yby_*` options count remained `13` with identical SHA256 `6394dd2a070107160ad45c13fabb028567d992d1219f5c4fe0ac7227f7df9dc5`; database metadata remained `1.3.0`.
-- No Dev/production deployment, version bump, database metadata bump, package build, tag, release, or merge is included in M8. Final WP-API admin-page visual acceptance remains an explicit Owner gate before M8 can be called fully closed for Release Prep.
+- Owner WP-API admin-page visual UAT passed on 2026-08-31. The five-tab layout, WP-API content, complete 6 GET + 5 POST endpoint presentation, Connection/Security/Provider status presentation, and page interaction were accepted by the Owner. No Dev/production deployment, version bump, database metadata bump, package build, tag, release, or merge is included in M8; merge remains a separate explicit Owner authorization.
