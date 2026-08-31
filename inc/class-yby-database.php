@@ -39,6 +39,8 @@ class YBY_Database {
 	const CONNECTOR_AFFILIATE_BINDINGS_TABLE = 'yby_connector_affiliate_bindings';
 
 	const CONNECTOR_COUPON_BINDINGS_TABLE = 'yby_connector_coupon_bindings';
+	const CONNECTOR_PAYOUT_BINDINGS_TABLE = 'yby_connector_payout_bindings';
+	const CONNECTOR_PAYOUT_CLAIMS_TABLE = 'yby_connector_payout_claims';
 
 	/**
 	 * Install or upgrade plugin database tables.
@@ -123,13 +125,17 @@ class YBY_Database {
 		return $wpdb->prefix . self::CONNECTOR_COUPON_BINDINGS_TABLE;
 	}
 
+	public static function connector_payout_bindings_table_name() { global $wpdb; return $wpdb->prefix . self::CONNECTOR_PAYOUT_BINDINGS_TABLE; }
+	public static function connector_payout_claims_table_name() { global $wpdb; return $wpdb->prefix . self::CONNECTOR_PAYOUT_CLAIMS_TABLE; }
+
 	public static function connector_tables_exist() {
 		global $wpdb;
 		$idempotency = self::connector_idempotency_table_name();
 		$audit       = self::connector_audit_table_name();
 		$bindings    = self::connector_affiliate_bindings_table_name();
 		$coupons     = self::connector_coupon_bindings_table_name();
-		if ( $idempotency !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $idempotency ) ) || $audit !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $audit ) ) || $bindings !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $bindings ) ) || $coupons !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $coupons ) ) ) {
+		$payouts     = self::connector_payout_bindings_table_name(); $claims = self::connector_payout_claims_table_name();
+		if ( $idempotency !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $idempotency ) ) || $audit !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $audit ) ) || $bindings !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $bindings ) ) || $coupons !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $coupons ) ) || $payouts !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $payouts ) ) || $claims !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $claims ) ) ) {
 			return false;
 		}
 		$required = array( $idempotency => array( 'mutation_identity', 'state_expires', 'connection_action' ), $audit => array( 'request_id', 'connection_action', 'created_at' ), $bindings => array( 'connection_kol', 'connection_affiliate' ), $coupons => array( 'normalized_code', 'coupon_id', 'state_expires' ) );
@@ -144,7 +150,9 @@ class YBY_Database {
 		$columns = array();
 		foreach ( (array) $wpdb->get_results( 'SHOW COLUMNS FROM ' . $bindings, ARRAY_A ) as $column ) { if ( ! empty( $column['Field'] ) ) { $columns[ $column['Field'] ] = true; } }
 		foreach ( array( 'state', 'lease_owner_hash', 'lease_expires_at' ) as $column ) { if ( empty( $columns[ $column ] ) ) { return false; } }
-		return true;
+		$payout_columns = array(); foreach ( (array) $wpdb->get_results( 'SHOW COLUMNS FROM ' . $payouts, ARRAY_A ) as $column ) { if ( ! empty( $column['Field'] ) ) { $payout_columns[ $column['Field'] ] = true; } }
+		$claim_columns = array(); foreach ( (array) $wpdb->get_results( 'SHOW COLUMNS FROM ' . $claims, ARRAY_A ) as $column ) { if ( ! empty( $column['Field'] ) ) { $claim_columns[ $column['Field'] ] = true; } }
+		return isset( $payout_columns['erp_payout_request_id'], $payout_columns['request_fingerprint'], $payout_columns['payout_id'], $payout_columns['lease_owner_hash'], $claim_columns['referral_id'] );
 	}
 
 	public static function connector_affiliate_bindings_table_exists() {
@@ -288,6 +296,7 @@ class YBY_Database {
 		$audit       = self::connector_audit_table_name();
 		$bindings    = self::connector_affiliate_bindings_table_name();
 		$coupons     = self::connector_coupon_bindings_table_name();
+		$payouts     = self::connector_payout_bindings_table_name(); $claims = self::connector_payout_claims_table_name();
 		$idempotency_sql = "CREATE TABLE {$idempotency} (
 			id bigint unsigned NOT NULL AUTO_INCREMENT,
 			connection_key varchar(128) NOT NULL,
@@ -362,5 +371,12 @@ class YBY_Database {
 			KEY state_expires (state, lease_expires_at)
 		) {$charset_collate};";
 		dbDelta( $coupons_sql );
+		$payouts_sql = "CREATE TABLE {$payouts} (
+			id bigint unsigned NOT NULL AUTO_INCREMENT, connection_key varchar(128) NOT NULL, erp_payout_request_id varchar(128) NOT NULL, request_fingerprint char(64) NOT NULL, state varchar(20) NOT NULL DEFAULT 'processing', payout_id bigint unsigned NULL, lease_owner_hash char(64) NULL, lease_expires_at datetime NULL, created_at datetime NOT NULL, updated_at datetime NOT NULL, PRIMARY KEY (id), UNIQUE KEY connection_request (connection_key, erp_payout_request_id), UNIQUE KEY payout_id (payout_id), KEY state_expires (state, lease_expires_at)
+		) {$charset_collate};";
+		$claims_sql = "CREATE TABLE {$claims} (
+			id bigint unsigned NOT NULL AUTO_INCREMENT, referral_id bigint unsigned NOT NULL, connection_key varchar(128) NOT NULL, erp_payout_request_id varchar(128) NOT NULL, created_at datetime NOT NULL, updated_at datetime NOT NULL, PRIMARY KEY (id), UNIQUE KEY referral_id (referral_id), KEY payout_request (connection_key, erp_payout_request_id)
+		) {$charset_collate};";
+		dbDelta( $payouts_sql ); dbDelta( $claims_sql );
 	}
 }

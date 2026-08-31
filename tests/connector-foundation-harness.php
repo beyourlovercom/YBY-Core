@@ -24,7 +24,7 @@ connector_assert( false !== strpos( $settings_admin, "'wp-api'" ) && false !== s
 connector_assert( false !== strpos( $admin, "current_user_can( 'manage_options' )" ) && false !== strpos( $admin, 'check_admin_referer' ), 'Admin access and nonce gates must remain present.' );
 connector_assert( false !== strpos( $view, '<h1>WP-API</h1>' ) && false !== strpos( $view, 'ERP 接口设置 · Andy Core v1.5.3' ), 'Connector header must show the approved identity.' );
 connector_assert( false !== strpos( $view, '测试连接' ) && false !== strpos( $view, '保存设置' ), 'Connector actions must be visible.' );
-connector_assert( false !== strpos( $view, 'M6' ) && false !== strpos( $view, 'Coupon' ) && false !== strpos( $view, 'Payout' ) && false === strpos( $view, 'M3.1' ), 'Connector WP-API copy must describe the M6 Coupon routes and unopened payout route.' );
+connector_assert( false !== strpos( $view, 'M7' ) && false !== strpos( $view, 'Coupon' ) && false !== strpos( $view, 'Payout' ) && false === strpos( $view, 'M3.1' ), 'Connector WP-API copy must describe the M7 Payout route.' );
 connector_assert( false !== strpos( $view, '协议版本' ) && false !== strpos( $view, 'readonly' ), 'Read-only foundation identity fields must be rendered.' );
 connector_assert( false !== strpos( $view, '安全密钥' ) && false !== strpos( $view, 'yby_connector_secret_nonce' ), 'M2 must provide a gated secret lifecycle action.' );
 connector_assert( 'yby_core_connector_options' === YBY_Connector::OPTION, 'Connector must use a dedicated option namespace.' );
@@ -60,7 +60,7 @@ connector_assert( $expected_routes === $actual_routes, 'Endpoint table must cont
 connector_assert( 'Connector Disabled' === $endpoints['health']['status'], 'Disabled connector health must report Connector Disabled.' );
 connector_assert( 'Provider Missing' === $endpoints['affiliate_snapshot']['status'], 'Implemented Affiliate snapshot must report Provider Missing when AffiliateWP is absent.' );
 connector_assert( false === $endpoints['health']['available'] && false === $endpoints['affiliate_snapshot']['available'], 'Disabled health and provider-missing snapshot must remain unavailable.' );
-foreach ( array( 'affiliate_snapshot', 'coupon_snapshot', 'referral_snapshot', 'payout_snapshot' ) as $name ) { connector_assert( 'Provider Missing' === $endpoints[ $name ]['status'], 'Implemented snapshot rows must report Provider Missing when providers are absent.' ); } connector_assert( 'Provider Missing' === $endpoints['coupon_check']['status'], 'Coupon check is implemented and must report provider absence.' ); connector_assert( 'Not Available' === $endpoints['payout_complete']['status'], 'Only payout completion remains Not Available.' );
+foreach ( array( 'affiliate_snapshot', 'coupon_snapshot', 'referral_snapshot', 'payout_snapshot' ) as $name ) { connector_assert( 'Provider Missing' === $endpoints[ $name ]['status'], 'Implemented snapshot rows must report Provider Missing when providers are absent.' ); } connector_assert( 'Provider Missing' === $endpoints['coupon_check']['status'], 'Coupon check is implemented and must report provider absence.' ); connector_assert( 'Provider Missing' === $endpoints['payout_complete']['status'], 'Payout completion must report provider absence.' );
 define( 'WC_VERSION', '9.9.9' );
 define( 'AFFILIATEWP_VERSION', '2.0.0' );
 $providers = YBY_Connector::provider_statuses();
@@ -68,10 +68,10 @@ connector_assert( 'Ready' === $providers['woocommerce']['status'] && '9.9.9' ===
 connector_assert( 'Ready' === $providers['affiliatewp']['status'] && '2.0.0' === $providers['affiliatewp']['version'], 'AffiliateWP provider-present detection must expose its real version.' );
 $options['yby_core_connector_options'] = array( 'enabled' => false, 'connection_key' => 'connection-key-123', 'key_id' => 'primary' );
 $endpoints = YBY_Connector::endpoint_statuses();
-foreach ( $endpoints as $name => $endpoint ) { $implemented = 'payout_complete' !== $name; connector_assert( false === $endpoint['available'] && ( $implemented ? 'Connector Disabled' : 'Not Available' ) === $endpoint['status'], 'Disabled connector must disable implemented routes while payout completion remains Not Available.' ); }
+foreach ( $endpoints as $name => $endpoint ) { connector_assert( false === $endpoint['available'] && 'Connector Disabled' === $endpoint['status'], 'Disabled connector must disable all routes.' ); }
 $options['yby_core_connector_options'] = array( 'enabled' => true, 'connection_key' => 'connection-key-123', 'key_id' => 'primary' );
 $endpoints = YBY_Connector::endpoint_statuses();
-foreach ( $endpoints as $name => $endpoint ) { $implemented = 'payout_complete' !== $name; connector_assert( false === $endpoint['available'] && ( $implemented ? 'Configuration Error' : 'Not Available' ) === $endpoint['status'], 'Incomplete connector must gate implemented routes while payout completion remains Not Available.' ); }
+foreach ( $endpoints as $name => $endpoint ) { connector_assert( false === $endpoint['available'] && 'Configuration Error' === $endpoint['status'], 'Incomplete connector must gate all routes.' ); }
 connector_assert( 'Connector Disabled' === YBY_Connector::status( array( 'enabled' => false, 'connection_key' => 'connection-key-123', 'key_id' => 'primary' ) ), 'Disabled connector state must take precedence over complete identity.' );
 connector_assert( 'Configuration Error' === YBY_Connector::status( array( 'enabled' => true, 'connection_key' => 'connection-key-123', 'key_id' => '' ) ), 'Enabled incomplete identity must remain Configuration Error.' );
 connector_assert( false !== strpos( $admin, "check_admin_referer( 'yby_connector_save', 'yby_connector_nonce' )" ) && false !== strpos( $admin, "check_admin_referer( 'yby_connector_self_check', 'yby_connector_check_nonce' )" ), 'Save and self-check must use distinct nonce actions.' );
