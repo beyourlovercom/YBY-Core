@@ -30,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
-          release_dir="releases/v${version}"
+          release_dir="${GITHUB_WORKSPACE}/releases/v${version}"
           builder="scripts/build-v${version}-release.sh"
           package="${release_dir}/andy-core-v${version}.zip"
           test -f "${builder}"
