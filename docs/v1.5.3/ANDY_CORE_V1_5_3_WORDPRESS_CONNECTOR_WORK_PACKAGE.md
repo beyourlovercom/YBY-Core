@@ -1,11 +1,11 @@
 # Andy Core v1.5.3 鈥?BYL ERP WordPress Connector Work Package
 
-Status: M7 PAYOUT COMPLETE LOCAL UAT PASS / DELIVERY GATE PENDING
+Status: M8 FULL CONNECTOR LOCAL UAT PASS / OWNER VISUAL UAT PASS / DELIVERY GATE PENDING
 Contract ID: ANDY-CORE-V1.5.3-WORDPRESS-CONNECTOR
 Baseline release: Andy Core v1.5.2
-Branch: `feature/andy-core-v1.5.3-wordpress-connector-m7-payout`
-Worktree: `D:\\ai\\_worktrees\\YBY-Core-v153-wordpress-connector-m7-payout`
-Base HEAD: `24d3b5fef1ad8e732abd747a29650a7a63b903da`
+Branch: `feature/andy-core-v1.5.3-wordpress-connector-m8-full-uat`
+Worktree: `D:\\ai\\_worktrees\\YBY-Core-v153-wordpress-connector-m8-full-uat`
+Base HEAD: `50771bc1f1be70300270539e5d92612824996768`
 Released v1.5.2 tag: `073ef9d34bbd5bfda1db7ca52caf358f7e6ade87`
 Database baseline: `1.3.0`
 M4 pre-release database metadata: `1.3.0` (global `1.4.0` bump reserved for final v1.5.3 release prep)
@@ -186,3 +186,17 @@ M4 is ready for delivery review. The next bounded Andy Core increment may implem
 ### Post-M7 gate
 
 M7 is ready for delivery review. After commit/push/PR and CI review, merge remains a separate explicit Owner authorization. Dev/production deployment, final database metadata bump, tag, and release remain outside this gate.
+
+## M8 Full Connector Local UAT evidence (2026-08-31)
+
+- M8 was created from canonical `origin/main@50771bc1f1be70300270539e5d92612824996768`, the merge commit for PR #24. The Local Connector runtime was LF-normalized and semantically matched that merged baseline before testing.
+- Full Spec sections 27-29 were re-reviewed. M8 intentionally does not bump the plugin/header/constants to `1.5.3`, does not bump `YBY_DATABASE_VERSION` from `1.3.0` to `1.4.0`, and does not build/tag/release a ZIP; those remain Release Prep actions after this gate.
+- Existing regression coverage passed: all five JavaScript harnesses passed; 25/26 directly executable PHP harnesses passed natively on Windows; the only native failure remains the historical CRLF-sensitive `brand-admin-runtime-harness.php`, while the exact same source and harness pass after LF normalization and the Brand runtime files equal canonical main.
+- All 99 repository PHP files linted successfully with the Local PHP 8.2.29 runtime. Release metadata harness and `git diff --check` passed. The executable Connector harness confirms the complete frozen 11-route surface.
+- M8 discovered one real provider-compatibility defect: WooCommerce 10.9.4 normalizes Coupon code casing on save, while the M6 read-back incorrectly required raw `get_code()` equality with the requested display casing. Full Spec section 12 defines Coupon identity as trim + case-insensitive, so M8 removed only that raw exact-case comparison while retaining normalized-code, amount, discount type, Affiliate binding, expiry, ownership, and compensation checks. The M6 provider stub now models Woo code normalization.
+- The Coupon read-back fix passed independent Connector M1-M7 regression, M6/M7 behavioral coverage, PHP lint, and `git diff --check`, then was synced only to Local for UAT. Local `inc/class-yby-connector.php` SHA256 after the fix was `657A5B3D27709235E480382AF8B1A81213B28EC94C59557B65CC832ED48E7D6F`.
+- REAL Full Local HTTPS HMAC UAT passed: health; snapshots for Affiliates, Coupons, Referrals, Payouts, and Subscribers; Affiliate provision, active read-back, same-key replay, cross-key stable identity, inactive/active status changes; Coupon check, provision, provider-ID read-back, exact replay, case-insensitive duplicate detection/conflict, and exact Affiliate binding; payout complete, payout-ID read-back, exact replay, cross-key stable identity, no duplicate payout, and exact Referral paid/payout-id read-back.
+- Final Referral verification used an independent authoritative read of `affiliate_wp_referrals` because the CLI UAT process had cached pre-HTTPS AffiliateWP Referral objects while the signed mutation ran in a separate Local web PHP process. Both synthetic Referrals were confirmed `paid` with the exact returned payout ID. This changed only the UAT verification method, not product code.
+- Security/storage checks passed in real UAT: Shared Secret, PayPal transaction reference, synthetic email, and password were absent from Connector technical persistence; audit rows were present; disabling the Connector succeeded while Inquiry and Sticky CTA shortcodes remained registered.
+- Synthetic cleanup and exact baseline restoration passed. Before/after counts were identical: Users `6051`, Coupons `2827`, Affiliates `1758`, Referrals `3299`, Payouts `1550`, Leads `0`; all Connector idempotency/audit/binding/claim tables returned to zero rows; `yby_*` options count remained `13` with identical SHA256 `6394dd2a070107160ad45c13fabb028567d992d1219f5c4fe0ac7227f7df9dc5`; database metadata remained `1.3.0`.
+- Owner WP-API admin-page visual UAT passed on 2026-08-31. The five-tab layout, WP-API content, complete 6 GET + 5 POST endpoint presentation, Connection/Security/Provider status presentation, and page interaction were accepted by the Owner. No Dev/production deployment, version bump, database metadata bump, package build, tag, release, or merge is included in M8; merge remains a separate explicit Owner authorization.

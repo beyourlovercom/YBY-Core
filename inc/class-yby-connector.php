@@ -315,7 +315,7 @@ class YBY_Connector {
 		$created_id = (int) $coupon->get_id(); $read = null; $read_error = false;
 		try { $read = new WC_Coupon( $created_id ); } catch ( Exception $e ) { $read_error = true; }
 		$linked = $read ? self::coupon_affiliate_id( $read ) : null;
-		if ( $read_error || ! $read || (string) $read->get_code() !== (string) $input['code'] || self::normalize_coupon_code( $read->get_code() ) !== $normalized || (string) $read->get_discount_type() !== $input['discount_type'] || ! self::decimal_equal( $read->get_amount(), $input['amount'] ) || (int) $linked !== (int) $input['affiliate_id'] || ! self::coupon_expiry_matches( $read, $input['expiry_timestamp'] ) ) {
+		if ( $read_error || ! $read || self::normalize_coupon_code( $read->get_code() ) !== $normalized || (string) $read->get_discount_type() !== $input['discount_type'] || ! self::decimal_equal( $read->get_amount(), $input['amount'] ) || (int) $linked !== (int) $input['affiliate_id'] || ! self::coupon_expiry_matches( $read, $input['expiry_timestamp'] ) ) {
 			return self::compensate_created_coupon( $connection, $normalized, $owner, $created_id, $release );
 		}
 		if ( ! YBY_Connector_Coupon_Bindings::finalize( $connection, $normalized, $owner, $created_id, $input['affiliate_id'], $input['erp_kol_id'] ) ) {
