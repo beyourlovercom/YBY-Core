@@ -29,3 +29,22 @@ AffiliateWP `get_referrals()` excludes internal `draft` and `failed` statuses wh
 - Connector foundation harness: PASS.
 - Connector security harness: PASS.
 - All 26 repository harnesses: PASS.
+
+## Local WordPress UAT — 2026-09-01
+
+- Windows Local source guard matched exact v1.5.3 connector hash before patch.
+- UAT patch file hash matched PR #28 source exactly.
+- With the patch, ERP received all `3,299` real AffiliateWP Referral rows.
+- Status parity: paid `1,548`; unpaid `834`; failed `598`; rejected `223`; pending `95`; draft `1`.
+- Payout ID present: `1,549`, matching raw provider data.
+- Clean-window idempotency replay returned `3,299` rows again with no duplicates.
+- `LOCAL_WORDPRESS_UAT = PASS`.
+- All 26 repository harnesses remain PASS.
+- After UAT, Windows Local connector was restored to exact v1.5.3 base hash and the temporary backup was deleted.
+
+## Delivery gate
+
+- Connector compatibility defect is fixed and Local UAT verified.
+- Version/tag/release remain unchanged.
+- Production deploy remains NOT RUN.
+- PR may enter Ready-for-Review; merge still requires explicit Owner authorization.
