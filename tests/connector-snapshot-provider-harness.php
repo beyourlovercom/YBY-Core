@@ -41,10 +41,14 @@ class StubReferrals {
 		elseif ( is_array($args['status']) ) { $rows=array_values(array_filter($rows,fn($row)=>in_array($row->status,$args['status'],true))); }
 		return array_slice($rows,$args['offset'],$args['number']); }
 }
+class StubPayoutWithStaleReferral {
+	public $payout_id=4,$affiliate_id=2,$amount='18.96',$payout_method='manual',$status='paid',$date='2026-03-04 00:00:00';
+	public function get_referral_ids() { return array( 1617 ); }
+}
 class StubPayouts {
 	public function get_payouts( $args ) { global $last_payout_args; $last_payout_args=$args; $rows=array(
 		(object) array( 'payout_id'=>3,'affiliate_id'=>1,'amount'=>'20.50','payout_method'=>'manual','status'=>'paid','date'=>'2026-03-03 00:00:00' ),
-		(object) array( 'payout_id'=>4,'affiliate_id'=>2,'amount'=>'18.96','payout_method'=>'manual','status'=>'paid','date'=>'2026-03-04 00:00:00' ) ); return array_slice($rows,$args['offset'],$args['number']); }
+		new StubPayoutWithStaleReferral() ); return array_slice($rows,$args['offset'],$args['number']); }
 }
 class StubAffiliateWP { public $affiliates; public $referrals; public function __construct(){ $this->affiliates=new StubAffiliates(); $this->referrals=new StubReferrals(); } }
 function affiliate_wp() { static $api; if ( ! $api ) { $api=new StubAffiliateWP(); } return $api; }

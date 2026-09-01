@@ -407,9 +407,9 @@ class YBY_Connector {
 	}
 	private static function payout_referral_ids( $payout ) {
 		$refs = array();
-		if ( is_object( $payout ) && method_exists( $payout, 'get_referral_ids' ) ) { $refs = (array) $payout->get_referral_ids(); }
+		if ( function_exists( 'affwp_get_payout_referrals' ) ) { $refs = (array) affwp_get_payout_referrals( $payout ); }
+		elseif ( is_object( $payout ) && method_exists( $payout, 'get_referral_ids' ) ) { $refs = (array) $payout->get_referral_ids(); }
 		elseif ( is_object( $payout ) && isset( $payout->referrals ) ) { $refs = is_array( $payout->referrals ) ? $payout->referrals : explode( ',', (string) $payout->referrals ); }
-		elseif ( function_exists( 'affwp_get_payout_referrals' ) ) { $refs = (array) affwp_get_payout_referrals( $payout ); }
 		$ids = array(); foreach ( $refs as $ref ) { $ids[] = is_object( $ref ) ? self::referral_id_from_object( $ref ) : absint( $ref ); }
 		$ids = array_values( array_filter( $ids ) ); sort( $ids, SORT_NUMERIC ); return $ids;
 	}

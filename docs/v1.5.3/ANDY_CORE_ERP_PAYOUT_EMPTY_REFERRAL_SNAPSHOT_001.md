@@ -34,4 +34,8 @@ Andy Core already had `payout_referral_ids()` which canonicalizes IDs, removes z
 - Version bump: NO.
 - Tag / release: NO.
 - Production deploy: NO.
-- Real payout mutation: NO.
+- Real payout mutation: NO.## Live Root-Cause Refinement
+
+Local AffiliateWP payout #948 has a stale raw relation containing Referral ID 1617, while Referral #1617 no longer exists. `affwp_get_payout_referrals()` therefore hydrates that relation as `[false]`.
+
+Canonical payout Referral IDs must prefer AffiliateWP's hydrated helper and filter non-existent Referral entities. Raw payout relation IDs are only a fallback when the official helper is unavailable. This preserves historical payout #948 while correctly representing its current Referral entity set as empty.
