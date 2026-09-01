@@ -10,13 +10,14 @@ function home_url( $path = '/' ) { return 'https://example.test' . $path; }
 function is_ssl() { return true; }
 function is_wp_error( $value ) { return $value instanceof WP_Error; }
 function wp_json_encode( $value ) { return json_encode( $value ); }
+function absint( $value ) { return abs( (int) $value ); }
 function get_userdata( $id ) { return (object) array( 'user_login' => 'user' . $id, 'display_name' => 'User ' . $id, 'user_email' => 'u' . $id . '@example.test' ); }
 function affwp_get_affiliate_rate( $affiliate ) { return (string) $affiliate->rate; }
 function affwp_get_affiliate_rate_type( $affiliate ) { return (string) $affiliate->rate_type; }
 function affwp_get_affiliate_payment_email( $affiliate ) { return (string) $affiliate->payment_email; }
 function affwp_get_currency() { return 'USD'; }
 function affwp_get_referral_statuses( $include_internal = false ) { $statuses=array('paid'=>'Paid','unpaid'=>'Unpaid','rejected'=>'Rejected','pending'=>'Pending'); if($include_internal){$statuses['draft']='Draft';$statuses['failed']='Failed';} return $statuses; }
-function affwp_get_payout_referrals( $payout ) { return array( (object) array( 'referral_id' => 91 ), (object) array( 'referral_id' => 92 ) ); }
+function affwp_get_payout_referrals( $payout ) { if ( 4 === (int) ( $payout->payout_id ?? 0 ) ) { return array( false ); } return array( (object) array( 'referral_id' => 91 ), (object) array( 'referral_id' => 92 ) ); }
 function affwp_get_coupon( $code ) { return 'alpha10' === $code ? (object) array( 'affiliate_id' => 7 ) : false; }
 function get_post_meta( $id, $key, $single = true ) { return 102 === (int) $id && 'affwp_discount_affiliate' === $key ? '8' : ''; }
 class WooCommerce {}
@@ -40,9 +41,14 @@ class StubReferrals {
 		elseif ( is_array($args['status']) ) { $rows=array_values(array_filter($rows,fn($row)=>in_array($row->status,$args['status'],true))); }
 		return array_slice($rows,$args['offset'],$args['number']); }
 }
+class StubPayoutWithStaleReferral {
+	public $payout_id=4,$affiliate_id=2,$amount='18.96',$payout_method='manual',$status='paid',$date='2026-03-04 00:00:00';
+	public function get_referral_ids() { return array( 1617 ); }
+}
 class StubPayouts {
 	public function get_payouts( $args ) { global $last_payout_args; $last_payout_args=$args; $rows=array(
-		(object) array( 'payout_id'=>3,'affiliate_id'=>1,'amount'=>'20.50','payout_method'=>'manual','status'=>'paid','date'=>'2026-03-03 00:00:00' ) ); return array_slice($rows,$args['offset'],$args['number']); }
+		(object) array( 'payout_id'=>3,'affiliate_id'=>1,'amount'=>'20.50','payout_method'=>'manual','status'=>'paid','date'=>'2026-03-03 00:00:00' ),
+		new StubPayoutWithStaleReferral() ); return array_slice($rows,$args['offset'],$args['number']); }
 }
 class StubAffiliateWP { public $affiliates; public $referrals; public function __construct(){ $this->affiliates=new StubAffiliates(); $this->referrals=new StubReferrals(); } }
 function affiliate_wp() { static $api; if ( ! $api ) { $api=new StubAffiliateWP(); } return $api; }
@@ -73,6 +79,7 @@ provider_assert( array('paid','unpaid','rejected','pending','draft','failed') ==
 provider_assert( 4 === count($ref['items']) && 'failed' === $ref['items'][2]['status'] && 'draft' === $ref['items'][3]['status'], 'Referral snapshot must include AffiliateWP failed/draft provider truth.' );
 $payout = YBY_Connector::snapshot( 'payouts', new SnapshotProviderRequest() );
 provider_assert( 3 === $payout['items'][0]['payout_id'] && array(91,92) === $payout['items'][0]['referral_ids'] && 'USD' === $payout['items'][0]['currency'], 'Payout mapping must expose exact referral IDs and provider currency.' );
+provider_assert( 4 === $payout['items'][1]['payout_id'] && array() === $payout['items'][1]['referral_ids'], 'Historical payout with no referrals must expose an empty referral_ids list, never null/zero placeholders.' );
 $coupons = YBY_Connector::snapshot( 'coupons', new SnapshotProviderRequest() );
 provider_assert( 101 === $coupons['items'][0]['coupon_id'] && 'alpha10' === $coupons['items'][0]['normalized_code'] && 7 === $coupons['items'][0]['linked_affiliate_id'], 'Coupon mapping must expose exact code and AffiliateWP binding.' );
 provider_assert( 8 === $coupons['items'][1]['linked_affiliate_id'], 'Coupon mapping must support the installed AffiliateWP WooCommerce legacy binding meta.' );
