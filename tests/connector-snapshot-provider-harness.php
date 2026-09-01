@@ -15,6 +15,7 @@ function affwp_get_affiliate_rate( $affiliate ) { return (string) $affiliate->ra
 function affwp_get_affiliate_rate_type( $affiliate ) { return (string) $affiliate->rate_type; }
 function affwp_get_affiliate_payment_email( $affiliate ) { return (string) $affiliate->payment_email; }
 function affwp_get_currency() { return 'USD'; }
+function affwp_get_referral_statuses( $include_internal = false ) { $statuses=array('paid'=>'Paid','unpaid'=>'Unpaid','rejected'=>'Rejected','pending'=>'Pending'); if($include_internal){$statuses['draft']='Draft';$statuses['failed']='Failed';} return $statuses; }
 function affwp_get_payout_referrals( $payout ) { return array( (object) array( 'referral_id' => 91 ), (object) array( 'referral_id' => 92 ) ); }
 function affwp_get_coupon( $code ) { return 'alpha10' === $code ? (object) array( 'affiliate_id' => 7 ) : false; }
 function get_post_meta( $id, $key, $single = true ) { return 102 === (int) $id && 'affwp_discount_affiliate' === $key ? '8' : ''; }
@@ -32,7 +33,12 @@ class StubAffiliates {
 class StubReferrals {
 	public function get_referrals( $args ) { global $last_ref_args; $last_ref_args=$args; $rows=array(
 		(object) array( 'referral_id'=>91,'affiliate_id'=>1,'context'=>'woocommerce','reference'=>'5001','amount'=>'12.50','currency'=>'USD','status'=>'unpaid','description'=>'Order 5001','date'=>'2026-03-01 00:00:00','payout_id'=>0 ),
-		(object) array( 'referral_id'=>92,'affiliate_id'=>1,'context'=>'woocommerce','reference'=>'5002','amount'=>'8.00','currency'=>'USD','status'=>'paid','description'=>'Order 5002','date'=>'2026-03-02 00:00:00','payout_id'=>3 ) ); return array_slice($rows,$args['offset'],$args['number']); }
+		(object) array( 'referral_id'=>92,'affiliate_id'=>1,'context'=>'woocommerce','reference'=>'5002','amount'=>'8.00','currency'=>'USD','status'=>'paid','description'=>'Order 5002','date'=>'2026-03-02 00:00:00','payout_id'=>3 ),
+		(object) array( 'referral_id'=>93,'affiliate_id'=>2,'context'=>'woocommerce','reference'=>'5003','amount'=>'4.00','currency'=>'USD','status'=>'failed','description'=>'Order 5003','date'=>'2026-03-03 00:00:00','payout_id'=>0 ),
+		(object) array( 'referral_id'=>94,'affiliate_id'=>2,'context'=>'woocommerce','reference'=>'5004','amount'=>'1.00','currency'=>'USD','status'=>'draft','description'=>'Order 5004','date'=>'2026-03-04 00:00:00','payout_id'=>0 ) );
+		if ( empty($args['status']) ) { $rows=array_values(array_filter($rows,fn($row)=>!in_array($row->status,array('draft','failed'),true))); }
+		elseif ( is_array($args['status']) ) { $rows=array_values(array_filter($rows,fn($row)=>in_array($row->status,$args['status'],true))); }
+		return array_slice($rows,$args['offset'],$args['number']); }
 }
 class StubPayouts {
 	public function get_payouts( $args ) { global $last_payout_args; $last_payout_args=$args; $rows=array(
@@ -63,6 +69,8 @@ $cross = YBY_Connector::snapshot( 'referrals', new SnapshotProviderRequest( arra
 provider_assert( is_wp_error($cross) && 'VALIDATION_FAILED' === $cross->code, 'Cursor must not cross resources.' );
 $ref = YBY_Connector::snapshot( 'referrals', new SnapshotProviderRequest() );
 provider_assert( 91 === $ref['items'][0]['referral_id'] && 'unpaid' === $ref['items'][0]['status'] && 'USD' === $ref['items'][0]['currency'], 'Referral mapping must preserve IDs/status/currency.' );
+provider_assert( array('paid','unpaid','rejected','pending','draft','failed') === array_values($last_ref_args['status'] ?? array()), 'Referral snapshot must explicitly request all AffiliateWP statuses, including internal draft/failed.' );
+provider_assert( 4 === count($ref['items']) && 'failed' === $ref['items'][2]['status'] && 'draft' === $ref['items'][3]['status'], 'Referral snapshot must include AffiliateWP failed/draft provider truth.' );
 $payout = YBY_Connector::snapshot( 'payouts', new SnapshotProviderRequest() );
 provider_assert( 3 === $payout['items'][0]['payout_id'] && array(91,92) === $payout['items'][0]['referral_ids'] && 'USD' === $payout['items'][0]['currency'], 'Payout mapping must expose exact referral IDs and provider currency.' );
 $coupons = YBY_Connector::snapshot( 'coupons', new SnapshotProviderRequest() );

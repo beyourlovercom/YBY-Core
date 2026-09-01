@@ -581,6 +581,9 @@ class YBY_Connector {
 		$method = 'affiliates' === $resource ? 'get_affiliates' : ( 'referrals' === $resource ? 'get_referrals' : 'get_payouts' );
 		if ( ! is_object( $collection ) || ! method_exists( $collection, $method ) ) { return self::provider_unavailable(); }
 		$args = array( 'number' => $query['limit'] + 1, 'offset' => $query['offset'], 'order' => 'ASC', 'orderby' => 'affiliates' === $resource ? 'affiliate_id' : ( 'referrals' === $resource ? 'referral_id' : 'payout_id' ) );
+		if ( 'referrals' === $resource ) {
+			$args['status'] = function_exists( 'affwp_get_referral_statuses' ) ? array_keys( affwp_get_referral_statuses( true ) ) : array( 'paid', 'unpaid', 'rejected', 'pending', 'draft', 'failed' );
+		}
 		if ( $query['updated_after'] ) { $after = gmdate( 'Y-m-d H:i:s', self::iso_timestamp( $query['updated_after'] ) + 1 ); if ( 'affiliates' === $resource ) { $args['date_registered'] = array( 'start' => $after ); } else { $args['date'] = array( 'start' => $after ); } }
 		$objects = $collection->{$method}( $args );
 		if ( ! is_array( $objects ) ) { return self::provider_unavailable(); }
