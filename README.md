@@ -224,7 +224,7 @@ Version 1.5.1 upgrades the database schema to `1.3.0` by adding idempotent Inqui
 
 ## Release state
 
-Andy Core v1.5.1 is frozen for release prep. Production deployment remains a separate, explicitly authorized operation.
+Andy Core v1.5.3 is the stable/current release. Development version: None. Production deployment remains a separate, explicitly authorized operation.
 
 ## Release process
 

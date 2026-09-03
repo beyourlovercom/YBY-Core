@@ -4,15 +4,41 @@
 
 Define local environment configuration rules for YBY Core development.
 
-## Environment Priority
+## Mandatory Local-First Flow
 
-Development:
+The mandatory development and delivery flow is:
 
-- `dev.ybyirrigation.com`
+1. GitHub/GPT analysis and task definition.
+2. Windows Local Codex implementation.
+3. Local test/UAT.
+4. Dev environment-specific UAT, only after Local test/UAT passes.
+5. WWW production deployment, only after Dev UAT passes and with separate authorization.
 
-Production:
+Dev and WWW must not be used as the default development environment.
 
-- `ybyirrigation.com`
+## Canonical Local Development Baseline
+
+- Canonical GitHub repository: `beyourlovercom/YBY-Core` on `main`
+- Canonical Windows local Git checkout: `D:\ai\_repos\YBY-Core`
+- Local Bottle site: `D:\ai\devybybottle` -> `https://localdev.ybybottle.com`
+- Local Irrigation site: `D:\ai\devybyirrigation` -> `https://localdev.ybyirrigation.com`
+
+After source changes, sync the canonical checkout to the local WordPress runtime with:
+
+`powershell -ExecutionPolicy Bypass -File D:\ai\_system\sync-yby-core-local.ps1`
+
+The runtime target is:
+
+`D:\ai\devybybottle\app\public\wp-content\plugins\yby-core`
+
+Run local browser or UAT checks only after the sync returns `YBY_CORE_LOCAL_SYNC=PASS`.
+
+## Environment Deployment Targets
+
+- Dev validation: `dev.ybyirrigation.com`
+- Production: `ybyirrigation.com`
+
+Dev is for environment-specific validation after Local PASS, consistent with `AGENTS.md`; it is not the default development environment.
 
 ## Credentials
 
