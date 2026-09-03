@@ -1,22 +1,20 @@
 # Source of Truth
 
-## Active source
+## Canonical versioned source and history
 
-The canonical active source for YBY Core is:
+The GitHub repository `beyourlovercom/YBY-Core` on `main` is the canonical versioned source and history authority.
 
-`C:\Users\Administrator\Documents\YBY-LP\yby-core`
+The canonical Windows local Git checkout is:
 
-## Repository rule
+`D:\ai\_repos\YBY-Core`
 
-The `yby-core` Git repository is the only active source for plugin code, release engineering, and release artifacts.
+## Non-authoritative copies
 
-## Historical reference rule
-
-Plugin copies found in `YBY-OS-v1` or other repositories may be inspected for history only. They must not be treated as the active release source.
+WordPress runtime plugin copies and historical repository copies are non-authoritative. They may be inspected for runtime validation or historical reference, but must not be edited as source.
 
 ## Ownership boundary
 
-- plugin code: `yby-core`
-- website code: `ybyirrigationcom`
+- Andy Core plugin code, release engineering, and release artifacts: the canonical GitHub repository and its canonical Windows checkout.
+- Website-specific code and configuration: the respective website repositories and environments.
 
 Cross-repository copies are not authoritative.
