@@ -97,7 +97,7 @@ class YBY_Connector_Idempotency {
 		if ( is_scalar( $value ) || null === $value ) { return is_string( $value ) ? substr( $value, 0, 128 ) : $value; }
 		return null;
 	}
-	private static function allowed_result_key( $key ) { return in_array( $key, array( 'id', 'user_id', 'wp_user_id', 'affiliate_id', 'coupon_id', 'linked_affiliate_id', 'referral_id', 'referral_ids', 'payout_id', 'status', 'affiliate_status', 'success', 'retryable', 'exists', 'code', 'normalized_code', 'discount_type', 'amount', 'date_expires', 'date', 'currency', 'payout_method', 'created_user', 'created_affiliate' ), true ); }
-	private static function forbidden_key( $key ) { return (bool) preg_match( '/secret|password|authorization|token|credential|header|payload|email|display_name|payment/', $key ); }
+	private static function allowed_result_key( $key ) { return in_array( $key, array( 'id', 'user_id', 'wp_user_id', 'wordpress_user_id', 'affiliate_id', 'coupon_id', 'linked_affiliate_id', 'referral_id', 'referral_ids', 'payout_id', 'status', 'affiliate_status', 'success', 'password_updated', 'retryable', 'exists', 'code', 'normalized_code', 'discount_type', 'amount', 'date_expires', 'date', 'currency', 'payout_method', 'created_user', 'created_affiliate' ), true ); }
+	private static function forbidden_key( $key ) { return 'password_updated' !== $key && (bool) preg_match( '/secret|password|authorization|token|credential|header|payload|email|display_name|payment/', $key ); }
 	private static function valid_scope_text( $value, $max_length ) { return is_scalar( $value ) && '' !== trim( (string) $value ) && strlen( (string) $value ) <= $max_length; }
 }

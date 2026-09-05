@@ -139,6 +139,7 @@ class YBY_Connector {
 		register_rest_route( self::REST_NAMESPACE, '/coupons/check', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_coupon_check' ), 'permission_callback' => '__return_true' ) );
 		register_rest_route( self::REST_NAMESPACE, '/coupons/provision', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_coupon_provision' ), 'permission_callback' => '__return_true' ) );
 		register_rest_route( self::REST_NAMESPACE, '/payouts/complete', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_payout_complete' ), 'permission_callback' => '__return_true' ) );
+		register_rest_route( self::REST_NAMESPACE, '/wordpress/users/(?P<user_id>\\d+)/password', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_wordpress_password' ), 'permission_callback' => '__return_true' ) );
 	}
 
 	public static function dispatch_coupon_check( $request ) {
@@ -176,6 +177,43 @@ class YBY_Connector {
 		}
 		return new WP_REST_Response( array( 'ok' => true, 'contract_version' => self::CONTRACT_VERSION, 'request_id' => self::request_id(), 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'data' => $data ), 200 );
 	}
+
+	public static function dispatch_wordpress_password( $request ) {
+		$auth = self::authenticate( $request ); if ( is_wp_error( $auth ) ) { return self::error_response( $auth, $request ); }
+		$request_id = self::request_id(); $endpoint = '/wordpress/users/{user_id}/password'; $key = self::request_header( $request, 'X-YBY-Idempotency-Key' );
+		if ( '' === $key ) { return self::mutation_failure( 'VALIDATION_FAILED', 'X-YBY-Idempotency-Key is required.', 400, false, $request, $request_id, $endpoint, $key ); }
+		$input = self::validate_wordpress_password_input( $request, self::json_params( $request ) );
+		if ( is_wp_error( $input ) ) { return self::mutation_failure( $input->get_error_code(), $input->get_error_message(), 400, false, $request, $request_id, $endpoint, $key ); }
+		$begin = YBY_Connector_Idempotency::begin( $input['connection_key'], 'wordpress.password.update', $key, $input );
+		if ( is_wp_error( $begin ) ) { return self::mutation_failure( $begin->get_error_code(), $begin->get_error_message(), self::error_status( $begin ), ! empty( $begin->get_error_data()['retryable'] ), $request, $request_id, $endpoint, $key, $input ); }
+		if ( 'replay' === $begin['status'] ) { self::audit( $request, $request_id, $endpoint, $key, $begin['record']['result'], 'OK', true, false ); return self::mutation_success( $begin['record']['result'], $request, $request_id ); }
+		if ( 'failed' === $begin['status'] ) { $failed_code = $begin['record']['failure_code']; return self::mutation_failure( $failed_code, 'The previous mutation failed.', self::failure_replay_status( $failed_code ), false, $request, $request_id, $endpoint, $key, $input ); }
+		$result = self::update_wordpress_password( $input );
+		if ( is_wp_error( $result ) ) {
+			$retryable = ! empty( $result->get_error_data()['retryable'] ); YBY_Connector_Idempotency::fail( $begin['id'], $result->get_error_code(), $retryable );
+			return self::mutation_failure( $result->get_error_code(), $result->get_error_message(), self::error_status( $result ), $retryable, $request, $request_id, $endpoint, $key, $input, $result );
+		}
+		if ( ! YBY_Connector_Idempotency::succeed( $begin['id'], $result ) ) { return self::mutation_failure( 'IDEMPOTENCY_UNAVAILABLE', 'Could not persist mutation result.', 503, true, $request, $request_id, $endpoint, $key, $input ); }
+		self::audit( $request, $request_id, $endpoint, $key, $result, 'OK', true, false ); return self::mutation_success( $result, $request, $request_id );
+	}
+
+	private static function update_wordpress_password( $input ) {
+		$binding = YBY_Connector_Affiliate_Bindings::by_kol( $input['connection_key'], $input['erp_kol_id'] );
+		if ( ! is_array( $binding ) || 'ready' !== (string) ( $binding['state'] ?? '' ) || (int) ( $binding['wp_user_id'] ?? 0 ) !== $input['wp_user_id'] || (int) ( $binding['affiliate_id'] ?? 0 ) !== $input['affiliate_id'] ) { return new WP_Error( 'BINDING_MISMATCH', 'The durable Affiliate binding does not match the requested identity.', array( 'status' => 409, 'retryable' => false ) ); }
+		if ( ! self::wordpress_password_provider_ready() ) { return self::provider_failure( 'PROVIDER_UNAVAILABLE', 'The required provider is unavailable.' ); }
+		$user = get_user_by( 'id', $input['wp_user_id'] );
+		if ( ! $user || (int) ( $user->ID ?? 0 ) !== $input['wp_user_id'] ) { return new WP_Error( 'WP_USER_NOT_FOUND', 'WordPress user was not found.', array( 'status' => 404, 'retryable' => false ) ); }
+		$affiliate = affwp_get_affiliate( $input['affiliate_id'] ); if ( is_wp_error( $affiliate ) ) { return self::provider_failure( 'PROVIDER_READ_FAILED', 'Affiliate provider read failed.' ); } $affiliate_id = self::affiliate_id_from_object( $affiliate );
+		if ( ! $affiliate || null === $affiliate_id ) { return new WP_Error( 'AFFILIATE_NOT_FOUND', 'Affiliate was not found.', array( 'status' => 404, 'retryable' => false ) ); }
+		if ( $affiliate_id !== $input['affiliate_id'] || (int) ( $affiliate->user_id ?? 0 ) !== $input['wp_user_id'] ) { return new WP_Error( 'PROVIDER_IDENTITY_MISMATCH', 'Provider identity does not match the requested binding.', array( 'status' => 409, 'retryable' => false ) ); }
+		$updated = wp_update_user( array( 'ID' => $input['wp_user_id'], 'user_pass' => $input['password'] ) );
+		if ( is_wp_error( $updated ) || ! $updated ) { return self::provider_failure( 'PROVIDER_WRITE_FAILED', 'WordPress password update failed.' ); }
+		$read = get_user_by( 'id', $input['wp_user_id'] );
+		if ( ! $read || empty( $read->user_pass ) || ! wp_check_password( $input['password'], $read->user_pass, $input['wp_user_id'] ) ) { return self::provider_failure( 'PROVIDER_READBACK_FAILED', 'WordPress password read-back failed.' ); }
+		return array( 'wordpress_user_id' => $input['wp_user_id'], 'affiliate_id' => $input['affiliate_id'], 'password_updated' => true );
+	}
+
+	private static function wordpress_password_provider_ready() { return self::provider_available( 'affiliatewp' ) && function_exists( 'affiliate_wp' ) && is_object( affiliate_wp() ) && function_exists( 'affwp_get_affiliate' ) && function_exists( 'get_user_by' ) && function_exists( 'wp_update_user' ) && function_exists( 'wp_check_password' ); }
 
 	public static function dispatch_affiliate_status( $request ) {
 		return self::dispatch_mutation( $request, 'affiliate.status', '/affiliates/{affiliate_id}/status', 'status' );
@@ -413,9 +451,9 @@ class YBY_Connector {
 	}
 
 	private static function failure_replay_status( $code ) {
-		if ( 'AFFILIATE_NOT_FOUND' === $code ) { return 404; }
-		if ( in_array( $code, array( 'IDEMPOTENCY_CONFLICT', 'AFFILIATE_ID_CONFLICT', 'WP_USER_CONFLICT', 'AFFILIATE_CONFLICT', 'COUPON_CONFLICT' ), true ) ) { return 409; }
-		return in_array( $code, array( 'PROVIDER_UNAVAILABLE', 'PROVIDER_WRITE_FAILED', 'PROVIDER_READBACK_FAILED', 'PROVIDER_SYNC_FAILED', 'IDEMPOTENCY_UNAVAILABLE', 'AFFILIATE_BINDING_UNAVAILABLE', 'PROVISION_IN_PROGRESS', 'PAYOUT_IN_PROGRESS' ), true ) ? 503 : 400;
+		if ( in_array( $code, array( 'AFFILIATE_NOT_FOUND', 'WP_USER_NOT_FOUND' ), true ) ) { return 404; }
+		if ( in_array( $code, array( 'IDEMPOTENCY_CONFLICT', 'AFFILIATE_ID_CONFLICT', 'WP_USER_CONFLICT', 'AFFILIATE_CONFLICT', 'COUPON_CONFLICT', 'BINDING_MISMATCH', 'PROVIDER_IDENTITY_MISMATCH' ), true ) ) { return 409; }
+		return in_array( $code, array( 'PROVIDER_UNAVAILABLE', 'PROVIDER_WRITE_FAILED', 'PROVIDER_READ_FAILED', 'PROVIDER_READBACK_FAILED', 'PROVIDER_SYNC_FAILED', 'IDEMPOTENCY_UNAVAILABLE', 'AFFILIATE_BINDING_UNAVAILABLE', 'PROVISION_IN_PROGRESS', 'PAYOUT_IN_PROGRESS' ), true ) ? 503 : 400;
 	}
 
 	private static function validate_payout_input( $request, $body ) {
@@ -511,6 +549,13 @@ class YBY_Connector {
 		return array( 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'affiliate_id' => (int) $id, 'status' => (string) $body['status'] );
 	}
 
+	private static function validate_wordpress_password_input( $request, $body ) {
+		$user_id = is_object( $request ) && method_exists( $request, 'get_param' ) ? $request->get_param( 'user_id' ) : null;
+		$fields = array( 'erp_kol_id', 'affiliate_id', 'password' );
+		if ( ! ( is_int( $user_id ) || ( is_string( $user_id ) && ctype_digit( $user_id ) ) ) || (int) $user_id < 1 || ! is_array( $body ) || count( $body ) !== 3 || array_diff( $fields, array_keys( $body ) ) || array_diff( array_keys( $body ), $fields ) || ! ( is_int( $body['erp_kol_id'] ) || ( is_string( $body['erp_kol_id'] ) && ctype_digit( $body['erp_kol_id'] ) ) ) || ! ( is_int( $body['affiliate_id'] ) || ( is_string( $body['affiliate_id'] ) && ctype_digit( $body['affiliate_id'] ) ) ) || (int) $body['erp_kol_id'] < 1 || (int) $body['affiliate_id'] < 1 || ! is_string( $body['password'] ) || strlen( $body['password'] ) < 12 || strlen( $body['password'] ) > 128 || ! preg_match( '/[A-Za-z]/', $body['password'] ) || ! preg_match( '/[0-9]/', $body['password'] ) ) { return self::validation_error(); }
+		return array( 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'wp_user_id' => (int) $user_id, 'erp_kol_id' => (int) $body['erp_kol_id'], 'affiliate_id' => (int) $body['affiliate_id'], 'password' => $body['password'] );
+	}
+
 	private static function validate_coupon_check_input( $body ) { if ( ! is_array( $body ) || 1 !== count( $body ) || ! array_key_exists( 'code', $body ) || ! is_scalar( $body['code'] ) ) { return self::validation_error(); } $code = trim( (string) $body['code'] ); if ( '' === $code || strlen( $code ) > 255 ) { return self::validation_error(); } return array( 'code' => $code, 'normalized_code' => self::normalize_coupon_code( $code ) ); }
 
 	private static function validate_coupon_provision_input( $request, $body ) {
@@ -539,7 +584,7 @@ class YBY_Connector {
 	}
 	private static function audit( $request, $request_id, $endpoint, $idempotency_key, $result, $code, $success, $retryable ) {
 		$targets = array();
-		foreach ( array( 'wp_user_id', 'affiliate_id', 'coupon_id', 'payout_id', 'referral_id', 'referral_ids' ) as $key ) { if ( isset( $result[ $key ] ) && is_scalar( $result[ $key ] ) ) { $targets[ $key ] = array( (int) $result[ $key ] ); } elseif ( isset( $result[ $key ] ) && is_array( $result[ $key ] ) ) { $targets[ $key ] = array_map( 'absint', array_slice( $result[ $key ], 0, 20 ) ); } }
+		foreach ( array( 'wp_user_id', 'wordpress_user_id', 'affiliate_id', 'coupon_id', 'payout_id', 'referral_id', 'referral_ids' ) as $key ) { if ( isset( $result[ $key ] ) && is_scalar( $result[ $key ] ) ) { $targets[ $key ] = array( (int) $result[ $key ] ); } elseif ( isset( $result[ $key ] ) && is_array( $result[ $key ] ) ) { $targets[ $key ] = array_map( 'absint', array_slice( $result[ $key ], 0, 20 ) ); } }
 		YBY_Connector_Audit::record( array( 'request_id' => $request_id, 'key_id' => self::request_header( $request, 'X-YBY-Key-Id' ), 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'endpoint_action' => $endpoint, 'idempotency_key_hash' => YBY_Connector_Idempotency::key_hash( $idempotency_key ), 'target_provider_ids' => $targets, 'result_code' => $code, 'success' => $success, 'retryable' => $retryable ) );
 	}
 
@@ -793,8 +838,9 @@ class YBY_Connector {
 			'coupon_check'        => array( 'label' => '检查优惠券', 'method' => 'POST', 'path' => '/coupons/check', 'providers' => array( 'woocommerce' ) ),
 			'coupon_provision'    => array( 'label' => '创建优惠券', 'method' => 'POST', 'path' => '/coupons/provision', 'providers' => array( 'woocommerce', 'affiliatewp' ) ),
 			'payout_complete'     => array( 'label' => '完成结算', 'method' => 'POST', 'path' => '/payouts/complete', 'providers' => array( 'affiliatewp' ) ),
+			'wordpress_password'  => array( 'label' => '更新 WordPress 密码', 'method' => 'POST', 'path' => '/wordpress/users/{user_id}/password', 'providers' => array( 'wordpress', 'affiliatewp' ) ),
 		);
-		$implemented = array( '/health', '/snapshot/affiliates', '/snapshot/coupons', '/snapshot/referrals', '/snapshot/payouts', '/snapshot/subscribers', '/affiliates/provision', '/affiliates/{affiliate_id}/status', '/coupons/check', '/coupons/provision', '/payouts/complete' );
+		$implemented = array( '/health', '/snapshot/affiliates', '/snapshot/coupons', '/snapshot/referrals', '/snapshot/payouts', '/snapshot/subscribers', '/affiliates/provision', '/affiliates/{affiliate_id}/status', '/coupons/check', '/coupons/provision', '/payouts/complete', '/wordpress/users/{user_id}/password' );
 		foreach ( $endpoints as &$endpoint ) {
 			if ( ! in_array( $endpoint['path'], $implemented, true ) ) {
 				$endpoint['status'] = 'Not Available'; $endpoint['available'] = false; unset( $endpoint['providers'] ); continue;
