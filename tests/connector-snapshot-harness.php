@@ -17,7 +17,7 @@ function snapshot_assert( $condition, $message ) { if ( ! $condition ) { fwrite(
 require_once dirname( __DIR__ ) . '/inc/class-yby-connector.php';
 
 YBY_Connector::register_routes();
-snapshot_assert( 11 === count( $routes ), 'M7 must register six GET and five POST routes.' );
+snapshot_assert( 12 === count( $routes ) && isset( $routes[ YBY_Connector::REST_NAMESPACE . '/affiliates/check' ] ), 'Connector must register six GET and six POST routes.' );
 foreach ( array( '/health', '/snapshot/affiliates', '/snapshot/coupons', '/snapshot/referrals', '/snapshot/payouts', '/snapshot/subscribers' ) as $route ) { snapshot_assert( isset( $routes[ YBY_Connector::REST_NAMESPACE . $route ] ), 'Required GET route is missing: ' . $route ); snapshot_assert( 'GET' === $routes[ YBY_Connector::REST_NAMESPACE . $route ]['methods'], 'Snapshot route must be GET-only: ' . $route ); }
 
 $invalid = YBY_Connector::snapshot( 'affiliates', new Snapshot_Request( '/andy-core/v1/erp/snapshot/affiliates', array( 'limit' => 101 ) ) );
@@ -42,7 +42,7 @@ $source = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-connector.php'
 $snapshot_source = substr( $source, strpos( $source, 'public static function snapshot' ), strpos( $source, 'private static function provision_coupon' ) - strpos( $source, 'public static function snapshot' ) );
 snapshot_assert( false === strpos( $snapshot_source, 'affwp_add_' ) && false === strpos( $snapshot_source, '->save(' ), 'Snapshot implementation must not contain provider mutation calls.' );
 $route_block = substr( $source, strpos( $source, 'public static function register_routes' ), strpos( $source, 'public static function dispatch_health' ) - strpos( $source, 'public static function register_routes' ) );
-snapshot_assert( 5 === substr_count( $route_block, "'POST'" ), 'Exactly five POST routes must be registered.' );
+snapshot_assert( 6 === substr_count( $route_block, "'POST'" ), 'Exactly six POST routes must be registered.' );
 snapshot_assert( false === strpos( substr( $source, strpos( $source, 'public static function snapshot' ) ), 'SECRET_OPTION' ), 'Snapshot implementation must not expose connector secrets.' );
 foreach ( array( 'affiliate_id', 'user_id', 'display_name', 'status', 'rate_type', 'registered_at', 'provider_modified_at', 'coupon_id', 'normalized_code', 'discount_type', 'date_expires', 'linked_affiliate_id', 'referral_id', 'referred_at', 'payout_id', 'referral_ids', 'payout_method' ) as $field ) { snapshot_assert( false !== strpos( $source, "'{$field}'" ), 'Required snapshot field mapping is missing: ' . $field ); }
 snapshot_assert( false !== strpos( $source, "'items'" ) && false !== strpos( $source, "'next_cursor'" ), 'Snapshot envelope data must contain items and next_cursor.' );
