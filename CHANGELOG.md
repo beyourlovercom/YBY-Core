@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.5.4 - 2026-09-05
+
+- Added the bounded private GitHub Releases updater.
+- Added authenticated package download, SHA-256 evidence validation, safe ZIP structure checks, bounded code backups, post-install health validation, and code-only rollback.
+- Preserved database version `1.4.0`; this release introduces no database migration.
+
 ## v1.5.3 - 2026-08-31
 
 ### Added

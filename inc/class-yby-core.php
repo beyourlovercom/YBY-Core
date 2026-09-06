@@ -55,6 +55,10 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-connector-audit.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-connector-affiliate-bindings.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-connector-coupon-bindings.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-connector-payout-bindings.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-github-release-client.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-update-verifier.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-update-backup.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-updater.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-inquiry-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
@@ -122,6 +126,7 @@ class YBY_Core {
 		$social_login   = new YBY_Social_Login_Admin();
 		$popup_admin    = new YBY_Popup_Admin( 'yby-core', YBY_CORE_VERSION );
 		$connector_admin = new YBY_Connector_Admin();
+		$updater         = new YBY_Updater( YBY_CORE_PLUGIN_FILE, YBY_CORE_VERSION );
 
 		$this->loader->add_action( 'init', $project_cpt, 'register' );
 		$this->loader->add_action( 'admin_menu', $inquiry_admin, 'add_admin_menu', 20 );
@@ -138,6 +143,7 @@ class YBY_Core {
 		$this->loader->add_action( 'admin_enqueue_scripts', $popup_admin, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_init', $admin, 'redirect_legacy_inquiry_dock' );
 		$this->loader->add_action( 'admin_init', $connector_admin, 'handle_secret_action' );
+		$updater->register_hooks( $this->loader );
 		$this->loader->add_filter( 'parent_file', $project_studio, 'filter_parent_file' );
 		$this->loader->add_filter( 'submenu_file', $project_studio, 'filter_submenu_file' );
 	}

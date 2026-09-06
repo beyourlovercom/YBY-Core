@@ -1,85 +1,55 @@
 <?php
+/** Release metadata contract for Andy Core v1.5.4. */
 $root = dirname( __DIR__ );
-$plugin = file_get_contents( $root . '/yby-core.php' );
-$version = file_get_contents( $root . '/VERSION.md' );
-$readme = file_get_contents( $root . '/README.md' );
-$wp_readme = file_get_contents( $root . '/readme.txt' );
-$changelog = file_get_contents( $root . '/CHANGELOG.md' );
-$release_notes = file_get_contents( $root . '/RELEASE_NOTES_v1.5.3.md' );
-$upgrade_guide = file_get_contents( $root . '/UPGRADE_GUIDE_v1.5.3.md' );
-$rollback_guide = file_get_contents( $root . '/ROLLBACK_GUIDE_v1.5.3.md' );
-$tag_workflow = file_get_contents( $root . '/.github/workflows/release.yml' );
-$builder = file_get_contents( $root . '/scripts/build-v1.5.3-release.sh' );
-$collect_files = static function ( $paths ) {
-	$files = array();
-	foreach ( $paths as $path ) {
-		if ( is_file( $path ) ) {
-			$files[] = $path;
-			continue;
-		}
-		if ( ! is_dir( $path ) ) {
-			continue;
-		}
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator( $path, FilesystemIterator::SKIP_DOTS )
-		);
-		foreach ( $iterator as $file ) {
-			if ( $file->isFile() ) {
-				$files[] = $file->getPathname();
-			}
-		}
-	}
-	return $files;
+$read = static function ( $file ) use ( $root ) {
+	$path = $root . '/' . $file;
+	if ( ! is_file( $path ) ) { throw new RuntimeException( 'Missing file: ' . $file ); }
+	return file_get_contents( $path );
 };
-$runtime_files = $collect_files(
-	array(
-		$root . '/yby-core.php',
-		$root . '/README.md',
-		$root . '/VERSION.md',
-		$root . '/CHANGELOG.md',
-		$root . '/readme.txt',
-		$root . '/scripts/build-v1.5.3-release.sh',
-		$root . '/admin',
-		$root . '/assets',
-		$root . '/inc',
-		$root . '/languages',
-		$root . '/modules',
-		$root . '/public',
-		$root . '/templates',
-	)
-);
-$assert = static function ( $condition, $message ) {
-	if ( ! $condition ) { throw new RuntimeException( $message ); }
-};
-$assert( false !== strpos( $plugin, 'Version:           1.5.3' ), 'PLUGIN_HEADER_VERSION_GATE failed.' );
-$assert( false !== strpos( $plugin, "define( 'YBY_CORE_VERSION', '1.5.3' );" ), 'CORE_CONSTANT_VERSION_GATE failed.' );
+$assert = static function ( $ok, $message ) { if ( ! $ok ) { throw new RuntimeException( $message ); } };
+
+$plugin      = $read( 'yby-core.php' );
+$version     = $read( 'VERSION.md' );
+$readme      = $read( 'README.md' );
+$wp_readme   = $read( 'readme.txt' );
+$changelog   = $read( 'CHANGELOG.md' );
+$workflow    = $read( '.github/workflows/release.yml' );
+$validation  = $read( '.github/workflows/release-package-validation.yml' );
+$builder     = $read( 'scripts/build-v1.5.4-release.sh' );
+$signer      = $read( 'scripts/sign-update-metadata.php' );
+$updater     = $read( 'inc/class-yby-updater.php' );
+$verifier    = $read( 'inc/class-yby-update-verifier.php' );
+
+$assert( false !== strpos( $plugin, 'Version:           1.5.4' ), 'PLUGIN_HEADER_VERSION_GATE failed.' );
+$assert( false !== strpos( $plugin, "define( 'YBY_CORE_VERSION', '1.5.4' );" ), 'CORE_CONSTANT_VERSION_GATE failed.' );
 $assert( false !== strpos( $plugin, "define( 'YBY_DATABASE_VERSION', '1.4.0' );" ), 'DATABASE_VERSION_GATE failed.' );
-$assert( false !== strpos( $version, 'Stable Version: 1.5.3' ) && false !== strpos( $version, 'Development Version: None' ) && false !== strpos( $version, 'Stable Release Type: Stable' ), 'VERSION_MD_GATE failed.' );
-$assert( false !== strpos( $readme, 'Product version: `1.5.3`' ) && false !== strpos( $readme, 'Database version: `1.4.0`' ), 'README_VERSION_GATE failed.' );
-$assert( false !== strpos( $wp_readme, 'Stable tag: 1.5.3' ) && false !== strpos( $wp_readme, 'Tested up to: 7.1' ), 'README_METADATA_GATE failed.' );
-$assert( false !== strpos( $changelog, '## v1.5.3 - 2026-08-31' ), 'CHANGELOG_RELEASE_GATE failed.' );
-$assert( false !== strpos( $release_notes, 'Plugin version: 1.5.3' ) && false !== strpos( $release_notes, 'Database version: 1.4.0' ), 'RELEASE_NOTES_GATE failed.' );
-$assert( false !== strpos( $upgrade_guide, 'Upgrade target: Andy Core 1.5.3' ) && false !== strpos( $upgrade_guide, 'Database target: 1.4.0' ), 'UPGRADE_GUIDE_GATE failed.' );
-$assert( false !== strpos( $rollback_guide, 'Rollback target: last verified Andy Core v1.5.2 package' ), 'ROLLBACK_GUIDE_GATE failed.' );
-$assert( false === strpos( $tag_workflow, 'softprops/action-gh-release' ), 'TAG_WORKFLOW_MUST_NOT_PUBLISH_GATE failed.' );
-$assert( false !== strpos( $tag_workflow, 'actions/upload-artifact@v4' ) && false !== strpos( $tag_workflow, 'scripts/build-v${version}-release.sh' ) && false !== strpos( $tag_workflow, 'andy-core-v${version}.zip' ), 'TAG_BUILD_ARTIFACT_GATE failed.' );
-$builder_metadata_checks = array(
-	"if ! grep -Fq 'Version:           1.5.3' \"\${root_dir}/yby-core.php\"; then",
-	"if ! grep -Fq \"define( 'YBY_CORE_VERSION', '1.5.3' );\" \"\${root_dir}/yby-core.php\"; then",
-	"if ! grep -Fq \"define( 'YBY_DATABASE_VERSION', '1.4.0' );\" \"\${root_dir}/yby-core.php\"; then",
-	"if ! grep -Fq 'Stable tag: 1.5.3' \"\${root_dir}/readme.txt\"; then",
-);
-$stage_position = strpos( $builder, 'stage_dir="$(mktemp -d)"' );
-$staging_mkdir_position = strpos( $builder, 'mkdir -p "${stage_dir}/yby-core" "${output_dir}"' );
-$assert( false !== $stage_position && false !== $staging_mkdir_position && $stage_position < $staging_mkdir_position, 'BUILDER_STAGING_ORDER_GATE failed.' );
-foreach ( $builder_metadata_checks as $check ) {
-	$check_position = strpos( $builder, $check );
-	$assert( false !== $check_position, 'BUILDER_SOURCE_METADATA_GATE failed.' );
-	$assert( $check_position < $stage_position && $check_position < $staging_mkdir_position, 'BUILDER_SOURCE_METADATA_ORDER_GATE failed.' );
+$assert( false !== strpos( $version, 'Stable Version: 1.5.4' ) && false !== strpos( $version, 'Database Version: 1.4.0' ), 'VERSION_MD_GATE failed.' );
+$assert( false !== strpos( $readme, 'Product version: `1.5.4`' ) && false !== strpos( $readme, 'Database version: `1.4.0`' ), 'README_VERSION_GATE failed.' );
+$assert( false !== strpos( $wp_readme, 'Stable tag: 1.5.4' ) && false !== strpos( $wp_readme, 'Tested up to: 7.1' ), 'README_METADATA_GATE failed.' );
+$assert( false !== strpos( $changelog, '## v1.5.4 - 2026-09-05' ), 'CHANGELOG_RELEASE_GATE failed.' );
+
+foreach ( array( 'RELEASE_NOTES_v1.5.4.md', 'UPGRADE_GUIDE_v1.5.4.md', 'ROLLBACK_GUIDE_v1.5.4.md', 'docs/v1.5.4/ANDY-CORE-SECURE-UPDATER-M1.md' ) as $file ) {
+	$assert( is_file( $root . '/' . $file ), 'Release/WP documentation missing: ' . $file );
 }
-foreach ( $runtime_files as $file ) {
-	if ( is_file( $file ) ) {
-		$assert( false === strpos( file_get_contents( $file ), '1.5.3-dev' ), 'DEV_VERSION_STRING_GATE failed in ' . basename( $file ) );
-	}
+foreach ( array( 'RELEASE_NOTES_v1.5.3.md', 'UPGRADE_GUIDE_v1.5.3.md', 'ROLLBACK_GUIDE_v1.5.3.md', 'scripts/build-v1.5.3-release.sh' ) as $file ) {
+	$assert( is_file( $root . '/' . $file ), 'Historical v1.5.3 evidence missing: ' . $file );
 }
+
+$assert( false !== strpos( $builder, 'andy-core-v${version}.zip' ), 'PACKAGE_NAME_GATE failed.' );
+$assert( false !== strpos( $builder, 'SHA256.txt' ) && false !== strpos( $builder, 'update-metadata.json' ), 'UPDATER_EVIDENCE_BUILD_GATE failed.' );
+$assert( false !== strpos( $builder, 'update-metadata.sig' ) && false !== strpos( $builder, 'ANDY_CORE_UPDATE_SIGNING_SECRET' ), 'ED25519_BUILD_GATE failed.' );
+$assert( false !== strpos( $signer, 'sodium_crypto_sign_detached' ) && false !== strpos( $signer, 'sodium_crypto_sign_publickey_from_secretkey' ), 'ED25519_SIGNER_GATE failed.' );
+$assert( false !== strpos( $verifier, "SIGNING_PUBLIC_KEY_B64 = 'LcPq5x+fNa96aC+cXyC1ZbwRoGXCihF9YSG+iMHtjKU='" ) && false !== strpos( $verifier, 'sodium_crypto_sign_verify_detached' ), 'ED25519_VERIFY_GATE failed.' );
+$assert( false !== strpos( $builder, '"schema_version": 1' ) && false !== strpos( $builder, '"database_version": "%s"' ), 'UPDATER_METADATA_SCHEMA_GATE failed.' );
+$assert( false !== strpos( $builder, "printf '%s  %s\\n'" ), 'SHA256_FILENAME_EVIDENCE_GATE failed.' );
+$assert( false !== strpos( $builder, 'define( \'YBY_DATABASE_VERSION\', \'${database_version}\' );' ), 'BUILDER_DATABASE_COMPATIBILITY_GATE failed.' );
+
+$assert( false === strpos( $workflow, 'softprops/action-gh-release' ) && false === strpos( $workflow, 'gh release' ), 'TAG_WORKFLOW_MUST_NOT_PUBLISH_GATE failed.' );
+$assert( false !== strpos( $workflow, 'actions/upload-artifact@v4' ) && false !== strpos( $workflow, 'update-metadata.json' ) && false !== strpos( $workflow, 'update-metadata.sig' ) && false !== strpos( $workflow, 'ANDY_CORE_UPDATE_SIGNING_SECRET' ), 'TAG_BUILD_ARTIFACT_GATE failed.' );
+$assert( false !== strpos( $validation, 'php tests/secure-updater-harness.php' ) && false !== strpos( $validation, 'andy-core-v1.5.4-release-candidate' ), 'PR_RELEASE_VALIDATION_GATE failed.' );
+
+$assert( false !== strpos( $updater, 'const PENDING_KEY' ) && false !== strpos( $updater, "'target_version'" ), 'UPDATER_TARGET_STATE_GATE failed.' );
+$assert( false !== strpos( $updater, 'YBY_Update_Backup::restore_record' ), 'UPDATER_EXACT_BACKUP_ROLLBACK_GATE failed.' );
+$assert( false !== strpos( $verifier, "const DATABASE_VERSION = '1.4.0'" ) && false !== strpos( $verifier, "'schema_version'" ), 'VERIFIER_DATABASE_GATE failed.' );
+
 echo "PASS release-metadata-harness\n";

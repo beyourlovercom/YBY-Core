@@ -117,7 +117,7 @@ class YBY_Admin {
 		}
 
 		$tab         = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general';
-		$tab         = in_array( $tab, array( 'general', 'inquiry', 'inquiry-notification', 'wp-api', 'system-status' ), true ) ? $tab : 'general';
+		$tab         = in_array( $tab, array( 'general', 'inquiry', 'inquiry-notification', 'wp-api', 'system-status', 'updates' ), true ) ? $tab : 'general';
 		if ( 'inquiry' === $tab ) {
 			$this->render_inquiry_settings();
 			return;
@@ -128,6 +128,10 @@ class YBY_Admin {
 		}
 		if ( 'wp-api' === $tab ) {
 			( new YBY_Connector_Admin() )->render_page();
+			return;
+		}
+		if ( 'updates' === $tab ) {
+			( new YBY_Updater( YBY_CORE_PLUGIN_FILE, YBY_CORE_VERSION ) )->render_tab();
 			return;
 		}
 		if ( 'system-status' === $tab ) {

@@ -28,11 +28,12 @@ jobs:
         with:
           node-version: '20.19.1'
 
-      - name: Release metadata assertions
+      - name: Release and updater assertions
         shell: bash
         run: |
           set -euo pipefail
           php tests/release-metadata-harness.php
+          php tests/secure-updater-harness.php
           git diff --check
           for file in tests/*-harness.js; do node --check "$file"; done
 
@@ -41,29 +42,40 @@ jobs:
         env:
           SOURCE_BRANCH: ${{ github.head_ref || github.ref_name }}
           SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+          ANDY_CORE_UPDATE_SIGNING_SECRET: ${{ secrets.ANDY_CORE_UPDATE_SIGNING_SECRET }}
         run: |
           set -euo pipefail
-          BUILD_CONTEXT=RELEASE_CANDIDATE bash scripts/build-v1.5.3-release.sh
-          test -s releases/v1.5.3/andy-core-v1.5.3.zip
-          test -s releases/v1.5.3/SHA256.txt
-          test -s releases/v1.5.3/BUILD_INFO.md
-          for doc in RELEASE_NOTES_v1.5.3.md UPGRADE_GUIDE_v1.5.3.md ROLLBACK_GUIDE_v1.5.3.md; do
+          BUILD_CONTEXT=RELEASE_CANDIDATE bash scripts/build-v1.5.4-release.sh
+          package="releases/v1.5.4/andy-core-v1.5.4.zip"
+          checksum="releases/v1.5.4/SHA256.txt"
+          metadata="releases/v1.5.4/update-metadata.json"
+          test -s "$package"
+          test -s "$checksum"
+          test -s "$metadata"
+          if [[ -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" ]]; then test -s releases/v1.5.4/update-metadata.sig; else test ! -e releases/v1.5.4/update-metadata.sig; fi
+          test -s releases/v1.5.4/BUILD_INFO.md
+          for doc in RELEASE_NOTES_v1.5.4.md UPGRADE_GUIDE_v1.5.4.md ROLLBACK_GUIDE_v1.5.4.md; do
             test -s "$doc"
-            cp "$doc" releases/v1.5.3/
+            cp "$doc" releases/v1.5.4/
           done
-          unzip -Z1 releases/v1.5.3/andy-core-v1.5.3.zip | awk -F/ 'NF && $1 != "yby-core" { exit 1 }'
-          unzip -Z1 releases/v1.5.3/andy-core-v1.5.3.zip | grep -Fx 'yby-core/yby-core.php'
-          ! unzip -Z1 releases/v1.5.3/andy-core-v1.5.3.zip | grep -E '(^|/)(\.git|\.github|tests|docs|releases)(/|$)'
-          unzip -p releases/v1.5.3/andy-core-v1.5.3.zip yby-core/yby-core.php | grep -F 'Version:           1.5.3'
-          unzip -p releases/v1.5.3/andy-core-v1.5.3.zip yby-core/yby-core.php | grep -F "define( 'YBY_CORE_VERSION', '1.5.3' );"
-          unzip -p releases/v1.5.3/andy-core-v1.5.3.zip yby-core/yby-core.php | grep -F "define( 'YBY_DATABASE_VERSION', '1.4.0' );"
-          grep -F 'Build Context: RELEASE_CANDIDATE' releases/v1.5.3/BUILD_INFO.md
-          grep -F 'PHP Lint: PASS' releases/v1.5.3/BUILD_INFO.md
-          grep -F 'git diff --check: PASS' releases/v1.5.3/BUILD_INFO.md
+          unzip -Z1 "$package" | awk -F/ 'NF && $1 != "yby-core" { exit 1 }'
+          unzip -Z1 "$package" | grep -Fx 'yby-core/yby-core.php'
+          ! unzip -Z1 "$package" | grep -E '(^|/)(\.git|\.github|tests|docs|releases|scripts)(/|$)'
+          unzip -p "$package" yby-core/yby-core.php | grep -F 'Version:           1.5.4'
+          unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_CORE_VERSION', '1.5.4' );"
+          unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_DATABASE_VERSION', '1.4.0' );"
+          expected_sha="$(awk 'NF {print $1; exit}' "$checksum")"
+          actual_sha="$(sha256sum "$package" | awk '{print $1}')"
+          test "$expected_sha" = "$actual_sha"
+          php -r '$m=json_decode(file_get_contents($argv[1]),true); if (!is_array($m) || ($m["schema_version"] ?? null)!==1 || ($m["version"] ?? "")!=="1.5.4" || ($m["database_version"] ?? "")!=="1.4.0" || ($m["package"] ?? "")!=="andy-core-v1.5.4.zip" || ($m["sha256"] ?? "")!==$argv[2]) exit(1);' "$metadata" "$actual_sha"
+          grep -F 'Build Context: RELEASE_CANDIDATE' releases/v1.5.4/BUILD_INFO.md
+          grep -F 'PHP Lint: PASS' releases/v1.5.4/BUILD_INFO.md
+          grep -F 'git diff --check: PASS' releases/v1.5.4/BUILD_INFO.md
+          if [[ -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" ]]; then grep -F 'Ed25519 Signature: PASS' releases/v1.5.4/BUILD_INFO.md; else grep -F 'Ed25519 Signature: NOT_SIGNED' releases/v1.5.4/BUILD_INFO.md; fi
 
       - name: Upload release candidate
         uses: actions/upload-artifact@v4
         with:
-          name: andy-core-v1.5.3-release-candidate
-          path: releases/v1.5.3
+          name: andy-core-v1.5.4-release-candidate
+          path: releases/v1.5.4
           if-no-files-found: error
