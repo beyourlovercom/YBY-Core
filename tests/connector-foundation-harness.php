@@ -48,19 +48,19 @@ connector_assert( 'beyourlover.com' === $options[ YBY_Connector::OPTION ]['conne
 unset( $options[ YBY_Connector::OPTION ] );
 connector_assert( 'Provider Missing' === YBY_Connector::provider_statuses()['woocommerce']['status'] && 'Provider Missing' === YBY_Connector::provider_statuses()['affiliatewp']['status'], 'Absent providers must be detected gracefully.' );
 $endpoints = YBY_Connector::endpoint_statuses();
-connector_assert( 11 === count( $endpoints ), 'M3.1 must expose exactly eleven contract endpoint rows.' );
+connector_assert( 12 === count( $endpoints ), 'Connector must expose exactly twelve contract endpoint rows.' );
 $expected_routes = array(
 	'GET /health', 'GET /snapshot/affiliates', 'GET /snapshot/coupons', 'GET /snapshot/referrals', 'GET /snapshot/payouts', 'GET /snapshot/subscribers',
-	'POST /affiliates/provision', 'POST /affiliates/{affiliate_id}/status', 'POST /coupons/check', 'POST /coupons/provision', 'POST /payouts/complete',
+	'POST /affiliates/provision', 'POST /affiliates/{affiliate_id}/status', 'POST /coupons/check', 'POST /coupons/provision', 'POST /payouts/complete', 'POST /wordpress/users/{user_id}/password',
 );
 $actual_routes = array();
 foreach ( $endpoints as $endpoint ) { $actual_routes[] = $endpoint['method'] . ' ' . $endpoint['path']; }
 sort( $expected_routes ); sort( $actual_routes );
-connector_assert( $expected_routes === $actual_routes, 'Endpoint table must contain exactly the eleven approved routes and no others.' );
+connector_assert( $expected_routes === $actual_routes, 'Endpoint table must contain exactly the twelve approved routes and no others.' );
 connector_assert( 'Connector Disabled' === $endpoints['health']['status'], 'Disabled connector health must report Connector Disabled.' );
 connector_assert( 'Provider Missing' === $endpoints['affiliate_snapshot']['status'], 'Implemented Affiliate snapshot must report Provider Missing when AffiliateWP is absent.' );
 connector_assert( false === $endpoints['health']['available'] && false === $endpoints['affiliate_snapshot']['available'], 'Disabled health and provider-missing snapshot must remain unavailable.' );
-foreach ( array( 'affiliate_snapshot', 'coupon_snapshot', 'referral_snapshot', 'payout_snapshot' ) as $name ) { connector_assert( 'Provider Missing' === $endpoints[ $name ]['status'], 'Implemented snapshot rows must report Provider Missing when providers are absent.' ); } connector_assert( 'Provider Missing' === $endpoints['coupon_check']['status'], 'Coupon check is implemented and must report provider absence.' ); connector_assert( 'Provider Missing' === $endpoints['payout_complete']['status'], 'Payout completion must report provider absence.' );
+foreach ( array( 'affiliate_snapshot', 'coupon_snapshot', 'referral_snapshot', 'payout_snapshot' ) as $name ) { connector_assert( 'Provider Missing' === $endpoints[ $name ]['status'], 'Implemented snapshot rows must report Provider Missing when providers are absent.' ); } foreach ( array( 'coupon_check', 'payout_complete', 'wordpress_password' ) as $name ) { connector_assert( 'Provider Missing' === $endpoints[ $name ]['status'], 'Implemented provider-backed mutation must report provider absence.' ); }
 define( 'WC_VERSION', '9.9.9' );
 define( 'AFFILIATEWP_VERSION', '2.0.0' );
 $providers = YBY_Connector::provider_statuses();
