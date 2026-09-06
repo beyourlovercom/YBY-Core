@@ -68,3 +68,53 @@ jobs:
           path: releases/${{ github.ref_name }}
           if-no-files-found: error
           retention-days: 30
+  publish-release:
+    needs: tagged-release-package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified tagged build
+        uses: actions/download-artifact@v4
+        with:
+          name: andy-core-${{ github.ref_name }}-tagged-build
+          path: releases/${{ github.ref_name }}
+
+      - name: Publish verified GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          release_dir="${GITHUB_WORKSPACE}/releases/${tag}"
+          notes="${release_dir}/RELEASE_NOTES_v${version}.md"
+          repo="${GITHUB_REPOSITORY}"
+          expected_sha="$(awk 'NF {print $1; exit}' "${release_dir}/SHA256.txt")"
+          assets=(
+            "${release_dir}/andy-core-v${version}.zip"
+            "${release_dir}/SHA256.txt"
+            "${release_dir}/update-metadata.json"
+            "${release_dir}/update-metadata.sig"
+            "${release_dir}/BUILD_INFO.md"
+            "${release_dir}/RELEASE_NOTES_v${version}.md"
+            "${release_dir}/UPGRADE_GUIDE_v${version}.md"
+            "${release_dir}/ROLLBACK_GUIDE_v${version}.md"
+          )
+          if gh release view "${tag}" --repo "${repo}" >/dev/null 2>&1; then
+            echo "Release ${tag} already exists; refusing to overwrite or mutate it."
+            exit 1
+          fi
+          gh release create "${tag}" "${assets[@]}" --repo "${repo}" --title "Andy Core ${tag}" --notes-file "${notes}" --verify-tag --draft
+          release_json="$(gh api "repos/${repo}/releases/tags/${tag}")"
+          test "$(jq -r '.tag_name' <<<"${release_json}")" = "${tag}"
+          test "$(jq -r '.draft' <<<"${release_json}")" = "true"
+          test "$(jq -r '.prerelease' <<<"${release_json}")" = "false"
+          mapfile -t actual_names < <(jq -r '.assets[].name' <<<"${release_json}" | sort)
+          expected_names=("BUILD_INFO.md" "RELEASE_NOTES_v${version}.md" "ROLLBACK_GUIDE_v${version}.md" "SHA256.txt" "UPGRADE_GUIDE_v${version}.md" "andy-core-v${version}.zip" "update-metadata.json" "update-metadata.sig")
+          mapfile -t expected_names_sorted < <(printf '%s\n' "${expected_names[@]}" | sort)
+          test "${actual_names[*]}" = "${expected_names_sorted[*]}"
+          actual_digest="$(jq -r --arg n "andy-core-v${version}.zip" '.assets[] | select(.name==$n) | .digest' <<<"${release_json}")"
+          test "${actual_digest}" = "sha256:${expected_sha}"
+          gh release edit "${tag}" --repo "${repo}" --draft=false --prerelease=false --latest
