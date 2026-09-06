@@ -4,7 +4,7 @@ Tags: andy-core, yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.5.4
+Stable tag: 1.5.5
 License: Proprietary
 License URI: https://ybyglobal.com/
 
@@ -12,7 +12,12 @@ Core platform plugin for managed WordPress websites, including Case ID, tracking
 
 == Description ==
 
-Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.4 adds the bounded private GitHub Releases updater while preserving the existing `yby-core` plugin identity, database version, and runtime contracts.
+Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.5 is the first production-native secure-updater canary and preserves the existing `yby-core` plugin identity, database version, and business-runtime contracts.
+
+Included in v1.5.5:
+
+* First real native-update canary from an installed v1.5.4 bootstrap
+* No database migration and no business-runtime contract change
 
 Included in v1.5.4:
 
