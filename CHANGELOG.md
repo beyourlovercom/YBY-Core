@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v1.5.5 - 2026-09-06
+
+- Added the first production-native secure-updater canary release.
+- Preserved all v1.5.4 runtime behavior while exercising signed private GitHub Release discovery and WordPress native update delivery.
+- Preserved database version `1.4.0`; no database migration or business-runtime change.
 ## v1.5.4 - 2026-09-05
 
 - Added the bounded private GitHub Releases updater.
