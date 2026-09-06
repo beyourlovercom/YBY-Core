@@ -22,7 +22,7 @@ connector_assert( false !== strpos( $core, "inc/class-yby-connector.php" ) && fa
 connector_assert( false === strpos( $admin, 'add_submenu_page' ), 'WP-API must not register a standalone submenu.' );
 connector_assert( false !== strpos( $settings_admin, "'wp-api'" ) && false !== strpos( $settings_admin, 'YBY_Connector_Admin' ), 'WP-API must render as a Settings tab.' );
 connector_assert( false !== strpos( $admin, "current_user_can( 'manage_options' )" ) && false !== strpos( $admin, 'check_admin_referer' ), 'Admin access and nonce gates must remain present.' );
-connector_assert( false !== strpos( $view, '<h1>WP-API</h1>' ) && false !== strpos( $view, 'ERP 接口设置 · Andy Core v1.5.3' ), 'Connector header must show the approved identity.' );
+connector_assert( false !== strpos( $view, '<h1>WP-API</h1>' ) && false !== strpos( $view, 'ERP 接口设置 · Andy Core v<?php echo esc_html( YBY_CORE_VERSION ); ?>' ), 'Connector header must use the active Andy Core runtime version.' );
 connector_assert( false !== strpos( $view, '测试连接' ) && false !== strpos( $view, '保存设置' ), 'Connector actions must be visible.' );
 connector_assert( false !== strpos( $view, 'M7' ) && false !== strpos( $view, 'Coupon' ) && false !== strpos( $view, 'Payout' ) && false === strpos( $view, 'M3.1' ), 'Connector WP-API copy must describe the M7 Payout route.' );
 connector_assert( false !== strpos( $view, '协议版本' ) && false !== strpos( $view, 'readonly' ), 'Read-only foundation identity fields must be rendered.' );

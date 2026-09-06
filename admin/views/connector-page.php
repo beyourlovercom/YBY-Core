@@ -4,9 +4,9 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 ?>
 <div class="wrap yby-connector-page">
 	<h1>WP-API</h1>
-	<p class="yby-connector-kicker">ERP 接口设置 · Andy Core v1.5.3</p>
+	<p class="yby-connector-kicker">ERP 接口设置 · Andy Core v<?php echo esc_html( YBY_CORE_VERSION ); ?></p>
 	<nav class="nav-tab-wrapper" aria-label="WP-API 设置">
-		<?php foreach ( array( 'general' => '常规', 'inquiry' => '询盘', 'inquiry-notification' => '询盘通知', 'wp-api' => 'WP-API', 'system-status' => '系统状态' ) as $key => $label ) : ?>
+		<?php foreach ( array( 'general' => '常规', 'inquiry' => '询盘', 'inquiry-notification' => '询盘通知', 'wp-api' => 'WP-API', 'system-status' => '系统状态', 'updates' => '更新' ) as $key => $label ) : ?>
 			<a class="nav-tab <?php echo 'wp-api' === $key ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => YBY_Helpers::admin_page_slug(), 'tab' => $key ), admin_url( 'admin.php' ) ) ); ?>"><?php echo esc_html( $label ); ?></a>
 		<?php endforeach; ?>
 	</nav>

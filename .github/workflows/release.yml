@@ -27,6 +27,8 @@ jobs:
 
       - name: Build and validate tagged release package
         shell: bash
+        env:
+          ANDY_CORE_UPDATE_SIGNING_SECRET: ${{ secrets.ANDY_CORE_UPDATE_SIGNING_SECRET }}
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
@@ -37,6 +39,8 @@ jobs:
           BUILD_CONTEXT=FINAL_RELEASE RELEASE_OUTPUT_DIR="${release_dir}" SOURCE_BRANCH="tag:${GITHUB_REF_NAME}" SOURCE_COMMIT="${GITHUB_SHA}" bash "${builder}"
           test -s "${package}"
           test -s "${release_dir}/SHA256.txt"
+          test -s "${release_dir}/update-metadata.json"
+          test -s "${release_dir}/update-metadata.sig"
           test -s "${release_dir}/BUILD_INFO.md"
           for doc in "RELEASE_NOTES_v${version}.md" "UPGRADE_GUIDE_v${version}.md" "ROLLBACK_GUIDE_v${version}.md"; do
             test -s "${doc}"
@@ -44,16 +48,18 @@ jobs:
           done
           unzip -Z1 "${package}" | awk -F/ 'NF && $1 != "yby-core" { exit 1 }'
           unzip -Z1 "${package}" | grep -Fx 'yby-core/yby-core.php'
-          ! unzip -Z1 "${package}" | grep -E '(^|/)(\.git|\.github|tests|docs|releases)(/|$)'
+          ! unzip -Z1 "${package}" | grep -E '(^|/)(\.git|\.github|tests|docs|releases|scripts)(/|$)'
           unzip -p "${package}" yby-core/yby-core.php | grep -F "Version:           ${version}"
           unzip -p "${package}" yby-core/yby-core.php | grep -F "define( 'YBY_CORE_VERSION', '${version}' );"
           unzip -p "${package}" yby-core/readme.txt | grep -F "Stable tag: ${version}"
-          expected_sha="$(cat "${release_dir}/SHA256.txt")"
+          expected_sha="$(awk 'NF {print $1; exit}' "${release_dir}/SHA256.txt")"
           actual_sha="$(sha256sum "${package}" | awk '{print $1}')"
           test "${expected_sha}" = "${actual_sha}"
+          php -r '$m=json_decode(file_get_contents($argv[1]),true); if (!is_array($m) || ($m["schema_version"] ?? null)!==1 || ($m["version"] ?? "")!==$argv[2] || ($m["database_version"] ?? "")!=="1.4.0" || ($m["package"] ?? "")!=="andy-core-v".$argv[2].".zip" || ($m["sha256"] ?? "")!==$argv[3]) exit(1);' "${release_dir}/update-metadata.json" "${version}" "${actual_sha}"
           grep -F 'Build Context: FINAL_RELEASE' "${release_dir}/BUILD_INFO.md"
           grep -F 'PHP Lint: PASS' "${release_dir}/BUILD_INFO.md"
           grep -F 'git diff --check: PASS' "${release_dir}/BUILD_INFO.md"
+          grep -F 'Ed25519 Signature: PASS' "${release_dir}/BUILD_INFO.md"
 
       - name: Upload tagged build evidence
         uses: actions/upload-artifact@v4

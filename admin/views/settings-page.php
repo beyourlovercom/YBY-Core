@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="wrap">
 	<h1><?php echo esc_html__( 'Andy Core', 'yby-core' ); ?></h1>
 	<h2 class="nav-tab-wrapper">
-		<?php foreach ( array( 'general' => '常规', 'inquiry' => '询盘', 'inquiry-notification' => '询盘通知', 'wp-api' => 'WP-API', 'system-status' => '系统状态' ) as $tab_key => $tab_label ) : ?>
+		<?php foreach ( array( 'general' => '常规', 'inquiry' => '询盘', 'inquiry-notification' => '询盘通知', 'wp-api' => 'WP-API', 'system-status' => '系统状态', 'updates' => 'Updates' ) as $tab_key => $tab_label ) : ?>
 			<a class="nav-tab <?php echo ( $tab ?? 'general' ) === $tab_key ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => YBY_Helpers::admin_page_slug(), 'tab' => $tab_key ), admin_url( 'admin.php' ) ) ); ?>"><?php echo esc_html( $tab_label ); ?></a>
 		<?php endforeach; ?>
 	</h2>
