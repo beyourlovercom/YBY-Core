@@ -28,7 +28,7 @@ $assert( false !== strpos( $readme, 'Product version: `1.5.4`' ) && false !== st
 $assert( false !== strpos( $wp_readme, 'Stable tag: 1.5.4' ) && false !== strpos( $wp_readme, 'Tested up to: 7.1' ), 'README_METADATA_GATE failed.' );
 $assert( false !== strpos( $changelog, '## v1.5.4 - 2026-09-05' ), 'CHANGELOG_RELEASE_GATE failed.' );
 
-foreach ( array( 'RELEASE_NOTES_v1.5.4.md', 'UPGRADE_GUIDE_v1.5.4.md', 'ROLLBACK_GUIDE_v1.5.4.md', 'docs/v1.5.4/ANDY-CORE-SECURE-UPDATER-M1.md' ) as $file ) {
+foreach ( array( 'RELEASE_NOTES_v1.5.4.md', 'UPGRADE_GUIDE_v1.5.4.md', 'ROLLBACK_GUIDE_v1.5.4.md', 'docs/v1.5.4/ANDY-CORE-SECURE-UPDATER-M1.md', 'docs/v1.5.4/ANDY-CORE-RELEASE-AUTOMATION-M1.md' ) as $file ) {
 	$assert( is_file( $root . '/' . $file ), 'Release/WP documentation missing: ' . $file );
 }
 foreach ( array( 'RELEASE_NOTES_v1.5.3.md', 'UPGRADE_GUIDE_v1.5.3.md', 'ROLLBACK_GUIDE_v1.5.3.md', 'scripts/build-v1.5.3-release.sh' ) as $file ) {
@@ -44,7 +44,16 @@ $assert( false !== strpos( $builder, '"schema_version": 1' ) && false !== strpos
 $assert( false !== strpos( $builder, "printf '%s  %s\\n'" ), 'SHA256_FILENAME_EVIDENCE_GATE failed.' );
 $assert( false !== strpos( $builder, 'define( \'YBY_DATABASE_VERSION\', \'${database_version}\' );' ), 'BUILDER_DATABASE_COMPATIBILITY_GATE failed.' );
 
-$assert( false === strpos( $workflow, 'softprops/action-gh-release' ) && false === strpos( $workflow, 'gh release' ), 'TAG_WORKFLOW_MUST_NOT_PUBLISH_GATE failed.' );
+$publish_pos = strpos( $workflow, "  publish-release:\n" );
+$assert( false !== $publish_pos, 'TAG_RELEASE_PUBLISH_JOB_GATE failed.' );
+$build_section   = substr( $workflow, 0, $publish_pos );
+$publish_section = substr( $workflow, $publish_pos );
+$assert( false === strpos( $build_section, 'gh release' ) && false !== strpos( $workflow, "permissions:\n  contents: read" ), 'TAG_BUILD_READ_ONLY_GATE failed.' );
+$assert( false !== strpos( $publish_section, 'needs: tagged-release-package' ) && false !== strpos( $publish_section, "permissions:\n      contents: write" ), 'TAG_PUBLISH_DEPENDENCY_PERMISSION_GATE failed.' );
+$assert( false !== strpos( $publish_section, 'actions/download-artifact@v4' ) && false !== strpos( $publish_section, 'gh release create' ) && false !== strpos( $publish_section, '--draft' ), 'TAG_DRAFT_RELEASE_GATE failed.' );
+$assert( false !== strpos( $publish_section, 'gh api' ) && false !== strpos( $publish_section, '.assets[].name' ) && false !== strpos( $publish_section, '.digest' ), 'TAG_RELEASE_ASSET_VERIFY_GATE failed.' );
+$assert( false !== strpos( $publish_section, 'gh release edit' ) && false !== strpos( $publish_section, '--draft=false' ) && false !== strpos( $publish_section, '--latest' ), 'TAG_RELEASE_STABLE_PUBLISH_GATE failed.' );
+$assert( false === strpos( $workflow, 'softprops/action-gh-release' ), 'TAG_RELEASE_UNAPPROVED_ACTION_GATE failed.' );
 $assert( false !== strpos( $workflow, 'actions/upload-artifact@v4' ) && false !== strpos( $workflow, 'update-metadata.json' ) && false !== strpos( $workflow, 'update-metadata.sig' ) && false !== strpos( $workflow, 'ANDY_CORE_UPDATE_SIGNING_SECRET' ), 'TAG_BUILD_ARTIFACT_GATE failed.' );
 $assert( false !== strpos( $validation, 'php tests/secure-updater-harness.php' ) && false !== strpos( $validation, 'andy-core-v1.5.4-release-candidate' ), 'PR_RELEASE_VALIDATION_GATE failed.' );
 
