@@ -1,7 +1,7 @@
 # VERSION
 
 - Product Name: Andy Core
-- Stable Version: 1.5.5
+- Stable Version: 1.5.6
 - Development Version: None
 - Stable Release Type: Stable
 - Development Status: None

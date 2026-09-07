@@ -9,7 +9,7 @@ $temp = sys_get_temp_dir() . '/andy-core-updater-harness-' . str_replace( '.', '
 define( 'ABSPATH', $temp . '/' );
 define( 'WP_CONTENT_DIR', $temp . '/wp-content' );
 define( 'YBY_CORE_UPDATE_BACKUP_DIR', $temp . '-private-backups' );
-define( 'YBY_CORE_VERSION', '1.5.4' );
+define( 'YBY_CORE_VERSION', '1.5.6' );
 define( 'MINUTE_IN_SECONDS', 60 );
 
 class WP_Error {
@@ -44,32 +44,32 @@ $assert = static function ( $ok, $message ) {
 
 // Stable semantic version / release gates.
 $base_assets = array(
-	array( 'name' => 'andy-core-v1.5.5.zip', 'url' => 'https://api.github.com/repos/beyourlovercom/YBY-Core/releases/assets/101', 'digest' => 'sha256:' . str_repeat( 'a', 64 ) ),
-	array( 'name' => 'SHA256.txt', 'url' => 'https://api.github.com/repos/beyourlovercom/YBY-Core/releases/assets/102' ),
-	array( 'name' => 'update-metadata.json', 'url' => 'https://api.github.com/repos/beyourlovercom/YBY-Core/releases/assets/103' ),
-	array( 'name' => 'update-metadata.sig', 'url' => 'https://api.github.com/repos/beyourlovercom/YBY-Core/releases/assets/104' ),
+	array( 'name' => 'andy-core-v1.5.6.zip', 'url' => 'https://api.github.com/repos/beyourlovercom/andy-core-release/releases/assets/101', 'digest' => 'sha256:' . str_repeat( 'a', 64 ) ),
+	array( 'name' => 'SHA256.txt', 'url' => 'https://api.github.com/repos/beyourlovercom/andy-core-release/releases/assets/102' ),
+	array( 'name' => 'update-metadata.json', 'url' => 'https://api.github.com/repos/beyourlovercom/andy-core-release/releases/assets/103' ),
+	array( 'name' => 'update-metadata.sig', 'url' => 'https://api.github.com/repos/beyourlovercom/andy-core-release/releases/assets/104' ),
 );
-$release = array( 'tag_name' => 'v1.5.5', 'draft' => false, 'prerelease' => false, 'assets' => $base_assets );
-$assert( '1.5.5' === YBY_Update_Verifier::release_version( $release ), 'stable release parsing failed' );
-$assert( YBY_Update_Verifier::is_newer( '1.5.5', '1.5.4' ), 'newer semantic version failed' );
-$assert( ! YBY_Update_Verifier::is_newer( '1.5.5-beta', '1.5.4' ), 'prerelease semantic version accepted' );
+$release = array( 'tag_name' => 'v1.5.6', 'draft' => false, 'prerelease' => false, 'assets' => $base_assets );
+$assert( '1.5.6' === YBY_Update_Verifier::release_version( $release ), 'stable release parsing failed' );
+$assert( YBY_Update_Verifier::is_newer( '1.5.6', '1.5.4' ), 'newer semantic version failed' );
+$assert( ! YBY_Update_Verifier::is_newer( '1.5.6-beta', '1.5.4' ), 'prerelease semantic version accepted' );
 $draft = $release; $draft['draft'] = true; $assert( '' === YBY_Update_Verifier::release_version( $draft ), 'draft release accepted' );
 $pre = $release; $pre['prerelease'] = true; $assert( '' === YBY_Update_Verifier::release_version( $pre ), 'prerelease accepted' );
-$bad_tag = $release; $bad_tag['tag_name'] = '1.5.5'; $assert( '' === YBY_Update_Verifier::release_version( $bad_tag ), 'non-v tag accepted' );
-$assert( is_array( YBY_Update_Verifier::select_asset( $release, '1.5.5' ) ), 'required assets rejected' );
-$duplicate = $release; $duplicate['assets'][] = $base_assets[0]; $assert( false === YBY_Update_Verifier::select_asset( $duplicate, '1.5.5' ), 'duplicate required asset accepted' );
-$bad_digest = $release; $bad_digest['assets'][0]['digest'] = 'md5:bad'; $assert( false === YBY_Update_Verifier::select_asset( $bad_digest, '1.5.5' ), 'malformed digest accepted' );
+$bad_tag = $release; $bad_tag['tag_name'] = '1.5.6'; $assert( '' === YBY_Update_Verifier::release_version( $bad_tag ), 'non-v tag accepted' );
+$assert( is_array( YBY_Update_Verifier::select_asset( $release, '1.5.6' ) ), 'required assets rejected' );
+$duplicate = $release; $duplicate['assets'][] = $base_assets[0]; $assert( false === YBY_Update_Verifier::select_asset( $duplicate, '1.5.6' ), 'duplicate required asset accepted' );
+$bad_digest = $release; $bad_digest['assets'][0]['digest'] = 'md5:bad'; $assert( false === YBY_Update_Verifier::select_asset( $bad_digest, '1.5.6' ), 'malformed digest accepted' );
 
 // SHA256 and compatibility metadata are both mandatory.
 $sha = str_repeat( 'a', 64 );
-$checksum = $sha . "  andy-core-v1.5.5.zip\n";
-$assert( $sha === YBY_Update_Verifier::checksum( $checksum, 'andy-core-v1.5.5.zip' ), 'checksum evidence rejected' );
-$assert( '' === YBY_Update_Verifier::checksum( $sha, 'andy-core-v1.5.5.zip' ), 'bare checksum accepted' );
-$assert( '' === YBY_Update_Verifier::checksum( $sha . "  other.zip\n", 'andy-core-v1.5.5.zip' ), 'wrong package checksum accepted' );
-$metadata = json_encode( array( 'schema_version' => 1, 'version' => '1.5.5', 'database_version' => '1.4.0', 'package' => 'andy-core-v1.5.5.zip', 'sha256' => $sha ) );
-$assert( YBY_Update_Verifier::metadata( $metadata, '1.5.5', 'andy-core-v1.5.5.zip', $sha ), 'valid update metadata rejected' );
-$assert( ! YBY_Update_Verifier::metadata( str_replace( '1.4.0', '1.5.0', $metadata ), '1.5.5', 'andy-core-v1.5.5.zip', $sha ), 'database-changing release accepted' );
-$assert( ! YBY_Update_Verifier::metadata( str_replace( '"schema_version":1', '"schema_version":2', $metadata ), '1.5.5', 'andy-core-v1.5.5.zip', $sha ), 'unknown metadata schema accepted' );
+$checksum = $sha . "  andy-core-v1.5.6.zip\n";
+$assert( $sha === YBY_Update_Verifier::checksum( $checksum, 'andy-core-v1.5.6.zip' ), 'checksum evidence rejected' );
+$assert( '' === YBY_Update_Verifier::checksum( $sha, 'andy-core-v1.5.6.zip' ), 'bare checksum accepted' );
+$assert( '' === YBY_Update_Verifier::checksum( $sha . "  other.zip\n", 'andy-core-v1.5.6.zip' ), 'wrong package checksum accepted' );
+$metadata = json_encode( array( 'schema_version' => 1, 'version' => '1.5.6', 'database_version' => '1.4.0', 'package' => 'andy-core-v1.5.6.zip', 'sha256' => $sha ) );
+$assert( YBY_Update_Verifier::metadata( $metadata, '1.5.6', 'andy-core-v1.5.6.zip', $sha ), 'valid update metadata rejected' );
+$assert( ! YBY_Update_Verifier::metadata( str_replace( '1.4.0', '1.5.0', $metadata ), '1.5.6', 'andy-core-v1.5.6.zip', $sha ), 'database-changing release accepted' );
+$assert( ! YBY_Update_Verifier::metadata( str_replace( '"schema_version":1', '"schema_version":2', $metadata ), '1.5.6', 'andy-core-v1.5.6.zip', $sha ), 'unknown metadata schema accepted' );
 if ( function_exists( 'sodium_crypto_sign_keypair' ) ) {
 	$keypair = sodium_crypto_sign_keypair();
 	$test_secret = sodium_crypto_sign_secretkey( $keypair );
@@ -80,15 +80,14 @@ if ( function_exists( 'sodium_crypto_sign_keypair' ) ) {
 	sodium_memzero( $test_secret );
 }
 
-// GitHub API authentication and redirect scope.
+// Public GitHub API channel and redirect scope.
 $client = new YBY_GitHub_Release_Client();
-$assert( ! $client->has_auth(), 'missing token did not fail closed' );
-$GLOBALS['yby_filter_token'] = 'test-token-harness';
-$assert( $client->has_auth(), 'filter token fallback rejected' );
-$asset_url = 'https://api.github.com/repos/beyourlovercom/YBY-Core/releases/assets/123';
+$assert( 'andy-core-release' === YBY_GitHub_Release_Client::REPOSITORY, 'public release repository mismatch' );
+$assert( $client->is_api_url( 'https://api.github.com/repos/beyourlovercom/andy-core-release/releases/latest' ), 'public latest-release API URL rejected' );
+$asset_url = 'https://api.github.com/repos/beyourlovercom/andy-core-release/releases/assets/123';
 $assert( $client->is_api_asset_url( $asset_url ), 'canonical asset API URL rejected' );
-$assert( ! $client->is_api_asset_url( 'https://evil@example.com@api.github.com/repos/beyourlovercom/YBY-Core/releases/assets/123' ), 'userinfo API URL accepted' );
-$assert( ! $client->is_api_asset_url( 'https://api.github.com:444/repos/beyourlovercom/YBY-Core/releases/assets/123' ), 'non-default API port accepted' );
+$assert( ! $client->is_api_asset_url( 'https://evil@example.com@api.github.com/repos/beyourlovercom/andy-core-release/releases/assets/123' ), 'userinfo API URL accepted' );
+$assert( ! $client->is_api_asset_url( 'https://api.github.com:444/repos/beyourlovercom/andy-core-release/releases/assets/123' ), 'non-default API port accepted' );
 $assert( ! $client->is_api_asset_url( $asset_url . '?x=1' ), 'query-bearing API asset accepted' );
 $assert( $client->is_asset_redirect_url( 'https://release-assets.githubusercontent.com/github-production-release-asset/x?sp=r' ), 'canonical release asset redirect rejected' );
 $assert( ! $client->is_asset_redirect_url( 'https://github.com/beyourlovercom/YBY-Core/releases/download/x.zip' ), 'github.com redirect accepted' );
@@ -99,13 +98,13 @@ $assert( ! $client->is_asset_redirect_url( 'https://release-assets.githubusercon
 if ( class_exists( 'ZipArchive' ) ) {
 	$valid_zip = $temp . '/valid.zip';
 	$zip = new ZipArchive(); $zip->open( $valid_zip, ZipArchive::CREATE | ZipArchive::OVERWRITE );
-	$main = "<?php\n/**\n * Version:           1.5.5\n */\ndefine( 'YBY_CORE_VERSION', '1.5.5' );\ndefine( 'YBY_DATABASE_VERSION', '1.4.0' );\n";
+	$main = "<?php\n/**\n * Version:           1.5.6\n */\ndefine( 'YBY_CORE_VERSION', '1.5.6' );\ndefine( 'YBY_DATABASE_VERSION', '1.4.0' );\n";
 	$zip->addFromString( 'yby-core/yby-core.php', $main );
 	$zip->addFromString( 'yby-core/inc/class-yby-core.php', '<?php // core' );
 	$zip->addFromString( 'yby-core/inc/class-yby-loader.php', '<?php // loader' );
 	$zip->addFromString( 'yby-core/admin/class-yby-admin.php', '<?php // admin' );
 	$zip->close();
-	$assert( true === YBY_Update_Verifier::validate_zip( $valid_zip, '1.5.5' ), 'valid package rejected' );
+	$assert( true === YBY_Update_Verifier::validate_zip( $valid_zip, '1.5.6' ), 'valid package rejected' );
 
 	$bad_zip = $temp . '/bad.zip';
 	$zip = new ZipArchive(); $zip->open( $bad_zip, ZipArchive::CREATE | ZipArchive::OVERWRITE );
@@ -115,7 +114,7 @@ if ( class_exists( 'ZipArchive' ) ) {
 	$zip->addFromString( 'yby-core/admin/class-yby-admin.php', '<?php // admin' );
 	$zip->addFromString( 'yby-core/tests/evil.php', '<?php // forbidden' );
 	$zip->close();
-	$assert( is_wp_error( YBY_Update_Verifier::validate_zip( $bad_zip, '1.5.5' ) ), 'development-only ZIP path accepted' );
+	$assert( is_wp_error( YBY_Update_Verifier::validate_zip( $bad_zip, '1.5.6' ) ), 'development-only ZIP path accepted' );
 }
 
 // Backup/restore must remain inside the dedicated direct-child backup root.
@@ -142,8 +141,9 @@ $assert( is_wp_error( YBY_Update_Backup::restore_latest( $plugin_dir ) ), 'rollb
 $client_source  = file_get_contents( $root . '/inc/class-yby-github-release-client.php' );
 $updater_source = file_get_contents( $root . '/inc/class-yby-updater.php' );
 $backup_source  = file_get_contents( $root . '/inc/class-yby-update-backup.php' );
-$assert( 1 === substr_count( $client_source, "'Authorization'" ), 'Authorization header is constructed in more than one code path' );
-$assert( false !== strpos( $client_source, 'Deliberately omit Authorization' ), 'redirect authentication stripping contract missing' );
+$assert( 0 === substr_count( $client_source, "'Authorization'" ), 'WordPress updater must not construct a GitHub Authorization header' );
+$assert( false === strpos( $client_source, 'YBY_CORE_GITHUB_TOKEN' ) && false === strpos( $client_source, 'yby_core_github_token' ), 'WordPress-side GitHub credential path remains present' );
+$assert( false !== strpos( $client_source, "const REPOSITORY = 'andy-core-release'" ), 'public release repository contract missing' );
 $assert( false === strpos( $updater_source, "\$_GET['yby_core_updater_action']" ), 'mutating updater GET action present' );
 $assert( false !== strpos( $updater_source, "\$_POST['yby_core_check_updates']" ) && false !== strpos( $updater_source, 'check_admin_referer' ), 'POST/nonce admin gate missing' );
 $assert( false !== strpos( $updater_source, "current_user_can( 'andy_core_settings_manage' )" ), 'updater capability gate missing' );
@@ -152,7 +152,7 @@ $assert( false !== strpos( $updater_source, 'yby_update_pending_store_failed' ) 
 $assert( false !== strpos( $updater_source, 'nav-tab-wrapper' ), 'updates page shared navigation missing' );
 $assert( false !== strpos( $backup_source, 'YBY_CORE_UPDATE_BACKUP_DIR' ) && false !== strpos( $backup_source, 'public WordPress root' ), 'private backup-root guard missing' );
 $assert( false !== strpos( $updater_source, 'validate_zip' ) && false !== strpos( $updater_source, "hash_file( 'sha256'" ) && false !== strpos( $updater_source, 'YBY_Update_Verifier::signature' ), 'pre-install package/signature verification missing' );
-$assert( false === strpos( $updater_source, 'echo $this->client->token' ) && false === strpos( $client_source, 'set_site_transient( $key, $this->token()' ), 'token rendering/storage detected' );
+$assert( false === strpos( $updater_source, 'YBY_CORE_GITHUB_TOKEN' ) && false === strpos( $client_source, 'Authorization' ), 'WordPress updater credential dependency detected' );
 $assert( false !== strpos( $backup_source, 'is_direct_backup_child' ) && false !== strpos( $backup_source, 'is_link' ) && false !== strpos( $backup_source, 'const RETAIN = 3' ), 'backup containment/symlink/retention contracts missing' );
 
 // Cleanup test artifacts.

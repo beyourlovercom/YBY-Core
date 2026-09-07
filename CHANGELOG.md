@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v1.5.6 - 2026-09-07
+
+- Moved native update discovery and downloads to the public `beyourlovercom/andy-core-release` GitHub Release channel.
+- Removed the WordPress-side GitHub token requirement; installed sites update with zero GitHub credentials.
+- Preserved SHA-256, Ed25519, ZIP validation, pre-update code backup, post-update health validation, and rollback.
+- Prepared cross-repository Release publication and fixed draft-release verification to use the draft Release ID before stable publication.
+- Database version remains `1.4.0`; no migration or business-runtime change.
+
 ## v1.5.5 - 2026-09-06
 
 - Added the first production-native secure-updater canary release.

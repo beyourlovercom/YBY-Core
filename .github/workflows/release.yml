@@ -72,7 +72,7 @@ jobs:
     needs: tagged-release-package
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - name: Download verified tagged build
         uses: actions/download-artifact@v4
@@ -83,14 +83,14 @@ jobs:
       - name: Publish verified GitHub Release
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.ANDY_CORE_RELEASE_REPO_TOKEN }}
         run: |
           set -euo pipefail
           tag="${GITHUB_REF_NAME}"
           version="${tag#v}"
           release_dir="${GITHUB_WORKSPACE}/releases/${tag}"
           notes="${release_dir}/RELEASE_NOTES_v${version}.md"
-          repo="${GITHUB_REPOSITORY}"
+          repo="beyourlovercom/andy-core-release"
           expected_sha="$(awk 'NF {print $1; exit}' "${release_dir}/SHA256.txt")"
           assets=(
             "${release_dir}/andy-core-v${version}.zip"
@@ -102,12 +102,16 @@ jobs:
             "${release_dir}/UPGRADE_GUIDE_v${version}.md"
             "${release_dir}/ROLLBACK_GUIDE_v${version}.md"
           )
-          if gh release view "${tag}" --repo "${repo}" >/dev/null 2>&1; then
+          test -n "${GH_TOKEN:-}"
+          existing_id="$(gh api "repos/${repo}/releases?per_page=100" --jq ".[] | select(.tag_name == \"${tag}\") | .id" | head -n1)"
+          if [[ -n "${existing_id}" ]]; then
             echo "Release ${tag} already exists; refusing to overwrite or mutate it."
             exit 1
           fi
-          gh release create "${tag}" "${assets[@]}" --repo "${repo}" --title "Andy Core ${tag}" --notes-file "${notes}" --verify-tag --draft
-          release_json="$(gh api "repos/${repo}/releases/tags/${tag}")"
+          gh release create "${tag}" "${assets[@]}" --repo "${repo}" --title "Andy Core ${tag}" --notes-file "${notes}" --draft
+          release_id="$(gh api "repos/${repo}/releases?per_page=100" --jq ".[] | select(.tag_name == \"${tag}\" and .draft == true) | .id" | head -n1)"
+          [[ "${release_id}" =~ ^[0-9]+$ ]]
+          release_json="$(gh api "repos/${repo}/releases/${release_id}")"
           test "$(jq -r '.tag_name' <<<"${release_json}")" = "${tag}"
           test "$(jq -r '.draft' <<<"${release_json}")" = "true"
           test "$(jq -r '.prerelease' <<<"${release_json}")" = "false"
@@ -117,4 +121,8 @@ jobs:
           test "${actual_names[*]}" = "${expected_names_sorted[*]}"
           actual_digest="$(jq -r --arg n "andy-core-v${version}.zip" '.assets[] | select(.name==$n) | .digest' <<<"${release_json}")"
           test "${actual_digest}" = "sha256:${expected_sha}"
-          gh release edit "${tag}" --repo "${repo}" --draft=false --prerelease=false --latest
+          gh api --method PATCH "repos/${repo}/releases/${release_id}" -F draft=false -F prerelease=false -f make_latest=true >/dev/null
+          published_json="$(gh api "repos/${repo}/releases/tags/${tag}")"
+          test "$(jq -r '.tag_name' <<<"${published_json}" | tr -d ' ')" = "${tag}"
+          test "$(jq -r '.draft' <<<"${published_json}" | tr -d ' ')" = "false"
+          test "$(jq -r '.prerelease' <<<"${published_json}" | tr -d ' ')" = "false"

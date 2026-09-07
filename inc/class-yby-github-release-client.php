@@ -1,6 +1,6 @@
 <?php
 /**
- * Secure allowlisted GitHub Releases client for Andy Core updates.
+ * Zero-config public GitHub Releases client for Andy Core updates.
  *
  * @package YBY_Core
  */
@@ -12,7 +12,7 @@ class YBY_GitHub_Release_Client {
 	const API_HOST   = 'api.github.com';
 	const ASSET_HOST = 'release-assets.githubusercontent.com';
 	const OWNER      = 'beyourlovercom';
-	const REPOSITORY = 'YBY-Core';
+	const REPOSITORY = 'andy-core-release';
 
 	/** @var string[] */
 	private $asset_hosts = array(
@@ -20,24 +20,8 @@ class YBY_GitHub_Release_Client {
 		'objects.githubusercontent.com',
 	);
 
-	public function token() {
-		$token = defined( 'YBY_CORE_GITHUB_TOKEN' ) ? YBY_CORE_GITHUB_TOKEN : '';
-		if ( ! is_string( $token ) || '' === trim( $token ) ) {
-			$token = function_exists( 'apply_filters' ) ? apply_filters( 'yby_core_github_token', '' ) : '';
-		}
-		$token = is_string( $token ) ? trim( $token ) : '';
-		return '' !== $token && strlen( $token ) <= 512 && ! preg_match( '/\s/', $token ) ? $token : '';
-	}
-
-	public function has_auth() {
-		return '' !== $this->token();
-	}
-
 	public function latest_release( $force = false ) {
-		if ( ! $this->has_auth() ) {
-			return new WP_Error( 'yby_update_auth_missing', __( 'Andy Core updates are unavailable because GitHub authentication is not configured.', 'yby-core' ) );
-		}
-		$key = 'yby_core_github_latest_release';
+		$key = 'yby_core_public_github_latest_release';
 		if ( ! $force ) {
 			$cached = get_site_transient( $key );
 			if ( is_array( $cached ) ) {
@@ -55,9 +39,6 @@ class YBY_GitHub_Release_Client {
 	}
 
 	public function request_json( $url ) {
-		if ( ! $this->has_auth() ) {
-			return new WP_Error( 'yby_update_auth_missing', __( 'Andy Core updates are unavailable because GitHub authentication is not configured.', 'yby-core' ) );
-		}
 		if ( ! $this->is_api_url( $url ) ) {
 			return new WP_Error( 'yby_update_host_denied', __( 'The update API endpoint is not trusted.', 'yby-core' ) );
 		}
@@ -80,7 +61,7 @@ class YBY_GitHub_Release_Client {
 	}
 
 	public function download_asset( $asset_url, $destination = '' ) {
-		if ( ! $this->has_auth() || ! $this->is_api_asset_url( $asset_url ) ) {
+		if ( ! $this->is_api_asset_url( $asset_url ) ) {
 			return new WP_Error( 'yby_update_download_denied', __( 'The update download endpoint is not trusted.', 'yby-core' ) );
 		}
 
@@ -102,7 +83,6 @@ class YBY_GitHub_Release_Client {
 			if ( ! $this->is_asset_redirect_url( $location ) ) {
 				return new WP_Error( 'yby_update_redirect_denied', __( 'The update download redirect was not trusted.', 'yby-core' ) );
 			}
-			// Deliberately omit Authorization after leaving api.github.com.
 			$response = wp_safe_remote_get(
 				$location,
 				array(
@@ -136,9 +116,8 @@ class YBY_GitHub_Release_Client {
 
 	private function api_headers( $download ) {
 		return array(
-			'Accept'        => $download ? 'application/octet-stream' : 'application/vnd.github+json',
-			'Authorization' => 'Bearer ' . $this->token(),
-			'User-Agent'    => 'Andy-Core/' . YBY_CORE_VERSION,
+			'Accept'               => $download ? 'application/octet-stream' : 'application/vnd.github+json',
+			'User-Agent'           => 'Andy-Core/' . YBY_CORE_VERSION,
 			'X-GitHub-Api-Version' => '2022-11-28',
 		);
 	}
