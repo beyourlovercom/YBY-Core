@@ -42,7 +42,7 @@ class YBY_Updater {
 	}
 
 	public function filter_updates( $transient ) {
-		if ( ! is_object( $transient ) || ! $this->client->has_auth() ) {
+		if ( ! is_object( $transient ) ) {
 			return $transient;
 		}
 		$release = $this->validated_release( false );
@@ -66,7 +66,7 @@ class YBY_Updater {
 	}
 
 	public function filter_plugin_information( $result, $action, $args ) {
-		if ( 'plugin_information' !== $action || ! is_object( $args ) || 'yby-core' !== (string) ( $args->slug ?? '' ) || ! $this->client->has_auth() ) {
+		if ( 'plugin_information' !== $action || ! is_object( $args ) || 'yby-core' !== (string) ( $args->slug ?? '' ) ) {
 			return $result;
 		}
 		$release = $this->validated_release( false );
@@ -242,7 +242,7 @@ class YBY_Updater {
 			echo '<a class="nav-tab ' . ( 'updates' === $key ? 'nav-tab-active' : '' ) . '" href="' . esc_url( add_query_arg( array( 'page' => YBY_Helpers::admin_page_slug(), 'tab' => $key ), admin_url( 'admin.php' ) ) ) . '">' . esc_html( $label ) . '</a>';
 		}
 		echo '</h2><h2>' . esc_html__( 'Secure Updates', 'yby-core' ) . '</h2>';
-		echo '<p>' . esc_html__( 'Andy Core checks the private GitHub stable release channel. The GitHub token is server-side only and is never stored, rendered, or logged by Andy Core.', 'yby-core' ) . '</p>';
+		echo '<p>' . esc_html__( 'Andy Core checks the public signed GitHub stable release channel. No GitHub token or server-side credential is required on this WordPress site.', 'yby-core' ) . '</p>';
 		echo '<p>' . esc_html( sprintf( __( 'Current version: %s', 'yby-core' ), $this->version ) ) . '</p>';
 		if ( is_wp_error( $release ) ) {
 			echo '<p><strong>' . esc_html( $release->get_error_message() ) . '</strong></p>';

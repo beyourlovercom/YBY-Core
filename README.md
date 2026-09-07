@@ -4,12 +4,18 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `1.5.5`
+- Product version: `1.5.6`
 - Development version: None
 - Database version: `1.4.0`
 - Release status: Stable
 - Plugin path: `yby-core/yby-core.php`
 - Technical namespace: existing `YBY_*` and `yby_*` identifiers retained for compatibility
+
+## v1.5.6 release scope
+
+- Zero-config native WordPress updates from the public signed GitHub Release channel `beyourlovercom/andy-core-release`.
+- No GitHub token, SSH, or wp-config.php update credential is required on installed WordPress sites.
+- SHA-256, pinned Ed25519 signatures, safe ZIP validation, bounded code backup, post-install health validation, and rollback remain mandatory.
 
 ## v1.5.5 release scope
 
@@ -233,7 +239,7 @@ Version 1.5.1 upgrades the database schema to `1.3.0` by adding idempotent Inqui
 
 ## Release state
 
-Andy Core v1.5.5 is the stable/current release. Development version: None. Production deployment remains a separate, explicitly authorized operation.
+Andy Core v1.5.6 is the stable/current release. Development version: None. Production deployment remains a separate, explicitly authorized operation.
 
 ## Release process
 
