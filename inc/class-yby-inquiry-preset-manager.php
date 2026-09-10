@@ -70,10 +70,22 @@ class YBY_Inquiry_Preset_Manager {
 						'farm_size',
 						'message',
 					),
+					'mobile_fields'    => array( 'name', 'contact', 'message' ),
 					'validation'       => array(
 						'contact_requirement' => 'email_or_whatsapp',
 					),
 					'source_component' => 'inquiry_modal',
+				),
+				'used_forklift_inquiry' => array(
+					'id'               => 'used_forklift_inquiry',
+					'label'            => 'Used Forklift Inquiry',
+					'enabled'          => true,
+					'version'          => '1.0',
+					'fields'           => array( 'name', 'email', 'whatsapp', 'country', 'product_interest', 'quantity', 'message' ),
+					'mobile_fields'    => array( 'name', 'contact', 'message' ),
+					'validation'       => array( 'contact_requirement' => 'email_or_whatsapp' ),
+					'source_component' => 'inquiry_modal',
+					'page_profiles'    => array( 'used_forklifts' ),
 				),
 				'bottle_wholesale_inquiry' => array(
 					'id'               => 'bottle_wholesale_inquiry',
@@ -91,6 +103,7 @@ class YBY_Inquiry_Preset_Manager {
 						'customization',
 						'message',
 					),
+					'mobile_fields'    => array( 'name', 'contact', 'message' ),
 					'validation'       => array(
 						'contact_requirement' => 'email_or_whatsapp',
 					),
@@ -102,6 +115,7 @@ class YBY_Inquiry_Preset_Manager {
 					'enabled'          => true,
 					'version'          => '1.0',
 					'fields'           => array( 'name', 'company', 'email', 'whatsapp', 'country', 'product_interest', 'estimated_quantity', 'target_launch_date', 'project_path', 'spirit_type', 'selected_components', 'selected_model', 'customization', 'message' ),
+					'mobile_fields'    => array( 'name', 'contact', 'message' ),
 					'validation'       => array( 'contact_requirement' => 'email_or_whatsapp' ),
 					'source_component' => 'inquiry_modal',
 					'page_profiles'    => array( 'bottle_oem' ),
@@ -116,8 +130,21 @@ class YBY_Inquiry_Preset_Manager {
 	 * @return array<string, array<string, mixed>>
 	 */
 	public function get_presets() {
-		$stored  = get_option( self::OPTION_KEY, null );
-		$presets = is_array( $stored ) ? $stored : $this->defaults();
+		$stored   = get_option( self::OPTION_KEY, null );
+		$defaults = $this->defaults();
+		$presets  = is_array( $stored ) ? $stored : $defaults;
+
+		if ( is_array( $stored ) ) {
+			if ( ! isset( $presets['used_forklift_inquiry'] ) && isset( $defaults['used_forklift_inquiry'] ) ) {
+				$presets['used_forklift_inquiry'] = $defaults['used_forklift_inquiry'];
+			}
+
+			foreach ( $defaults as $preset_id => $default_preset ) {
+				if ( isset( $presets[ $preset_id ] ) && is_array( $presets[ $preset_id ] ) && ! array_key_exists( 'mobile_fields', $presets[ $preset_id ] ) && isset( $default_preset['mobile_fields'] ) ) {
+					$presets[ $preset_id ]['mobile_fields'] = $default_preset['mobile_fields'];
+				}
+			}
+		}
 		$presets = $this->sanitize_presets( $presets );
 		$presets = apply_filters( 'yby_inquiry_presets', $presets );
 
@@ -210,6 +237,7 @@ class YBY_Inquiry_Preset_Manager {
 			'enabled'          => ! array_key_exists( 'enabled', $preset ) || ! empty( $preset['enabled'] ),
 			'version'          => isset( $preset['version'] ) ? sanitize_text_field( $preset['version'] ) : '1.0',
 			'fields'           => $this->sanitize_preset_fields( isset( $preset['fields'] ) ? $preset['fields'] : array(), $allowed_field_ids ),
+			'mobile_fields'    => $this->sanitize_preset_fields( isset( $preset['mobile_fields'] ) ? $preset['mobile_fields'] : array(), $allowed_field_ids ),
 			'validation'       => $this->sanitize_validation( isset( $preset['validation'] ) ? $preset['validation'] : array() ),
 			'source_component' => isset( $preset['source_component'] ) ? sanitize_text_field( $preset['source_component'] ) : '',
 			'page_profiles'    => $this->sanitize_page_profiles( isset( $preset['page_profiles'] ) ? $preset['page_profiles'] : array() ),

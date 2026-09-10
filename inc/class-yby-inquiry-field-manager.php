@@ -88,6 +88,17 @@ class YBY_Inquiry_Field_Manager {
 					'placeholder'  => '',
 					'autocomplete' => 'tel',
 				),
+				'contact'          => array(
+					'id'           => 'contact',
+					'type'         => 'text',
+					'label'        => 'Email / WhatsApp',
+					'required'     => false,
+					'enabled'      => true,
+					'order'        => 45,
+					'options'      => array(),
+					'placeholder'  => 'Email or WhatsApp',
+					'autocomplete' => '',
+				),
 				'country'          => array(
 					'id'           => 'country',
 					'type'         => 'text',
@@ -173,8 +184,13 @@ class YBY_Inquiry_Field_Manager {
 	 * @return array<string, array<string, mixed>>
 	 */
 	public function get_fields() {
-		$stored = get_option( self::OPTION_KEY, null );
-		$fields = is_array( $stored ) ? $stored : $this->defaults();
+		$stored   = get_option( self::OPTION_KEY, null );
+		$defaults = $this->defaults();
+		$fields   = is_array( $stored ) ? $stored : $defaults;
+
+		if ( is_array( $stored ) && ! isset( $fields['contact'] ) && isset( $defaults['contact'] ) ) {
+			$fields['contact'] = $defaults['contact'];
+		}
 		$fields = $this->sanitize_fields( $fields );
 		$fields = apply_filters( 'yby_inquiry_fields', $fields );
 

@@ -113,7 +113,8 @@ class YBY_Inquiry_Shortcodes {
 			return '';
 		}
 
-		$fields = $this->resolve_preset_fields( $preset );
+		$fields        = $this->resolve_preset_fields( $preset );
+		$mobile_fields = $this->resolve_preset_fields( $preset, 'mobile_fields' );
 
 		if ( empty( $fields ) ) {
 			return '';
@@ -123,7 +124,7 @@ class YBY_Inquiry_Shortcodes {
 			'' !== $attributes['id'] ? $attributes['id'] : 'yby-inquiry-modal-' . $preset['id']
 		);
 
-		$modal_markup = $this->renderer->render_modal( $preset, $fields, $attributes );
+		$modal_markup = $this->renderer->render_modal( $preset, $fields, $attributes, $mobile_fields );
 
 		if ( '' === $modal_markup ) {
 			return '';
@@ -336,12 +337,12 @@ class YBY_Inquiry_Shortcodes {
 	 * @param array<string, mixed> $preset Preset definition.
 	 * @return array<int, array<string, mixed>>
 	 */
-	protected function resolve_preset_fields( $preset ) {
+	protected function resolve_preset_fields( $preset, $key = 'fields' ) {
 		$field_manager = $this->inquiry_manager->get_field_manager();
 		$all_fields    = $field_manager->get_fields();
 		$resolved      = array();
 
-		foreach ( isset( $preset['fields'] ) && is_array( $preset['fields'] ) ? $preset['fields'] : array() as $field_id ) {
+		foreach ( isset( $preset[ $key ] ) && is_array( $preset[ $key ] ) ? $preset[ $key ] : array() as $field_id ) {
 			$field_id = sanitize_key( $field_id );
 
 			if ( '' === $field_id || ! isset( $all_fields[ $field_id ] ) ) {
