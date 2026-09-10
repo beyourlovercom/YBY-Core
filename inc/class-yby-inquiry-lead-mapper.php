@@ -140,6 +140,7 @@ class YBY_Inquiry_Lead_Mapper {
 		return array(
 			'name',
 			'company',
+			'contact',
 			'email',
 			'whatsapp',
 			'country',

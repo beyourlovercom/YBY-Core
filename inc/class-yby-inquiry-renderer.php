@@ -35,7 +35,7 @@ class YBY_Inquiry_Renderer {
 	 * @param array<string, mixed> $attributes Sanitized renderer attributes.
 	 * @return string
 	 */
-	public function render_modal( $preset, $fields, $attributes = array() ) {
+	public function render_modal( $preset, $fields, $attributes = array(), $mobile_fields = array() ) {
 		if ( ! is_array( $preset ) || empty( $preset['id'] ) ) {
 			return '';
 		}
@@ -47,16 +47,27 @@ class YBY_Inquiry_Renderer {
 		$image         = isset( $attributes['image'] ) ? $attributes['image'] : '';
 		$extra_classes = isset( $attributes['class'] ) && is_array( $attributes['class'] ) ? $attributes['class'] : array();
 		$title_id      = $modal_id . '-title';
-		$form_markup   = '';
+		$form_markup   = '<div class="yby-inquiry-form__fields">';
 
 		foreach ( $fields as $field ) {
 			$form_markup .= $this->render_field(
 				$field,
 				array(
 					'modal_id' => $modal_id,
+					'responsive' => 'desktop',
 				)
 			);
 		}
+		foreach ( $mobile_fields as $field ) {
+			$form_markup .= $this->render_field(
+				$field,
+				array(
+					'modal_id' => $modal_id,
+					'responsive' => 'mobile',
+				)
+			);
+		}
+		$form_markup .= '</div>';
 
 		$form_markup .= $this->render_metadata_fields( $preset );
 
@@ -107,7 +118,9 @@ class YBY_Inquiry_Renderer {
 
 		$type      = (string) $field['type'];
 		$modal_id  = isset( $context['modal_id'] ) ? (string) $context['modal_id'] : 'yby-inquiry-modal';
-		$field_id  = $this->build_field_id( $modal_id, (string) $field['id'] );
+		$responsive = isset( $context['responsive'] ) ? sanitize_key( $context['responsive'] ) : '';
+		$dom_suffix = '' !== $responsive ? '-' . $responsive : '';
+		$field_id  = $this->build_field_id( $modal_id, (string) $field['id'] ) . $dom_suffix;
 		$error_id  = $field_id . '-error';
 		$is_hidden = 'hidden' === $type;
 
@@ -133,12 +146,20 @@ class YBY_Inquiry_Renderer {
 				return '';
 		}
 
+		if ( 'mobile' === $responsive && '' !== $control ) {
+			$control = preg_replace( '/^<(input|select|textarea)(\s)/', '<$1 disabled$2', $control );
+		}
+
 		if ( $is_hidden || '' === $control ) {
 			return $control;
 		}
 
-		$output  = '<div class="yby-inquiry-field yby-inquiry-field--' . esc_attr( $type ) . '" data-yby-field-wrapper="' . esc_attr( $field['id'] ) . '">';
-		$output .= $this->render_field_label( $field, $field_id );
+		$field_label = $field;
+		if ( 'mobile' === $responsive && 'message' === $field['id'] ) {
+			$field_label['label'] = 'Inquiry Details (Optional)';
+		}
+		$output  = '<div class="yby-inquiry-field yby-inquiry-field--' . esc_attr( $type ) . '" data-yby-field-wrapper="' . esc_attr( $field['id'] ) . '"' . ( '' !== $responsive ? ' data-yby-responsive="' . esc_attr( $responsive ) . '"' : '' ) . '>';
+		$output .= $this->render_field_label( $field_label, $field_id );
 		$output .= $control;
 		$output .= '<span id="' . esc_attr( $error_id ) . '" class="yby-inquiry-field__error" data-yby-field-error="' . esc_attr( $field['id'] ) . '" aria-live="polite"></span>';
 		$output .= '</div>';
@@ -177,8 +198,9 @@ class YBY_Inquiry_Renderer {
 	 * @return string
 	 */
 	protected function render_field_label( $field, $field_dom_id ) {
+		$label = isset( $field['label'] ) ? $field['label'] : '';
 		$output  = '<label for="' . esc_attr( $field_dom_id ) . '">';
-		$output .= esc_html( $field['label'] );
+		$output .= esc_html( $label );
 
 		if ( ! empty( $field['required'] ) ) {
 			$output .= ' <span class="yby-inquiry-field__required" aria-hidden="true">*</span>';

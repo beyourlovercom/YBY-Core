@@ -92,7 +92,8 @@
       trigger: trigger,
       source: safeString(options.source || (trigger ? trigger.getAttribute("data-yby-source") : ""), 120),
       sourcePage: safeString(options.sourcePage || (trigger ? trigger.getAttribute("data-yby-source-page") : ""), 255),
-      profile: safeString(options.profile || getClosestProfile(trigger), 100)
+      profile: safeString(options.profile || getClosestProfile(trigger), 100),
+      productInterest: safeString(options.productInterest || (trigger ? trigger.getAttribute("data-yby-product-interest") : ""), 500)
     };
   }
 
@@ -116,6 +117,46 @@
     } else {
       form.removeAttribute("data-yby-page-profile");
     }
+
+    if (request.productInterest) {
+      form.setAttribute("data-yby-product-interest-context", request.productInterest);
+      var productFields = Array.prototype.slice.call(form.querySelectorAll('[data-yby-field-id="product_interest"]'));
+      var hasExistingProduct = productFields.some(function (field) {
+        return safeString(field.value, 500) !== "";
+      });
+      if (!hasExistingProduct) {
+        productFields.forEach(function (field) {
+          if (!field.disabled) {
+            field.value = request.productInterest;
+          }
+        });
+      }
+    } else {
+      form.removeAttribute("data-yby-product-interest-context");
+    }
+  }
+
+  function isMobileViewport() {
+    return !!(window.matchMedia && window.matchMedia("(max-width: 859px)").matches);
+  }
+
+  function syncResponsiveFields(form) {
+    if (!form) {
+      return;
+    }
+
+    var mobile = isMobileViewport();
+    Array.prototype.slice.call(form.querySelectorAll("[data-yby-field]")).forEach(function (field) {
+      var wrapper = field.closest ? field.closest("[data-yby-responsive]") : null;
+      var mode = wrapper ? wrapper.getAttribute("data-yby-responsive") : "";
+      var active = !mode || (mode === "mobile" ? mobile : !mobile);
+      field.disabled = !active;
+      field.setAttribute("data-yby-active", active ? "true" : "false");
+      if (wrapper) {
+        wrapper.hidden = !active;
+        wrapper.setAttribute("aria-hidden", active ? "false" : "true");
+      }
+    });
   }
 
   function getFocusableElements(modal) {
@@ -204,7 +245,7 @@
     Array.prototype.slice.call(form.querySelectorAll("[data-yby-field]")).forEach(function (field) {
       var fieldId = safeString(field.getAttribute("data-yby-field-id"), 80);
 
-      if (fieldId) {
+      if (fieldId && !field.disabled && field.getAttribute("data-yby-active") !== "false") {
         fields[fieldId] = field;
       }
     });
@@ -360,6 +401,7 @@
   }
 
   function validateForm(form) {
+    syncResponsiveFields(form);
     var fields = getFieldsByName(form);
     var errors = {};
     var contactRequirement = safeString(form.getAttribute("data-yby-contact-requirement"), 80) || "none";
@@ -402,14 +444,18 @@
         errors.whatsapp = fields.whatsapp && safeString(fields.whatsapp.value, 50) ? "Please enter a valid WhatsApp number." : "WhatsApp is required.";
       }
     } else if (contactRequirement === "email_or_whatsapp") {
+      var contactValue = fields.contact ? safeString(fields.contact.value, 150) : "";
       var emailValue = fields.email ? safeString(fields.email.value, 150) : "";
       var whatsappValue = fields.whatsapp ? safeString(fields.whatsapp.value, 50) : "";
+      if (contactValue) {
+        emailValue = looksLikeEmail(contactValue) ? contactValue : emailValue;
+        whatsappValue = looksLikeEmail(contactValue) ? whatsappValue : contactValue;
+      }
       var emailValid = emailValue && looksLikeEmail(emailValue);
       var whatsappValid = whatsappValue && looksLikeWhatsApp(whatsappValue);
 
       if (!emailValid && !whatsappValid) {
-        errors.email = emailValue ? "Please enter a valid email address." : "Email or WhatsApp is required.";
-        errors.whatsapp = whatsappValue ? "Please enter a valid WhatsApp number." : "Email or WhatsApp is required.";
+        errors[fields.contact ? "contact" : "email"] = contactValue ? "Please enter a valid email address or WhatsApp number." : "Email or WhatsApp is required.";
       }
     }
 
@@ -437,6 +483,7 @@
   }
 
   function buildPayload(form) {
+    syncResponsiveFields(form);
     var fields = getFieldsByName(form);
     var payload = {};
     var customFields = {};
@@ -447,7 +494,7 @@
       var type = safeString(field.type || field.tagName.toLowerCase(), 40);
       var value = type === "checkbox" ? (field.checked ? "1" : "") : safeString(field.value, 3000);
 
-      if (value) {
+      if (value && fieldId !== "contact") {
         payload[fieldId] = value;
 
         if (!CORE_FIELD_IDS[fieldId]) {
@@ -461,8 +508,17 @@
     payload.email = payload.email || "";
     payload.whatsapp = payload.whatsapp || "";
     payload.country = payload.country || "";
-    payload.product_interest = payload.product_interest || "";
+    payload.product_interest = payload.product_interest || safeString(form.getAttribute("data-yby-product-interest-context"), 500);
     payload.quantity = payload.quantity || "";
+
+    if (fields.contact && safeString(fields.contact.value, 150)) {
+      var contactValue = safeString(fields.contact.value, 150);
+      if (looksLikeEmail(contactValue)) {
+        payload.email = contactValue;
+      } else {
+        payload.whatsapp = normalizeWhatsApp(contactValue);
+      }
+    }
     payload.project_details = buildProjectDetails(payload);
     payload.page = safeString(document.title || window.location.pathname, 240);
     payload.source_url = stripHash(window.location.href);
@@ -547,6 +603,7 @@
     if (form) {
       form.setAttribute("data-yby-started", "false");
       applyTriggerContext(form, request);
+      syncResponsiveFields(form);
     }
 
     firstField = modal.querySelector("[data-yby-field]:not([type='hidden']):not([disabled])");
@@ -725,6 +782,7 @@
     Array.prototype.slice.call((root || document).querySelectorAll("[data-yby-inquiry-form]")).forEach(function (form) {
       form.setAttribute("data-yby-submitting", "false");
       form.removeAttribute("aria-busy");
+      syncResponsiveFields(form);
       enableFormIfReady(form);
     });
   }
@@ -755,6 +813,9 @@
       document.addEventListener("input", handleFormInteraction);
       document.addEventListener("change", handleFormInteraction);
       document.addEventListener("submit", handleFormSubmit);
+      window.addEventListener("resize", function () {
+        Array.prototype.slice.call(document.querySelectorAll("[data-yby-inquiry-form]")).forEach(syncResponsiveFields);
+      });
       listenersBound = true;
     }
 
