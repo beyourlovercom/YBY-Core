@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v1.5.7 - 2026-09-11
+
+- Added Page-Owned Inquiry Modal architecture so each landing page can own its modal instance and presentation while reusing the canonical Andy Core inquiry engine.
+- Added reusable `split_visual` desktop and `compact` mobile layout variants with page-level field order, labels, placeholders, media, copy, and CTA configuration.
+- Added the generic `page_owned_inquiry` preset for landing-page-owned modal instances.
+- Preserved combined Email / WhatsApp routing, Case ID, source attribution, tracking, hidden product-interest context, and compact no-image mobile submissions.
+- Retained `used_forklift_inquiry` and existing saved preset registries for backward compatibility without resetting custom configuration.
+- Database version remains 1.4.0; no database migration is required.
+
 ## v1.5.6 - 2026-09-07
 
 - Moved native update discovery and downloads to the public `beyourlovercom/andy-core-release` GitHub Release channel.
@@ -53,7 +62,7 @@
 
 ### Changed
 
-- Centralized WhatsApp and Email Notification configuration under `Settings -> 询盘通知` without changing their underlying option authorities.
+- Centralized WhatsApp and Email Notification configuration under `Settings -> 璇㈢洏閫氱煡` without changing their underlying option authorities.
 - Reused the existing WhatsApp URL/message runtime for the new floating dock instead of introducing a second WhatsApp configuration path.
 
 ### Compatibility

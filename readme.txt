@@ -4,7 +4,7 @@ Tags: andy-core, yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.5.6
+Stable tag: 1.5.7
 License: Proprietary
 License URI: https://ybyglobal.com/
 
@@ -12,7 +12,15 @@ Core platform plugin for managed WordPress websites, including Case ID, tracking
 
 == Description ==
 
-Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.6 moves native updates to the public signed GitHub Release channel `beyourlovercom/andy-core-release`, so installed sites require no GitHub token or server-side update credential while preserving the existing `yby-core` identity and runtime contracts.
+Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.7 adds Page-Owned Inquiry Modal architecture while preserving the public signed GitHub Release update channel and existing `yby-core` runtime contracts.
+
+Included in v1.5.7:
+
+* Landing pages can own their inquiry modal instance while reusing the Andy Core lead, Case ID, validation, attribution, and tracking engine
+* Reusable `split_visual` desktop and `compact` mobile layout variants support page-level field order, labels, placeholders, media, copy, and CTA configuration
+* Compact mobile inquiry can hide media and use Name, Email / WhatsApp, and Inquiry Details without internal scrolling
+* Existing presets remain backward compatible, including the legacy `used_forklift_inquiry` preset; new landing pages can use `page_owned_inquiry`
+* Database schema remains version 1.4.0 with no migration
 
 Included in v1.5.6:
 
@@ -48,7 +56,7 @@ Included in v1.5.2:
 * Global floating inquiry with Mode A single Inquiry and Mode B WhatsApp + Inquiry bottom dock
 * First-screen deferred display, responsive previews, per-button color controls, and Custom CSS override support
 * Reusable Inquiry and Subscribe shortcodes, including minimal Subscribe mode
-* `Settings -> 璇㈢洏閫氱煡` centralizes WhatsApp and Email Notification while preserving existing option keys
+* `Settings -> 閻犲洢鍨诲ú蹇涙焻濮樿京鍙€` centralizes WhatsApp and Email Notification while preserving existing option keys
 * Database schema remains version 1.3.0 with no new migration
 
 Included in v1.5.1:
@@ -167,7 +175,7 @@ The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Re
 * Added the Email admin hub for floating inquiry, popup inquiry/subscribe, and shortcode management.
 * Added Global Inquiry Popup, Subscribe Popup, and reusable Inquiry/Subscribe shortcode runtime.
 * Added dual-mode global floating inquiry with WhatsApp + Inquiry support, deferred display, responsive previews, and per-button colors.
-* Moved WhatsApp and Email Notification settings into `Settings -> 璇㈢洏閫氱煡` while preserving the existing option authorities.
+* Moved WhatsApp and Email Notification settings into `Settings -> 閻犲洢鍨诲ú蹇涙焻濮樿京鍙€` while preserving the existing option authorities.
 * Preserved database schema version 1.3.0 and existing Lead, Inquiry, notification, Case ID, and WhatsApp contracts.
 
 = 1.5.1 =

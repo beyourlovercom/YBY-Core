@@ -45,37 +45,37 @@ jobs:
           ANDY_CORE_UPDATE_SIGNING_SECRET: ${{ secrets.ANDY_CORE_UPDATE_SIGNING_SECRET }}
         run: |
           set -euo pipefail
-          BUILD_CONTEXT=RELEASE_CANDIDATE bash scripts/build-v1.5.6-release.sh
-          package="releases/v1.5.6/andy-core-v1.5.6.zip"
-          checksum="releases/v1.5.6/SHA256.txt"
-          metadata="releases/v1.5.6/update-metadata.json"
+          BUILD_CONTEXT=RELEASE_CANDIDATE bash scripts/build-v1.5.7-release.sh
+          package="releases/v1.5.7/andy-core-v1.5.7.zip"
+          checksum="releases/v1.5.7/SHA256.txt"
+          metadata="releases/v1.5.7/update-metadata.json"
           test -s "$package"
           test -s "$checksum"
           test -s "$metadata"
-          if [[ -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" ]]; then test -s releases/v1.5.6/update-metadata.sig; else test ! -e releases/v1.5.6/update-metadata.sig; fi
-          test -s releases/v1.5.6/BUILD_INFO.md
-          for doc in RELEASE_NOTES_v1.5.6.md UPGRADE_GUIDE_v1.5.6.md ROLLBACK_GUIDE_v1.5.6.md; do
+          if [[ -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" ]]; then test -s releases/v1.5.7/update-metadata.sig; else test ! -e releases/v1.5.7/update-metadata.sig; fi
+          test -s releases/v1.5.7/BUILD_INFO.md
+          for doc in RELEASE_NOTES_v1.5.7.md UPGRADE_GUIDE_v1.5.7.md ROLLBACK_GUIDE_v1.5.7.md; do
             test -s "$doc"
-            cp "$doc" releases/v1.5.6/
+            cp "$doc" releases/v1.5.7/
           done
           unzip -Z1 "$package" | awk -F/ 'NF && $1 != "yby-core" { exit 1 }'
           unzip -Z1 "$package" | grep -Fx 'yby-core/yby-core.php'
           ! unzip -Z1 "$package" | grep -E '(^|/)(\.git|\.github|tests|docs|releases|scripts)(/|$)'
-          unzip -p "$package" yby-core/yby-core.php | grep -F 'Version:           1.5.6'
-          unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_CORE_VERSION', '1.5.6' );"
+          unzip -p "$package" yby-core/yby-core.php | grep -F 'Version:           1.5.7'
+          unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_CORE_VERSION', '1.5.7' );"
           unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_DATABASE_VERSION', '1.4.0' );"
           expected_sha="$(awk 'NF {print $1; exit}' "$checksum")"
           actual_sha="$(sha256sum "$package" | awk '{print $1}')"
           test "$expected_sha" = "$actual_sha"
-          php -r '$m=json_decode(file_get_contents($argv[1]),true); if (!is_array($m) || ($m["schema_version"] ?? null)!==1 || ($m["version"] ?? "")!=="1.5.6" || ($m["database_version"] ?? "")!=="1.4.0" || ($m["package"] ?? "")!=="andy-core-v1.5.6.zip" || ($m["sha256"] ?? "")!==$argv[2]) exit(1);' "$metadata" "$actual_sha"
-          grep -F 'Build Context: RELEASE_CANDIDATE' releases/v1.5.6/BUILD_INFO.md
-          grep -F 'PHP Lint: PASS' releases/v1.5.6/BUILD_INFO.md
-          grep -F 'git diff --check: PASS' releases/v1.5.6/BUILD_INFO.md
-          if [[ -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" ]]; then grep -F 'Ed25519 Signature: PASS' releases/v1.5.6/BUILD_INFO.md; else grep -F 'Ed25519 Signature: NOT_SIGNED' releases/v1.5.6/BUILD_INFO.md; fi
+          php -r '$m=json_decode(file_get_contents($argv[1]),true); if (!is_array($m) || ($m["schema_version"] ?? null)!==1 || ($m["version"] ?? "")!=="1.5.7" || ($m["database_version"] ?? "")!=="1.4.0" || ($m["package"] ?? "")!=="andy-core-v1.5.7.zip" || ($m["sha256"] ?? "")!==$argv[2]) exit(1);' "$metadata" "$actual_sha"
+          grep -F 'Build Context: RELEASE_CANDIDATE' releases/v1.5.7/BUILD_INFO.md
+          grep -F 'PHP Lint: PASS' releases/v1.5.7/BUILD_INFO.md
+          grep -F 'git diff --check: PASS' releases/v1.5.7/BUILD_INFO.md
+          if [[ -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" ]]; then grep -F 'Ed25519 Signature: PASS' releases/v1.5.7/BUILD_INFO.md; else grep -F 'Ed25519 Signature: NOT_SIGNED' releases/v1.5.7/BUILD_INFO.md; fi
 
       - name: Upload release candidate
         uses: actions/upload-artifact@v4
         with:
-          name: andy-core-v1.5.6-release-candidate
-          path: releases/v1.5.6
+          name: andy-core-v1.5.7-release-candidate
+          path: releases/v1.5.7
           if-no-files-found: error
