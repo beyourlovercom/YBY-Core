@@ -12,14 +12,14 @@ Core platform plugin for managed WordPress websites, including Case ID, tracking
 
 == Description ==
 
-Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.7 adds the canonical responsive Inquiry Modal Default v1 while preserving the public signed GitHub Release update channel and existing `yby-core` runtime contracts.
+Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.7 adds Page-Owned Inquiry Modal architecture while preserving the public signed GitHub Release update channel and existing `yby-core` runtime contracts.
 
 Included in v1.5.7:
 
-* Desktop media inquiry modals use the approved left-media / right-form layout
-* Mobile inquiry modals hide media and use Name, Email / WhatsApp, and Inquiry Details (Optional)
-* Existing saved inquiry registries gain the new defaults additively without resetting custom configuration
-* Product-interest attribution remains preserved for compact mobile submissions
+* Landing pages can own their inquiry modal instance while reusing the Andy Core lead, Case ID, validation, attribution, and tracking engine
+* Reusable `split_visual` desktop and `compact` mobile layout variants support page-level field order, labels, placeholders, media, copy, and CTA configuration
+* Compact mobile inquiry can hide media and use Name, Email / WhatsApp, and Inquiry Details without internal scrolling
+* Existing presets remain backward compatible, including the legacy `used_forklift_inquiry` preset; new landing pages can use `page_owned_inquiry`
 * Database schema remains version 1.4.0 with no migration
 
 Included in v1.5.6:

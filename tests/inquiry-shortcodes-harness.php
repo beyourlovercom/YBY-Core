@@ -5,6 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $GLOBALS['shortcode_tags'] = array();
 $GLOBALS['post']           = null;
+$GLOBALS['harness_render_calls'] = array();
 
 function add_shortcode( $tag, $callback ) {
 	$GLOBALS['shortcode_tags'][ $tag ] = $callback;
@@ -105,6 +106,16 @@ class Harness_Inquiry_Manager {
 class Harness_Preset_Manager {
 	public function get_preset( $preset_id ) {
 		$presets = array(
+			'page_owned_inquiry' => array(
+				'id'               => 'page_owned_inquiry',
+				'label'            => 'Page-Owned Inquiry',
+				'enabled'          => true,
+				'version'          => '1.0',
+				'fields'           => array( 'name', 'email', 'whatsapp', 'message' ),
+				'mobile_fields'    => array( 'name', 'contact', 'message' ),
+				'validation'       => array( 'contact_requirement' => 'email_or_whatsapp' ),
+				'source_component' => 'inquiry_modal',
+			),
 			'irrigation_quick_inquiry' => array(
 				'id'               => 'irrigation_quick_inquiry',
 				'label'            => 'Irrigation Quick Inquiry',
@@ -145,6 +156,7 @@ class Harness_Field_Manager {
 			'company'          => array( 'id' => 'company', 'type' => 'text', 'enabled' => true ),
 			'email'            => array( 'id' => 'email', 'type' => 'email', 'enabled' => true ),
 			'whatsapp'         => array( 'id' => 'whatsapp', 'type' => 'tel', 'enabled' => true ),
+			'contact'          => array( 'id' => 'contact', 'type' => 'text', 'enabled' => true ),
 			'country'          => array( 'id' => 'country', 'type' => 'text', 'enabled' => true ),
 			'farm_size'        => array( 'id' => 'farm_size', 'type' => 'text', 'enabled' => true ),
 			'product_interest' => array( 'id' => 'product_interest', 'type' => 'text', 'enabled' => true ),
@@ -156,10 +168,17 @@ class Harness_Field_Manager {
 }
 
 class Harness_Renderer {
-	public function render_modal( $preset, $fields, $attributes = array() ) {
+	public function render_modal( $preset, $fields, $attributes = array(), $mobile_fields = array() ) {
 		if ( ! is_array( $preset ) || empty( $preset['id'] ) || empty( $fields ) ) {
 			return '';
 		}
+
+		$GLOBALS['harness_render_calls'][] = array(
+			'preset'        => $preset,
+			'fields'        => $fields,
+			'mobile_fields' => $mobile_fields,
+			'attributes'    => $attributes,
+		);
 
 		return '<div id="' . $attributes['id'] . '" class="yby-inquiry-modal" data-yby-inquiry-modal data-yby-preset="' . $preset['id'] . '"></div>';
 	}
@@ -278,6 +297,32 @@ $tests['default_modal_preset'] = static function () use ( $shortcodes ) {
 
 	harness_assert( false !== strpos( $result, 'yby_inquiry_modal:yby-inquiry-modal-irrigation_quick_inquiry' ), 'Bare modal shortcode should use default irrigation preset.' );
 	harness_assert( $state['modal_ids'] === array( 'yby-inquiry-modal-irrigation_quick_inquiry' ), 'Default modal should defer exactly one modal.' );
+};
+
+$tests['page_owned_modal_overrides'] = static function () use ( $shortcodes ) {
+	YBY_Inquiry_Shortcodes::reset_request_state();
+	$GLOBALS['harness_render_calls'] = array();
+	$shortcodes->render_modal_shortcode(
+		array(
+			'id'                        => 'page-owned-test',
+			'preset'                    => 'page_owned_inquiry',
+			'layout'                    => 'split_visual',
+			'mobile_layout'             => 'compact',
+			'desktop_fields'            => 'name,country,email,whatsapp,product_interest,quantity,message',
+			'mobile_fields'             => 'name,contact,message',
+			'field_placeholders'        => 'name=Your full name|product_interest=e.g. Test Model',
+			'mobile_field_labels'       => 'message=Inquiry Details (Optional)',
+			'mobile_field_placeholders' => 'message=Tell us what you need',
+		)
+	);
+	$call = end( $GLOBALS['harness_render_calls'] );
+	harness_assert( is_array( $call ), 'Page-owned modal must reach renderer.' );
+	harness_assert( 'split_visual' === $call['attributes']['layout'], 'Page-owned desktop layout must be preserved.' );
+	harness_assert( 'compact' === $call['attributes']['mobile_layout'], 'Page-owned mobile layout must be preserved.' );
+	harness_assert( array( 'name', 'country', 'email', 'whatsapp', 'product_interest', 'quantity', 'message' ) === array_column( $call['fields'], 'id' ), 'Page-owned desktop field order must override preset order.' );
+	harness_assert( array( 'name', 'contact', 'message' ) === array_column( $call['mobile_fields'], 'id' ), 'Page-owned mobile field order must override preset order.' );
+	harness_assert( 'Your full name' === $call['attributes']['field_placeholders']['name'], 'Page-owned placeholder map must be parsed.' );
+	harness_assert( 'Inquiry Details (Optional)' === $call['attributes']['mobile_field_labels']['message'], 'Page-owned mobile label map must be parsed.' );
 };
 
 $tests['sticky_cta_shortcode'] = static function () use ( $shortcodes ) {

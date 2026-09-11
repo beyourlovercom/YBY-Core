@@ -113,8 +113,12 @@ class YBY_Inquiry_Shortcodes {
 			return '';
 		}
 
-		$fields        = $this->resolve_preset_fields( $preset );
-		$mobile_fields = $this->resolve_preset_fields( $preset, 'mobile_fields' );
+		$fields = ! empty( $attributes['desktop_fields'] )
+			? $this->resolve_field_ids( $attributes['desktop_fields'] )
+			: $this->resolve_preset_fields( $preset );
+		$mobile_fields = ! empty( $attributes['mobile_fields'] )
+			? $this->resolve_field_ids( $attributes['mobile_fields'] )
+			: $this->resolve_preset_fields( $preset, 'mobile_fields' );
 
 		if ( empty( $fields ) ) {
 			return '';
@@ -239,24 +243,60 @@ class YBY_Inquiry_Shortcodes {
 	protected function sanitize_shortcode_attributes( $attributes ) {
 		$attributes = shortcode_atts(
 			array(
-				'id'           => '',
-				'preset'       => '',
-				'title'        => '',
-				'submit_label' => '',
-				'image'        => '',
-				'class'        => '',
+				'id'                        => '',
+				'preset'                    => '',
+				'layout'                    => '',
+				'mobile_layout'             => '',
+				'desktop_fields'            => '',
+				'mobile_fields'             => '',
+				'field_labels'              => '',
+				'field_placeholders'        => '',
+				'mobile_field_labels'       => '',
+				'mobile_field_placeholders' => '',
+				'title'                     => '',
+				'mobile_title'              => '',
+				'subtitle'                  => '',
+				'mobile_subtitle'           => '',
+				'eyebrow'                   => '',
+				'brand_mark'                => '',
+				'brand_name'                => '',
+				'brand_tagline'             => '',
+				'privacy_note'              => '',
+				'submit_label'              => '',
+				'mobile_submit_label'       => '',
+				'image'                     => '',
+				'image_alt'                 => '',
+				'class'                     => '',
 			),
 			is_array( $attributes ) ? $attributes : array(),
 			'yby_inquiry_modal'
 		);
 
 		return array(
-			'id'           => $this->sanitize_dom_id( $attributes['id'] ),
-			'preset'       => sanitize_key( $attributes['preset'] ),
-			'title'        => sanitize_text_field( $attributes['title'] ),
-			'submit_label' => sanitize_text_field( $attributes['submit_label'] ),
-			'image'        => esc_url_raw( $attributes['image'] ),
-			'class'        => $this->sanitize_class_tokens( $attributes['class'] ),
+			'id'                        => $this->sanitize_dom_id( $attributes['id'] ),
+			'preset'                    => sanitize_key( $attributes['preset'] ),
+			'layout'                    => sanitize_key( $attributes['layout'] ),
+			'mobile_layout'             => sanitize_key( $attributes['mobile_layout'] ),
+			'desktop_fields'            => $this->sanitize_field_list( $attributes['desktop_fields'] ),
+			'mobile_fields'             => $this->sanitize_field_list( $attributes['mobile_fields'] ),
+			'field_labels'              => $this->sanitize_field_map( $attributes['field_labels'] ),
+			'field_placeholders'        => $this->sanitize_field_map( $attributes['field_placeholders'] ),
+			'mobile_field_labels'       => $this->sanitize_field_map( $attributes['mobile_field_labels'] ),
+			'mobile_field_placeholders' => $this->sanitize_field_map( $attributes['mobile_field_placeholders'] ),
+			'title'                     => sanitize_text_field( $attributes['title'] ),
+			'mobile_title'              => sanitize_text_field( $attributes['mobile_title'] ),
+			'subtitle'                  => sanitize_text_field( $attributes['subtitle'] ),
+			'mobile_subtitle'           => sanitize_text_field( $attributes['mobile_subtitle'] ),
+			'eyebrow'                   => sanitize_text_field( $attributes['eyebrow'] ),
+			'brand_mark'                => sanitize_text_field( $attributes['brand_mark'] ),
+			'brand_name'                => sanitize_text_field( $attributes['brand_name'] ),
+			'brand_tagline'             => sanitize_text_field( $attributes['brand_tagline'] ),
+			'privacy_note'              => sanitize_text_field( $attributes['privacy_note'] ),
+			'submit_label'              => sanitize_text_field( $attributes['submit_label'] ),
+			'mobile_submit_label'       => sanitize_text_field( $attributes['mobile_submit_label'] ),
+			'image'                     => esc_url_raw( $attributes['image'] ),
+			'image_alt'                 => sanitize_text_field( $attributes['image_alt'] ),
+			'class'                     => $this->sanitize_class_tokens( $attributes['class'] ),
 		);
 	}
 
@@ -332,33 +372,86 @@ class YBY_Inquiry_Shortcodes {
 	}
 
 	/**
+	 * Sanitize a comma/pipe/space separated field ID list.
+	 *
+	 * @param string|array $value Raw field list.
+	 * @return array<int, string>
+	 */
+	protected function sanitize_field_list( $value ) {
+		$tokens = is_array( $value ) ? $value : preg_split( '/[\s,|]+/', (string) $value, -1, PREG_SPLIT_NO_EMPTY );
+		$tokens = is_array( $tokens ) ? $tokens : array();
+		$result = array();
+		foreach ( $tokens as $token ) {
+			$token = sanitize_key( $token );
+			if ( '' !== $token && ! in_array( $token, $result, true ) ) {
+				$result[] = $token;
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * Sanitize page-owned field presentation overrides using key=value|key=value syntax.
+	 *
+	 * @param string|array $value Raw map.
+	 * @return array<string, string>
+	 */
+	protected function sanitize_field_map( $value ) {
+		if ( is_array( $value ) ) {
+			$pairs = $value;
+		} else {
+			$pairs = array();
+			foreach ( preg_split( '/\|+/', (string) $value, -1, PREG_SPLIT_NO_EMPTY ) ?: array() as $chunk ) {
+				$parts = explode( '=', $chunk, 2 );
+				if ( 2 === count( $parts ) ) {
+					$pairs[ $parts[0] ] = $parts[1];
+				}
+			}
+		}
+		$result = array();
+		foreach ( $pairs as $field_id => $text ) {
+			$field_id = sanitize_key( $field_id );
+			$text = sanitize_text_field( $text );
+			if ( '' !== $field_id && '' !== $text ) {
+				$result[ $field_id ] = $text;
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * Resolve explicit page-owned field IDs against the global field registry.
+	 *
+	 * @param array<int, string> $field_ids Field IDs.
+	 * @return array<int, array<string, mixed>>
+	 */
+	protected function resolve_field_ids( $field_ids ) {
+		$field_manager = $this->inquiry_manager->get_field_manager();
+		$all_fields    = $field_manager->get_fields();
+		$resolved      = array();
+		foreach ( is_array( $field_ids ) ? $field_ids : array() as $field_id ) {
+			$field_id = sanitize_key( $field_id );
+			if ( '' === $field_id || ! isset( $all_fields[ $field_id ] ) ) {
+				continue;
+			}
+			$field = $all_fields[ $field_id ];
+			if ( empty( $field['enabled'] ) || empty( $field['type'] ) ) {
+				continue;
+			}
+			$resolved[] = $field;
+		}
+		return $resolved;
+	}
+
+	/**
 	 * Resolve preset fields in preset order.
 	 *
 	 * @param array<string, mixed> $preset Preset definition.
 	 * @return array<int, array<string, mixed>>
 	 */
 	protected function resolve_preset_fields( $preset, $key = 'fields' ) {
-		$field_manager = $this->inquiry_manager->get_field_manager();
-		$all_fields    = $field_manager->get_fields();
-		$resolved      = array();
-
-		foreach ( isset( $preset[ $key ] ) && is_array( $preset[ $key ] ) ? $preset[ $key ] : array() as $field_id ) {
-			$field_id = sanitize_key( $field_id );
-
-			if ( '' === $field_id || ! isset( $all_fields[ $field_id ] ) ) {
-				continue;
-			}
-
-			$field = $all_fields[ $field_id ];
-
-			if ( empty( $field['enabled'] ) || empty( $field['type'] ) ) {
-				continue;
-			}
-
-			$resolved[] = $field;
-		}
-
-		return $resolved;
+		$field_ids = isset( $preset[ $key ] ) && is_array( $preset[ $key ] ) ? $preset[ $key ] : array();
+		return $this->resolve_field_ids( $field_ids );
 	}
 
 	/**

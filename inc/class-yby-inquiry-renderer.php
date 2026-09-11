@@ -41,15 +41,27 @@ class YBY_Inquiry_Renderer {
 		}
 
 		$modal_id      = $this->normalize_modal_id( isset( $attributes['id'] ) ? $attributes['id'] : '' );
-		$title         = isset( $attributes['title'] ) && '' !== $attributes['title'] ? $attributes['title'] : $preset['label'];
-		$subtitle      = isset( $attributes['subtitle'] ) ? (string) $attributes['subtitle'] : '';
-		$submit_label  = isset( $attributes['submit_label'] ) && '' !== $attributes['submit_label'] ? $attributes['submit_label'] : 'Submit Inquiry';
+		$title               = isset( $attributes['title'] ) && '' !== $attributes['title'] ? $attributes['title'] : $preset['label'];
+		$mobile_title        = isset( $attributes['mobile_title'] ) && '' !== $attributes['mobile_title'] ? $attributes['mobile_title'] : $title;
+		$subtitle            = isset( $attributes['subtitle'] ) ? (string) $attributes['subtitle'] : '';
+		$mobile_subtitle     = isset( $attributes['mobile_subtitle'] ) && '' !== $attributes['mobile_subtitle'] ? (string) $attributes['mobile_subtitle'] : $subtitle;
+		$eyebrow             = isset( $attributes['eyebrow'] ) ? (string) $attributes['eyebrow'] : '';
+		$brand_mark          = isset( $attributes['brand_mark'] ) ? (string) $attributes['brand_mark'] : '';
+		$brand_name          = isset( $attributes['brand_name'] ) ? (string) $attributes['brand_name'] : '';
+		$brand_tagline       = isset( $attributes['brand_tagline'] ) ? (string) $attributes['brand_tagline'] : '';
+		$privacy_note        = isset( $attributes['privacy_note'] ) ? (string) $attributes['privacy_note'] : '';
+		$submit_label        = isset( $attributes['submit_label'] ) && '' !== $attributes['submit_label'] ? $attributes['submit_label'] : 'Submit Inquiry';
+		$mobile_submit_label = isset( $attributes['mobile_submit_label'] ) && '' !== $attributes['mobile_submit_label'] ? $attributes['mobile_submit_label'] : $submit_label;
 		$image         = isset( $attributes['image'] ) ? $attributes['image'] : '';
+		$image_alt     = isset( $attributes['image_alt'] ) ? $attributes['image_alt'] : '';
+		$layout        = isset( $attributes['layout'] ) ? sanitize_key( $attributes['layout'] ) : '';
+		$mobile_layout = isset( $attributes['mobile_layout'] ) ? sanitize_key( $attributes['mobile_layout'] ) : '';
 		$extra_classes = isset( $attributes['class'] ) && is_array( $attributes['class'] ) ? $attributes['class'] : array();
 		$title_id      = $modal_id . '-title';
 		$form_markup   = '<div class="yby-inquiry-form__fields">';
 
 		foreach ( $fields as $field ) {
+			$field = $this->apply_field_presentation_overrides( $field, $attributes, false );
 			$form_markup .= $this->render_field(
 				$field,
 				array(
@@ -59,6 +71,7 @@ class YBY_Inquiry_Renderer {
 			);
 		}
 		foreach ( $mobile_fields as $field ) {
+			$field = $this->apply_field_presentation_overrides( $field, $attributes, true );
 			$form_markup .= $this->render_field(
 				$field,
 				array(
@@ -73,35 +86,79 @@ class YBY_Inquiry_Renderer {
 
 		$classes = array_merge( array( 'yby-inquiry-modal' ), $extra_classes );
 
+		if ( '' !== $layout ) {
+			$classes[] = 'yby-inquiry-modal--layout-' . str_replace( '_', '-', $layout );
+		}
+		if ( '' !== $mobile_layout ) {
+			$classes[] = 'yby-inquiry-modal--mobile-' . str_replace( '_', '-', $mobile_layout );
+		}
 		if ( '' !== $image ) {
 			$classes[] = 'yby-inquiry-modal--has-media';
 		}
 
-		$output  = '<div id="' . esc_attr( $modal_id ) . '" class="' . esc_attr( implode( ' ', $classes ) ) . '" data-yby-inquiry-modal data-yby-preset="' . esc_attr( $preset['id'] ) . '" data-yby-preset-version="' . esc_attr( $preset['version'] ) . '" data-yby-source-component="' . esc_attr( $preset['source_component'] ) . '" data-yby-source-page="' . esc_attr( sanitize_text_field( (string) $title ) ) . '" aria-hidden="true" hidden>';
+		$output  = '<div id="' . esc_attr( $modal_id ) . '" class="' . esc_attr( implode( ' ', array_unique( $classes ) ) ) . '" data-yby-inquiry-modal data-yby-preset="' . esc_attr( $preset['id'] ) . '" data-yby-preset-version="' . esc_attr( $preset['version'] ) . '" data-yby-source-component="' . esc_attr( $preset['source_component'] ) . '" data-yby-source-page="' . esc_attr( sanitize_text_field( (string) $title ) ) . '"' . ( '' !== $layout ? ' data-yby-layout="' . esc_attr( $layout ) . '"' : '' ) . ( '' !== $mobile_layout ? ' data-yby-mobile-layout="' . esc_attr( $mobile_layout ) . '"' : '' ) . ' aria-hidden="true" hidden>';
 		$output .= '<div class="yby-inquiry-modal__backdrop" data-yby-modal-close></div>';
 		$output .= '<div class="yby-inquiry-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="' . esc_attr( $title_id ) . '" tabindex="-1">';
 		$output .= '<button type="button" class="yby-inquiry-modal__close" data-yby-modal-close aria-label="' . esc_attr__( 'Close inquiry form', 'yby-core' ) . '"><span aria-hidden="true">&times;</span></button>';
 
 		if ( '' !== $image ) {
-			$output .= '<div class="yby-inquiry-modal__media"><img src="' . esc_url( $image ) . '" alt="" loading="lazy" decoding="async"></div>';
+			$output .= '<div class="yby-inquiry-modal__media"><img src="' . esc_url( $image ) . '" alt="' . esc_attr( $image_alt ) . '" loading="lazy" decoding="async"></div>';
 		}
 
 		$output .= '<div class="yby-inquiry-modal__content">';
-		$output .= '<h2 id="' . esc_attr( $title_id ) . '">' . esc_html( $title ) . '</h2>';
-		if ( '' !== $subtitle ) {
-			$output .= '<p class="yby-inquiry-modal__subtitle">' . esc_html( $subtitle ) . '</p>';
+		if ( '' !== $brand_mark || '' !== $brand_name || '' !== $brand_tagline ) {
+			$output .= '<div class="yby-inquiry-modal__brandline"><div class="yby-inquiry-modal__brand"><span class="yby-inquiry-modal__brand-mark">' . esc_html( $brand_mark ) . '</span><span class="yby-inquiry-modal__brand-name">' . esc_html( $brand_name ) . '</span></div><span class="yby-inquiry-modal__brand-tagline">' . esc_html( $brand_tagline ) . '</span></div>';
+		}
+		if ( '' !== $eyebrow ) { $output .= '<p class="yby-inquiry-modal__eyebrow">' . esc_html( $eyebrow ) . '</p>'; }
+		$output .= '<h2 id="' . esc_attr( $title_id ) . '"><span class="yby-inquiry-modal__title--desktop">' . esc_html( $title ) . '</span><span class="yby-inquiry-modal__title--mobile">' . esc_html( $mobile_title ) . '</span></h2>';
+		if ( '' !== $subtitle || '' !== $mobile_subtitle ) {
+			$output .= '<p class="yby-inquiry-modal__subtitle"><span class="yby-inquiry-modal__subtitle--desktop">' . esc_html( $subtitle ) . '</span><span class="yby-inquiry-modal__subtitle--mobile">' . esc_html( $mobile_subtitle ) . '</span></p>';
 		}
 		$output .= '<form class="yby-inquiry-form" data-yby-inquiry-form data-yby-preset="' . esc_attr( $preset['id'] ) . '" data-yby-contact-requirement="' . esc_attr( isset( $preset['validation']['contact_requirement'] ) ? $preset['validation']['contact_requirement'] : 'none' ) . '" data-yby-form-version="' . esc_attr( $preset['version'] ) . '" data-yby-source-page="' . esc_attr( sanitize_text_field( (string) $title ) ) . '" novalidate>';
 		$output .= $form_markup;
 		$output .= '<div class="yby-inquiry-form__status" data-yby-inquiry-status role="status" aria-live="polite"></div>';
 		$output .= '<div class="yby-inquiry-form__error" data-yby-inquiry-error role="alert" aria-live="assertive" hidden></div>';
-		$output .= '<button type="submit" class="yby-inquiry-form__submit" data-yby-inquiry-submit disabled>' . esc_html( $submit_label ) . '</button>';
+		$output .= '<button type="submit" class="yby-inquiry-form__submit" data-yby-inquiry-submit disabled><span class="yby-inquiry-form__submit-label--desktop">' . esc_html( $submit_label ) . '</span><span class="yby-inquiry-form__submit-label--mobile">' . esc_html( $mobile_submit_label ) . '</span></button>';
+		if ( '' !== $privacy_note ) { $output .= '<p class="yby-inquiry-modal__privacy-note">' . esc_html( $privacy_note ) . '</p>'; }
 		$output .= '</form>';
 		$output .= '</div>';
 		$output .= '</div>';
 		$output .= '</div>';
 
 		return $output;
+	}
+
+
+	/**
+	 * Apply page-owned labels/placeholders without mutating the global field registry.
+	 *
+	 * @param array<string, mixed> $field Field definition.
+	 * @param array<string, mixed> $attributes Sanitized modal attributes.
+	 * @param bool                 $mobile Whether mobile overrides should win.
+	 * @return array<string, mixed>
+	 */
+	protected function apply_field_presentation_overrides( $field, $attributes, $mobile = false ) {
+		if ( ! is_array( $field ) || empty( $field['id'] ) ) {
+			return $field;
+		}
+		$field_id = sanitize_key( $field['id'] );
+		$label_maps = array( isset( $attributes['field_labels'] ) && is_array( $attributes['field_labels'] ) ? $attributes['field_labels'] : array() );
+		$placeholder_maps = array( isset( $attributes['field_placeholders'] ) && is_array( $attributes['field_placeholders'] ) ? $attributes['field_placeholders'] : array() );
+		if ( $mobile ) {
+			$label_maps[] = isset( $attributes['mobile_field_labels'] ) && is_array( $attributes['mobile_field_labels'] ) ? $attributes['mobile_field_labels'] : array();
+			$placeholder_maps[] = isset( $attributes['mobile_field_placeholders'] ) && is_array( $attributes['mobile_field_placeholders'] ) ? $attributes['mobile_field_placeholders'] : array();
+		}
+		foreach ( $label_maps as $map ) {
+			if ( isset( $map[ $field_id ] ) ) {
+				$field['label'] = $map[ $field_id ];
+			}
+		}
+		foreach ( $placeholder_maps as $map ) {
+			if ( isset( $map[ $field_id ] ) ) {
+				$field['placeholder'] = $map[ $field_id ];
+			}
+		}
+		return $field;
 	}
 
 	/**
@@ -154,12 +211,8 @@ class YBY_Inquiry_Renderer {
 			return $control;
 		}
 
-		$field_label = $field;
-		if ( 'mobile' === $responsive && 'message' === $field['id'] ) {
-			$field_label['label'] = 'Inquiry Details (Optional)';
-		}
 		$output  = '<div class="yby-inquiry-field yby-inquiry-field--' . esc_attr( $type ) . '" data-yby-field-wrapper="' . esc_attr( $field['id'] ) . '"' . ( '' !== $responsive ? ' data-yby-responsive="' . esc_attr( $responsive ) . '"' : '' ) . '>';
-		$output .= $this->render_field_label( $field_label, $field_id );
+		$output .= $this->render_field_label( $field, $field_id );
 		$output .= $control;
 		$output .= '<span id="' . esc_attr( $error_id ) . '" class="yby-inquiry-field__error" data-yby-field-error="' . esc_attr( $field['id'] ) . '" aria-live="polite"></span>';
 		$output .= '</div>';

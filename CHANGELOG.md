@@ -1,12 +1,12 @@
 # CHANGELOG
 
-## v1.5.7 - 2026-09-10
+## v1.5.7 - 2026-09-11
 
-- Promoted Inquiry Modal Default v1 into the canonical Andy Core runtime.
-- Desktop media modals now use the approved left-media / right-form layout with viewport constraints, independently scrollable form content, and sticky submit behavior.
-- Mobile inquiry modals now use the approved compact no-image experience with Name, Email / WhatsApp, and Inquiry Details (Optional).
-- Added backward-compatible mobile field schemas, combined contact routing, and preserved hidden product-interest attribution for compact mobile submissions.
-- Added the built-in used_forklift_inquiry preset and additive compatibility for existing saved field/preset registries without resetting user configuration.
+- Added Page-Owned Inquiry Modal architecture so each landing page can own its modal instance and presentation while reusing the canonical Andy Core inquiry engine.
+- Added reusable `split_visual` desktop and `compact` mobile layout variants with page-level field order, labels, placeholders, media, copy, and CTA configuration.
+- Added the generic `page_owned_inquiry` preset for landing-page-owned modal instances.
+- Preserved combined Email / WhatsApp routing, Case ID, source attribution, tracking, hidden product-interest context, and compact no-image mobile submissions.
+- Retained `used_forklift_inquiry` and existing saved preset registries for backward compatibility without resetting custom configuration.
 - Database version remains 1.4.0; no database migration is required.
 
 ## v1.5.6 - 2026-09-07

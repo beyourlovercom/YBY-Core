@@ -41,6 +41,11 @@ require_once dirname( __DIR__ ) . '/inc/class-yby-inquiry-preset-manager.php';
 $field_manager  = new YBY_Inquiry_Field_Manager();
 $preset_manager = new YBY_Inquiry_Preset_Manager( $field_manager );
 $preset         = $preset_manager->get_preset( 'used_forklift_inquiry' );
+$page_owned     = $preset_manager->get_preset( 'page_owned_inquiry' );
+
+harness_assert( is_array( $page_owned ), 'Generic page-owned inquiry preset must exist in core.' );
+harness_assert( true === $page_owned['enabled'], 'Generic page-owned inquiry preset must be enabled.' );
+harness_assert( empty( $page_owned['page_profiles'] ), 'Generic page-owned inquiry preset must not be product-scoped.' );
 
 harness_assert( is_array( $preset ), 'Used forklift preset must exist in core.' );
 harness_assert( true === $preset['enabled'], 'Used forklift preset must be enabled.' );
