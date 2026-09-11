@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v1.5.7 - 2026-09-10
+
+- Promoted Inquiry Modal Default v1 into the canonical Andy Core runtime.
+- Desktop media modals now use the approved left-media / right-form layout with viewport constraints, independently scrollable form content, and sticky submit behavior.
+- Mobile inquiry modals now use the approved compact no-image experience with Name, Email / WhatsApp, and Inquiry Details (Optional).
+- Added backward-compatible mobile field schemas, combined contact routing, and preserved hidden product-interest attribution for compact mobile submissions.
+- Added the built-in used_forklift_inquiry preset and additive compatibility for existing saved field/preset registries without resetting user configuration.
+- Database version remains 1.4.0; no database migration is required.
+
 ## v1.5.6 - 2026-09-07
 
 - Moved native update discovery and downloads to the public `beyourlovercom/andy-core-release` GitHub Release channel.
@@ -53,7 +62,7 @@
 
 ### Changed
 
-- Centralized WhatsApp and Email Notification configuration under `Settings -> 询盘通知` without changing their underlying option authorities.
+- Centralized WhatsApp and Email Notification configuration under `Settings -> 璇㈢洏閫氱煡` without changing their underlying option authorities.
 - Reused the existing WhatsApp URL/message runtime for the new floating dock instead of introducing a second WhatsApp configuration path.
 
 ### Compatibility

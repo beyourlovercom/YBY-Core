@@ -4,12 +4,20 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `1.5.6`
+- Product version: `1.5.7`
 - Development version: None
 - Database version: `1.4.0`
 - Release status: Stable
 - Plugin path: `yby-core/yby-core.php`
 - Technical namespace: existing `YBY_*` and `yby_*` identifiers retained for compatibility
+
+## v1.5.7 release scope
+
+- Canonical responsive Inquiry Modal Default v1 across managed sites.
+- Desktop media modals use the approved left-media / right-form layout with constrained height and sticky submit.
+- Mobile inquiry modals hide media and use the approved compact Name / Email or WhatsApp / Inquiry Details (Optional) flow.
+- Backward-compatible saved-preset upgrades preserve existing custom configuration and product-interest attribution.
+- Database version remains 1.4.0; no database migration.
 
 ## v1.5.6 release scope
 
@@ -50,7 +58,7 @@ Version 1.5.2 adds portable inquiry and subscribe conversion surfaces plus site-
 - Global floating inquiry with Mode A single Inquiry button and Mode B WhatsApp + Inquiry bottom dock
 - first-screen deferred display, responsive previews, per-button color controls, and Custom CSS override support
 - reusable Inquiry and Subscribe shortcodes, including the minimal Subscribe mode
-- centralized `Settings -> 询盘通知` management for WhatsApp and Email Notification using the existing option authorities
+- centralized `Settings -> 鐠囥垻娲忛柅姘辩叀` management for WhatsApp and Email Notification using the existing option authorities
 - existing WhatsApp URL/message runtime reused without a second configuration authority
 - Windows local-first sync and runtime UAT helpers for repeatable development verification
 - database schema remains `1.3.0`; no migration is introduced by this release
