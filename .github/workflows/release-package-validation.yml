@@ -45,7 +45,12 @@ jobs:
           ANDY_CORE_UPDATE_SIGNING_SECRET: ${{ secrets.ANDY_CORE_UPDATE_SIGNING_SECRET }}
         run: |
           set -euo pipefail
-          BUILD_CONTEXT=RELEASE_CANDIDATE bash scripts/build-v1.5.7-release.sh
+          stable_root="$RUNNER_TEMP/andy-core-v1.5.7-source"
+          rm -rf "$stable_root"
+          mkdir -p "$stable_root"
+          git archive v1.5.7 | tar -x -C "$stable_root"
+          stable_commit="$(git rev-list -n 1 v1.5.7)"
+          RELEASE_SOURCE_DIR="$stable_root" RELEASE_OUTPUT_DIR="$GITHUB_WORKSPACE/releases/v1.5.7" SOURCE_BRANCH="v1.5.7" SOURCE_COMMIT="$stable_commit" BUILD_CONTEXT=RELEASE_CANDIDATE bash scripts/build-v1.5.7-release.sh
           package="releases/v1.5.7/andy-core-v1.5.7.zip"
           checksum="releases/v1.5.7/SHA256.txt"
           metadata="releases/v1.5.7/update-metadata.json"
