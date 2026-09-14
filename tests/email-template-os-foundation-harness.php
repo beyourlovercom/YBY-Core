@@ -71,9 +71,25 @@ $assert( false === strpos( $invalid['html'], '{unknown_token}' ), 'raw unknown t
 $architecture = file_get_contents( dirname( __DIR__ ) . '/docs/v1.5.8/ANDY-CORE-EMAIL-TEMPLATE-OS-V1-ARCHITECTURE.md' );
 $assert( false !== strpos( $architecture, 'woocommerce-email-template-customizer' ) || false !== strpos( $architecture, 'Legacy Customizer' ), 'legacy coexist contract missing' );
 $assert( false !== strpos( $architecture, 'andy-core/v1/erp' ), 'ERP read-only connector contract missing' );
+$assert( false !== strpos( $architecture, 'P4 is a governance bridge, not a runtime canary.' ), 'Woo governance bridge pivot contract missing' );
+$assert( false !== strpos( $architecture, 'MUST NOT register `woocommerce_email_*` runtime replacement hooks' ), 'Woo runtime takeover prohibition missing' );
+$assert( false !== strpos( $architecture, 'WooCommerce runtime/editor ownership remains with WooCommerce / Mailonix / active provider' ), 'Woo editor ownership contract missing' );
+$assert( false === strpos( $architecture, 'P4: Woo canary adapters / UAT' ), 'stale Woo canary roadmap remains' );
 
 $bootstrap = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-core.php' );
-$assert( false === strpos( $bootstrap, "class-yby-email-template-registry.php" ), 'P3 Foundation must remain source-only until runtime activation gate' );
-$assert( false === strpos( $bootstrap, "class-yby-email-template-renderer.php" ), 'renderer activated before local gate' );
+$assert( false !== strpos( $bootstrap, "class-yby-email-template-registry.php" ), 'registry bootstrap wiring missing' );
+$assert( false !== strpos( $bootstrap, "class-yby-email-template-renderer.php" ), 'renderer bootstrap wiring missing' );
+$assert( false !== strpos( $bootstrap, "admin/class-yby-email-template-admin.php" ), 'Email Template admin bootstrap wiring missing' );
+$assert( false === strpos( $bootstrap, 'woocommerce_email_' ) && false === strpos( $bootstrap, 'wp_new_user_notification_email' ), 'Woo runtime override must remain absent under Email OS V1.1 bridge architecture' );
+$database = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-database.php' );
+$assert( false !== strpos( $database, 'yby_email_templates' ) && false !== strpos( $database, 'yby_email_template_versions' ), 'Email Template OS DB ownership missing' );
+$admin = file_get_contents( dirname( __DIR__ ) . '/admin/class-yby-admin.php' );
+$popup_admin = file_get_contents( dirname( __DIR__ ) . '/admin/class-yby-popup-admin.php' );
+$popup_view = file_get_contents( dirname( __DIR__ ) . '/admin/views/popup-settings.php' );
+$settings_view = file_get_contents( dirname( __DIR__ ) . '/admin/views/settings-page.php' );
+$assert( false !== strpos( $popup_admin, "'email_templates'" ) && false !== strpos( $popup_view, "'email_templates' => '邮件模板'" ), 'Email OS Email Template route missing' );
+$assert( false !== strpos( $popup_view, '<h1>Email OS</h1>' ) && false === strpos( $popup_view, '统一管理网站 Email 弹窗、短代码和后续营销能力。' ), 'Email OS compact header contract failed' );
+$assert( false === strpos( $settings_view, "'email-templates' => '邮件模板'" ), 'Email Template must not remain a Settings navigation tab' );
+$assert( false !== strpos( $admin, "'email-templates' => 'email_templates'" ), 'Legacy Settings Email Template redirect missing' );
 
 echo "PASS email-template-os-foundation-harness\n";

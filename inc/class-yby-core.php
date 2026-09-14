@@ -33,6 +33,10 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-session.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-tracking.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-webhook.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-schema.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-design-settings.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-registry.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-renderer.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-subject-renderer.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-notification-provider.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-notification-manager.php';
@@ -65,6 +69,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-social-login-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-popup-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-connector-admin.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-email-template-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'public/class-yby-public.php';
 
 /**
@@ -101,6 +106,7 @@ class YBY_Core {
 
 		$this->loader->add_action( 'plugins_loaded', 'YBY_Activator', 'sync_capabilities', 1, 0 );
 		$this->loader->add_action( 'plugins_loaded', $database, 'maybe_upgrade', 5, 0 );
+		$this->loader->add_action( 'plugins_loaded', 'YBY_Email_Design_Settings', 'install_defaults', 6, 0 );
 	}
 
 	/**

@@ -48,8 +48,11 @@ class YBY_Admin {
 	}
 
 	public function redirect_legacy_inquiry_dock() {
-		if ( ! is_admin() || ! isset( $_GET['page'], $_GET['tab'] ) || YBY_Helpers::admin_page_slug() !== sanitize_key( wp_unslash( $_GET['page'] ) ) || 'inquiry-dock' !== sanitize_key( wp_unslash( $_GET['tab'] ) ) || ! $this->security->can_manage_settings() ) { return; }
-		wp_safe_redirect( add_query_arg( array( 'page' => 'yby-core-popups', 'tab' => 'floating_inquiry' ), admin_url( 'admin.php' ) ) );
+		if ( ! is_admin() || ! isset( $_GET['page'], $_GET['tab'] ) || YBY_Helpers::admin_page_slug() !== sanitize_key( wp_unslash( $_GET['page'] ) ) || ! $this->security->can_manage_settings() ) { return; }
+		$legacy_tab = sanitize_key( wp_unslash( $_GET['tab'] ) );
+		$target_tab = array( 'inquiry-dock' => 'floating_inquiry', 'email-templates' => 'email_templates' )[ $legacy_tab ] ?? '';
+		if ( '' === $target_tab ) { return; }
+		wp_safe_redirect( add_query_arg( array( 'page' => 'yby-core-popups', 'tab' => $target_tab ), admin_url( 'admin.php' ) ) );
 		exit;
 	}
 
@@ -223,14 +226,16 @@ class YBY_Admin {
 		if ( false === $status ) {
 			$management_tables_ok = YBY_Database::management_tables_exist();
 			$connector_tables_ok = YBY_Database::connector_tables_exist();
+			$email_tables_ok = YBY_Database::email_tables_exist();
 			$status = array(
 				'plugin_version' => YBY_CORE_VERSION,
 				'database_version' => get_option( YBY_Database::VERSION_OPTION, 'unknown' ),
 				'lead_table' => YBY_Database::leads_table_exists(),
 				'management_table' => $management_tables_ok,
 				'activities_table' => $management_tables_ok,
-				'index_status' => $management_tables_ok && $connector_tables_ok ? 'verified' : 'attention',
-				'migration_status' => $management_tables_ok && $connector_tables_ok && YBY_DATABASE_VERSION === get_option( YBY_Database::VERSION_OPTION, '' ) ? 'ready' : 'attention',
+				'email_template_tables' => $email_tables_ok,
+				'index_status' => $management_tables_ok && $connector_tables_ok && $email_tables_ok ? 'verified' : 'attention',
+				'migration_status' => $management_tables_ok && $connector_tables_ok && $email_tables_ok && YBY_DATABASE_VERSION === get_option( YBY_Database::VERSION_OPTION, '' ) ? 'ready' : 'attention',
 				'recent_lead_metadata' => $this->recent_lead_metadata(),
 				'management_consistency' => $management_tables_ok ? 'lazy management enabled' : 'attention',
 				'preset_registry' => 'registered by inquiry preset manager',

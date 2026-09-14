@@ -33,8 +33,8 @@ $assert( false !== strpos( $admin_view, 'yby-media-button' ) && false !== strpos
 $assert( false !== strpos( $css, '.yby-global-popup--inquiry' ) && false !== strpos( $css, '--yby-theme-surface' ), 'Global inquiry shell must inherit Brand Theme tokens in a scoped override.' );
 $assert( false !== strpos( $css, '--yby-theme-border' ) && false !== strpos( $css, '--yby-theme-overlay' ), 'Global inquiry controls and overlay must inherit scoped Brand Theme tokens.' );
 $assert( false === strpos( $popup, 'CREATE TABLE' ) && false === strpos( $popup, 'dbDelta' ), 'Popup must not change database schema.' );
-$assert( false !== strpos( $admin, "'Email', 'Email'" ) && false !== strpos( $admin_view, 'nav-tab-wrapper' ), 'Email hub must retain the legacy slug and use WordPress nav tabs.' );
-$assert( false !== strpos( $admin_view, "'floating_inquiry' => '悬浮询盘'" ) && strpos( $admin_view, "'floating_inquiry' => '悬浮询盘'" ) < strpos( $admin_view, "'popup_inquiry' => '弹窗询盘'" ) && false !== strpos( $admin_view, "'shortcode_inquiry' => '短代码询盘', 'shortcode_subscribe' => '短代码订阅', 'bulk_marketing' => '营销群发'" ), 'Email hub must expose seven Chinese tabs with 悬浮询盘 first.' );
+$assert( false !== strpos( $admin, "'Email OS', 'Email OS'" ) && false !== strpos( $admin_view, 'nav-tab-wrapper' ), 'Email OS must retain the legacy page slug and use WordPress nav tabs.' );
+$assert( false !== strpos( $admin_view, "'floating_inquiry' => '悬浮询盘'" ) && strpos( $admin_view, "'floating_inquiry' => '悬浮询盘'" ) < strpos( $admin_view, "'popup_inquiry' => '弹窗询盘'" ) && false !== strpos( $admin_view, "'bulk_marketing' => '营销群发', 'email_templates' => '邮件模板'" ), 'Email OS must expose eight Chinese tabs with 悬浮询盘 first and 邮件模板 last.' );
 $assert( false !== strpos( $admin, 'popup_lottery' ) && false !== strpos( $admin, 'bulk_marketing' ) && false !== strpos( $admin, "'inquiry' => 'popup_inquiry'" ), 'Email hub modes and legacy aliases missing.' );
 $assert( false !== strpos( $popup, 'inquiry_shortcode_custom_css' ) && false !== strpos( $popup, 'subscribe_shortcode_custom_css' ), 'Inquiry and Subscribe shortcode CSS keys must be independent.' );
 $assert( false !== strpos( $admin, 'array_merge( $existing' ), 'Partial tab saves must merge with existing settings.' );
@@ -54,5 +54,5 @@ $assert( false === strpos( $subscribe, 'Subscribe submission is not configured y
 $shortcode_css = file_get_contents( $root . '/public/css/yby-email-shortcodes.css' );
 $assert( false !== strpos( $shortcode_css, 'display:flex' ) && false !== strpos( $shortcode_css, 'flex-direction:column' ) && false !== strpos( $shortcode_css, '[data-yby-subscribe-status]:empty' ), 'Subscribe shortcode CSS must provide horizontal and mobile layouts.' );
 $assert( false !== strpos( $shortcode_css, 'background:var(--yby-theme-surface,#fff)' ) && false !== strpos( $shortcode_css, 'border-radius:var(--yby-theme-border-radius,12px)' ), 'Inquiry shortcode surface and radius contract must remain.' );
-$assert( false !== strpos( $admin_view, '统一管理网站 Email 弹窗、短代码和后续营销能力' ) && false !== strpos( $admin_view, '不会影响弹窗或其他组件' ) && false !== strpos( $admin_view, '不会改变短代码样式' ), 'Email usage and CSS-scope explanations must remain visible.' );
+$assert( false !== strpos( $admin_view, '不会影响弹窗或其他组件' ) && false !== strpos( $admin_view, '不会改变短代码样式' ), 'Email CSS-scope explanations must remain visible.' );
 echo "PASS global-popup-contract-harness\n";

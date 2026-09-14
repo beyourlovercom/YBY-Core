@@ -1,30 +1,37 @@
 # Andy Core v1.5.8 — Email Template OS V1 — Canonical Architecture
 
-Status: ARCHITECTURE FROZEN
+Status: EMAIL OS V1.1 ARCHITECTURE PIVOT FROZEN
 Date: 2026-09-14
 Branch: `feat/andy-core-v1.5.8-email-template`
 Base: `main@b8cf37b5b2cec4b0e3d14be58aae51a0731e2407`
 
 ## 1. Product ownership
 
-Andy Core is the source of truth for email template identity, structured content, variables, global Email VI, preview rendering, publication state and published-version metadata.
+Andy Core Email OS is the unified owner-facing control center for email discovery, governance, Global Email VI, diagnostics, preview/test entry points, and Andy Core-owned native business templates.
+
+WooCommerce remains the runtime/source owner for WooCommerce transactional email. Woo templates are edited in WooCommerce native settings and/or the active Mailonix / legacy customizer surface. Email OS MUST NOT rebuild a competing Woo editor and MUST NOT register WooCommerce outbound runtime override hooks.
+
+Andy Core owns structured payloads, variables, preview rendering, publication state and published-version metadata only for templates whose editor/runtime ownership is explicitly `wordpress` or `andy_core`.
 
 Andy Core does NOT own SMTP credentials, provider transport, queue delivery, retries or inbox deliverability. Those remain in the transport layer (for example WP Mail SMTP or the site's chosen mail provider).
 
-ERP is read-only. ERP may consume published template metadata through the existing authenticated Andy Core Connector contract, but it must not edit templates or render runtime email HTML.
+ERP is read-only. ERP may consume published Andy Core-owned template metadata through the existing authenticated Andy Core Connector contract, but it must not edit templates or render runtime email HTML.
 
 ## 2. Final IA
 
-Location: `Andy Core → Settings → 邮件模板`
+Canonical parent: `Andy Core → Email OS`
 
-Existing Settings tabs remain:
-- 常规
-- 询盘
-- 询盘通知
+Email OS top-level tabs:
+- 悬浮询盘
+- 弹窗询盘
+- 弹窗订阅
+- 弹窗抽奖
+- 短代码询盘
+- 短代码订阅
+- 营销群发
 - 邮件模板
-- WP-API
-- 系统状态
-- Updates
+
+`邮件模板` is no longer a Settings tab. The historical Settings URL remains redirect-only compatibility and must route to the canonical Email OS tab.
 
 Email Template OS internal sections:
 - 概览
@@ -34,7 +41,15 @@ Email Template OS internal sections:
 - Andy Core
 - 发布与测试
 
-The historical Andy Core submenu named `Email` is not the Email Template OS. Its current responsibilities are popup / floating-inquiry settings; it must be renamed or folded into the proper settings area to avoid IA collision.
+Settings remains for system configuration only:
+- 常规
+- 询盘
+- 询盘通知
+- WP-API
+- 系统状态
+- Updates
+
+The existing Email submenu is promoted to `Email OS` and becomes the unified owner-facing hub for website Email surfaces and the Email Template OS. This IA change does not transfer SMTP/transport ownership into the template renderer.
 
 ## 3. Registry contract
 
@@ -51,16 +66,18 @@ Each template identity MUST include at least:
 - `legacy_template_ref` when a legacy mapping exists
 - `capabilities` / supported dynamic sections
 
-WooCommerce registry entries are discovered from the runtime mailer classes so third-party email classes such as Smart Coupon remain visible.
+V1.1 governance metadata SHOULD additionally expose `editor_owner`, `current_editor`, `editor_url`, `preview_test_url`, and health/status diagnostics where safely discoverable.
+
+WooCommerce registry entries are discovered from runtime mailer classes so native Woo and third-party classes such as Smart Coupon remain visible. Discovery does not imply Andy Core runtime ownership. Woo entries are governance/bridge records; WordPress and Andy Core entries may become native editable templates in later gates.
 
 ## 4. Storage model
 
 Database version target: `1.5.0`.
 
-Planned tables follow existing `wp_yby_*` ownership conventions:
+The existing Email OS tables remain valid foundation for Andy Core-owned native templates and immutable published versions. WooCommerce discovery rows do not require copying Woo template HTML into Andy Core and do not make Andy Core the Woo runtime source of truth.
 
 ### `wp_yby_email_templates`
-Stores one mutable template identity / working state.
+Stores one mutable identity / working state for Andy Core-owned editable templates. Provider-discovered templates may be represented as read-only governance metadata without an Andy Core working payload.
 
 Minimum fields:
 - id
@@ -68,13 +85,13 @@ Minimum fields:
 - provider
 - label
 - status (`draft`, `published`, `disabled`)
-- working_payload (LONGTEXT JSON)
+- working_payload (LONGTEXT JSON, nullable for bridge-only providers)
 - published_version_id (nullable)
 - created_at
 - updated_at
 
 ### `wp_yby_email_template_versions`
-Stores immutable published versions.
+Stores immutable published versions for Andy Core-owned editable templates.
 
 Minimum fields:
 - id
@@ -134,20 +151,22 @@ Variable availability is template-context aware; the editor only advertises vari
 
 ## 7. Renderer contract
 
-There is one canonical renderer for:
+There is one canonical Andy Core renderer for Email OS-owned native templates:
 - admin preview
 - test email
-- production runtime
+- production runtime for explicitly Andy Core-owned WordPress / Andy Core adapters only
 
-Preview and runtime MUST NOT use separate markup implementations.
+Preview and runtime for Andy Core-owned templates MUST NOT use separate markup implementations.
 
-The renderer consumes:
+WooCommerce email rendering remains owned by WooCommerce / Mailonix / the active Woo editor path. Email OS may surface provider preview/test links or diagnostics, but the Andy Core renderer MUST NOT replace Woo runtime output.
+
+The Andy Core renderer consumes:
 1. published or draft payload
 2. template runtime context
 3. Global Email VI
 4. component library
 
-Output contract:
+Output contract for native templates:
 - email-client-safe HTML
 - inline critical presentation
 - plain-text fallback where applicable
@@ -176,21 +195,23 @@ Email VI presentation configuration is independent from Case ID / trusted site i
 
 ## 9. Publish state machine
 
-Allowed states:
+Allowed native-template states:
 - Draft
 - Published
 - Disabled
 
-Rules:
+Rules for `wordpress` / `andy_core` editable templates:
 - Draft is editable and never automatically becomes runtime output.
 - Publish creates a new immutable version snapshot and SHA-256 content hash.
-- Published points runtime to the new snapshot atomically.
-- Disabled means Andy Core does not override that template runtime.
+- Published points the native Andy Core adapter to the new snapshot atomically once that adapter gate is explicitly enabled.
+- Disabled means the native Andy Core adapter is not active for that template.
 - Rollback republishes an earlier immutable snapshot as a new current published selection; history is preserved.
+
+WooCommerce provider status is observed and governed, not shadow-published by Andy Core. Email OS must not create an independent Woo publish state that conflicts with WooCommerce / Mailonix.
 
 ## 10. Preview / test contract
 
-Editor layout:
+For Andy Core-owned native templates, the editor layout is:
 - left / center: structured editor
 - right: live preview
 
@@ -198,46 +219,50 @@ Preview modes:
 - Desktop
 - Mobile
 
-Test data supports representative datasets by template type. Test email uses the same renderer and payload, but is clearly marked as a test send and cannot silently publish a draft.
+Test data supports representative datasets by native template type. Test email uses the same Andy Core renderer and payload, but is clearly marked as a test send and cannot silently publish a draft.
+
+For WooCommerce templates, Email OS exposes routing to the authoritative Woo / Mailonix edit and preview/test surfaces plus diagnostics. It does not duplicate the Woo editor.
 
 ## 11. Legacy Customizer coexistence
 
-Default state for new v1.5.8 runtime override: OFF.
+Legacy `woocommerce-email-template-customizer` remains installed and active during V1.1 governance unless a later separately approved migration says otherwise.
 
-Cutover is per-template / per-source, never an all-at-once switch.
+Email OS responsibilities are detection and governance:
+1. detect whether the legacy customizer is active;
+2. identify the current editor / rendering owner where practical;
+3. surface conflicts or ambiguous ownership;
+4. route the owner to WooCommerce / Mailonix / legacy editor surfaces;
+5. never deactivate, bypass, or suppress the legacy plugin during P3/P4.
 
-For a template to be Andy Core-owned in runtime:
-1. a valid Published version must exist;
-2. renderer output must pass contract tests;
-3. the legacy Customizer must be prevented from applying its wrapper/subject/template replacement for that exact template path;
-4. source Woo/WordPress trigger semantics remain unchanged.
+There is no V1.1 requirement to import all Woo HTML into Andy Core, suppress legacy wrappers per Woo template, or perform a forced Woo runtime cutover.
 
-If Andy Core cannot resolve a valid published template, it fails open to the original source path / legacy path rather than sending a broken blank email.
+## 12. WooCommerce bridge contract
 
-The implementation must explicitly prevent dual Header/Footer wrappers and competing subject filters.
+P4 is a governance bridge, not a runtime canary.
 
-## 12. Canary sequence
+WooCommerce Bridge V1 should provide:
+- runtime-discovered Woo template inventory
+- enabled / disabled state where discoverable
+- recipient / audience metadata
+- current editor label (`Woo 原生`, `Mailonix`, `Legacy Customizer`, or diagnostic/unknown)
+- direct `Woo 设置` / provider editor jump links
+- preview/test entry where supported
+- transport / health diagnostics without SMTP credential ownership
 
-First canary group:
-- Woo Customer Processing Order
-- Woo Customer Completed Order
-- Woo Customer New Account
-- Woo Customer Reset Password
+Hard rule: Andy Core MUST NOT register `woocommerce_email_*` runtime replacement hooks or otherwise become the outbound Woo renderer in P4.
 
-After canary UAT, expand to remaining native Woo emails, then Smart Coupon / third-party mailers.
-
-Abandoned-cart/WACV migration is compatibility scope but is not allowed to silently replace a third-party campaign engine; only template rendering assets are migrated where runtime ownership is technically safe.
-
-## 13. WordPress / Andy Core mail paths
+## 13. WordPress / Andy Core native mail paths
 
 WordPress system mail is a separate adapter from Woo mail classes.
 
-V1 adapters include, where applicable:
+V1.1 native adapters may include, where applicable:
 - new user/account notification
 - password reset
 - password / email change notification compatibility
 
-Andy Core business templates include inquiry notifications first, with future KOL / operational messages registered through the same template registry rather than bespoke HTML builders.
+Andy Core business templates include inquiry notifications first, followed by Affiliate / sales-assignment / operational messages registered through the same template registry rather than bespoke HTML builders.
+
+These WordPress / Andy Core templates are the primary scope for the structured editor, immutable publish versions, variable diagnostics and Andy Core renderer.
 
 ## 14. ERP read-only contract
 
@@ -268,36 +293,37 @@ Template content is sanitized per field / block type before storage and again es
 
 ## 16. Migration / rollback
 
-Legacy migration is import-first and non-destructive.
+WooCommerce migration is not required for Email OS V1.1. Woo provider-owned content remains in WooCommerce / Mailonix / the active customizer and is referenced through discovery and bridge metadata.
 
-Migration records source references and maps known legacy placeholders to Andy Core variables. Unsupported structures are flagged for review rather than guessed.
+For WordPress / Andy Core native templates, migration/import is non-destructive: map known placeholders to governed variables, flag unsupported structures for review, and never guess unknown variables.
 
-Legacy `woocommerce-email-template-customizer` remains installed and active until the final cutover/regression gate. No production deactivation occurs during foundation development.
+Legacy `woocommerce-email-template-customizer` remains installed and active during the governance phase. No production deactivation occurs as part of P3/P4.
 
-Rollback principle: disable Andy Core override for a template and restore the previous source/legacy runtime without deleting imported or published history.
+Rollback principle for native Andy Core templates: disable the native adapter and return to the prior WordPress / plugin source path while preserving draft and published history.
 
 ## 17. Delivery roadmap
 
 - P0/P0.5: runtime reconciliation and Local 1.5.7 alignment — COMPLETE
 - P1: IA / Email VI / visual UAT — OWNER PASS
-- P2: registry, schema, renderer, publish, coexistence and ERP contracts — FROZEN by this document
-- P3: Global Email Design System + foundation runtime
-- P4: Woo canary adapters / UAT
-- P4B: remaining Woo + Smart Coupon compatibility
-- P5: WordPress + Andy Core business templates
-- P6: legacy importer / per-template cutover
-- P7: ERP read-only published-template snapshot
-- P8: full regression / release gate
+- P2/P3 Foundation: registry, schema, Email VI and native renderer foundation — COMPLETE / ACTIVATED LOCALLY
+- P3.1: Email OS IA + Architecture Pivot — CURRENT
+- P4: WooCommerce Registry / Native Editor Bridge — NEXT
+- P5: WordPress + Andy Core Native Template Editor
+- P6: Transport / Test / Health Center
+- P7: Legacy Customizer Governance
+- P8: ERP read-only published-template contract
+- P9: full regression / UAT / release gate
 
 ## 18. Architecture Gate
 
-P2 is considered PASS only when implementation preserves all of the following:
-- runtime-discovered registry
-- structured payloads
-- one renderer for preview/test/runtime
-- immutable published versions with SHA-256 hash
-- no global forced cutover
-- no dual legacy/Andy wrappers
-- transport remains outside Email Template OS
+P3.1 is considered PASS only when implementation and tests preserve all of the following:
+- Email OS is the canonical owner-facing hub; `邮件模板` is not a Settings tab
+- runtime-discovered registry remains intact
+- WooCommerce runtime/editor ownership remains with WooCommerce / Mailonix / active provider
+- no WooCommerce outbound runtime override hooks are registered by Andy Core
+- structured payload + one renderer are retained for WordPress / Andy Core native templates
+- immutable published versions with SHA-256 hash remain available for Andy Core-owned templates
+- Legacy Customizer is detected/governed but not disabled or bypassed
+- SMTP transport remains outside Email OS ownership
 - ERP remains read-only
 - Email VI does not alter trusted Case ID identity

@@ -17,6 +17,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class YBY_Email_Design_Settings {
 
+	/** Install approved defaults without overwriting an existing site profile. */
+	public static function install_defaults() {
+		add_option( YBY_Email_Template_Schema::DESIGN_OPTION, self::sanitize( YBY_Email_Template_Schema::design_defaults() ) );
+	}
+
 	/**
 	 * Return stored settings merged with approved defaults.
 	 *

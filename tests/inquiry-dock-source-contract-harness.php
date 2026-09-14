@@ -17,7 +17,7 @@ $assert( false !== strpos( $popup_admin, "\$_GET['tab'] ?? 'floating_inquiry'" )
 $assert( false !== strpos( $popup_admin, "wp_enqueue_style( 'yby-global-inquiry-dock-preview'" ), 'Email page must enqueue dock preview CSS.' );
 $assert( false !== strpos( $view, 'yby_inquiry_dock_submit' ) && false !== strpos( $view, '当前预览' ) && false !== strpos( $view, 'Preview / Test' ) && false !== strpos( $view, 'Custom CSS' ), 'Floating inquiry Email tab controls missing.' );
 $assert( false === strpos( $settings_views, "'inquiry-dock' => 'Inquiry Dock'" ), 'Inquiry Dock must not remain in Settings tabs.' );
-$assert( false !== strpos( $admin, 'redirect_legacy_inquiry_dock' ) && false !== strpos( $admin, "'tab' => 'floating_inquiry'" ) && false !== strpos( $core, "'admin_init', \$admin, 'redirect_legacy_inquiry_dock'" ), 'Legacy Settings URL redirect contract missing.' );
+$assert( false !== strpos( $admin, 'redirect_legacy_inquiry_dock' ) && false !== strpos( $admin, "'inquiry-dock' => 'floating_inquiry'" ) && false !== strpos( $core, "'admin_init', \$admin, 'redirect_legacy_inquiry_dock'" ), 'Legacy Settings URL redirect contract missing.' );
 $assert( preg_match( '/@media\\(min-width:601px\\)\\{[^}]*\\.yby-global-inquiry-dock--desktop-hidden\\{display:none\\}/', $css ) && preg_match( '/@media\\(max-width:600px\\)\\{[^}]*\\.yby-global-inquiry-dock--mobile-hidden\\{display:none\\}/', $css ), 'Visibility must remain breakpoint scoped.' );
 $assert( false !== strpos( $css, '.yby-global-inquiry-dock.yby-global-inquiry-dock--admin-preview{display:block;position:static' ), 'Inline preview contract missing.' );
 $assert( false !== strpos( $js, 'sourcePage = sourcePage || location.pathname' ), 'Inquiry source page pathname fallback missing.' );
