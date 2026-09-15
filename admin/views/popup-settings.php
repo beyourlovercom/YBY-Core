@@ -3,7 +3,7 @@
 $tabs = array(
 	'floating_inquiry' => '悬浮询盘',
 	'popup_inquiry' => '弹窗询盘', 'popup_subscribe' => '弹窗订阅', 'popup_lottery' => '弹窗抽奖',
-	'shortcode_inquiry' => '短代码询盘', 'shortcode_subscribe' => '短代码订阅', 'bulk_marketing' => '营销群发',
+	'shortcode_inquiry' => '短代码询盘', 'shortcode_subscribe' => '短代码订阅', 'bulk_marketing' => '营销群发', 'email_templates' => '邮件模板',
 );
 $dock_theme = YBY_Brand_Profile::get_theme_config();
 $dock_inquiry_background = $dock_settings['inquiry_background_color'] ?: ( sanitize_hex_color( $dock_theme['ctaBackground'] ?? '' ) ?: ( sanitize_hex_color( $dock_theme['primaryColor'] ?? '' ) ?: '#176b35' ) );
@@ -13,9 +13,8 @@ $dock_preview_settings['inquiry_background_color'] = $dock_inquiry_background;
 $dock_preview_settings['inquiry_text_color'] = $dock_inquiry_text;
 ?>
 <div class="wrap">
-	<h1>Email</h1>
-	<p>统一管理网站 Email 弹窗、短代码和后续营销能力。</p>
-	<nav class="nav-tab-wrapper" aria-label="Email">
+	<h1>Email OS</h1>
+	<nav class="nav-tab-wrapper" aria-label="Email OS">
 		<?php foreach ( $tabs as $key => $label ) : ?>
 			<a class="nav-tab <?php echo $tab === $key ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => 'yby-core-popups', 'tab' => $key ), admin_url( 'admin.php' ) ) ); ?>"><?php echo esc_html( $label ); ?></a>
 		<?php endforeach; ?>
@@ -84,6 +83,8 @@ $dock_preview_settings['inquiry_text_color'] = $dock_inquiry_text;
 		if (code) code.textContent = event.target.value.toUpperCase();
 	});
 	</script>
+<?php elseif ( 'email_templates' === $tab ) : ?>
+	<?php ( new YBY_Email_Template_Admin() )->render(); ?>
 <?php elseif ( 'shortcode_inquiry' === $tab || 'shortcode_subscribe' === $tab ) :
 	$shortcode_prefix = 'shortcode_inquiry' === $tab ? 'inquiry' : 'subscribe';
 	$shortcode_key = $shortcode_prefix . '_shortcode_custom_css';

@@ -17,8 +17,8 @@ function snapshot_assert( $condition, $message ) { if ( ! $condition ) { fwrite(
 require_once dirname( __DIR__ ) . '/inc/class-yby-connector.php';
 
 YBY_Connector::register_routes();
-snapshot_assert( 13 === count( $routes ) && isset( $routes[ YBY_Connector::REST_NAMESPACE . '/affiliates/check' ] ) && isset( $routes[ YBY_Connector::REST_NAMESPACE . '/wordpress/users/(?P<user_id>\\d+)/password' ] ), 'Connector must register six GET and seven POST routes.' );
-foreach ( array( '/health', '/snapshot/affiliates', '/snapshot/coupons', '/snapshot/referrals', '/snapshot/payouts', '/snapshot/subscribers' ) as $route ) { snapshot_assert( isset( $routes[ YBY_Connector::REST_NAMESPACE . $route ] ), 'Required GET route is missing: ' . $route ); snapshot_assert( 'GET' === $routes[ YBY_Connector::REST_NAMESPACE . $route ]['methods'], 'Snapshot route must be GET-only: ' . $route ); }
+snapshot_assert( 14 === count( $routes ) && isset( $routes[ YBY_Connector::REST_NAMESPACE . '/affiliates/check' ] ) && isset( $routes[ YBY_Connector::REST_NAMESPACE . '/wordpress/users/(?P<user_id>\\d+)/password' ] ), 'Connector must register seven GET and seven POST routes.' );
+foreach ( array( '/health', '/snapshot/affiliates', '/snapshot/coupons', '/snapshot/referrals', '/snapshot/payouts', '/snapshot/subscribers', '/snapshot/email-templates' ) as $route ) { snapshot_assert( isset( $routes[ YBY_Connector::REST_NAMESPACE . $route ] ), 'Required GET route is missing: ' . $route ); snapshot_assert( 'GET' === $routes[ YBY_Connector::REST_NAMESPACE . $route ]['methods'], 'Snapshot route must be GET-only: ' . $route ); }
 
 $invalid = YBY_Connector::snapshot( 'affiliates', new Snapshot_Request( '/andy-core/v1/erp/snapshot/affiliates', array( 'limit' => 101 ) ) );
 snapshot_assert( is_wp_error( $invalid ) && 'VALIDATION_FAILED' === $invalid->code, 'Out-of-bounds limit must fail validation.' );
@@ -35,7 +35,7 @@ $absent = YBY_Connector::snapshot( 'subscribers', new Snapshot_Request( '/andy-c
 snapshot_assert( is_wp_error( $absent ) && 'PROVIDER_UNAVAILABLE' === $absent->code, 'Subscriber tables absence must be graceful.' );
 
 $statuses = YBY_Connector::endpoint_statuses();
-snapshot_assert( 12 === count( $statuses ) && 'GET' === $statuses['subscriber_snapshot']['method'], 'Connector must expose exactly twelve contract rows including subscribers and password reset.' );
+snapshot_assert( 13 === count( $statuses ) && 'GET' === $statuses['subscriber_snapshot']['method'], 'Connector must expose exactly thirteen contract rows including subscribers and password reset.' );
 foreach ( array( 'affiliate_provision', 'affiliate_status' ) as $name ) { snapshot_assert( false === $statuses[ $name ]['available'] && 'Provider Missing' === $statuses[ $name ]['status'], 'M5 affiliate mutations must report provider absence.' ); }
 snapshot_assert( 'Provider Missing' === $statuses['payout_complete']['status'], 'Payout completion must report provider absence.' );
 $source = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-connector.php' );

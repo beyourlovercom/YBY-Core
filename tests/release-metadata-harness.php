@@ -1,5 +1,5 @@
 <?php
-/** Release metadata contract for Andy Core v1.5.7. */
+/** Published v1.5.7 release metadata + v1.5.8 development database contract. */
 $root = dirname( __DIR__ );
 $read = static function ( $file ) use ( $root ) {
 	$path = $root . '/' . $file;
@@ -22,11 +22,11 @@ $verifier    = $read( 'inc/class-yby-update-verifier.php' );
 
 $assert( false !== strpos( $plugin, 'Version:           1.5.7' ), 'PLUGIN_HEADER_VERSION_GATE failed.' );
 $assert( false !== strpos( $plugin, "define( 'YBY_CORE_VERSION', '1.5.7' );" ), 'CORE_CONSTANT_VERSION_GATE failed.' );
-$assert( false !== strpos( $plugin, "define( 'YBY_DATABASE_VERSION', '1.4.0' );" ), 'DATABASE_VERSION_GATE failed.' );
+$assert( false !== strpos( $plugin, "define( 'YBY_DATABASE_VERSION', '1.5.0' );" ), 'DEVELOPMENT_DATABASE_VERSION_GATE failed.' );
 $assert( false !== strpos( $version, 'Stable Version: 1.5.7' ) && false !== strpos( $version, 'Database Version: 1.4.0' ), 'VERSION_MD_GATE failed.' );
 $assert( false !== strpos( $readme, 'Product version: `1.5.7`' ) && false !== strpos( $readme, 'Database version: `1.4.0`' ), 'README_VERSION_GATE failed.' );
 $assert( false !== strpos( $wp_readme, 'Stable tag: 1.5.7' ) && false !== strpos( $wp_readme, 'Tested up to: 7.1' ), 'README_METADATA_GATE failed.' );
-$assert( false !== strpos( $changelog, '## v1.5.7 - 2026-09-10' ), 'CHANGELOG_RELEASE_GATE failed.' );
+$assert( false !== strpos( $changelog, '## v1.5.7 - 2026-09-11' ), 'CHANGELOG_RELEASE_GATE failed.' );
 
 foreach ( array( 'RELEASE_NOTES_v1.5.7.md', 'UPGRADE_GUIDE_v1.5.7.md', 'ROLLBACK_GUIDE_v1.5.7.md' ) as $file ) {
 	$assert( is_file( $root . '/' . $file ), 'Release/WP documentation missing: ' . $file );

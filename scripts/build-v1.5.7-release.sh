@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+script_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+root_dir="${RELEASE_SOURCE_DIR:-${script_root}}"
 version="1.5.7"
 database_version="1.4.0"
 signing_public_key_b64="LcPq5x+fNa96aC+cXyC1ZbwRoGXCihF9YSG+iMHtjKU="
 signing_secret="${ANDY_CORE_UPDATE_SIGNING_SECRET:-}"
 output_dir="${RELEASE_OUTPUT_DIR:-${root_dir}/releases/v${version}}"
 package_name="andy-core-v${version}.zip"
-source_ref="${SOURCE_BRANCH:-${GITHUB_HEAD_REF:-$(git -C "${root_dir}" branch --show-current)}}"
-source_commit="${SOURCE_COMMIT:-$(git -C "${root_dir}" rev-parse HEAD)}"
+source_ref="${SOURCE_BRANCH:-${GITHUB_HEAD_REF:-$(git -C "${script_root}" branch --show-current)}}"
+source_commit="${SOURCE_COMMIT:-$(git -C "${script_root}" rev-parse HEAD)}"
 build_context="${BUILD_CONTEXT:-RELEASE_CANDIDATE}"
 php_bin="${PHP_BIN:-php}"
-repository_remote="$(git -C "${root_dir}" remote get-url origin 2>/dev/null || echo UNKNOWN)"
+repository_remote="$(git -C "${script_root}" remote get-url origin 2>/dev/null || echo UNKNOWN)"
 build_date_utc="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 
 case "${build_context}" in
@@ -47,7 +48,7 @@ while IFS= read -r -d '' file; do
 done < <(find "${stage_dir}/yby-core" -name '*.php' -print0)
 php_lint_status='PASS'
 
-git -C "${root_dir}" diff --check
+git -C "${script_root}" diff --check
 git_diff_check_status='PASS'
 file_count="$(find "${stage_dir}/yby-core" -type f | wc -l | tr -d ' ')"
 
