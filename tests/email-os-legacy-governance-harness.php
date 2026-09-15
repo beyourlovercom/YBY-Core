@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if ( ! defined( 'ABSPATH' ) ) { define( 'ABSPATH', __DIR__ ); }
 define( 'VIWEC_VER', '1.2.14' );
 define( 'WACVP_VERSION', '1.1.7' );

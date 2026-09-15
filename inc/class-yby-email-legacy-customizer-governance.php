@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Read-only governance scanner for legacy Woo email customizers.
  *
