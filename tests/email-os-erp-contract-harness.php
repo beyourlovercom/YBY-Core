@@ -72,7 +72,7 @@ $core = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-core.php' );
 $assert( false !== strpos( $core, "class-yby-email-erp-contract.php" ), 'contract bootstrap missing' );
 
 $connector = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-connector.php' );
-$assert( false === strpos( $connector, '/snapshot/email-templates' ), 'P8A must not expose REST route yet' );
+$assert( false !== strpos( $connector, "'/snapshot/email-templates'" ) && false === strpos( $connector, "'/snapshot/email-templates', array( 'methods' => 'POST'" ), 'P8B must expose the frozen resource as GET-only' );
 
 $doc = file_get_contents( dirname( __DIR__ ) . '/docs/v1.5.8/ANDY-CORE-EMAIL-OS-P8A-ERP-READONLY-CONTRACT.md' );
 foreach ( array(

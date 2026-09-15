@@ -309,6 +309,8 @@ P7 governance rule: VillaTheme / Legacy Customizer remains active and owns Woo r
 
 P8A ERP contract rule: ERP consumes only a read-only metadata projection of valid immutable Published Snapshots for native providers (`wordpress`, `andy_core`). The frozen V1 fields are `template_key`, `provider`, `label`, `status`, `runtime_enabled`, `published_version`, `content_hash_sha256`, and `published_at`. Draft/content payloads, Owner Notes, recipients, editor URLs and transport secrets are forbidden. WooCommerce is excluded from this Published Snapshot resource because Woo / VillaTheme remains its source of truth. P8B may expose only a signed authenticated GET resource through the existing `andy-core/v1/erp` Connector namespace.
 
+P8B Connector rule: the frozen projection is exposed only as `GET /wp-json/andy-core/v1/erp/snapshot/email-templates` behind the existing Connector HMAC v1 authentication. The outer Connector contract remains version `1`; the resource reports `email-os-published-v1`, supports only bounded read pagination/filtering, and introduces no template mutation or send route.
+
 ## 17. Delivery roadmap
 
 - P0/P0.5: runtime reconciliation and Local 1.5.7 alignment — COMPLETE
