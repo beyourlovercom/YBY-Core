@@ -311,6 +311,20 @@ P8A ERP contract rule: ERP consumes only a read-only metadata projection of vali
 
 P8B Connector rule: the frozen projection is exposed only as `GET /wp-json/andy-core/v1/erp/snapshot/email-templates` behind the existing Connector HMAC v1 authentication. The outer Connector contract remains version `1`; the resource reports `email-os-published-v1`, supports only bounded read pagination/filtering, and introduces no template mutation or send route.
 
+### Andy Core 1.5.8 final integration gate - Woo completed-delivered
+
+PR #40 `feat(woocommerce): register completed delivered status` is merged to `main` at `ac1c234be5de8881bdb483568a774989f59d2c3f` and is mandatory content for the final Andy Core 1.5.8 release. Before the final 1.5.8 merge / release, the Email OS branch MUST sync the latest `main` and MUST preserve PR #40 without overwrite or rollback.
+
+Release/UAT requirements:
+- do not install or use tag `v1.5.4-hotfix-completed-delivered-20260915`;
+- final 1.5.8 build must contain `completed-delivered / 完结&送达`;
+- run final 1.5.8 Woo REST UAT on `localdev.beyourlover.com`;
+- verify `/wp-json/wc/v3/orders/statuses` exposes the expected ordered status segment `completed → completed-delivered → cancelled`;
+- only after this 1.5.8 UAT PASS may the unified build be released to WWW;
+- PR #40 implementation must not be overwritten, reverted, shadowed or replaced by the Email OS integration.
+
+This is a P9 release gate, not a separate hotfix deployment path.
+
 ## 17. Delivery roadmap
 
 - P0/P0.5: runtime reconciliation and Local 1.5.7 alignment — COMPLETE
@@ -323,9 +337,9 @@ P8B Connector rule: the frozen projection is exposed only as `GET /wp-json/andy-
 - P6: Transport / Test / Health Center — COMPLETE
 - P7: Legacy Customizer Governance — COMPLETE
 - P8A: ERP read-only published-template contract freeze — COMPLETE
-- P8B: authenticated Connector GET snapshot — NEXT
-- P8C: ERP read-only consumer
-- P9: full regression / UAT / release gate
+- P8B: authenticated Connector GET snapshot - COMPLETE
+- P8C: ERP read-only consumer - CURRENT
+- P9: full regression / UAT / release gate, including PR #40 completed-delivered integration
 
 ## 18. Architecture Gate
 
