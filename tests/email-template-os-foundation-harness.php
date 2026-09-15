@@ -80,7 +80,8 @@ $bootstrap = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-core.php' )
 $assert( false !== strpos( $bootstrap, "class-yby-email-template-registry.php" ), 'registry bootstrap wiring missing' );
 $assert( false !== strpos( $bootstrap, "class-yby-email-template-renderer.php" ), 'renderer bootstrap wiring missing' );
 $assert( false !== strpos( $bootstrap, "admin/class-yby-email-template-admin.php" ), 'Email Template admin bootstrap wiring missing' );
-$assert( false === strpos( $bootstrap, 'woocommerce_email_' ) && false === strpos( $bootstrap, 'wp_new_user_notification_email' ), 'Woo runtime override must remain absent under Email OS V1.1 bridge architecture' );
+$assert( false === strpos( $bootstrap, 'woocommerce_email_' ), 'Woo runtime override must remain absent under Email OS V1.1 bridge architecture' );
+$assert( false !== strpos( $bootstrap, 'wp_new_user_notification_email' ) && false !== strpos( $bootstrap, 'retrieve_password_notification_email' ), 'WordPress native runtime adapter hooks missing' );
 $database = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-database.php' );
 $assert( false !== strpos( $database, 'yby_email_templates' ) && false !== strpos( $database, 'yby_email_template_versions' ), 'Email Template OS DB ownership missing' );
 $admin = file_get_contents( dirname( __DIR__ ) . '/admin/class-yby-admin.php' );

@@ -29,11 +29,20 @@ class YBY_Email_Notification_Provider {
 	 */
 	public function sendLeadNotification( $lead ) {
 		$recipient = YBY_Config::get_lead_notification_primary_recipient_email();
-		$subject   = $this->build_subject( $lead );
-		$html      = $this->build_html( $lead );
-		$headers   = $this->build_headers( $lead );
+		$runtime = new YBY_Email_Template_Runtime();
+		$published = $runtime->render_inquiry_notification( $lead );
 
-		$this->current_alt_body = $this->build_plain_text( $lead );
+		if ( ! empty( $published['active'] ) ) {
+			$subject = (string) $published['subject'];
+			$html = (string) $published['html'];
+			$this->current_alt_body = (string) $published['text'];
+		} else {
+			$subject = $this->build_subject( $lead );
+			$html = $this->build_html( $lead );
+			$this->current_alt_body = $this->build_plain_text( $lead );
+		}
+
+		$headers = $this->build_headers( $lead );
 		add_action( 'phpmailer_init', array( $this, 'apply_alt_body' ) );
 
 		try {

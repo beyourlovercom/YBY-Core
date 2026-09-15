@@ -38,6 +38,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-store.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-design-settings.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-registry.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-renderer.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-subject-renderer.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-notification-provider.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-notification-manager.php';
@@ -108,6 +109,9 @@ class YBY_Core {
 		$this->loader->add_action( 'plugins_loaded', 'YBY_Activator', 'sync_capabilities', 1, 0 );
 		$this->loader->add_action( 'plugins_loaded', $database, 'maybe_upgrade', 5, 0 );
 		$this->loader->add_action( 'plugins_loaded', 'YBY_Email_Design_Settings', 'install_defaults', 6, 0 );
+		$runtime = new YBY_Email_Template_Runtime();
+		$this->loader->add_filter( 'wp_new_user_notification_email', $runtime, 'filter_new_user_notification_email', 10, 3 );
+		$this->loader->add_filter( 'retrieve_password_notification_email', $runtime, 'filter_reset_password_notification_email', 10, 4 );
 	}
 
 	/**

@@ -17,6 +17,7 @@ class YBY_Email_Template_Admin {
 	const SECTION_WORDPRESS = 'wordpress';
 	const SECTION_ANDY_CORE = 'andy-core';
 	const SECTION_RELEASE = 'release-test';
+	const OWNER_NOTES_OPTION = 'yby_email_template_owner_notes';
 
 	public static function sections() {
 		return array(
@@ -43,6 +44,11 @@ class YBY_Email_Template_Admin {
 		$store = new YBY_Email_Template_Store();
 		$renderer = new YBY_Email_Template_Renderer();
 		$native_notice = array();
+		$registry_notice = array();
+
+		if ( isset( $_POST['yby_email_registry_note_action'] ) ) {
+			$registry_notice = $this->handle_registry_note_action( $templates );
+		}
 
 		if ( isset( $_POST['yby_email_template_action'] ) ) {
 			$native_notice = $this->handle_native_action( $templates, $store, $renderer );
@@ -71,11 +77,49 @@ class YBY_Email_Template_Admin {
 			);
 		}
 
+		$owner_notes = $this->owner_notes();
+
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/email-template-settings.php';
 	}
 
-	protected function native_provider_for_section( $section ) {
-		if ( self::SECTION_WORDPRESS === $section ) { return 'wordpress'; }
+	public function owner_notes() {
+		$notes = get_option( self::OWNER_NOTES_OPTION, array() );
+		return is_array( $notes ) ? $notes : array();
+	}
+
+	public function template_editor_url( $identity, $base_url ) {
+		$provider = (string) ( $identity['provider'] ?? '' );
+		if ( 'woocommerce' === $provider ) {
+			return (string) ( $identity['editor_url'] ?: ( $identity['settings_url'] ?? '' ) );
+		}
+		$section = 'wordpress' === $provider ? self::SECTION_WORDPRESS : ( 'andy_core' === $provider ? self::SECTION_ANDY_CORE : '' );
+		if ( '' === $section ) {
+			return '';
+		}
+		return add_query_arg( array( 'email_section' => $section, 'template_key' => (string) ( $identity['template_key'] ?? '' ) ), $base_url );
+	}
+
+	protected function handle_registry_note_action( $templates ) {
+		if ( ! current_user_can( 'andy_core_settings_manage' ) ) {
+			return array( 'type' => 'error', 'message' => 'Permission denied.' );
+		}
+		check_admin_referer( 'yby_email_registry_note', 'yby_email_registry_note_nonce' );
+		$template_key = isset( $_POST['registry_template_key'] ) ? sanitize_text_field( wp_unslash( $_POST['registry_template_key'] ) ) : '';
+		if ( ! isset( $templates[ $template_key ] ) ) {
+			return array( 'type' => 'error', 'message' => 'Invalid template.' );
+		}
+		$note = isset( $_POST['registry_note'] ) ? sanitize_text_field( wp_unslash( $_POST['registry_note'] ) ) : '';
+		$notes = $this->owner_notes();
+		if ( '' === $note ) {
+			unset( $notes[ $template_key ] );
+		} else {
+			$notes[ $template_key ] = $note;
+		}
+		update_option( self::OWNER_NOTES_OPTION, $notes, false );
+		return array( 'type' => 'success', 'message' => '备注已保存。' );
+	}
+
+	protected function native_provider_for_section( $section ) {		if ( self::SECTION_WORDPRESS === $section ) { return 'wordpress'; }
 		if ( self::SECTION_ANDY_CORE === $section ) { return 'andy_core'; }
 		return '';
 	}

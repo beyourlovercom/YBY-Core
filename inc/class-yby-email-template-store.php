@@ -35,6 +35,40 @@ class YBY_Email_Template_Store {
 		);
 	}
 
+	public function get_published_snapshot( $identity ) {
+		if ( ! $this->valid_identity( $identity ) ) {
+			return array();
+		}
+
+		$row = $this->find_row( (string) $identity['template_key'] );
+		if ( ! $row || YBY_Email_Template_Schema::STATUS_PUBLISHED !== (string) $row['status'] || empty( $row['published_version_id'] ) ) {
+			return array();
+		}
+
+		$version = $this->find_version( (int) $row['published_version_id'] );
+		if ( ! $version || (int) $version['template_id'] !== (int) $row['id'] ) {
+			return array();
+		}
+
+		$snapshot = (string) $version['payload_snapshot'];
+		if ( '' === $snapshot || ! hash_equals( (string) $version['content_hash_sha256'], hash( 'sha256', $snapshot ) ) ) {
+			return array();
+		}
+
+		$payload = json_decode( $snapshot, true );
+		if ( ! is_array( $payload ) ) {
+			return array();
+		}
+
+		return array(
+			'payload'        => $this->sanitize_payload( $payload ),
+			'version_id'     => (int) $version['id'],
+			'version_number' => (int) $version['version_number'],
+			'content_hash'   => (string) $version['content_hash_sha256'],
+			'published_at'   => (string) $version['published_at'],
+		);
+	}
+
 	public function save_draft( $identity, $payload ) {
 		if ( ! $this->valid_identity( $identity ) ) {
 			return array( 'success' => false, 'error' => 'invalid_native_identity' );

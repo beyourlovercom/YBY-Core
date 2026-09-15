@@ -301,14 +301,17 @@ Legacy `woocommerce-email-template-customizer` remains installed and active duri
 
 Rollback principle for native Andy Core templates: disable the native adapter and return to the prior WordPress / plugin source path while preserving draft and published history.
 
+P5B runtime rule: Draft content is never an outbound source. Only a valid immutable Published Snapshot with matching SHA-256 may drive WordPress / Andy Core native mail. Missing, disabled, invalid or hash-mismatched snapshots fail closed to the pre-existing WordPress / Andy Core mail path. WooCommerce remains excluded from native runtime adapters.
+
 ## 17. Delivery roadmap
 
 - P0/P0.5: runtime reconciliation and Local 1.5.7 alignment — COMPLETE
 - P1: IA / Email VI / visual UAT — OWNER PASS
 - P2/P3 Foundation: registry, schema, Email VI and native renderer foundation — COMPLETE / ACTIVATED LOCALLY
-- P3.1: Email OS IA + Architecture Pivot — CURRENT
-- P4: WooCommerce Registry / Native Editor Bridge — NEXT
-- P5: WordPress + Andy Core Native Template Editor
+- P3.1: Email OS IA + Architecture Pivot — COMPLETE
+- P4: WooCommerce Registry / Native Editor Bridge — COMPLETE
+- P5A: WordPress + Andy Core Native Template Editor / immutable publish — COMPLETE
+- P5B: WordPress + Andy Core Published Snapshot Runtime Adapter — CURRENT
 - P6: Transport / Test / Health Center
 - P7: Legacy Customizer Governance
 - P8: ERP read-only published-template contract

@@ -96,4 +96,8 @@ $assert( ! empty( $second['success'] ) && 2 === (int) $second['version_number'],
 $assert( 2 === count( $wpdb->versions ), 'Immutable version history was not preserved' );
 $assert( $v1_hash !== $second['content_hash_sha256'], 'Content hash did not change for changed payload' );
 $assert( 64 === strlen( $second['content_hash_sha256'] ), 'SHA-256 length invalid' );
+$published = $store->get_published_snapshot( $identity );
+$assert( 2 === (int) $published['version_number'] && 'Updated {user_login}' === $published['payload']['subject'], 'Runtime snapshot did not use published v2' );
+$wpdb->versions[1]['payload_snapshot'] = wp_json_encode( array( 'subject' => 'TAMPERED' ) );
+$assert( array() === $store->get_published_snapshot( $identity ), 'Tampered published snapshot must fail closed' );
 echo "PASS email-os-native-store-harness\n";
