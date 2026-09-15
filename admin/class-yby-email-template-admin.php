@@ -43,7 +43,9 @@ class YBY_Email_Template_Admin {
 		$sections = self::sections();
 		$store = new YBY_Email_Template_Store();
 		$renderer = new YBY_Email_Template_Renderer();
+		$health_center = new YBY_Email_Health_Center();
 		$native_notice = array();
+		$test_notice = array();
 		$registry_notice = array();
 
 		if ( isset( $_POST['yby_email_registry_note_action'] ) ) {
@@ -52,6 +54,10 @@ class YBY_Email_Template_Admin {
 
 		if ( isset( $_POST['yby_email_template_action'] ) ) {
 			$native_notice = $this->handle_native_action( $templates, $store, $renderer );
+		}
+
+		if ( isset( $_POST['yby_email_test_action'] ) ) {
+			$test_notice = $this->handle_test_action( $templates, $store, $renderer, $health_center );
 		}
 
 		$native_provider = $this->native_provider_for_section( $section );
@@ -78,6 +84,11 @@ class YBY_Email_Template_Admin {
 		}
 
 		$owner_notes = $this->owner_notes();
+		$transport_health = $health_center->transport_status();
+		$native_health = $health_center->native_health( $templates, $store );
+		$last_test = $health_center->get_last_test();
+		$current_user = wp_get_current_user();
+		$test_recipient_default = is_object( $current_user ) ? sanitize_email( (string) $current_user->user_email ) : '';
 
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/email-template-settings.php';
 	}
@@ -117,6 +128,18 @@ class YBY_Email_Template_Admin {
 		}
 		update_option( self::OWNER_NOTES_OPTION, $notes, false );
 		return array( 'type' => 'success', 'message' => '备注已保存。' );
+	}
+
+
+	protected function handle_test_action( $templates, $store, $renderer, $health_center ) {
+		if ( ! current_user_can( 'andy_core_settings_manage' ) ) {
+			return array( 'success' => false, 'message' => 'Permission denied.', 'error_code' => 'permission_denied' );
+		}
+		check_admin_referer( 'yby_email_test_send', 'yby_email_test_nonce' );
+		$template_key = isset( $_POST['test_template_key'] ) ? sanitize_text_field( wp_unslash( $_POST['test_template_key'] ) ) : '';
+		$recipient = isset( $_POST['test_recipient'] ) ? sanitize_email( wp_unslash( $_POST['test_recipient'] ) ) : '';
+		$identity = isset( $templates[ $template_key ] ) ? $templates[ $template_key ] : array();
+		return $health_center->send_test( $identity, $recipient, $store, $renderer );
 	}
 
 	protected function native_provider_for_section( $section ) {		if ( self::SECTION_WORDPRESS === $section ) { return 'wordpress'; }

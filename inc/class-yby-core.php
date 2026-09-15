@@ -38,6 +38,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-store.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-design-settings.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-registry.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-renderer.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-health-center.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-subject-renderer.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-notification-provider.php';

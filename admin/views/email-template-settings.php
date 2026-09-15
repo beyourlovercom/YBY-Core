@@ -188,13 +188,13 @@ $base_url = add_query_arg(
 				<?php else : ?>
 					<div class="notice notice-error inline"><p><?php echo esc_html( implode( ', ', (array) ( $preview['diagnostics'] ?? array( 'Preview unavailable' ) ) ) ); ?></p></div>
 				<?php endif; ?>
-				<p class="description"><?php esc_html_e( 'Draft 仅用于编辑与预览，不影响实际发信；Published 版本才进入 Native Runtime。真实测试发送属于 P6 Transport/Test Gate。', 'yby-core' ); ?></p>
+				<p class="description"><?php esc_html_e( 'Draft 仅用于编辑与预览，不影响实际发信；Published 版本才进入 Native Runtime。真实测试发送请前往“发布与测试”。', 'yby-core' ); ?></p>
 			</section>
 			<?php endif; ?>
 		</div>
 
-	<?php else : ?>
-		<div class="yby-email-os__panel"><h3><?php echo esc_html( $sections[ $section ] ); ?></h3><p><?php esc_html_e( '发布与测试总览将在后续 Gate 汇总 Native Publish、Transport、Test 与 Health 状态。', 'yby-core' ); ?></p></div>
+	<?php elseif ( YBY_Email_Template_Admin::SECTION_RELEASE === $section ) : ?>
+		<?php include YBY_CORE_PLUGIN_DIR . 'admin/views/email-template-health-center.php'; ?>
 	<?php endif; ?>
 </div>
 
