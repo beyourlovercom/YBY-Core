@@ -25,6 +25,63 @@ class YBY_Connector {
 	const SNAPSHOT_MAX_LIMIT = 100;
 	const REST_NAMESPACE = 'andy-core/v1/erp';
 
+	/**
+	 * Register connector-owned WooCommerce order status hooks.
+	 */
+	public function __construct() {
+		add_action( 'init', array( __CLASS__, 'register_completed_delivered_status' ), 10, 0 );
+		add_filter( 'wc_order_statuses', array( __CLASS__, 'add_completed_delivered_status' ), 10, 1 );
+	}
+
+	/**
+	 * Register the ERP completed-and-delivered WooCommerce order status.
+	 *
+	 * @return void
+	 */
+	public static function register_completed_delivered_status() {
+		register_post_status(
+			'wc-completed-delivered',
+			array(
+				'label'                     => 'Completed & Delivered / 完结&送达',
+				'public'                    => true,
+				'exclude_from_search'       => false,
+				'show_in_admin_all_list'    => true,
+				'show_in_admin_status_list' => true,
+				'label_count'               => _n_noop(
+					'Completed & Delivered / 完结&送达 <span class="count">(%s)</span>',
+					'Completed & Delivered / 完结&送达 <span class="count">(%s)</span>',
+					'yby-core'
+				),
+			)
+		);
+	}
+
+	/**
+	 * Add the status to WooCommerce's order-status list.
+	 *
+	 * @param array<string, string> $statuses Existing order statuses.
+	 * @return array<string, string>
+	 */
+	public static function add_completed_delivered_status( $statuses ) {
+		$updated_statuses = array();
+		$inserted         = false;
+
+		foreach ( $statuses as $status_key => $status_label ) {
+			$updated_statuses[ $status_key ] = $status_label;
+
+			if ( 'wc-completed' === $status_key ) {
+				$updated_statuses['wc-completed-delivered'] = 'Completed & Delivered / 完结&送达';
+				$inserted                                  = true;
+			}
+		}
+
+		if ( ! $inserted ) {
+			$updated_statuses['wc-completed-delivered'] = 'Completed & Delivered / 完结&送达';
+		}
+
+		return $updated_statuses;
+	}
+
 	public static function defaults() {
 		return array(
 			'enabled'        => false,
