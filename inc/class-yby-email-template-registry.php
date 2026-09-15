@@ -42,7 +42,8 @@ class YBY_Email_Template_Registry {
 	}
 
 	/**
-	 * Discover WooCommerce and third-party mailer classes at runtime.
+	 * Discover WooCommerce mail identities and their current editor ownership.
+	 * Email OS is governance-only for WooCommerce; no runtime hooks are registered.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
@@ -52,47 +53,75 @@ class YBY_Email_Template_Registry {
 		}
 
 		$emails = WC()->mailer()->get_emails();
-
 		if ( ! is_array( $emails ) ) {
 			return array();
 		}
 
 		$result = array();
-
 		foreach ( $emails as $email ) {
 			if ( ! is_object( $email ) ) {
 				continue;
 			}
 
 			$id = isset( $email->id ) ? sanitize_key( (string) $email->id ) : '';
-
 			if ( '' === $id ) {
 				continue;
 			}
 
-			$label = isset( $email->title ) ? sanitize_text_field( (string) $email->title ) : $id;
-			$description = isset( $email->description ) ? sanitize_text_field( (string) $email->description ) : '';
-			$enabled = method_exists( $email, 'is_enabled' ) ? (bool) $email->is_enabled() : true;
 			$is_customer = method_exists( $email, 'is_customer_email' ) ? (bool) $email->is_customer_email() : false;
+			$recipient = $is_customer ? 'Customer' : ( method_exists( $email, 'get_recipient' ) ? (string) $email->get_recipient() : '' );
+			$viwec_id = $this->find_viwec_template_id( $id );
+			$woo_url = admin_url( 'admin.php?page=wc-settings&tab=email&section=' . rawurlencode( strtolower( $id ) ) );
+			$editor_url = $viwec_id ? admin_url( 'post.php?post=' . $viwec_id . '&action=edit' ) : $woo_url;
 
-			$result[] = $this->normalize_item(
-				array(
-					'template_key'       => 'woocommerce:' . $id,
-					'provider'           => 'woocommerce',
-					'source_id'          => $id,
-					'source_class'       => get_class( $email ),
-					'audience'           => $is_customer ? 'customer' : 'admin',
-					'label'              => $label,
-					'description'        => $description,
-					'runtime_available'  => true,
-					'runtime_enabled'    => $enabled,
-					'legacy_template_ref'=> '',
-					'capabilities'       => array( 'subject', 'preheader', 'body', 'cta', 'dynamic_sections' ),
-				)
-			);
+			$result[] = $this->normalize_item( array(
+				'template_key' => 'woocommerce:' . $id,
+				'provider' => 'woocommerce',
+				'source_id' => $id,
+				'source_class' => get_class( $email ),
+				'audience' => $is_customer ? 'customer' : 'admin',
+				'label' => isset( $email->title ) ? (string) $email->title : $id,
+				'description' => isset( $email->description ) ? (string) $email->description : '',
+				'runtime_available' => true,
+				'runtime_enabled' => method_exists( $email, 'is_enabled' ) ? (bool) $email->is_enabled() : true,
+				'is_manual' => method_exists( $email, 'is_manual' ) ? (bool) $email->is_manual() : false,
+				'recipient' => $recipient,
+
+				'content_type' => method_exists( $email, 'get_content_type' ) ? (string) $email->get_content_type() : '',
+				'current_editor' => $viwec_id ? 'villatheme' : 'woocommerce',
+				'editor_label' => $viwec_id ? 'VillaTheme Customizer' : 'WooCommerce 原生',
+				'editor_url' => $editor_url,
+				'settings_url' => $woo_url,
+				'preview_test_url' => $editor_url,
+				'legacy_template_ref' => $viwec_id ? (string) $viwec_id : '',
+				'capabilities' => array( 'subject', 'preheader', 'body', 'cta', 'dynamic_sections' ),
+			) );
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Resolve the active VillaTheme template for one Woo email id.
+	 *
+	 * @param string $email_id Woo email id.
+	 * @return int
+	 */
+	protected function find_viwec_template_id( $email_id ) {
+		if ( ! post_type_exists( 'viwec_template' ) ) {
+			return 0;
+		}
+
+		$posts = get_posts( array(
+			'numberposts' => 1,
+			'post_type' => 'viwec_template',
+			'post_status' => 'publish',
+			'meta_key' => 'viwec_settings_type',
+			'meta_value' => sanitize_key( $email_id ),
+			'fields' => 'ids',
+		) );
+
+		return empty( $posts ) ? 0 : absint( $posts[0] );
 	}
 
 	/**
@@ -170,6 +199,14 @@ class YBY_Email_Template_Registry {
 			'description'         => sanitize_text_field( (string) ( $item['description'] ?? '' ) ),
 			'runtime_available'   => ! empty( $item['runtime_available'] ),
 			'runtime_enabled'     => ! empty( $item['runtime_enabled'] ),
+			'is_manual'           => ! empty( $item['is_manual'] ),
+			'recipient'           => sanitize_text_field( (string) ( $item['recipient'] ?? '' ) ),
+			'content_type'        => sanitize_text_field( (string) ( $item['content_type'] ?? '' ) ),
+			'current_editor'      => sanitize_key( (string) ( $item['current_editor'] ?? '' ) ),
+			'editor_label'        => sanitize_text_field( (string) ( $item['editor_label'] ?? '' ) ),
+			'editor_url'          => esc_url_raw( (string) ( $item['editor_url'] ?? '' ) ),
+			'settings_url'        => esc_url_raw( (string) ( $item['settings_url'] ?? '' ) ),
+			'preview_test_url'    => esc_url_raw( (string) ( $item['preview_test_url'] ?? '' ) ),
 			'legacy_template_ref' => sanitize_text_field( (string) ( $item['legacy_template_ref'] ?? '' ) ),
 			'capabilities'        => array_values( array_unique( array_map( 'sanitize_key', (array) ( $item['capabilities'] ?? array() ) ) ) ),
 		);
