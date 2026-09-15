@@ -305,6 +305,8 @@ P5B runtime rule: Draft content is never an outbound source. Only a valid immuta
 
 P6 transport/test rule: SMTP/API/OAuth credentials remain exclusively owned by the active transport provider. Email OS may read only non-secret provider health metadata. Native test sends require an explicit authorized click, use only an immutable Published Snapshot + Sample Context + the canonical Renderer, prefix the subject with [Email OS Test], and never persist the recipient address. WooCommerce test sending remains owned by WooCommerce / the active Woo editor.
 
+P7 governance rule: VillaTheme / Legacy Customizer remains active and owns Woo runtime. Email OS performs read-only discovery of published mappings, default templates, rule-driven variants and unmatched types. Multiple published templates for one Woo email are not automatically conflicts because VillaTheme may select them by country, language, product, payment or price rules. Email OS MUST NOT delete, unpublish, reorder or rewrite Legacy templates during governance.
+
 ## 17. Delivery roadmap
 
 - P0/P0.5: runtime reconciliation and Local 1.5.7 alignment — COMPLETE
@@ -314,8 +316,8 @@ P6 transport/test rule: SMTP/API/OAuth credentials remain exclusively owned by t
 - P4: WooCommerce Registry / Native Editor Bridge — COMPLETE
 - P5A: WordPress + Andy Core Native Template Editor / immutable publish — COMPLETE
 - P5B: WordPress + Andy Core Published Snapshot Runtime Adapter — COMPLETE
-- P6: Transport / Test / Health Center — CURRENT
-- P7: Legacy Customizer Governance
+- P6: Transport / Test / Health Center — COMPLETE
+- P7: Legacy Customizer Governance — CURRENT
 - P8: ERP read-only published-template contract
 - P9: full regression / UAT / release gate
 

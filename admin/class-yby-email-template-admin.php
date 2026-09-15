@@ -44,6 +44,7 @@ class YBY_Email_Template_Admin {
 		$store = new YBY_Email_Template_Store();
 		$renderer = new YBY_Email_Template_Renderer();
 		$health_center = new YBY_Email_Health_Center();
+		$legacy_governance_scanner = new YBY_Email_Legacy_Customizer_Governance();
 		$native_notice = array();
 		$test_notice = array();
 		$registry_notice = array();
@@ -84,6 +85,7 @@ class YBY_Email_Template_Admin {
 		}
 
 		$owner_notes = $this->owner_notes();
+		$legacy_governance = $legacy_governance_scanner->scan( $templates );
 		$transport_health = $health_center->transport_status();
 		$native_health = $health_center->native_health( $templates, $store );
 		$last_test = $health_center->get_last_test();
