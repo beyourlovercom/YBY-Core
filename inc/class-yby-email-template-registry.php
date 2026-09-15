@@ -141,7 +141,10 @@ class YBY_Email_Template_Registry {
 				'description'       => 'WordPress new-user notification adapter.',
 				'runtime_available' => true,
 				'runtime_enabled'   => true,
-				'capabilities'      => array( 'subject', 'body', 'cta' ),
+				'capabilities'      => array( 'subject', 'preheader', 'body', 'cta' ),
+				'variables'         => array( 'site_name', 'user_login', 'user_email', 'set_password_url', 'login_url' ),
+				'sample_context'    => array( 'site_name' => 'Example Site', 'user_login' => 'alex', 'user_email' => 'alex@example.test', 'set_password_url' => 'https://example.test/set-password', 'login_url' => 'https://example.test/login' ),
+				'default_payload'   => array( 'subject' => '[{site_name}] Your account', 'preheader' => 'Your account is ready', 'heading' => 'Welcome, {user_login}', 'intro_copy' => 'Your account for {site_name} has been created.', 'primary_cta' => array( 'label' => 'Set your password', 'url' => '{set_password_url}' ), 'secondary_copy' => 'Username: {user_login}', 'additional_content' => 'If you did not expect this email, you can ignore it.' ),
 			) ),
 			$this->normalize_item( array(
 				'template_key'      => 'wordpress:reset_password',
@@ -153,7 +156,10 @@ class YBY_Email_Template_Registry {
 				'description'       => 'WordPress password-reset notification adapter.',
 				'runtime_available' => true,
 				'runtime_enabled'   => true,
-				'capabilities'      => array( 'subject', 'body', 'cta' ),
+				'capabilities'      => array( 'subject', 'preheader', 'body', 'cta' ),
+				'variables'         => array( 'site_name', 'user_login', 'reset_url' ),
+				'sample_context'    => array( 'site_name' => 'Example Site', 'user_login' => 'alex', 'reset_url' => 'https://example.test/reset-password' ),
+				'default_payload'   => array( 'subject' => '[{site_name}] Password reset', 'preheader' => 'Reset your password', 'heading' => 'Reset your password', 'intro_copy' => 'A password reset was requested for {user_login}.', 'primary_cta' => array( 'label' => 'Reset password', 'url' => '{reset_url}' ), 'additional_content' => 'If you did not request a password reset, you can ignore this email.' ),
 			) ),
 		);
 	}
@@ -175,7 +181,10 @@ class YBY_Email_Template_Registry {
 				'description'       => 'Internal notification generated when a website inquiry is received.',
 				'runtime_available' => class_exists( 'YBY_Email_Notification_Provider' ),
 				'runtime_enabled'   => true,
-				'capabilities'      => array( 'subject', 'body', 'dynamic_sections' ),
+				'capabilities'      => array( 'subject', 'preheader', 'body', 'cta', 'dynamic_sections' ),
+				'variables'         => array( 'inquiry.case_id', 'customer_name', 'company', 'customer_email', 'product_interest', 'quantity', 'admin_inquiry_url' ),
+				'sample_context'    => array( 'inquiry' => array( 'case_id' => 'YBY-TEST-001' ), 'customer_name' => 'Alex Buyer', 'company' => 'Example Trading', 'customer_email' => 'alex@example.test', 'product_interest' => 'Irrigation Kit', 'quantity' => '500', 'admin_inquiry_url' => 'https://example.test/wp-admin/admin.php?page=andy-core-leads' ),
+				'default_payload'   => array( 'subject' => '[New Inquiry] {inquiry.case_id} · {customer_name}', 'preheader' => 'New website inquiry from {company}', 'heading' => 'New website inquiry', 'intro_copy' => 'A new inquiry was submitted by {customer_name} from {company}.', 'dynamic_sections' => array( array( 'label' => 'Case ID', 'value' => '{inquiry.case_id}' ), array( 'label' => 'Email', 'value' => '{customer_email}' ), array( 'label' => 'Product', 'value' => '{product_interest}' ), array( 'label' => 'Quantity', 'value' => '{quantity}' ) ), 'primary_cta' => array( 'label' => 'Open inquiry', 'url' => '{admin_inquiry_url}' ) ),
 			) ),
 		);
 	}
@@ -209,6 +218,9 @@ class YBY_Email_Template_Registry {
 			'preview_test_url'    => esc_url_raw( (string) ( $item['preview_test_url'] ?? '' ) ),
 			'legacy_template_ref' => sanitize_text_field( (string) ( $item['legacy_template_ref'] ?? '' ) ),
 			'capabilities'        => array_values( array_unique( array_map( 'sanitize_key', (array) ( $item['capabilities'] ?? array() ) ) ) ),
+			'variables'           => array_values( array_map( 'sanitize_text_field', (array) ( $item['variables'] ?? array() ) ) ),
+			'sample_context'      => is_array( $item['sample_context'] ?? null ) ? $item['sample_context'] : array(),
+			'default_payload'     => is_array( $item['default_payload'] ?? null ) ? $item['default_payload'] : array(),
 		);
 	}
 }
