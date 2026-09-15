@@ -307,6 +307,8 @@ P6 transport/test rule: SMTP/API/OAuth credentials remain exclusively owned by t
 
 P7 governance rule: VillaTheme / Legacy Customizer remains active and owns Woo runtime. Email OS performs read-only discovery of published mappings, default templates, rule-driven variants and unmatched types. Multiple published templates for one Woo email are not automatically conflicts because VillaTheme may select them by country, language, product, payment or price rules. Email OS MUST NOT delete, unpublish, reorder or rewrite Legacy templates during governance.
 
+P8A ERP contract rule: ERP consumes only a read-only metadata projection of valid immutable Published Snapshots for native providers (`wordpress`, `andy_core`). The frozen V1 fields are `template_key`, `provider`, `label`, `status`, `runtime_enabled`, `published_version`, `content_hash_sha256`, and `published_at`. Draft/content payloads, Owner Notes, recipients, editor URLs and transport secrets are forbidden. WooCommerce is excluded from this Published Snapshot resource because Woo / VillaTheme remains its source of truth. P8B may expose only a signed authenticated GET resource through the existing `andy-core/v1/erp` Connector namespace.
+
 ## 17. Delivery roadmap
 
 - P0/P0.5: runtime reconciliation and Local 1.5.7 alignment — COMPLETE
@@ -317,8 +319,10 @@ P7 governance rule: VillaTheme / Legacy Customizer remains active and owns Woo r
 - P5A: WordPress + Andy Core Native Template Editor / immutable publish — COMPLETE
 - P5B: WordPress + Andy Core Published Snapshot Runtime Adapter — COMPLETE
 - P6: Transport / Test / Health Center — COMPLETE
-- P7: Legacy Customizer Governance — CURRENT
-- P8: ERP read-only published-template contract
+- P7: Legacy Customizer Governance — COMPLETE
+- P8A: ERP read-only published-template contract freeze — COMPLETE
+- P8B: authenticated Connector GET snapshot — NEXT
+- P8C: ERP read-only consumer
 - P9: full regression / UAT / release gate
 
 ## 18. Architecture Gate

@@ -35,6 +35,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-webhook.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-schema.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-store.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-erp-contract.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-design-settings.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-registry.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template-renderer.php';
