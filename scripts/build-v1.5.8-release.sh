@@ -3,8 +3,9 @@ set -euo pipefail
 
 script_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 root_dir="${RELEASE_SOURCE_DIR:-${script_root}}"
-version="1.5.7"
+version="1.5.8"
 database_version="1.4.0"
+runtime_database_version="1.5.0"
 signing_public_key_b64="LcPq5x+fNa96aC+cXyC1ZbwRoGXCihF9YSG+iMHtjKU="
 signing_secret="${ANDY_CORE_UPDATE_SIGNING_SECRET:-}"
 output_dir="${RELEASE_OUTPUT_DIR:-${root_dir}/releases/v${version}}"
@@ -25,6 +26,7 @@ if [[ "${build_context}" == "FINAL_RELEASE" && -z "${signing_secret}" ]]; then e
 grep -Fq "Version:           ${version}" "${root_dir}/yby-core.php"
 grep -Fq "define( 'YBY_CORE_VERSION', '${version}' );" "${root_dir}/yby-core.php"
 grep -Fq "define( 'YBY_DATABASE_VERSION', '${database_version}' );" "${root_dir}/yby-core.php"
+grep -Fq "define( 'YBY_RUNTIME_DATABASE_VERSION', '${runtime_database_version}' );" "${root_dir}/yby-core.php"
 grep -Fq "Stable tag: ${version}" "${root_dir}/readme.txt"
 
 stage_dir="$(mktemp -d)"
@@ -72,8 +74,8 @@ fi
 
 sha256="$(sha256sum "${output_dir}/${package_name}" | awk '{print $1}')"
 printf '%s  %s\n' "${sha256}" "${package_name}" > "${output_dir}/SHA256.txt"
-printf '{\n  "schema_version": 1,\n  "version": "%s",\n  "database_version": "%s",\n  "package": "%s",\n  "sha256": "%s"\n}\n' \
-  "${version}" "${database_version}" "${package_name}" "${sha256}" > "${output_dir}/update-metadata.json"
+printf '{\n  "schema_version": 1,\n  "version": "%s",\n  "database_version": "%s",\n  "runtime_database_version": "%s",\n  "package": "%s",\n  "sha256": "%s"\n}\n' \
+  "${version}" "${database_version}" "${runtime_database_version}" "${package_name}" "${sha256}" > "${output_dir}/update-metadata.json"
 
 signature_status='NOT_SIGNED'
 if [[ -n "${signing_secret}" ]]; then
@@ -87,7 +89,8 @@ if [[ "${build_context}" == "FINAL_RELEASE" && "${signature_status}" != "PASS" ]
   echo
   echo 'Product: Andy Core'
   echo "Version: ${version}"
-  echo "Database Version: ${database_version}"
+  echo "Updater Compatibility Database Version: ${database_version}"
+  echo "Runtime Database Version: ${runtime_database_version}"
   echo 'Release Stage: Stable'
   echo "Build Context: ${build_context}"
   echo "Repository Remote: ${repository_remote}"
@@ -110,3 +113,4 @@ zipinfo -1 "${output_dir}/${package_name}" | grep -Fx 'yby-core/yby-core.php' >/
 unzip -p "${output_dir}/${package_name}" yby-core/yby-core.php | grep -F "Version:           ${version}" >/dev/null
 unzip -p "${output_dir}/${package_name}" yby-core/yby-core.php | grep -F "define( 'YBY_CORE_VERSION', '${version}' );" >/dev/null
 unzip -p "${output_dir}/${package_name}" yby-core/yby-core.php | grep -F "define( 'YBY_DATABASE_VERSION', '${database_version}' );" >/dev/null
+unzip -p "${output_dir}/${package_name}" yby-core/yby-core.php | grep -F "define( 'YBY_RUNTIME_DATABASE_VERSION', '${runtime_database_version}' );" >/dev/null

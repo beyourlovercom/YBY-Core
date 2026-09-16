@@ -375,6 +375,12 @@ class WP_REST_Response {
 	}
 }
 
+class YBY_Email_Template_Runtime {
+	public function render_inquiry_notification( $lead ) {
+		return array( 'active' => false, 'reason' => 'not_published' );
+	}
+}
+
 require_once dirname( __DIR__ ) . '/inc/class-yby-email-notification-provider.php';
 require_once dirname( __DIR__ ) . '/inc/class-yby-notification-manager.php';
 require_once dirname( __DIR__ ) . '/inc/class-yby-lead-rest-controller.php';

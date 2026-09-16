@@ -42,6 +42,10 @@ class YBY_Database {
 	const CONNECTOR_PAYOUT_BINDINGS_TABLE = 'yby_connector_payout_bindings';
 	const CONNECTOR_PAYOUT_CLAIMS_TABLE = 'yby_connector_payout_claims';
 
+	const EMAIL_TEMPLATES_TABLE = 'yby_email_templates';
+
+	const EMAIL_TEMPLATE_VERSIONS_TABLE = 'yby_email_template_versions';
+
 	/**
 	 * Install or upgrade plugin database tables.
 	 *
@@ -55,8 +59,9 @@ class YBY_Database {
 		self::create_leads_table();
 		self::create_management_tables();
 		self::create_connector_tables();
-		if ( self::leads_table_exists() && self::management_tables_exist() && self::connector_tables_exist() ) {
-			update_option( self::VERSION_OPTION, YBY_DATABASE_VERSION );
+		self::create_email_tables();
+		if ( self::leads_table_exists() && self::management_tables_exist() && self::connector_tables_exist() && self::email_tables_exist() ) {
+			update_option( self::VERSION_OPTION, YBY_RUNTIME_DATABASE_VERSION );
 		}
 	}
 
@@ -128,6 +133,10 @@ class YBY_Database {
 	public static function connector_payout_bindings_table_name() { global $wpdb; return $wpdb->prefix . self::CONNECTOR_PAYOUT_BINDINGS_TABLE; }
 	public static function connector_payout_claims_table_name() { global $wpdb; return $wpdb->prefix . self::CONNECTOR_PAYOUT_CLAIMS_TABLE; }
 
+	public static function email_templates_table_name() { global $wpdb; return $wpdb->prefix . self::EMAIL_TEMPLATES_TABLE; }
+
+	public static function email_template_versions_table_name() { global $wpdb; return $wpdb->prefix . self::EMAIL_TEMPLATE_VERSIONS_TABLE; }
+
 	public static function connector_tables_exist() {
 		global $wpdb;
 		$idempotency = self::connector_idempotency_table_name();
@@ -179,6 +188,16 @@ class YBY_Database {
 		return isset( $columns['state'], $columns['lease_owner_hash'], $columns['lease_expires_at'] );
 	}
 
+	public static function email_tables_exist() {
+		global $wpdb;
+		$templates = self::email_templates_table_name();
+		$versions = self::email_template_versions_table_name();
+		if ( $templates !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $templates ) ) || $versions !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $versions ) ) ) { return false; }
+		$template_indexes = array_flip( (array) $wpdb->get_col( 'SHOW INDEX FROM ' . $templates, 2 ) );
+		$version_indexes = array_flip( (array) $wpdb->get_col( 'SHOW INDEX FROM ' . $versions, 2 ) );
+		return isset( $template_indexes['template_key'], $template_indexes['provider_status'], $version_indexes['template_version'], $version_indexes['content_hash_sha256'], $version_indexes['published_at'] );
+	}
+
 	public static function management_tables_exist() {
 		global $wpdb;
 		$management_exists = self::management_table_name() === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', self::management_table_name() ) );
@@ -202,11 +221,11 @@ class YBY_Database {
 	public static function needs_install_or_upgrade() {
 		$stored_version = get_option( self::VERSION_OPTION, '' );
 
-		if ( YBY_DATABASE_VERSION !== $stored_version ) {
+		if ( YBY_RUNTIME_DATABASE_VERSION !== $stored_version ) {
 			return true;
 		}
 
-		return ! self::leads_table_exists() || ! self::management_tables_exist() || ! self::connector_tables_exist();
+		return ! self::leads_table_exists() || ! self::management_tables_exist() || ! self::connector_tables_exist() || ! self::email_tables_exist();
 	}
 
 	/**
@@ -296,6 +315,43 @@ class YBY_Database {
 		) {$charset_collate};";
 		dbDelta( $management_sql );
 		dbDelta( $activities_sql );
+	}
+
+	protected static function create_email_tables() {
+		global $wpdb;
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		$charset_collate = $wpdb->get_charset_collate();
+		$templates = self::email_templates_table_name();
+		$versions = self::email_template_versions_table_name();
+		$templates_sql = "CREATE TABLE {$templates} (
+			id bigint unsigned NOT NULL AUTO_INCREMENT,
+			template_key varchar(191) NOT NULL,
+			provider varchar(50) NOT NULL,
+			label varchar(255) NOT NULL,
+			status varchar(20) NOT NULL DEFAULT 'draft',
+			working_payload longtext NULL,
+			published_version_id bigint unsigned NULL,
+			created_at datetime NOT NULL,
+			updated_at datetime NOT NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY template_key (template_key),
+			KEY provider_status (provider, status)
+		) {$charset_collate};";
+		$versions_sql = "CREATE TABLE {$versions} (
+			id bigint unsigned NOT NULL AUTO_INCREMENT,
+			template_id bigint unsigned NOT NULL,
+			version_number bigint unsigned NOT NULL,
+			content_hash_sha256 char(64) NOT NULL,
+			payload_snapshot longtext NOT NULL,
+			published_by bigint unsigned NOT NULL DEFAULT 0,
+			published_at datetime NOT NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY template_version (template_id, version_number),
+			KEY content_hash_sha256 (content_hash_sha256),
+			KEY published_at (published_at)
+		) {$charset_collate};";
+		dbDelta( $templates_sql );
+		dbDelta( $versions_sql );
 	}
 
 	protected static function create_connector_tables() {

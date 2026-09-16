@@ -21,6 +21,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
+          extensions: zip, sodium
 
       - name: PHP syntax validation
         run: find . -name "*.php" -print0 | xargs -0 -n1 php -l
@@ -51,11 +52,15 @@ jobs:
           ! unzip -Z1 "${package}" | grep -E '(^|/)(\.git|\.github|tests|docs|releases|scripts)(/|$)'
           unzip -p "${package}" yby-core/yby-core.php | grep -F "Version:           ${version}"
           unzip -p "${package}" yby-core/yby-core.php | grep -F "define( 'YBY_CORE_VERSION', '${version}' );"
+          unzip -p "${package}" yby-core/yby-core.php | grep -F "define( 'YBY_DATABASE_VERSION', '1.4.0' );"
+          unzip -p "${package}" yby-core/yby-core.php | grep -F "define( 'YBY_RUNTIME_DATABASE_VERSION', '1.5.0' );"
           unzip -p "${package}" yby-core/readme.txt | grep -F "Stable tag: ${version}"
           expected_sha="$(awk 'NF {print $1; exit}' "${release_dir}/SHA256.txt")"
           actual_sha="$(sha256sum "${package}" | awk '{print $1}')"
           test "${expected_sha}" = "${actual_sha}"
-          php -r '$m=json_decode(file_get_contents($argv[1]),true); if (!is_array($m) || ($m["schema_version"] ?? null)!==1 || ($m["version"] ?? "")!==$argv[2] || ($m["database_version"] ?? "")!=="1.4.0" || ($m["package"] ?? "")!=="andy-core-v".$argv[2].".zip" || ($m["sha256"] ?? "")!==$argv[3]) exit(1);' "${release_dir}/update-metadata.json" "${version}" "${actual_sha}"
+          php -r '$m=json_decode(file_get_contents($argv[1]),true); if (!is_array($m) || ($m["schema_version"] ?? null)!==1 || ($m["version"] ?? "")!==$argv[2] || ($m["database_version"] ?? "")!=="1.4.0" || ($m["runtime_database_version"] ?? "")!=="1.5.0" || ($m["package"] ?? "")!=="andy-core-v".$argv[2].".zip" || ($m["sha256"] ?? "")!==$argv[3]) exit(1);' "${release_dir}/update-metadata.json" "${version}" "${actual_sha}"
+          git show v1.5.7:inc/class-yby-update-verifier.php > "$RUNNER_TEMP/v157-update-verifier.php"
+          php tests/updater-backward-compat-harness.php "$RUNNER_TEMP/v157-update-verifier.php" "${package}" "${release_dir}/update-metadata.json"
           grep -F 'Build Context: FINAL_RELEASE' "${release_dir}/BUILD_INFO.md"
           grep -F 'PHP Lint: PASS' "${release_dir}/BUILD_INFO.md"
           grep -F 'git diff --check: PASS' "${release_dir}/BUILD_INFO.md"

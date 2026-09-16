@@ -18,9 +18,9 @@ function bottle_assert( $test, $message ) { if ( ! $test ) { throw new RuntimeEx
 bottle_assert(
 	false !== strpos(
 		$main,
-		"define( 'YBY_DATABASE_VERSION', '1.4.0' );"
+		"define( 'YBY_RUNTIME_DATABASE_VERSION', '1.5.0' );"
 	),
-	'Bottle page_profile migration must remain compatible with the current 1.4.0 database schema.'
+	'Bottle page_profile migration must remain compatible with the current 1.5.0 database schema.'
 );
 bottle_assert(
 	false !== strpos(
