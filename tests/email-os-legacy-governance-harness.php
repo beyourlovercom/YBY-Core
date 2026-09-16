@@ -53,5 +53,3 @@ $core=file_get_contents(dirname(__DIR__).'/inc/class-yby-core.php');
 $assert(false!==strpos($core,'class-yby-email-legacy-customizer-governance.php'),'governance bootstrap missing');
 $assert(false===strpos($core,'woocommerce_email_'),'Woo runtime takeover remains forbidden');
 echo "PASS email-os-legacy-governance-harness\n";
-
-

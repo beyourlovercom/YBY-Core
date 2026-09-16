@@ -171,4 +171,3 @@ class YBY_Email_Legacy_Customizer_Governance {
 		return false;
 	}
 }
-
