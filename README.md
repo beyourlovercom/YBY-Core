@@ -4,14 +4,22 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `1.5.7`
-- Development version: `1.5.8`
-- Database version: `1.4.0`
-- Development database version: `1.5.0`
+- Product version: `1.5.8`
+- Development version: None
+- Database version: `1.5.0`
+- Updater compatibility database version: `1.4.0`
 - Release status: Stable
-- Development status: Release Candidate
+- Development status: None
 - Plugin path: `yby-core/yby-core.php`
 - Technical namespace: existing `YBY_*` and `yby_*` identifiers retained for compatibility
+
+## v1.5.8 release scope
+
+- Added Email OS V1.1 for WordPress and Andy Core native Draft / immutable Published templates, SHA-256 integrity, health/test tooling and read-only ERP Published metadata.
+- Preserved WooCommerce / VillaTheme runtime ownership while adding registry, diagnostics, editor deep links and Legacy Customizer governance.
+- Added canonical `completed-delivered / 完结&送达` order status from PR #40 with REST ordering `completed → completed-delivered → cancelled`.
+- Runtime database schema advances to `1.5.0`; signed updater compatibility remains `1.4.0` so existing 1.5.7 installations can validate the package.
+- The obsolete `v1.5.4-hotfix-completed-delivered-20260915` is not used.
 
 ## v1.5.7 release scope
 

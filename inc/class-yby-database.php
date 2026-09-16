@@ -61,7 +61,7 @@ class YBY_Database {
 		self::create_connector_tables();
 		self::create_email_tables();
 		if ( self::leads_table_exists() && self::management_tables_exist() && self::connector_tables_exist() && self::email_tables_exist() ) {
-			update_option( self::VERSION_OPTION, YBY_DATABASE_VERSION );
+			update_option( self::VERSION_OPTION, YBY_RUNTIME_DATABASE_VERSION );
 		}
 	}
 
@@ -221,7 +221,7 @@ class YBY_Database {
 	public static function needs_install_or_upgrade() {
 		$stored_version = get_option( self::VERSION_OPTION, '' );
 
-		if ( YBY_DATABASE_VERSION !== $stored_version ) {
+		if ( YBY_RUNTIME_DATABASE_VERSION !== $stored_version ) {
 			return true;
 		}
 

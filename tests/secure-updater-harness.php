@@ -66,9 +66,10 @@ $checksum = $sha . "  andy-core-v1.5.6.zip\n";
 $assert( $sha === YBY_Update_Verifier::checksum( $checksum, 'andy-core-v1.5.6.zip' ), 'checksum evidence rejected' );
 $assert( '' === YBY_Update_Verifier::checksum( $sha, 'andy-core-v1.5.6.zip' ), 'bare checksum accepted' );
 $assert( '' === YBY_Update_Verifier::checksum( $sha . "  other.zip\n", 'andy-core-v1.5.6.zip' ), 'wrong package checksum accepted' );
-$metadata = json_encode( array( 'schema_version' => 1, 'version' => '1.5.6', 'database_version' => '1.4.0', 'package' => 'andy-core-v1.5.6.zip', 'sha256' => $sha ) );
+$metadata = json_encode( array( 'schema_version' => 1, 'version' => '1.5.6', 'database_version' => '1.4.0', 'runtime_database_version' => '1.5.0', 'package' => 'andy-core-v1.5.6.zip', 'sha256' => $sha ) );
 $assert( YBY_Update_Verifier::metadata( $metadata, '1.5.6', 'andy-core-v1.5.6.zip', $sha ), 'valid update metadata rejected' );
-$assert( ! YBY_Update_Verifier::metadata( str_replace( '1.4.0', '1.5.0', $metadata ), '1.5.6', 'andy-core-v1.5.6.zip', $sha ), 'database-changing release accepted' );
+$assert( ! YBY_Update_Verifier::metadata( str_replace( '"database_version":"1.4.0"', '"database_version":"9.9.9"', $metadata ), '1.5.6', 'andy-core-v1.5.6.zip', $sha ), 'updater compatibility marker change accepted' );
+$assert( ! YBY_Update_Verifier::metadata( str_replace( '"runtime_database_version":"1.5.0"', '"runtime_database_version":"invalid"', $metadata ), '1.5.6', 'andy-core-v1.5.6.zip', $sha ), 'invalid runtime database version accepted' );
 $assert( ! YBY_Update_Verifier::metadata( str_replace( '"schema_version":1', '"schema_version":2', $metadata ), '1.5.6', 'andy-core-v1.5.6.zip', $sha ), 'unknown metadata schema accepted' );
 if ( function_exists( 'sodium_crypto_sign_keypair' ) ) {
 	$keypair = sodium_crypto_sign_keypair();

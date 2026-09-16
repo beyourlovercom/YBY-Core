@@ -58,7 +58,7 @@ if ( 'seed' === $phase ) {
 
 $management = YBY_Database::management_table_name();
 $activities = YBY_Database::activities_table_name();
-yby_validation_assert( '1.5.0' === get_option( 'yby_database_version' ) && YBY_DATABASE_VERSION === get_option( 'yby_database_version' ), 'Current PR database schema authority must migrate to 1.5.0.' );
+yby_validation_assert( '1.5.0' === get_option( 'yby_database_version' ) && YBY_RUNTIME_DATABASE_VERSION === get_option( 'yby_database_version' ), 'Current PR database schema authority must migrate to 1.5.0.' );
 yby_validation_assert( YBY_Database::email_tables_exist(), 'Email OS template/version tables are missing after the 1.5.0 migration.' );
 yby_validation_assert( YBY_Database::management_tables_exist(), 'Management tables or indexes missing.' );
 yby_validation_assert( YBY_Database::connector_tables_exist(), 'Connector idempotency/audit tables or unique index missing.' );

@@ -4,7 +4,7 @@ Tags: andy-core, yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.5.7
+Stable tag: 1.5.8
 License: Proprietary
 License URI: https://ybyglobal.com/
 
@@ -12,7 +12,15 @@ Core platform plugin for managed WordPress websites, including Case ID, tracking
 
 == Description ==
 
-Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.7 adds Page-Owned Inquiry Modal architecture while preserving the public signed GitHub Release update channel and existing `yby-core` runtime contracts.
+Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.8 adds Email OS V1.1 and the canonical completed-delivered WooCommerce status while preserving the public signed GitHub Release update channel and existing `yby-core` runtime contracts.
+
+Included in v1.5.8:
+
+* Email OS V1.1 for WordPress and Andy Core native template Draft / Published lifecycle, integrity validation, health/test tooling, and read-only ERP Published metadata
+* WooCommerce remains provider-owned; Email OS adds governance, diagnostics and deep links without runtime takeover
+* Canonical `completed-delivered / 完结&送达` status with REST ordering `completed → completed-delivered → cancelled`
+* Runtime database schema 1.5.0 with updater compatibility marker 1.4.0 for native upgrade from 1.5.7
+* No installation of `v1.5.4-hotfix-completed-delivered-20260915`
 
 Included in v1.5.7:
 

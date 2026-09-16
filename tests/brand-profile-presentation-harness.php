@@ -315,7 +315,7 @@ $tests['database_version_unchanged'] = static function () {
 	$plugin_source = file_get_contents( dirname( __DIR__ ) . '/yby-core.php' );
 
 	harness_assert( false !== $plugin_source, 'Plugin bootstrap must remain readable.' );
-	harness_assert( false !== strpos( $plugin_source, "define( 'YBY_DATABASE_VERSION', '1.5.0' );" ), 'Database version must remain current at 1.5.0.' );
+	harness_assert( false !== strpos( $plugin_source, "define( 'YBY_RUNTIME_DATABASE_VERSION', '1.5.0' );" ), 'Database version must remain current at 1.5.0.' );
 };
 
 $tests['whatsapp_template_sanitization'] = static function () {

@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v1.5.8 - 2026-09-16
+
+- Added Email OS V1.1 native WordPress / Andy Core template lifecycle, immutable Published snapshots, SHA-256 integrity, health/test tooling and ERP read-only Published metadata contract.
+- Preserved WooCommerce / VillaTheme runtime ownership and added read-only Legacy Customizer governance.
+- Integrated PR #40 `completed-delivered / 完结&送达` with the ordered Woo REST segment `completed → completed-delivered → cancelled`.
+- Advanced runtime database schema to `1.5.0` for Email OS tables.
+- Preserved updater compatibility marker `1.4.0` so existing 1.5.7 installations can validate and install the signed 1.5.8 package; release metadata also records `runtime_database_version=1.5.0`.
+- The obsolete `v1.5.4-hotfix-completed-delivered-20260915` is not part of this release path.
+
 ## v1.5.7 - 2026-09-11
 
 - Added Page-Owned Inquiry Modal architecture so each landing page can own its modal instance and presentation while reusing the canonical Andy Core inquiry engine.

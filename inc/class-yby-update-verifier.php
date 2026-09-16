@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class YBY_Update_Verifier {
+	/** Legacy package compatibility marker; not the runtime schema target. */
 	const DATABASE_VERSION = '1.4.0';
 	const SIGNING_PUBLIC_KEY_B64 = 'LcPq5x+fNa96aC+cXyC1ZbwRoGXCihF9YSG+iMHtjKU=';
 
@@ -104,6 +105,9 @@ class YBY_Update_Verifier {
 			return false;
 		}
 		$metadata_sha = strtolower( trim( (string) ( $data['sha256'] ?? '' ) ) );
+		if ( isset( $data['runtime_database_version'] ) && '' === self::stable_version( $data['runtime_database_version'] ) ) {
+			return false;
+		}
 		return self::stable_version( $data['version'] ?? '' ) === $version
 			&& self::DATABASE_VERSION === (string) ( $data['database_version'] ?? '' )
 			&& $package_name === (string) ( $data['package'] ?? '' )

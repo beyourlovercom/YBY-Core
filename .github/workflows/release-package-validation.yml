@@ -21,6 +21,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
+          extensions: zip, sodium
           coverage: none
 
       - name: Setup Node
@@ -45,42 +46,41 @@ jobs:
           ANDY_CORE_UPDATE_SIGNING_SECRET: ${{ secrets.ANDY_CORE_UPDATE_SIGNING_SECRET }}
         run: |
           set -euo pipefail
-          stable_root="$RUNNER_TEMP/andy-core-v1.5.7-source"
-          rm -rf "$stable_root"
-          mkdir -p "$stable_root"
-          git archive v1.5.7 | tar -x -C "$stable_root"
-          stable_commit="$(git rev-list -n 1 v1.5.7)"
-          RELEASE_SOURCE_DIR="$stable_root" RELEASE_OUTPUT_DIR="$GITHUB_WORKSPACE/releases/v1.5.7" SOURCE_BRANCH="v1.5.7" SOURCE_COMMIT="$stable_commit" BUILD_CONTEXT=RELEASE_CANDIDATE bash scripts/build-v1.5.7-release.sh
-          package="releases/v1.5.7/andy-core-v1.5.7.zip"
-          checksum="releases/v1.5.7/SHA256.txt"
-          metadata="releases/v1.5.7/update-metadata.json"
+          release_root="$GITHUB_WORKSPACE"
+          RELEASE_SOURCE_DIR="$release_root" RELEASE_OUTPUT_DIR="$GITHUB_WORKSPACE/releases/v1.5.8" SOURCE_BRANCH="${SOURCE_BRANCH}" SOURCE_COMMIT="${SOURCE_COMMIT}" BUILD_CONTEXT=RELEASE_CANDIDATE bash scripts/build-v1.5.8-release.sh
+          package="releases/v1.5.8/andy-core-v1.5.8.zip"
+          checksum="releases/v1.5.8/SHA256.txt"
+          metadata="releases/v1.5.8/update-metadata.json"
           test -s "$package"
           test -s "$checksum"
           test -s "$metadata"
-          if [[ -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" ]]; then test -s releases/v1.5.7/update-metadata.sig; else test ! -e releases/v1.5.7/update-metadata.sig; fi
-          test -s releases/v1.5.7/BUILD_INFO.md
-          for doc in RELEASE_NOTES_v1.5.7.md UPGRADE_GUIDE_v1.5.7.md ROLLBACK_GUIDE_v1.5.7.md; do
+          if [[ -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" ]]; then test -s releases/v1.5.8/update-metadata.sig; else test ! -e releases/v1.5.8/update-metadata.sig; fi
+          test -s releases/v1.5.8/BUILD_INFO.md
+          for doc in RELEASE_NOTES_v1.5.8.md UPGRADE_GUIDE_v1.5.8.md ROLLBACK_GUIDE_v1.5.8.md; do
             test -s "$doc"
-            cp "$doc" releases/v1.5.7/
+            cp "$doc" releases/v1.5.8/
           done
           unzip -Z1 "$package" | awk -F/ 'NF && $1 != "yby-core" { exit 1 }'
           unzip -Z1 "$package" | grep -Fx 'yby-core/yby-core.php'
           ! unzip -Z1 "$package" | grep -E '(^|/)(\.git|\.github|tests|docs|releases|scripts)(/|$)'
-          unzip -p "$package" yby-core/yby-core.php | grep -F 'Version:           1.5.7'
-          unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_CORE_VERSION', '1.5.7' );"
+          unzip -p "$package" yby-core/yby-core.php | grep -F 'Version:           1.5.8'
+          unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_CORE_VERSION', '1.5.8' );"
           unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_DATABASE_VERSION', '1.4.0' );"
+          unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_RUNTIME_DATABASE_VERSION', '1.5.0' );"
           expected_sha="$(awk 'NF {print $1; exit}' "$checksum")"
           actual_sha="$(sha256sum "$package" | awk '{print $1}')"
           test "$expected_sha" = "$actual_sha"
-          php -r '$m=json_decode(file_get_contents($argv[1]),true); if (!is_array($m) || ($m["schema_version"] ?? null)!==1 || ($m["version"] ?? "")!=="1.5.7" || ($m["database_version"] ?? "")!=="1.4.0" || ($m["package"] ?? "")!=="andy-core-v1.5.7.zip" || ($m["sha256"] ?? "")!==$argv[2]) exit(1);' "$metadata" "$actual_sha"
-          grep -F 'Build Context: RELEASE_CANDIDATE' releases/v1.5.7/BUILD_INFO.md
-          grep -F 'PHP Lint: PASS' releases/v1.5.7/BUILD_INFO.md
-          grep -F 'git diff --check: PASS' releases/v1.5.7/BUILD_INFO.md
-          if [[ -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" ]]; then grep -F 'Ed25519 Signature: PASS' releases/v1.5.7/BUILD_INFO.md; else grep -F 'Ed25519 Signature: NOT_SIGNED' releases/v1.5.7/BUILD_INFO.md; fi
+          php -r '$m=json_decode(file_get_contents($argv[1]),true); if (!is_array($m) || ($m["schema_version"] ?? null)!==1 || ($m["version"] ?? "")!=="1.5.8" || ($m["database_version"] ?? "")!=="1.4.0" || ($m["runtime_database_version"] ?? "")!=="1.5.0" || ($m["package"] ?? "")!=="andy-core-v1.5.8.zip" || ($m["sha256"] ?? "")!==$argv[2]) exit(1);' "$metadata" "$actual_sha"
+          git show v1.5.7:inc/class-yby-update-verifier.php > "$RUNNER_TEMP/v157-update-verifier.php"
+          php tests/updater-backward-compat-harness.php "$RUNNER_TEMP/v157-update-verifier.php" "$package" "$metadata"
+          grep -F 'Build Context: RELEASE_CANDIDATE' releases/v1.5.8/BUILD_INFO.md
+          grep -F 'PHP Lint: PASS' releases/v1.5.8/BUILD_INFO.md
+          grep -F 'git diff --check: PASS' releases/v1.5.8/BUILD_INFO.md
+          if [[ -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" ]]; then grep -F 'Ed25519 Signature: PASS' releases/v1.5.8/BUILD_INFO.md; else grep -F 'Ed25519 Signature: NOT_SIGNED' releases/v1.5.8/BUILD_INFO.md; fi
 
       - name: Upload release candidate
         uses: actions/upload-artifact@v4
         with:
-          name: andy-core-v1.5.7-release-candidate
-          path: releases/v1.5.7
+          name: andy-core-v1.5.8-release-candidate
+          path: releases/v1.5.8
           if-no-files-found: error

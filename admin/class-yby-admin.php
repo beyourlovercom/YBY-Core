@@ -235,7 +235,7 @@ class YBY_Admin {
 				'activities_table' => $management_tables_ok,
 				'email_template_tables' => $email_tables_ok,
 				'index_status' => $management_tables_ok && $connector_tables_ok && $email_tables_ok ? 'verified' : 'attention',
-				'migration_status' => $management_tables_ok && $connector_tables_ok && $email_tables_ok && YBY_DATABASE_VERSION === get_option( YBY_Database::VERSION_OPTION, '' ) ? 'ready' : 'attention',
+				'migration_status' => $management_tables_ok && $connector_tables_ok && $email_tables_ok && YBY_RUNTIME_DATABASE_VERSION === get_option( YBY_Database::VERSION_OPTION, '' ) ? 'ready' : 'attention',
 				'recent_lead_metadata' => $this->recent_lead_metadata(),
 				'management_consistency' => $management_tables_ok ? 'lazy management enabled' : 'attention',
 				'preset_registry' => 'registered by inquiry preset manager',
