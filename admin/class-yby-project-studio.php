@@ -83,10 +83,14 @@ class YBY_Project_Studio {
 			__( 'Andy Core', 'yby-core' ),
 			'manage_options',
 			self::menu_slug(),
-			array( $this, 'render_project_studio_page' ),
+			array( $this, 'render_root_page' ),
 			'dashicons-portfolio',
 			58
 		);
+
+		if ( ! YBY_Module_Registry::is_enabled( 'project_studio' ) ) {
+			return;
+		}
 
 		$this->studio_page_hook = add_submenu_page(
 			self::menu_slug(),
@@ -104,6 +108,24 @@ class YBY_Project_Studio {
 			'manage_options',
 			'edit.php?post_type=' . YBY_Project_CPT::post_type()
 		);
+	}
+
+	public function render_root_page() {
+		if ( YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) { $url = admin_url( 'admin.php?page=' . YBY_Inquiry_Admin::page_slug() ); }
+		elseif ( YBY_Module_Registry::is_enabled( 'project_studio' ) ) { $url = admin_url( 'admin.php?page=' . self::studio_page_slug() ); }
+		elseif ( YBY_Module_Registry::is_enabled( 'email_os' ) ) { $url = admin_url( 'admin.php?page=yby-core-popups&tab=email_templates' ); }
+		elseif ( YBY_Module_Registry::is_enabled( 'social_login' ) ) { $url = admin_url( 'admin.php?page=' . YBY_Social_Login_Admin::page_slug() ); }
+		elseif ( YBY_Module_Registry::is_enabled( 'connector' ) ) { $url = admin_url( 'admin.php?page=' . YBY_Helpers::admin_page_slug() . '&tab=wp-api' ); }
+		else { $url = admin_url( 'admin.php?page=' . YBY_Helpers::admin_page_slug() . '&tab=modules' ); }
+		wp_safe_redirect( $url );
+		exit;
+	}
+
+	public function normalize_root_menu() {
+		global $submenu;
+		$parent = self::menu_slug();
+		if ( empty( $submenu[ $parent ] ) || ! is_array( $submenu[ $parent ] ) ) { return; }
+		$submenu[ $parent ] = array_values( array_filter( $submenu[ $parent ], static function ( $item ) use ( $parent ) { return ! isset( $item[2] ) || $parent !== $item[2]; } ) );
 	}
 
 	/**
