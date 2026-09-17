@@ -146,9 +146,24 @@ class YBY_Core {
 		$social_enabled  = YBY_Module_Registry::is_enabled( 'social_login' );
 		$connector_enabled = YBY_Module_Registry::is_enabled( 'connector' );
 
-		$this->loader->add_action( 'admin_menu', $project_studio, 'add_admin_menu', 5 );
-		$this->loader->add_action( 'admin_menu', $admin, 'add_admin_menu', 20 );
-		$this->loader->add_action( 'admin_menu', $brand_os, 'add_admin_menu', 20 );
+		$this->loader->add_action( 'admin_menu', $project_studio, 'add_admin_menu' );
+		$this->loader->add_action( 'admin_menu', $brand_os, 'add_admin_menu' );
+		if ( $social_enabled ) {
+			$social_login = new YBY_Social_Login_Admin();
+			$this->loader->add_action( 'admin_menu', $social_login, 'add_admin_menu' );
+			$this->loader->add_action( 'admin_enqueue_scripts', $social_login, 'enqueue_assets' );
+		}
+		$this->loader->add_action( 'admin_menu', $admin, 'add_admin_menu' );
+		if ( $inquiry_enabled || $email_enabled ) {
+			$popup_admin = new YBY_Popup_Admin( 'yby-core', YBY_CORE_VERSION );
+			$this->loader->add_action( 'admin_menu', $popup_admin, 'add_admin_menu' );
+			$this->loader->add_action( 'admin_enqueue_scripts', $popup_admin, 'enqueue_assets' );
+		}
+		if ( $inquiry_enabled ) {
+			$inquiry_admin = new YBY_Inquiry_Admin( 'yby-core', YBY_CORE_VERSION );
+			$this->loader->add_action( 'admin_menu', $inquiry_admin, 'add_admin_menu', 20 );
+			$this->loader->add_action( 'admin_enqueue_scripts', $inquiry_admin, 'enqueue_assets' );
+		}
 		$this->loader->add_action( 'admin_menu', $project_studio, 'normalize_root_menu', 999 );
 		$this->loader->add_action( 'admin_enqueue_scripts', $brand_os, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_assets' );
@@ -161,24 +176,6 @@ class YBY_Core {
 			$this->loader->add_action( 'admin_enqueue_scripts', $project_studio, 'enqueue_assets' );
 			$this->loader->add_filter( 'parent_file', $project_studio, 'filter_parent_file' );
 			$this->loader->add_filter( 'submenu_file', $project_studio, 'filter_submenu_file' );
-		}
-
-		if ( $inquiry_enabled ) {
-			$inquiry_admin = new YBY_Inquiry_Admin( 'yby-core', YBY_CORE_VERSION );
-			$this->loader->add_action( 'admin_menu', $inquiry_admin, 'add_admin_menu', 20 );
-			$this->loader->add_action( 'admin_enqueue_scripts', $inquiry_admin, 'enqueue_assets' );
-		}
-
-		if ( $social_enabled ) {
-			$social_login = new YBY_Social_Login_Admin();
-			$this->loader->add_action( 'admin_menu', $social_login, 'add_admin_menu', 20 );
-			$this->loader->add_action( 'admin_enqueue_scripts', $social_login, 'enqueue_assets' );
-		}
-
-		if ( $inquiry_enabled || $email_enabled ) {
-			$popup_admin = new YBY_Popup_Admin( 'yby-core', YBY_CORE_VERSION );
-			$this->loader->add_action( 'admin_menu', $popup_admin, 'add_admin_menu', 20 );
-			$this->loader->add_action( 'admin_enqueue_scripts', $popup_admin, 'enqueue_assets' );
 		}
 
 		if ( $connector_enabled ) {
