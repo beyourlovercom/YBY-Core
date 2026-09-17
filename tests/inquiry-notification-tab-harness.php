@@ -7,7 +7,10 @@ $inquiry = file_get_contents( $root . '/admin/views/inquiry-settings.php' );
 $status = file_get_contents( $root . '/admin/views/system-status.php' );
 $view = file_get_contents( $root . '/admin/views/inquiry-notification-settings.php' );
 $assert( false !== strpos( $admin, "'inquiry-notification'" ) && false !== strpos( $admin, 'render_inquiry_notification_settings' ), 'Settings routing for inquiry notification missing.' );
-$assert( false !== strpos( $general, "'inquiry-notification' => '询盘通知'" ) && false !== strpos( $inquiry, "'inquiry-notification' => '询盘通知'" ) && false !== strpos( $status, "'inquiry-notification' => '询盘通知'" ), '询盘通知 tab must appear in every Settings nav.' );
+$assert( false !== strpos( $admin, "\$tabs['inquiry-notification'] = '询盘通知'" ) && false !== strpos( $admin, "is_enabled( 'inquiry_os' )" ), '询盘通知 must remain part of Inquiry OS dynamic Settings tabs.' );
+foreach ( array( $general, $inquiry, $status, $view ) as $nav_source ) {
+    $assert( false !== strpos( $nav_source, 'YBY_Admin::settings_tabs()' ), 'Settings nav must use the canonical dynamic tab registry.' );
+}
 $assert( false === strpos( $general, 'id="yby-whatsapp-number"' ) && false === strpos( $general, "'Email Notification'" ), 'WhatsApp and Email Notification controls must leave General.' );
 $assert( false !== strpos( $view, 'id="yby-whatsapp-number"' ) && false !== strpos( $view, 'id="yby-whatsapp-message-template"' ), 'WhatsApp controls missing from 询盘通知.' );
 $assert( false !== strpos( $view, 'Primary Recipient Email' ) && false !== strpos( $view, 'CC Recipient Emails' ) && false !== strpos( $view, 'BCC Recipient Emails' ) && false !== strpos( $view, 'Reply-To Policy' ), 'Email recipient controls missing from 询盘通知.' );

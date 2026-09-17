@@ -45,6 +45,9 @@ class YBY_Public {
 	 * @return void
 	 */
 	public function enqueue_assets() {
+		$inquiry_enabled = ! class_exists( 'YBY_Module_Registry' ) || YBY_Module_Registry::is_enabled( 'inquiry_os' );
+		$project_enabled = ! class_exists( 'YBY_Module_Registry' ) || YBY_Module_Registry::is_enabled( 'project_studio' );
+		if ( ! $inquiry_enabled && ! $project_enabled ) { return; }
 		wp_enqueue_style(
 			$this->plugin_name . '-public',
 			YBY_CORE_PLUGIN_URL . 'public/assets/css/yby-core-public.css',
@@ -52,68 +55,75 @@ class YBY_Public {
 			$this->asset_version( 'public/assets/css/yby-core-public.css' )
 		);
 
-		wp_enqueue_style(
-			'yby-inquiry-components',
-			YBY_CORE_PLUGIN_URL . 'public/css/yby-inquiry-components.css',
-			array(),
-			$this->asset_version( 'public/css/yby-inquiry-components.css' )
-		);
-		wp_enqueue_style( 'yby-global-popup', YBY_CORE_PLUGIN_URL . 'public/css/yby-global-popup.css', array( 'yby-inquiry-components' ), $this->asset_version( 'public/css/yby-global-popup.css' ) );
-		wp_enqueue_style( 'yby-global-inquiry-dock', YBY_CORE_PLUGIN_URL . 'public/css/yby-global-inquiry-dock.css', array( 'yby-global-popup' ), $this->asset_version( 'public/css/yby-global-inquiry-dock.css' ) );
-		wp_enqueue_style( 'yby-email-shortcodes', YBY_CORE_PLUGIN_URL . 'public/css/yby-email-shortcodes.css', array( 'yby-inquiry-components' ), $this->asset_version( 'public/css/yby-email-shortcodes.css' ) );
-		if ( class_exists( 'YBY_Global_Popup' ) ) {
-			$popup_settings = YBY_Global_Popup::sanitize( YBY_Global_Popup::settings() );
-			if ( '' !== $popup_settings['inquiry_custom_css'] ) { wp_add_inline_style( 'yby-global-popup', $popup_settings['inquiry_custom_css'] ); }
-			if ( '' !== $popup_settings['subscribe_custom_css'] ) { wp_add_inline_style( 'yby-global-popup', $popup_settings['subscribe_custom_css'] ); }
-			if ( '' !== $popup_settings['inquiry_shortcode_custom_css'] ) { wp_add_inline_style( 'yby-email-shortcodes', $popup_settings['inquiry_shortcode_custom_css'] ); }
-			if ( '' !== $popup_settings['subscribe_shortcode_custom_css'] ) { wp_add_inline_style( 'yby-email-shortcodes', $popup_settings['subscribe_shortcode_custom_css'] ); }
-		}
-		if ( class_exists( 'YBY_Global_Inquiry_Dock' ) ) {
-			$dock = YBY_Global_Inquiry_Dock::sanitize( YBY_Global_Inquiry_Dock::settings() );
-			wp_add_inline_style( 'yby-global-inquiry-dock', YBY_Global_Inquiry_Dock::build_color_css( $dock ) );
-			if ( '' !== $dock['custom_css'] ) { wp_add_inline_style( 'yby-global-inquiry-dock', $dock['custom_css'] ); }
+		if ( $inquiry_enabled ) {
+			wp_enqueue_style(
+				'yby-inquiry-components',
+				YBY_CORE_PLUGIN_URL . 'public/css/yby-inquiry-components.css',
+				array(),
+				$this->asset_version( 'public/css/yby-inquiry-components.css' )
+			);
+			wp_enqueue_style( 'yby-global-popup', YBY_CORE_PLUGIN_URL . 'public/css/yby-global-popup.css', array( 'yby-inquiry-components' ), $this->asset_version( 'public/css/yby-global-popup.css' ) );
+			wp_enqueue_style( 'yby-global-inquiry-dock', YBY_CORE_PLUGIN_URL . 'public/css/yby-global-inquiry-dock.css', array( 'yby-global-popup' ), $this->asset_version( 'public/css/yby-global-inquiry-dock.css' ) );
+			wp_enqueue_style( 'yby-email-shortcodes', YBY_CORE_PLUGIN_URL . 'public/css/yby-email-shortcodes.css', array( 'yby-inquiry-components' ), $this->asset_version( 'public/css/yby-email-shortcodes.css' ) );
+			if ( class_exists( 'YBY_Global_Popup' ) ) {
+				$popup_settings = YBY_Global_Popup::sanitize( YBY_Global_Popup::settings() );
+				if ( '' !== $popup_settings['inquiry_custom_css'] ) { wp_add_inline_style( 'yby-global-popup', $popup_settings['inquiry_custom_css'] ); }
+				if ( '' !== $popup_settings['subscribe_custom_css'] ) { wp_add_inline_style( 'yby-global-popup', $popup_settings['subscribe_custom_css'] ); }
+				if ( '' !== $popup_settings['inquiry_shortcode_custom_css'] ) { wp_add_inline_style( 'yby-email-shortcodes', $popup_settings['inquiry_shortcode_custom_css'] ); }
+				if ( '' !== $popup_settings['subscribe_shortcode_custom_css'] ) { wp_add_inline_style( 'yby-email-shortcodes', $popup_settings['subscribe_shortcode_custom_css'] ); }
+			}
+			if ( class_exists( 'YBY_Global_Inquiry_Dock' ) ) {
+				$dock = YBY_Global_Inquiry_Dock::sanitize( YBY_Global_Inquiry_Dock::settings() );
+				wp_add_inline_style( 'yby-global-inquiry-dock', YBY_Global_Inquiry_Dock::build_color_css( $dock ) );
+				if ( '' !== $dock['custom_css'] ) { wp_add_inline_style( 'yby-global-inquiry-dock', $dock['custom_css'] ); }
+			}
+
 		}
 
-		wp_add_inline_style(
-			'yby-inquiry-components',
-			$this->build_brand_profile_css()
-		);
+		if ( $inquiry_enabled ) {
+			wp_add_inline_style( 'yby-inquiry-components', $this->build_brand_profile_css() );
+		}
 
-		wp_enqueue_script(
-			'yby-lead-sdk',
-			YBY_CORE_PLUGIN_URL . 'public/js/yby-lead-sdk.js',
-			array(),
-			$this->asset_version( 'public/js/yby-lead-sdk.js' ),
-			true
-		);
+		if ( $inquiry_enabled ) {
+			wp_enqueue_script(
+				'yby-lead-sdk',
+				YBY_CORE_PLUGIN_URL . 'public/js/yby-lead-sdk.js',
+				array(),
+				$this->asset_version( 'public/js/yby-lead-sdk.js' ),
+				true
+			);
+		}
 
 		wp_enqueue_script(
 			$this->plugin_name . '-public',
 			YBY_CORE_PLUGIN_URL . 'public/assets/js/yby-core-public.js',
-			array( 'yby-lead-sdk' ),
+			$inquiry_enabled ? array( 'yby-lead-sdk' ) : array(),
 			$this->asset_version( 'public/assets/js/yby-core-public.js' ),
 			true
 		);
 
-		wp_enqueue_script(
-			'yby-inquiry-components',
-			YBY_CORE_PLUGIN_URL . 'public/js/yby-inquiry-components.js',
-			array( 'yby-lead-sdk', $this->plugin_name . '-public' ),
-			$this->asset_version( 'public/js/yby-inquiry-components.js' ),
-			true
-		);
-		wp_enqueue_script( 'yby-global-popup', YBY_CORE_PLUGIN_URL . 'public/js/yby-global-popup.js', array( 'yby-inquiry-components' ), $this->asset_version( 'public/js/yby-global-popup.js' ), true );
-		wp_enqueue_script( 'yby-global-inquiry-dock', YBY_CORE_PLUGIN_URL . 'public/js/yby-global-inquiry-dock.js', array( $this->plugin_name . '-public', 'yby-global-popup' ), $this->asset_version( 'public/js/yby-global-inquiry-dock.js' ), true );
+		if ( $inquiry_enabled ) {
+			wp_enqueue_script(
+				'yby-inquiry-components',
+				YBY_CORE_PLUGIN_URL . 'public/js/yby-inquiry-components.js',
+				array( 'yby-lead-sdk', $this->plugin_name . '-public' ),
+				$this->asset_version( 'public/js/yby-inquiry-components.js' ),
+				true
+			);
+			wp_enqueue_script( 'yby-global-popup', YBY_CORE_PLUGIN_URL . 'public/js/yby-global-popup.js', array( 'yby-inquiry-components' ), $this->asset_version( 'public/js/yby-global-popup.js' ), true );
+			wp_enqueue_script( 'yby-global-inquiry-dock', YBY_CORE_PLUGIN_URL . 'public/js/yby-global-inquiry-dock.js', array( $this->plugin_name . '-public', 'yby-global-popup' ), $this->asset_version( 'public/js/yby-global-inquiry-dock.js' ), true );
+		}
 
-		$project      = YBY_Project::get_current_project();
+
+		$project      = $project_enabled ? YBY_Project::get_current_project() : array();
 		$page_profile = YBY_Page_Profile::get_current_profile();
-		$content      = YBY_Content::get_current_content();
-		$template     = YBY_Project_Template::get_current_template();
+		$content      = $project_enabled ? YBY_Content::get_current_content() : array();
+		$template     = $project_enabled ? YBY_Project_Template::get_current_template() : array();
 
 		$data = array(
 			'config'      => YBY_Config::get_runtime_config(),
-			'leadSession' => ( new YBY_Lead_Session() )->get_frontend_config(),
-			'tracking'    => ( new YBY_Tracking() )->get_frontend_config(),
+			'leadSession' => $inquiry_enabled ? ( new YBY_Lead_Session() )->get_frontend_config() : array(),
+			'tracking'    => $inquiry_enabled ? ( new YBY_Tracking() )->get_frontend_config() : array(),
 			'project'     => $project,
 			'pageProfile' => $page_profile,
 			'content'     => $content,

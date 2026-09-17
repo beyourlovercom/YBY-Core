@@ -1,14 +1,14 @@
 <?php
 /** Email hub view. */
-$tabs = array(
-	'floating_inquiry' => '悬浮询盘',
-	'popup_inquiry' => '弹窗询盘', 'popup_subscribe' => '弹窗订阅', 'popup_lottery' => '弹窗抽奖',
+$tabs = isset( $tabs ) && is_array( $tabs ) ? $tabs : array(
+	'floating_inquiry' => '悬浮询盘', 'popup_inquiry' => '弹窗询盘', 'popup_subscribe' => '弹窗订阅', 'popup_lottery' => '弹窗抽奖',
 	'shortcode_inquiry' => '短代码询盘', 'shortcode_subscribe' => '短代码订阅', 'bulk_marketing' => '营销群发', 'email_templates' => '邮件模板',
 );
+$inquiry_enabled = YBY_Module_Registry::is_enabled( 'inquiry_os' );
 $dock_theme = YBY_Brand_Profile::get_theme_config();
-$dock_inquiry_background = $dock_settings['inquiry_background_color'] ?: ( sanitize_hex_color( $dock_theme['ctaBackground'] ?? '' ) ?: ( sanitize_hex_color( $dock_theme['primaryColor'] ?? '' ) ?: '#176b35' ) );
-$dock_inquiry_text = $dock_settings['inquiry_text_color'] ?: ( sanitize_hex_color( $dock_theme['buttonTextColor'] ?? '' ) ?: '#ffffff' );
-$dock_preview_settings = $dock_settings;
+$dock_inquiry_background = $inquiry_enabled ? ( $dock_settings['inquiry_background_color'] ?: ( sanitize_hex_color( $dock_theme['ctaBackground'] ?? '' ) ?: ( sanitize_hex_color( $dock_theme['primaryColor'] ?? '' ) ?: '#176b35' ) ) ) : '#176b35';
+$dock_inquiry_text = $inquiry_enabled ? ( $dock_settings['inquiry_text_color'] ?: ( sanitize_hex_color( $dock_theme['buttonTextColor'] ?? '' ) ?: '#ffffff' ) ) : '#ffffff';
+$dock_preview_settings = $inquiry_enabled ? $dock_settings : array();
 $dock_preview_settings['inquiry_background_color'] = $dock_inquiry_background;
 $dock_preview_settings['inquiry_text_color'] = $dock_inquiry_text;
 ?>

@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-loader.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-helpers.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-registry.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-security.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-database.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-config.php';
@@ -111,10 +112,13 @@ class YBY_Core {
 
 		$this->loader->add_action( 'plugins_loaded', 'YBY_Activator', 'sync_capabilities', 1, 0 );
 		$this->loader->add_action( 'plugins_loaded', $database, 'maybe_upgrade', 5, 0 );
-		$this->loader->add_action( 'plugins_loaded', 'YBY_Email_Design_Settings', 'install_defaults', 6, 0 );
-		$runtime = new YBY_Email_Template_Runtime();
-		$this->loader->add_filter( 'wp_new_user_notification_email', $runtime, 'filter_new_user_notification_email', 10, 3 );
-		$this->loader->add_filter( 'retrieve_password_notification_email', $runtime, 'filter_reset_password_notification_email', 10, 4 );
+
+		if ( YBY_Module_Registry::is_enabled( 'email_os' ) ) {
+			$this->loader->add_action( 'plugins_loaded', 'YBY_Email_Design_Settings', 'install_defaults', 6, 0 );
+			$runtime = new YBY_Email_Template_Runtime();
+			$this->loader->add_filter( 'wp_new_user_notification_email', $runtime, 'filter_new_user_notification_email', 10, 3 );
+			$this->loader->add_filter( 'retrieve_password_notification_email', $runtime, 'filter_reset_password_notification_email', 10, 4 );
+		}
 	}
 
 	/**
@@ -132,34 +136,52 @@ class YBY_Core {
 	 * @return void
 	 */
 	protected function define_admin_hooks() {
-		$admin          = new YBY_Admin( 'yby-core', YBY_CORE_VERSION );
-		$inquiry_admin  = new YBY_Inquiry_Admin( 'yby-core', YBY_CORE_VERSION );
-		$project_cpt    = new YBY_Project_CPT();
-		$brand_os       = new YBY_Brand_OS( 'yby-core', YBY_CORE_VERSION );
-		$project_studio = new YBY_Project_Studio( 'yby-core', YBY_CORE_VERSION );
-		$social_login   = new YBY_Social_Login_Admin();
-		$popup_admin    = new YBY_Popup_Admin( 'yby-core', YBY_CORE_VERSION );
-		$connector_admin = new YBY_Connector_Admin();
+		$admin           = new YBY_Admin( 'yby-core', YBY_CORE_VERSION );
+		$brand_os        = new YBY_Brand_OS( 'yby-core', YBY_CORE_VERSION );
+		$project_studio  = new YBY_Project_Studio( 'yby-core', YBY_CORE_VERSION );
 		$updater         = new YBY_Updater( YBY_CORE_PLUGIN_FILE, YBY_CORE_VERSION );
+		$inquiry_enabled = YBY_Module_Registry::is_enabled( 'inquiry_os' );
+		$email_enabled   = YBY_Module_Registry::is_enabled( 'email_os' );
+		$project_enabled = YBY_Module_Registry::is_enabled( 'project_studio' );
+		$social_enabled  = YBY_Module_Registry::is_enabled( 'social_login' );
+		$connector_enabled = YBY_Module_Registry::is_enabled( 'connector' );
 
-		$this->loader->add_action( 'init', $project_cpt, 'register' );
-		$this->loader->add_action( 'admin_menu', $inquiry_admin, 'add_admin_menu', 20 );
 		$this->loader->add_action( 'admin_menu', $project_studio, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_menu', $brand_os, 'add_admin_menu' );
-		$this->loader->add_action( 'admin_menu', $social_login, 'add_admin_menu' );
+		if ( $social_enabled ) {
+			$social_login = new YBY_Social_Login_Admin();
+			$this->loader->add_action( 'admin_menu', $social_login, 'add_admin_menu' );
+			$this->loader->add_action( 'admin_enqueue_scripts', $social_login, 'enqueue_assets' );
+		}
 		$this->loader->add_action( 'admin_menu', $admin, 'add_admin_menu' );
-		$this->loader->add_action( 'admin_menu', $popup_admin, 'add_admin_menu' );
-		$this->loader->add_action( 'admin_enqueue_scripts', $project_studio, 'enqueue_assets' );
+		if ( $inquiry_enabled || $email_enabled ) {
+			$popup_admin = new YBY_Popup_Admin( 'yby-core', YBY_CORE_VERSION );
+			$this->loader->add_action( 'admin_menu', $popup_admin, 'add_admin_menu' );
+			$this->loader->add_action( 'admin_enqueue_scripts', $popup_admin, 'enqueue_assets' );
+		}
+		if ( $inquiry_enabled ) {
+			$inquiry_admin = new YBY_Inquiry_Admin( 'yby-core', YBY_CORE_VERSION );
+			$this->loader->add_action( 'admin_menu', $inquiry_admin, 'add_admin_menu', 20 );
+			$this->loader->add_action( 'admin_enqueue_scripts', $inquiry_admin, 'enqueue_assets' );
+		}
+		$this->loader->add_action( 'admin_menu', $project_studio, 'normalize_root_menu', 999 );
 		$this->loader->add_action( 'admin_enqueue_scripts', $brand_os, 'enqueue_assets' );
-		$this->loader->add_action( 'admin_enqueue_scripts', $social_login, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_assets' );
-		$this->loader->add_action( 'admin_enqueue_scripts', $inquiry_admin, 'enqueue_assets' );
-		$this->loader->add_action( 'admin_enqueue_scripts', $popup_admin, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_init', $admin, 'redirect_legacy_inquiry_dock' );
-		$this->loader->add_action( 'admin_init', $connector_admin, 'handle_secret_action' );
 		$updater->register_hooks( $this->loader );
-		$this->loader->add_filter( 'parent_file', $project_studio, 'filter_parent_file' );
-		$this->loader->add_filter( 'submenu_file', $project_studio, 'filter_submenu_file' );
+
+		if ( $project_enabled ) {
+			$project_cpt = new YBY_Project_CPT();
+			$this->loader->add_action( 'init', $project_cpt, 'register' );
+			$this->loader->add_action( 'admin_enqueue_scripts', $project_studio, 'enqueue_assets' );
+			$this->loader->add_filter( 'parent_file', $project_studio, 'filter_parent_file' );
+			$this->loader->add_filter( 'submenu_file', $project_studio, 'filter_submenu_file' );
+		}
+
+		if ( $connector_enabled ) {
+			$connector_admin = new YBY_Connector_Admin();
+			$this->loader->add_action( 'admin_init', $connector_admin, 'handle_secret_action' );
+		}
 	}
 
 	/**
@@ -168,33 +190,48 @@ class YBY_Core {
 	 * @return void
 	 */
 	protected function define_public_hooks() {
-		$public             = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
-		$lead_rest_route    = new YBY_Lead_REST_Controller();
-		$google_auth_route  = new YBY_Google_Auth_REST_Controller();
-		$google_one_tap     = new YBY_Google_One_Tap_Controller();
-		$social_shortcodes  = new YBY_Social_Login_Shortcodes();
-		$inquiry_manager    = new YBY_Inquiry_Manager();
-		$inquiry_renderer   = new YBY_Inquiry_Renderer();
-		$inquiry_shortcodes = new YBY_Inquiry_Shortcodes( $inquiry_manager, $inquiry_renderer );
-		$subscribe_shortcode = new YBY_Subscribe_Shortcode();
-		$global_popup       = new YBY_Global_Popup( $inquiry_manager, $inquiry_renderer );
-		$inquiry_dock       = new YBY_Global_Inquiry_Dock();
-		$connector_route    = new YBY_Connector();
+		$inquiry_enabled = YBY_Module_Registry::is_enabled( 'inquiry_os' );
+		$project_enabled = YBY_Module_Registry::is_enabled( 'project_studio' );
+		$social_enabled = YBY_Module_Registry::is_enabled( 'social_login' );
+		$connector_enabled = YBY_Module_Registry::is_enabled( 'connector' );
 
-		$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
-		$this->loader->add_action( 'rest_api_init', $lead_rest_route, 'register_routes' );
-		$this->loader->add_action( 'rest_api_init', $google_auth_route, 'register_routes' );
-		$this->loader->add_action( 'rest_api_init', $google_one_tap, 'register_routes' );
-		$this->loader->add_action( 'rest_api_init', $connector_route, 'register_routes' );
-		$this->loader->add_action( 'wp_enqueue_scripts', $google_one_tap, 'enqueue_runtime', 20, 0 );
-		$this->loader->add_action( 'wp_logout', $google_one_tap, 'suppress_after_logout', 10, 0 );
-		$this->loader->add_action( 'init', $social_shortcodes, 'register', 10, 0 );
-		$this->loader->add_action( 'init', $inquiry_shortcodes, 'register', 10, 0 );
-		$this->loader->add_action( 'init', $subscribe_shortcode, 'register', 10, 0 );
-		$this->loader->add_filter( 'the_content', $inquiry_shortcodes, 'capture_modal_shortcodes_in_content', 9, 1 );
-		$this->loader->add_action( 'wp_footer', $inquiry_shortcodes, 'render_deferred_modals', 100, 0 );
-		$this->loader->add_action( 'wp_footer', $global_popup, 'render', 110, 0 );
-		$this->loader->add_action( 'wp_footer', $inquiry_dock, 'render', 120, 0 );
+		if ( $inquiry_enabled || $project_enabled ) {
+			$public = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
+			$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
+		}
+
+		if ( $inquiry_enabled ) {
+			$lead_rest_route = new YBY_Lead_REST_Controller();
+			$inquiry_manager = new YBY_Inquiry_Manager();
+			$inquiry_renderer = new YBY_Inquiry_Renderer();
+			$inquiry_shortcodes = new YBY_Inquiry_Shortcodes( $inquiry_manager, $inquiry_renderer );
+			$subscribe_shortcode = new YBY_Subscribe_Shortcode();
+			$global_popup = new YBY_Global_Popup( $inquiry_manager, $inquiry_renderer );
+			$inquiry_dock = new YBY_Global_Inquiry_Dock();
+			$this->loader->add_action( 'rest_api_init', $lead_rest_route, 'register_routes' );
+			$this->loader->add_action( 'init', $inquiry_shortcodes, 'register', 10, 0 );
+			$this->loader->add_action( 'init', $subscribe_shortcode, 'register', 10, 0 );
+			$this->loader->add_filter( 'the_content', $inquiry_shortcodes, 'capture_modal_shortcodes_in_content', 9, 1 );
+			$this->loader->add_action( 'wp_footer', $inquiry_shortcodes, 'render_deferred_modals', 100, 0 );
+			$this->loader->add_action( 'wp_footer', $global_popup, 'render', 110, 0 );
+			$this->loader->add_action( 'wp_footer', $inquiry_dock, 'render', 120, 0 );
+		}
+
+		if ( $social_enabled ) {
+			$google_auth_route = new YBY_Google_Auth_REST_Controller();
+			$google_one_tap = new YBY_Google_One_Tap_Controller();
+			$social_shortcodes = new YBY_Social_Login_Shortcodes();
+			$this->loader->add_action( 'rest_api_init', $google_auth_route, 'register_routes' );
+			$this->loader->add_action( 'rest_api_init', $google_one_tap, 'register_routes' );
+			$this->loader->add_action( 'wp_enqueue_scripts', $google_one_tap, 'enqueue_runtime', 20, 0 );
+			$this->loader->add_action( 'wp_logout', $google_one_tap, 'suppress_after_logout', 10, 0 );
+			$this->loader->add_action( 'init', $social_shortcodes, 'register', 10, 0 );
+		}
+
+		if ( $connector_enabled ) {
+			$connector_route = new YBY_Connector();
+			$this->loader->add_action( 'rest_api_init', $connector_route, 'register_routes' );
+		}
 	}
 
 	/**

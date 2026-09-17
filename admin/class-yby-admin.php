@@ -120,7 +120,11 @@ class YBY_Admin {
 		}
 
 		$tab         = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general';
-		$tab         = in_array( $tab, array( 'general', 'inquiry', 'inquiry-notification', 'wp-api', 'system-status', 'updates' ), true ) ? $tab : 'general';
+		$tab         = in_array( $tab, array_keys( self::settings_tabs() ), true ) ? $tab : 'general';
+		if ( 'modules' === $tab ) {
+			$this->render_modules_page();
+			return;
+		}
 		if ( 'inquiry' === $tab ) {
 			$this->render_inquiry_settings();
 			return;
@@ -162,6 +166,32 @@ class YBY_Admin {
 		$options = YBY_Config::get_options();
 
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/settings-page.php';
+	}
+
+	public static function settings_tabs() {
+		$tabs = array( 'general' => '常规', 'modules' => '模块' );
+		if ( YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) {
+			$tabs['inquiry'] = '询盘';
+			$tabs['inquiry-notification'] = '询盘通知';
+		}
+		if ( YBY_Module_Registry::is_enabled( 'connector' ) ) { $tabs['wp-api'] = 'WP-API'; }
+		$tabs['system-status'] = '系统状态';
+		$tabs['updates'] = '更新';
+		return $tabs;
+	}
+
+	protected function render_modules_page() {
+		$tab = 'modules';
+		$notice = '';
+		if ( isset( $_POST['yby_core_modules_submit'] ) ) {
+			check_admin_referer( 'yby_core_modules_save', 'yby_core_modules_nonce' );
+			YBY_Module_Registry::save( wp_unslash( $_POST['yby_core_modules'] ?? array() ) );
+			$notice = __( 'Module settings saved. Runtime gates are active for this site.', 'yby-core' );
+		}
+		$foundation = YBY_Module_Registry::foundation();
+		$modules = YBY_Module_Registry::modules();
+		$enabled = YBY_Module_Registry::enabled_modules();
+		include YBY_CORE_PLUGIN_DIR . 'admin/views/modules-page.php';
 	}
 
 	protected function render_inquiry_settings() {

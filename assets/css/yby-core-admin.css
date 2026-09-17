@@ -28,3 +28,49 @@
 .yby-status-error { color: #b32d2e; background: #fcf0f1; border-color: #f0b7b8; }
 .yby-status-missing { color: #8a4b00; background: #fff7e6; border-color: #f0cf8e; }
 .yby-status-neutral { color: #50575e; background: #f6f7f7; border-color: #dcdcde; }
+
+/* Andy Core Modular Runtime V1 */
+.yby-modules-page { max-width: 1440px; }
+.yby-modules-hero { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; margin:22px 0 26px; padding:24px 26px; background:#fff; border:1px solid #dcdcde; border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+.yby-modules-hero h2 { margin:4px 0 6px; font-size:24px; }
+.yby-modules-hero p { margin:0; color:#646970; }
+.yby-modules-kicker { color:#00754a; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.yby-modules-section-title { margin:26px 0 12px; }
+.yby-modules-section-title small { color:#646970; font-size:13px; font-weight:400; margin-left:8px; }
+.yby-modules-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.yby-modules-grid--foundation { grid-template-columns:repeat(6,minmax(0,1fr)); }
+.yby-module-card { display:flex; flex-direction:column; min-height:178px; padding:18px; background:#fff; border:1px solid #dcdcde; border-radius:10px; box-sizing:border-box; }
+.yby-module-card.is-foundation { min-height:132px; background:#f8fbf9; }
+.yby-module-card.is-planned { background:#f6f7f7; }
+.yby-module-card__top,.yby-module-card__footer { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.yby-module-card h3 { margin:16px 0 7px; font-size:17px; }
+.yby-module-card p { color:#646970; margin:0 0 18px; line-height:1.55; }
+.yby-module-card__footer { margin-top:auto; }
+.yby-module-card__footer a { color:#00754a; font-weight:600; text-decoration:none; }
+.yby-module-id { color:#8c8f94; font:11px/1.3 monospace; }
+.yby-module-switch { position:relative; display:inline-flex; }
+.yby-module-switch input { position:absolute; opacity:0; pointer-events:none; }
+.yby-module-switch__track { width:42px; height:24px; border-radius:999px; background:#8c8f94; position:relative; transition:.18s ease; }
+.yby-module-switch__track:after { content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); transition:.18s ease; }
+.yby-module-switch input:checked + .yby-module-switch__track { background:#00754a; }
+.yby-module-switch input:checked + .yby-module-switch__track:after { transform:translateX(18px); }
+.yby-module-switch input:disabled + .yby-module-switch__track { opacity:.35; cursor:not-allowed; }
+@media (max-width:1100px){.yby-modules-grid,.yby-modules-grid--foundation{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media (max-width:680px){.yby-modules-grid,.yby-modules-grid--foundation{grid-template-columns:1fr;}.yby-modules-hero{flex-direction:column;}}
+
+/* Modular Runtime V1 compact list */
+.yby-modules-table-wrap{margin-top:18px;background:#fff;border:1px solid #dcdcde;border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.yby-modules-table{border:0!important;box-shadow:none!important}
+.yby-modules-table th{padding:11px 12px;background:#f6f7f7;color:#50575e;font-size:12px;font-weight:700;letter-spacing:.02em}
+.yby-modules-table td{padding:12px;vertical-align:middle}
+.yby-modules-table td:first-child strong{display:block;font-size:14px;color:#1d2327}
+.yby-modules-table td:first-child code{display:block;margin-top:3px;padding:0;background:transparent;color:#8c8f94;font-size:10px}
+.yby-modules-table .col-module{width:18%}.yby-modules-table .col-desc{width:31%}.yby-modules-table .col-type{width:10%}.yby-modules-table .col-status{width:12%}.yby-modules-table .col-toggle{width:8%}.yby-modules-table .col-action{width:8%}
+.yby-modules-table tr.is-foundation td{background:#f8fbf9}
+.yby-modules-table tr.is-planned td{color:#8c8f94;background:#f6f7f7}
+.yby-module-type{display:inline-flex;padding:3px 7px;border-radius:5px;background:#f0f0f1;color:#50575e;font-size:11px;font-weight:600}
+.yby-modules-table .dashicons-lock{color:#00754a}
+.yby-module-enter{color:#00754a;font-weight:600;text-decoration:none;white-space:nowrap}
+.yby-module-enter:hover{color:#005c3a}
+.yby-modules-footer{display:flex;align-items:center;gap:16px;margin-top:14px}.yby-modules-footer .submit{margin:0;padding:0}
+@media(max-width:900px){.yby-modules-table-wrap{overflow-x:auto}.yby-modules-table{min-width:920px}.yby-modules-hero{flex-direction:column}}
