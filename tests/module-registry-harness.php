@@ -11,13 +11,9 @@ $assert = static function ( $ok, $message ) { if ( ! $ok ) { fwrite( STDERR, "FA
 $modules = YBY_Module_Registry::modules();
 $assert( YBY_Module_Registry::VERSION === '1', 'registry version' );
 $assert( count( YBY_Module_Registry::foundation() ) >= 6, 'foundation must be explicit and locked' );
-foreach ( array( 'inquiry_os', 'email_os', 'project_studio', 'social_login', 'connector', 'docs_os' ) as $id ) {
-    $assert( isset( $modules[ $id ] ), 'missing module: ' . $id );
-}
+foreach ( array( 'inquiry_os', 'email_os', 'project_studio', 'social_login', 'connector', 'docs_os' ) as $id ) { $assert( isset( $modules[ $id ] ), 'missing module: ' . $id ); }
 $defaults = YBY_Module_Registry::enabled_modules();
-foreach ( array( 'inquiry_os', 'email_os', 'project_studio', 'social_login', 'connector' ) as $id ) {
-    $assert( in_array( $id, $defaults, true ), 'existing site module must default ON: ' . $id );
-}
+foreach ( array( 'inquiry_os', 'email_os', 'project_studio', 'social_login', 'connector' ) as $id ) { $assert( in_array( $id, $defaults, true ), 'existing site module must default ON: ' . $id ); }
 $assert( ! in_array( 'docs_os', $defaults, true ), 'Docs OS must default OFF until runtime exists' );
 $saved = YBY_Module_Registry::sanitize_enabled_modules( array( 'email_os', 'connector', 'docs_os', 'evil_module', 'email_os' ) );
 $assert( $saved === array( 'email_os', 'connector' ), 'save sanitizer must reject planned, unknown and duplicate modules' );
@@ -32,6 +28,7 @@ $admin = file_get_contents( dirname( __DIR__ ) . '/admin/class-yby-admin.php' );
 $view = file_get_contents( dirname( __DIR__ ) . '/admin/views/modules-page.php' );
 $assert( false !== strpos( $core, 'class-yby-module-registry.php' ), 'registry bootstrap missing' );
 $assert( false !== strpos( $admin, "'modules' === \$tab" ), 'Modules settings tab routing missing' );
-$assert( false !== strpos( $view, 'Feature Modules' ) && false !== strpos( $view, 'Foundation' ), 'module manager sections missing' );
+$assert( false !== strpos( $view, 'yby-modules-table' ) && false !== strpos( $view, 'Foundation' ) && false !== strpos( $view, 'Feature' ), 'compact module table contract missing' );
+$assert( false !== strpos( $view, '功能说明' ) && false !== strpos( $view, '运行状态' ) && false !== strpos( $view, '启用' ), 'module table columns missing' );
 $assert( false !== strpos( $view, 'disabled( $is_planned )' ), 'planned modules must remain non-toggleable' );
 echo "PASS module-registry-harness\n";
