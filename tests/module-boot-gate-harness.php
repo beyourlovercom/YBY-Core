@@ -9,9 +9,10 @@ $project = file_get_contents( $root . '/admin/class-yby-project-studio.php' );
 $admin = file_get_contents( $root . '/admin/class-yby-admin.php' );
 $popup = file_get_contents( $root . '/admin/class-yby-popup-admin.php' );
 $public = file_get_contents( $root . '/public/class-yby-public.php' );
-foreach ( array( 'inquiry_os', 'email_os', 'project_studio', 'social_login', 'connector' ) as $id ) {
+foreach ( array( 'inquiry_os', 'email_os', 'project_studio', 'social_login', 'connector', 'docs_os' ) as $id ) {
 	$assert( false !== strpos( $core, "YBY_Module_Registry::is_enabled( '{$id}' )" ), 'core gate missing: ' . $id );
 }
+$assert( preg_match( '/if \( \$docs_enabled \).*?YBY_Docs_OS_Admin.*?add_admin_menu/s', $core ), 'Docs OS admin shell must be gated' );
 $assert( preg_match( '/is_enabled\( \'email_os\' \).*?wp_new_user_notification_email/s', $core ), 'Email OS system hooks must be gated' );
 $assert( preg_match( '/if \( \$inquiry_enabled \).*?YBY_Lead_REST_Controller.*?YBY_Inquiry_Shortcodes/s', $core ), 'Inquiry REST/runtime must be gated' );
 $assert( preg_match( '/if \( \$social_enabled \).*?YBY_Google_Auth_REST_Controller.*?YBY_Social_Login_Shortcodes/s', $core ), 'Social Login runtime must be gated' );

@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v1.6.0 - 2026-09-18
+
+- Added Docs OS V1 as a default-off modular runtime with Home, Category, Document, Search, TOC and Related Docs surfaces.
+- Added reversible canonical takeover that preserves existing Docs post IDs, slugs, canonical URLs, taxonomy and Rank Math metadata.
+- Added BetterDocs migration compatibility mapping without requiring BetterDocs as the long-term runtime owner.
+- Added Cloudflare R2 render-time asset resolution from existing offloader metadata; no media re-upload and no post-content rewrite.
+- Added reusable `yby_docs_os_contract` adapters for post type, taxonomy, base path and related metadata.
+- Preserved runtime database version `1.5.0` and updater compatibility database version `1.4.0`; no database migration.
+
 ## v1.5.8 - 2026-09-16
 
 - Added Email OS V1.1 native WordPress / Andy Core template lifecycle, immutable Published snapshots, SHA-256 integrity, health/test tooling and ERP read-only Published metadata contract.

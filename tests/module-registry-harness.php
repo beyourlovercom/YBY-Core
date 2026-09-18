@@ -14,15 +14,15 @@ $assert( count( YBY_Module_Registry::foundation() ) >= 6, 'foundation must be ex
 foreach ( array( 'inquiry_os', 'email_os', 'project_studio', 'social_login', 'connector', 'docs_os' ) as $id ) { $assert( isset( $modules[ $id ] ), 'missing module: ' . $id ); }
 $defaults = YBY_Module_Registry::enabled_modules();
 foreach ( array( 'inquiry_os', 'email_os', 'project_studio', 'social_login', 'connector' ) as $id ) { $assert( in_array( $id, $defaults, true ), 'existing site module must default ON: ' . $id ); }
-$assert( ! in_array( 'docs_os', $defaults, true ), 'Docs OS must default OFF until runtime exists' );
+$assert( ! in_array( 'docs_os', $defaults, true ), 'Docs OS must default OFF for existing sites' );
 $saved = YBY_Module_Registry::sanitize_enabled_modules( array( 'email_os', 'connector', 'docs_os', 'evil_module', 'email_os' ) );
-$assert( $saved === array( 'email_os', 'connector' ), 'save sanitizer must reject planned, unknown and duplicate modules' );
+$assert( $saved === array( 'email_os', 'connector', 'docs_os' ), 'save sanitizer must accept ready Docs OS while rejecting unknown and duplicate modules' );
 YBY_Module_Registry::save( array( 'email_os' ) );
 $assert( YBY_Module_Registry::enabled_modules() === array( 'email_os' ), 'explicit site selection must override defaults' );
 $assert( YBY_Module_Registry::is_enabled( 'email_os' ), 'enabled module lookup' );
 $assert( ! YBY_Module_Registry::is_enabled( 'inquiry_os' ), 'disabled module lookup' );
 $assert( false !== strpos( YBY_Module_Registry::settings_url( 'connector' ), 'tab=wp-api' ), 'connector settings URL' );
-$assert( '' === YBY_Module_Registry::settings_url( 'docs_os' ), 'planned module must not expose settings URL' );
+$assert( false !== strpos( YBY_Module_Registry::settings_url( 'docs_os' ), 'page=yby-docs-os' ), 'ready Docs OS must expose settings URL' );
 $core = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-core.php' );
 $admin = file_get_contents( dirname( __DIR__ ) . '/admin/class-yby-admin.php' );
 $view = file_get_contents( dirname( __DIR__ ) . '/admin/views/modules-page.php' );

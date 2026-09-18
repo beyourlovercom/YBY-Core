@@ -69,6 +69,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-github-release-client.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-update-verifier.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-update-backup.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-updater.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-docs-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-inquiry-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
@@ -76,6 +77,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-social-login-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-popup-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-connector-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-email-template-admin.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-docs-os-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'public/class-yby-public.php';
 
 /**
@@ -145,6 +147,7 @@ class YBY_Core {
 		$project_enabled = YBY_Module_Registry::is_enabled( 'project_studio' );
 		$social_enabled  = YBY_Module_Registry::is_enabled( 'social_login' );
 		$connector_enabled = YBY_Module_Registry::is_enabled( 'connector' );
+		$docs_enabled      = YBY_Module_Registry::is_enabled( 'docs_os' );
 
 		$this->loader->add_action( 'admin_menu', $project_studio, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_menu', $brand_os, 'add_admin_menu' );
@@ -154,6 +157,10 @@ class YBY_Core {
 			$this->loader->add_action( 'admin_enqueue_scripts', $social_login, 'enqueue_assets' );
 		}
 		$this->loader->add_action( 'admin_menu', $admin, 'add_admin_menu' );
+		if ( $docs_enabled ) {
+			$docs_admin = new YBY_Docs_OS_Admin();
+			$this->loader->add_action( 'admin_menu', $docs_admin, 'add_admin_menu', 25 );
+		}
 		if ( $inquiry_enabled || $email_enabled ) {
 			$popup_admin = new YBY_Popup_Admin( 'yby-core', YBY_CORE_VERSION );
 			$this->loader->add_action( 'admin_menu', $popup_admin, 'add_admin_menu' );
@@ -194,6 +201,15 @@ class YBY_Core {
 		$project_enabled = YBY_Module_Registry::is_enabled( 'project_studio' );
 		$social_enabled = YBY_Module_Registry::is_enabled( 'social_login' );
 		$connector_enabled = YBY_Module_Registry::is_enabled( 'connector' );
+		$docs_enabled = YBY_Module_Registry::is_enabled( 'docs_os' );
+
+		if ( $docs_enabled ) {
+			$docs_runtime = new YBY_Docs_Runtime();
+			$this->loader->add_filter( 'query_vars', $docs_runtime, 'register_query_var' );
+			$this->loader->add_action( 'wp_enqueue_scripts', $docs_runtime, 'enqueue_assets', 15, 0 );
+			$this->loader->add_action( 'template_redirect', $docs_runtime, 'maybe_render_preview', 1, 0 );
+			$this->loader->add_action( 'template_redirect', $docs_runtime, 'maybe_render_canonical', 2, 0 );
+		}
 
 		if ( $inquiry_enabled || $project_enabled ) {
 			$public = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
