@@ -23,6 +23,16 @@ class YBY_Docs_Runtime {
 	protected function taxonomy() { $c = $this->contract(); return sanitize_key( $c['taxonomy'] ); }
 	protected function related_meta_key() { $c = $this->contract(); return sanitize_key( $c['related_meta_key'] ); }
 
+	protected function settings() {
+		$defaults = array(
+			'site_title' => 'Help Center', 'site_description' => 'Find answers to common questions about orders, shipping, returns, and more.',
+			'home_layout' => 'cards', 'category_limit' => 8, 'docs_per_category' => 6, 'sort' => 'doc_count_desc',
+			'show_search' => 1, 'show_categories' => 1, 'show_recent' => 1, 'show_toc' => 1, 'show_related' => 1, 'schema_enabled' => 1,
+		);
+		$stored = get_option( 'yby_docs_os_settings_v1', array() );
+		return wp_parse_args( is_array( $stored ) ? $stored : array(), $defaults );
+	}
+
 	public function register_query_var( $vars ) {
 		$vars[] = self::PREVIEW_VAR;
 		return $vars;
@@ -61,6 +71,7 @@ class YBY_Docs_Runtime {
 		if ( is_singular( $this->post_type() ) ) {
 			$surface = 'document';
 			$context['doc_id'] = get_queried_object_id();
+			$context['allow_unpublished'] = is_preview() && current_user_can( 'edit_post', $context['doc_id'] );
 		} elseif ( is_tax( $this->taxonomy() ) ) {
 			$surface = 'category';
 			$term = get_queried_object();
@@ -85,10 +96,11 @@ class YBY_Docs_Runtime {
 			$classes[] = 'yby-docs-preview-' . sanitize_html_class( $surface );
 			return $classes;
 		};
+		$settings = $this->settings();
 		$schema_action = function () use ( $surface, $data ) { $this->render_schema( $surface, $data ); };
 		add_filter( 'pre_get_document_title', $title_filter, 99 );
 		add_filter( 'body_class', $body_filter, 99 );
-		if ( ! $canonical ) { add_action( 'wp_head', $schema_action, 2 ); }
+		if ( ! $canonical && ! empty( $settings['schema_enabled'] ) ) { add_action( 'wp_head', $schema_action, 2 ); }
 
 		get_header();
 		$this->close_theme_archive_wrappers();
@@ -98,7 +110,7 @@ class YBY_Docs_Runtime {
 		</div></main><?php
 		get_footer();
 
-		if ( ! $canonical ) { remove_action( 'wp_head', $schema_action, 2 ); }
+		if ( ! $canonical && ! empty( $settings['schema_enabled'] ) ) { remove_action( 'wp_head', $schema_action, 2 ); }
 		remove_filter( 'body_class', $body_filter, 99 );
 		remove_filter( 'pre_get_document_title', $title_filter, 99 );
 	}
@@ -137,12 +149,18 @@ class YBY_Docs_Runtime {
 	}
 
 	protected function build_surface_data( $surface, $context = array() ) {
-		$data = array( 'title' => __( 'Docs', 'yby-core' ), 'categories' => array(), 'docs' => array(), 'post' => null, 'term' => null, 'query' => '' );
+		$settings = $this->settings();
+		$data = array( 'title' => $settings['site_title'], 'description' => $settings['site_description'], 'settings' => $settings, 'categories' => array(), 'docs' => array(), 'post' => null, 'term' => null, 'query' => '' );
 		$query = sanitize_text_field( isset( $_GET['q'] ) ? wp_unslash( $_GET['q'] ) : '' );
 		$data['query'] = $query;
 		if ( 'home' === $surface ) {
-			$data['categories'] = get_terms( array( 'taxonomy' => $this->taxonomy(), 'hide_empty' => false ) );
-			$args = array( 'post_type' => $this->post_type(), 'post_status' => 'publish', 'numberposts' => 50, 'orderby' => 'title', 'order' => 'ASC' );
+			$term_args = array( 'taxonomy' => $this->taxonomy(), 'hide_empty' => false, 'number' => max( 1, absint( $settings['category_limit'] ) ) );
+			if ( 'manual' === $settings['sort'] ) { $term_args['meta_key'] = 'doc_category_order'; $term_args['orderby'] = 'meta_value_num'; $term_args['order'] = 'ASC'; }
+			elseif ( 'name' === $settings['sort'] ) { $term_args['orderby'] = 'name'; $term_args['order'] = 'ASC'; }
+			else { $term_args['orderby'] = 'count'; $term_args['order'] = 'DESC'; }
+			$data['categories'] = get_terms( $term_args );
+			if ( is_wp_error( $data['categories'] ) ) { $data['categories'] = array(); }
+			$args = array( 'post_type' => $this->post_type(), 'post_status' => 'publish', 'numberposts' => '' !== $query ? 50 : max( 1, absint( $settings['docs_per_category'] ) ), 'orderby' => '' !== $query ? 'title' : 'modified', 'order' => '' !== $query ? 'ASC' : 'DESC' );
 			if ( '' !== $query ) { $args['s'] = $query; }
 			$data['docs'] = get_posts( $args );
 			return $data;
@@ -170,7 +188,8 @@ class YBY_Docs_Runtime {
 		}
 		$id = absint( isset( $context['doc_id'] ) ? $context['doc_id'] : ( isset( $_GET['doc_id'] ) ? $_GET['doc_id'] : 0 ) );
 		$post = $id ? get_post( $id ) : null;
-		if ( ! $post || $this->post_type() !== $post->post_type || 'publish' !== $post->post_status ) {
+		$allow_unpublished = ! empty( $context['allow_unpublished'] ) && $post && current_user_can( 'edit_post', $post->ID );
+		if ( ! $post || $this->post_type() !== $post->post_type || ( 'publish' !== $post->post_status && ! $allow_unpublished ) ) {
 			$fallback = get_posts( array( 'post_type' => $this->post_type(), 'post_status' => 'publish', 'numberposts' => 1 ) );
 			$post = $fallback ? $fallback[0] : null;
 		}
@@ -182,6 +201,9 @@ class YBY_Docs_Runtime {
 	}
 
 	protected function related_docs( $post ) {
+		$ids = get_post_meta( $post->ID, 'yby_docs_related_ids', true );
+		$ids = is_array( $ids ) ? array_values( array_unique( array_filter( array_map( 'absint', $ids ) ) ) ) : array();
+		if ( $ids ) { return get_posts( array( 'post_type' => $this->post_type(), 'post_status' => 'publish', 'post__in' => $ids, 'orderby' => 'post__in', 'numberposts' => 6 ) ); }
 		$raw = get_post_meta( $post->ID, $this->related_meta_key(), true );
 		$ids = array();
 		if ( is_array( $raw ) ) {
@@ -225,16 +247,13 @@ class YBY_Docs_Runtime {
 	}
 	protected function render_surface( $surface, $data ) {
 		if ( 'home' === $surface ) {
-			echo '<section class="yby-docs-hero"><p class="yby-docs-eyebrow">Docs OS</p><h1>' . esc_html__( 'How can we help?', 'yby-core' ) . '</h1><p>' . esc_html__( 'Search documentation or browse by category.', 'yby-core' ) . '</p>';
-			$this->render_search( $data['query'] ); echo '</section>';
+			$settings = $data['settings'];
+			echo '<section class="yby-docs-hero"><p class="yby-docs-eyebrow">Docs OS</p><h1>' . esc_html( $data['title'] ) . '</h1><p>' . esc_html( $data['description'] ) . '</p>';
+			if ( ! empty( $settings['show_search'] ) ) { $this->render_search( $data['query'] ); } echo '</section>';
 			if ( ! $this->canonical_render ) { echo '<nav class="yby-docs-quick"><a href="' . esc_url( $this->preview_url( 'faq' ) ) . '">FAQ</a><a href="' . esc_url( $this->preview_url( 'tutorial' ) ) . '">Tutorials</a></nav>'; }
-			echo '<section class="yby-docs-grid">';
-			foreach ( $data['categories'] as $term ) {
-				$url = $this->surface_url( 'category', array( 'doc_category' => $term->slug ), $term );
-				echo '<a class="yby-docs-card" href="' . esc_url( $url ) . '"><strong>' . esc_html( $term->name ) . '</strong><span>' . esc_html( (string) $term->count ) . ' docs</span></a>';
-			}
-			echo '</section><section class="yby-docs-content"><h2>' . esc_html( '' !== $data['query'] ? __( 'Search results', 'yby-core' ) : __( 'All documentation', 'yby-core' ) ) . '</h2>';
-			$this->render_doc_list( $data['docs'] ); echo '</section>'; return;
+			if ( ! empty( $settings['show_categories'] ) ) { echo '<section class="yby-docs-grid yby-docs-grid-' . esc_attr( $settings['home_layout'] ) . '">'; foreach ( $data['categories'] as $term ) { $url = $this->surface_url( 'category', array( 'doc_category' => $term->slug ), $term ); echo '<a class="yby-docs-card" href="' . esc_url( $url ) . '"><strong>' . esc_html( $term->name ) . '</strong><span>' . esc_html( (string) $term->count ) . ' docs</span></a>'; } echo '</section>'; }
+			if ( '' !== $data['query'] || ! empty( $settings['show_recent'] ) ) { echo '<section class="yby-docs-content"><h2>' . esc_html( '' !== $data['query'] ? __( 'Search results', 'yby-core' ) : __( 'Latest documentation', 'yby-core' ) ) . '</h2>'; $this->render_doc_list( $data['docs'] ); echo '</section>'; }
+			return;
 		}
 		if ( in_array( $surface, array( 'category', 'faq', 'tutorial' ), true ) ) {
 			echo '<section class="yby-docs-content"><p class="yby-docs-eyebrow">' . esc_html( ucfirst( $surface ) ) . '</p><h1>' . esc_html( $data['title'] ) . '</h1>';
@@ -245,11 +264,13 @@ class YBY_Docs_Runtime {
 		if ( ! $post ) { echo '<section class="yby-docs-content"><h1>' . esc_html__( 'Document unavailable', 'yby-core' ) . '</h1></section>'; return; }
 		echo '<nav class="yby-docs-breadcrumb"><a href="' . esc_url( $this->surface_url( 'home' ) ) . '">Docs</a>';
 		foreach ( $data['terms'] as $term ) { echo '<span>/</span><a href="' . esc_url( $this->surface_url( 'category', array( 'doc_category' => $term->slug ), $term ) ) . '">' . esc_html( $term->name ) . '</a>'; }
-		echo '</nav><article class="yby-docs-document"><aside class="yby-docs-toc" data-yby-docs-toc><strong>' . esc_html__( 'Table of Contents', 'yby-core' ) . '</strong><ol></ol></aside>';
+		$settings = $data['settings'];
+		echo '</nav><article class="yby-docs-document' . ( empty( $settings['show_toc'] ) ? ' yby-docs-document-no-toc' : '' ) . '">';
+		if ( ! empty( $settings['show_toc'] ) ) { echo '<aside class="yby-docs-toc" data-yby-docs-toc><strong>' . esc_html__( 'Table of Contents', 'yby-core' ) . '</strong><ol></ol></aside>'; }
 		$rendered_content = apply_filters( 'the_content', $post->post_content );
 		$rendered_content = $this->resolve_asset_urls( $post, $rendered_content );
 		echo '<div class="yby-docs-article"><p class="yby-docs-eyebrow">Document</p><h1>' . esc_html( get_the_title( $post ) ) . '</h1><div class="yby-docs-entry" data-yby-docs-entry>' . $rendered_content . '</div>';
-		if ( ! empty( $data['related'] ) ) { echo '<section class="yby-docs-related"><h2>' . esc_html__( 'Related Docs', 'yby-core' ) . '</h2>'; $this->render_doc_list( $data['related'] ); echo '</section>'; }
+		if ( ! empty( $settings['show_related'] ) && ! empty( $data['related'] ) ) { echo '<section class="yby-docs-related"><h2>' . esc_html__( 'Related Docs', 'yby-core' ) . '</h2>'; $this->render_doc_list( $data['related'] ); echo '</section>'; }
 		echo '</div></article>';
 	}
 

@@ -160,6 +160,7 @@ class YBY_Core {
 		if ( $docs_enabled ) {
 			$docs_admin = new YBY_Docs_OS_Admin();
 			$this->loader->add_action( 'admin_menu', $docs_admin, 'add_admin_menu', 25 );
+			$this->loader->add_action( 'admin_enqueue_scripts', $docs_admin, 'enqueue_assets' );
 		}
 		if ( $inquiry_enabled || $email_enabled ) {
 			$popup_admin = new YBY_Popup_Admin( 'yby-core', YBY_CORE_VERSION );
