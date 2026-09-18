@@ -4,7 +4,7 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `1.5.8`
+- Product version: `1.6.0`
 - Development version: None
 - Database version: `1.5.0`
 - Updater compatibility database version: `1.4.0`
@@ -12,6 +12,15 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 - Development status: None
 - Plugin path: `yby-core/yby-core.php`
 - Technical namespace: existing `YBY_*` and `yby_*` identifiers retained for compatibility
+
+## v1.6.0 release scope
+
+- Added modular Docs OS V1 with default-off registry gating and data-retention guarantees.
+- Added native Docs Home, Category, Document, Search, TOC, Related Docs and preview schema surfaces.
+- Added reversible canonical takeover for existing WordPress `docs` / `doc_category` content without recreating posts or changing URLs.
+- Added Cloudflare R2 render-time asset resolution from existing offloader metadata; no media re-upload and no `post_content` rewrite.
+- Added reusable `yby_docs_os_contract` adapter for post type, taxonomy, base path and related metadata compatibility.
+- Database schema remains runtime `1.5.0`; updater compatibility remains `1.4.0`. No migration is required.
 
 ## v1.5.8 release scope
 

@@ -4,7 +4,7 @@ Tags: andy-core, yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.5.8
+Stable tag: 1.6.0
 License: Proprietary
 License URI: https://ybyglobal.com/
 
@@ -12,7 +12,16 @@ Core platform plugin for managed WordPress websites, including Case ID, tracking
 
 == Description ==
 
-Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.5.8 adds Email OS V1.1 and the canonical completed-delivered WooCommerce status while preserving the public signed GitHub Release update channel and existing `yby-core` runtime contracts.
+Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.6.0 adds modular Docs OS V1, reversible canonical documentation takeover, Cloudflare R2 render-time asset resolution, and a reusable cross-site Docs contract while preserving existing Andy Core runtime and signed updater contracts.
+
+Included in v1.6.0:
+
+* Docs OS V1 module registry with default OFF gate and full data-retention behavior
+* Native Docs Home, Category, Document, Search, TOC and Related Docs runtime
+* Reversible canonical takeover that preserves existing post IDs, slugs, URLs, taxonomy and SEO metadata
+* Cloudflare R2 render-time image/srcset resolution from existing offloader metadata; no re-upload or post-content rewrite
+* Reusable `yby_docs_os_contract` for post type, taxonomy, base path and related metadata adapters
+* Database schema remains runtime 1.5.0 and updater compatibility 1.4.0; no migration
 
 Included in v1.5.8:
 
