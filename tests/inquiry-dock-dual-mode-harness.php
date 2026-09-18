@@ -18,4 +18,6 @@ $assert( false !== strpos( $dock, "'whatsapp_background_color' => '#25d366'" ) &
 $assert( false !== strpos( $dock, 'build_color_css' ) && false !== strpos( $public, 'YBY_Global_Inquiry_Dock::build_color_css( $dock )' ), 'Governed dock color CSS injection missing.' );
 $assert( false !== strpos( $view, 'type="color"' ) && false !== strpos( $view, 'whatsapp_background_color' ) && false !== strpos( $view, 'inquiry_background_color' ) && false !== strpos( $view, 'data-yby-dock-color' ), 'Clickable dock color controls missing.' );
 $assert( false !== strpos( $css, '--yby-dock-whatsapp-bg' ) && false !== strpos( $css, '--yby-dock-inquiry-bg' ) && false !== strpos( $css, 'yby-floating-color-grid' ), 'Dock button color variables or admin color-grid styling missing.' );
+$assert( false !== strpos( $css, 'Andy Core v1.6.0 UI Patch: glossy inquiry dock' ) && false !== strpos( $css, 'linear-gradient(180deg' ) && false !== strpos( $css, 'border-radius:999px' ), 'Glossy 3D dock visual contract missing.' );
+$assert( false !== strpos( $css, 'max-width:340px' ) && false !== strpos( $css, 'min-height:44px' ) && false !== strpos( $css, 'font-size:14px' ) && false !== strpos( $css, 'opacity:.92' ), 'Mobile compact translucent dock contract missing.' );
 echo "PASS inquiry-dock-dual-mode-harness\n";
