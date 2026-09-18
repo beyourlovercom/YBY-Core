@@ -34,3 +34,7 @@ Baseline: `672aa3e26f07e6ddff1db26f2c69782cf2299e8e`
 - Metadata version: `1.6.0`
 
 Formal release signing and Production deployment remain outside V160-8 and require the V160-9 gate.
+
+## Backward compatibility
+
+- v1.5.7 updater verifier accepts the v1.6.0 metadata + ZIP when the compatibility harness derives the target version/package from signed metadata: PASS.
