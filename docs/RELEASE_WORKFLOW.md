@@ -148,5 +148,5 @@ The tag-build workflow should:
 
 ## Current stable release
 
-- Stable version: `YBY Core v1.5.2`
-- Stable package baseline: `andy-core-v1.5.2.zip`
+- Stable version: `YBY Core v1.5.8`
+- Stable package baseline: `andy-core-v1.5.8.zip`

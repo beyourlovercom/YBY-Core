@@ -45,17 +45,10 @@ $assert( false !== strpos( $builder, '"schema_version": 1' ) && false !== strpos
 $assert( false !== strpos( $builder, "printf '%s  %s\\n'" ), 'SHA256_FILENAME_EVIDENCE_GATE failed.' );
 $assert( false !== strpos( $builder, 'define( \'YBY_DATABASE_VERSION\', \'${database_version}\' );' ) && false !== strpos( $builder, 'YBY_RUNTIME_DATABASE_VERSION' ), 'BUILDER_DATABASE_COMPATIBILITY_GATE failed.' );
 
-$publish_pos = strpos( $workflow, "  publish-release:\n" );
-$assert( false !== $publish_pos, 'TAG_RELEASE_PUBLISH_JOB_GATE failed.' );
-$build_section   = substr( $workflow, 0, $publish_pos );
-$publish_section = substr( $workflow, $publish_pos );
-$assert( false === strpos( $build_section, 'gh release' ) && false !== strpos( $workflow, "permissions:\n  contents: read" ), 'TAG_BUILD_READ_ONLY_GATE failed.' );
-$assert( false !== strpos( $publish_section, 'needs: tagged-release-package' ) && false !== strpos( $publish_section, "permissions:\n      contents: read" ), 'TAG_PUBLISH_DEPENDENCY_PERMISSION_GATE failed.' );
-$assert( false !== strpos( $publish_section, 'beyourlovercom/andy-core-release' ) && false !== strpos( $publish_section, 'ANDY_CORE_RELEASE_REPO_TOKEN' ), 'PUBLIC_RELEASE_REPO_GATE failed.' );
-$assert( false !== strpos( $publish_section, 'actions/download-artifact@v4' ) && false !== strpos( $publish_section, 'gh release create' ) && false !== strpos( $publish_section, '--draft' ), 'TAG_DRAFT_RELEASE_GATE failed.' );
-$assert( false !== strpos( $publish_section, 'gh api' ) && false !== strpos( $publish_section, 'release_id' ) && false !== strpos( $publish_section, '.assets[].name' ) && false !== strpos( $publish_section, '.digest' ), 'TAG_RELEASE_ASSET_VERIFY_GATE failed.' );
-$assert( false !== strpos( $publish_section, '--method PATCH' ) && false !== strpos( $publish_section, 'make_latest=true' ) && false !== strpos( $publish_section, 'releases/tags/${tag}' ), 'TAG_RELEASE_STABLE_PUBLISH_GATE failed.' );
+$assert( false === strpos( $workflow, "  publish-release:\n" ), 'TAG_RELEASE_PUBLISH_JOB_FORBIDDEN_GATE failed.' );
+$assert( false === strpos( $workflow, 'gh release create' ) && false === strpos( $workflow, 'gh api' ) && false === strpos( $workflow, 'ANDY_CORE_RELEASE_REPO_TOKEN' ), 'TAG_WORKFLOW_MUST_NOT_PUBLISH_RELEASE_GATE failed.' );
 $assert( false === strpos( $workflow, 'softprops/action-gh-release' ), 'TAG_RELEASE_UNAPPROVED_ACTION_GATE failed.' );
+$assert( false !== strpos( $workflow, "permissions:\n  contents: read" ), 'TAG_BUILD_READ_ONLY_GATE failed.' );
 $assert( false !== strpos( $workflow, 'actions/upload-artifact@v4' ) && false !== strpos( $workflow, 'update-metadata.json' ) && false !== strpos( $workflow, 'update-metadata.sig' ) && false !== strpos( $workflow, 'ANDY_CORE_UPDATE_SIGNING_SECRET' ), 'TAG_BUILD_ARTIFACT_GATE failed.' );
 $assert( false !== strpos( $validation, 'php tests/secure-updater-harness.php' ) && false !== strpos( $validation, 'updater-backward-compat-harness.php' ) && false !== strpos( $validation, 'andy-core-v1.6.0-release-candidate' ), 'PR_RELEASE_VALIDATION_GATE failed.' );
 
