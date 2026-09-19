@@ -199,14 +199,29 @@
         "[data-yby-lead-name]",
         "[data-yby-case-id]",
         "[data-yby-case-id-input]",
-        "[data-yby-whatsapp-link]",
-        "[data-yby-catalog-link]",
-        "[data-yby-return-link]",
-        "[data-yby-project-form]",
-        "[data-yby-video-frame]",
-        "[data-yby-video-note]"
+        "[data-yby-project-form]"
       ].join(", ")
     );
+  }
+
+  function getBricksLeadForm(elementId) {
+    var normalizedId = safeString(elementId, 80).replace(/[^A-Za-z0-9_-]/g, "");
+    var form;
+
+    if (!normalizedId) {
+      return null;
+    }
+
+    form = document.querySelector('[data-element-id="' + normalizedId + '"]');
+    if (!form || typeof form.querySelector !== "function") {
+      return null;
+    }
+
+    if (!form.querySelector("input[type='email']") || !form.querySelector("textarea")) {
+      return null;
+    }
+
+    return form;
   }
 
   function sanitizeTrackingPayload(payload) {
@@ -813,6 +828,60 @@
   window.YBYTracking.viewCaseStudy = function (payload) {
     return window.YBYTracking.push("view_case_study", payload);
   };
+
+  window.YBYTracking.bindGlobalConversionActions = function () {
+    if (window.YBYTracking.globalConversionActionsBound) {
+      return;
+    }
+
+    window.YBYTracking.globalConversionActionsBound = true;
+
+    document.addEventListener("bricks/form/success", function (event) {
+      var detail = event && event.detail ? event.detail : {};
+      var elementId = safeString(detail.elementId, 80);
+      var form;
+
+      if (isThankYouPage()) {
+        return;
+      }
+
+      form = getBricksLeadForm(elementId);
+      if (!form) {
+        return;
+      }
+
+      window.YBYTracking.generateLead({
+        page_type: "bricks_form",
+        form_id: elementId,
+        lead_type: "lead_form",
+        event_id: "BRICKS-" + (elementId || "FORM") + "-" + Date.now()
+      });
+    });
+
+    document.addEventListener("click", function (event) {
+      var target = event && event.target;
+      var link = target && typeof target.closest === "function" ? target.closest("a") : null;
+      var href;
+
+      if (!link || isThankYouPage()) {
+        return;
+      }
+
+      href = String(link.getAttribute("href") || "").toLowerCase();
+      if (href.indexOf("wa.me") === -1 && href.indexOf("whatsapp") === -1) {
+        return;
+      }
+
+      window.YBYTracking.clickWhatsApp({
+        page_type: getCanonicalString("pageType", "website", 80) || "website",
+        click_url: "whatsapp",
+        click_text: safeString(link.textContent, 80),
+        lead_type: "whatsapp"
+      });
+    });
+  };
+
+  window.YBYTracking.bindGlobalConversionActions();
 
   window.YBYThankYou.init = function () {
     if (!isThankYouPage()) {
