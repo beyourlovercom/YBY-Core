@@ -789,6 +789,108 @@ function testNonThankYouExclusion() {
   assert(runtime.dataLayer.length === 0, "Non-Thank You pages must not emit Thank You tracking.");
 }
 
+function buildPlainLeadFormDocument() {
+  const document = new MockDocument();
+  const form = new MockNode();
+  const email = new MockNode();
+  const textarea = new MockNode();
+
+  form.childrenBySelector["input[type='email']"] = [email];
+  form.childrenBySelector["textarea"] = [textarea];
+  document.setSelector('[data-element-id="vtgczi"]', [form]);
+
+  return { document, form };
+}
+
+function testBricksLeadSuccessTracking() {
+  const bundle = buildPlainLeadFormDocument();
+  const runtime = createRuntime({
+    documentBundle: { document: bundle.document, nodes: {} },
+    pathname: "/"
+  });
+
+  runtime.document.dispatchEvent("bricks/form/success", {
+    detail: { elementId: "vtgczi" }
+  });
+
+  assert(runtime.dataLayer.length === 1, "Bricks lead form success must emit one conversion event.");
+  assert(runtime.dataLayer[0].event === "generate_lead", "Bricks lead form success must emit generate_lead.");
+  assert(runtime.dataLayer[0].form_id === "vtgczi", "Bricks lead event must preserve the non-PII form ID.");
+  assert(runtime.dataLayer[0].lead_type === "lead_form", "Bricks lead event must identify lead_form type.");
+}
+
+function testBricksNonLeadFormExclusion() {
+  const document = new MockDocument();
+  const form = new MockNode();
+  form.childrenBySelector["input[type='email']"] = [new MockNode()];
+  document.setSelector('[data-element-id="newsletter"]', [form]);
+
+  const runtime = createRuntime({
+    documentBundle: { document, nodes: {} },
+    pathname: "/"
+  });
+
+  runtime.document.dispatchEvent("bricks/form/success", {
+    detail: { elementId: "newsletter" }
+  });
+
+  assert(runtime.dataLayer.length === 0, "Email-only Bricks forms must not be counted as leads.");
+}
+
+function testGlobalWhatsAppTracking() {
+  const document = new MockDocument();
+  const runtime = createRuntime({
+    documentBundle: { document, nodes: {} },
+    pathname: "/"
+  });
+  const link = new MockNode({
+    href: "https://wa.me/8613798537439?text=private-message",
+    textContent: "WhatsApp"
+  });
+
+  runtime.document.dispatchEvent("click", {
+    target: {
+      closest(selector) {
+        return selector === "a" ? link : null;
+      }
+    }
+  });
+
+  assert(runtime.dataLayer.length === 1, "Ordinary-page WhatsApp click must emit one conversion event.");
+  assert(runtime.dataLayer[0].event === "click_whatsapp", "Ordinary-page WhatsApp click must emit click_whatsapp.");
+  assert(runtime.dataLayer[0].click_url === "whatsapp", "WhatsApp tracking must not expose the full URL or message.");
+  assert(JSON.stringify(runtime.dataLayer[0]).indexOf("private-message") === -1, "WhatsApp tracking must not leak message content.");
+}
+
+function testThankYouWhatsAppNoDoubleCount() {
+  const runtime = createRuntime({
+    search: "?case_id=YBY-IRR-20260721-ABC234"
+  });
+  const baseline = runtime.dataLayer.length;
+
+  runtime.document.dispatchEvent("click", {
+    target: {
+      closest(selector) {
+        return selector === "a" ? runtime.nodes.whatsappLink : null;
+      }
+    }
+  });
+
+  assert(runtime.dataLayer.length === baseline + 1, "Thank You WhatsApp click must emit exactly one event.");
+  assert(runtime.dataLayer[baseline].event === "click_whatsapp_after_lead", "Thank You WhatsApp click must keep after-lead semantics.");
+}
+
+function testDockMarkerDoesNotMakeThankYouPage() {
+  const document = new MockDocument();
+  document.setSelector("[data-yby-whatsapp-link]", [new MockNode()]);
+  const runtime = createRuntime({
+    documentBundle: { document, nodes: {} },
+    pathname: "/"
+  });
+
+  assert(runtime.dataLayer.length === 0, "A global WhatsApp dock marker alone must not initialize Thank You tracking.");
+}
+
 function testInquiryPageExclusion() {
   const runtime = runInquiryRuntime();
 
@@ -819,6 +921,11 @@ const tests = [
   ["bottle_template_isolation", testBottleRejectsIrrigationRuntimeTemplate],
   ["session_tracking", testSessionStorageHydrationAndTracking],
   ["tracking_pii", testTrackingPiiExclusion],
+  ["bricks_lead_success", testBricksLeadSuccessTracking],
+  ["bricks_nonlead_exclusion", testBricksNonLeadFormExclusion],
+  ["global_whatsapp", testGlobalWhatsAppTracking],
+  ["thank_you_whatsapp_no_double", testThankYouWhatsAppNoDoubleCount],
+  ["dock_marker_not_thank_you", testDockMarkerDoesNotMakeThankYouPage],
   ["non_thank_you", testNonThankYouExclusion],
   ["inquiry_exclusion", testInquiryPageExclusion]
 ];
