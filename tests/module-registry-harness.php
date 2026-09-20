@@ -9,7 +9,8 @@ function add_query_arg( $args, $url ) { return $url . '?' . http_build_query( $a
 require_once dirname( __DIR__ ) . '/inc/class-yby-module-registry.php';
 $assert = static function ( $ok, $message ) { if ( ! $ok ) { fwrite( STDERR, "FAIL: {$message}\n" ); exit( 1 ); } };
 $modules = YBY_Module_Registry::modules();
-$assert( YBY_Module_Registry::VERSION === '1', 'registry version' );
+$assert( YBY_Module_Registry::VERSION === '2', 'registry version' );
+$assert( YBY_Module_Registry::OPTION_KEY === 'yby_core_enabled_modules_v1', 'registry v2 must preserve existing option storage key' );
 $assert( count( YBY_Module_Registry::foundation() ) >= 6, 'foundation must be explicit and locked' );
 foreach ( array( 'inquiry_os', 'email_os', 'project_studio', 'social_login', 'connector', 'docs_os' ) as $id ) { $assert( isset( $modules[ $id ] ), 'missing module: ' . $id ); }
 $defaults = YBY_Module_Registry::enabled_modules();

@@ -8,7 +8,9 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class YBY_Module_Registry {
     const OPTION_KEY = 'yby_core_enabled_modules_v1';
-    const VERSION = '1';
+    const VERSION = '2';
+
+    protected static $registered = array();
 
     public static function foundation() {
         return array(
@@ -21,20 +23,117 @@ class YBY_Module_Registry {
         );
     }
 
-    public static function modules() {
+    protected static function core_modules() {
         return array(
-            'inquiry_os' => array('label'=>'Inquiry OS','description'=>'询盘、弹窗、短代码与 Lead Runtime。','default'=>true,'status'=>'ready','settings'=>array('page'=>'yby-core','tab'=>'inquiry'),'dependencies'=>array()),
-            'email_os' => array('label'=>'Email OS','description'=>'邮件模板治理、Native 发布、测试与健康中心。','default'=>true,'status'=>'ready','settings'=>array('page'=>'yby-core-popups','tab'=>'email_templates'),'dependencies'=>array()),
-            'project_studio' => array('label'=>'Project Studio','description'=>'项目、Landing Page 与站点项目内容管理。','default'=>true,'status'=>'ready','settings'=>array('page'=>'yby-os'),'dependencies'=>array()),
-            'social_login' => array('label'=>'Social Login','description'=>'Google 等第三方登录 Runtime 与管理。','default'=>true,'status'=>'ready','settings'=>array('page'=>'yby-social-login'),'dependencies'=>array()),
-            'connector' => array('label'=>'Connector / WP-API','description'=>'ERP 与外部系统的签名 Connector API。','default'=>true,'status'=>'ready','settings'=>array('page'=>'yby-core','tab'=>'wp-api'),'dependencies'=>array()),
-            'docs_os' => array('label'=>'Andy Docs','description'=>'FAQ、Tutorial、Docs、搜索、TOC 与 Schema。','default'=>false,'status'=>'ready','settings'=>array('page'=>'yby-docs-os'),'dependencies'=>array()),
+            'inquiry_os' => array(
+                'name' => 'Inquiry OS',
+                'description' => '询盘、弹窗、短代码与 Lead Runtime。',
+                'default_enabled' => true,
+                'status' => 'ready',
+                'settings' => array( 'page' => 'yby-core', 'tab' => 'inquiry' ),
+            ),
+            'email_os' => array(
+                'name' => 'Email OS',
+                'description' => '邮件模板治理、Native 发布、测试与健康中心。',
+                'default_enabled' => true,
+                'status' => 'ready',
+                'settings' => array( 'page' => 'yby-core-popups', 'tab' => 'email_templates' ),
+            ),
+            'project_studio' => array(
+                'name' => 'Project Studio',
+                'description' => '项目、Landing Page 与站点项目内容管理。',
+                'default_enabled' => true,
+                'status' => 'ready',
+                'settings' => array( 'page' => 'yby-os' ),
+            ),
+            'social_login' => array(
+                'name' => 'Social Login',
+                'description' => 'Google 等第三方登录 Runtime 与管理。',
+                'default_enabled' => true,
+                'status' => 'ready',
+                'settings' => array( 'page' => 'yby-social-login' ),
+            ),
+            'connector' => array(
+                'name' => 'Connector / WP-API',
+                'description' => 'ERP 与外部系统的签名 Connector API。',
+                'default_enabled' => true,
+                'status' => 'ready',
+                'settings' => array( 'page' => 'yby-core', 'tab' => 'wp-api' ),
+            ),
+            'docs_os' => array(
+                'name' => 'Andy Docs',
+                'description' => 'FAQ、Tutorial、Docs、搜索、TOC 与 Schema。',
+                'default_enabled' => false,
+                'status' => 'ready',
+                'capability' => 'andy_core_settings_manage',
+                'settings' => array( 'page' => 'yby-docs-os' ),
+            ),
         );
+    }
+
+    protected static function normalize_module( $id, $module ) {
+        $module = is_array( $module ) ? $module : array();
+        $name = isset( $module['name'] ) ? $module['name'] : ( isset( $module['label'] ) ? $module['label'] : $id );
+        $default = array_key_exists( 'default_enabled', $module )
+            ? (bool) $module['default_enabled']
+            : ! empty( $module['default'] );
+
+        return array(
+            'id' => sanitize_key( $id ),
+            'name' => (string) $name,
+            'label' => (string) $name,
+            'description' => isset( $module['description'] ) ? (string) $module['description'] : '',
+            'version' => isset( $module['version'] ) ? (string) $module['version'] : '',
+            'schema_version' => isset( $module['schema_version'] ) ? (string) $module['schema_version'] : '',
+            'default_enabled' => $default,
+            'default' => $default,
+            'status' => isset( $module['status'] ) ? sanitize_key( $module['status'] ) : 'ready',
+            'capability' => isset( $module['capability'] ) ? (string) $module['capability'] : '',
+            'bootstrap_class' => isset( $module['bootstrap_class'] ) ? (string) $module['bootstrap_class'] : '',
+            'boot' => isset( $module['boot'] ) && is_callable( $module['boot'] ) ? $module['boot'] : null,
+            'admin_menu' => isset( $module['admin_menu'] ) && is_callable( $module['admin_menu'] ) ? $module['admin_menu'] : null,
+            'settings' => isset( $module['settings'] ) && is_array( $module['settings'] ) ? $module['settings'] : array(),
+            'settings_register' => isset( $module['settings_register'] ) && is_callable( $module['settings_register'] ) ? $module['settings_register'] : null,
+            'assets' => isset( $module['assets'] ) && is_array( $module['assets'] ) ? $module['assets'] : array( 'admin' => array(), 'frontend' => array() ),
+            'dependencies' => isset( $module['dependencies'] ) && is_array( $module['dependencies'] ) ? array_values( array_unique( array_map( 'sanitize_key', $module['dependencies'] ) ) ) : array(),
+        );
+    }
+
+    public static function register( $id, $metadata ) {
+        $id = sanitize_key( $id );
+        if ( '' === $id || ! is_array( $metadata ) || isset( self::core_modules()[ $id ] ) || isset( self::$registered[ $id ] ) ) {
+            return false;
+        }
+        $module = self::normalize_module( $id, $metadata );
+        if ( '' === trim( $module['name'] ) ) {
+            return false;
+        }
+        self::$registered[ $id ] = $module;
+        return true;
+    }
+
+    public static function modules() {
+        $modules = array();
+        foreach ( self::core_modules() as $id => $module ) {
+            $modules[ $id ] = self::normalize_module( $id, $module );
+        }
+        foreach ( self::$registered as $id => $module ) {
+            $modules[ $id ] = $module;
+        }
+        return $modules;
+    }
+
+    public static function module( $id ) {
+        $modules = self::modules();
+        $id = sanitize_key( $id );
+        return isset( $modules[ $id ] ) ? $modules[ $id ] : array();
     }
 
     public static function defaults() {
         $enabled = array();
-        foreach ( self::modules() as $id => $module ) { if ( ! empty( $module['default'] ) ) { $enabled[] = $id; } }
+        foreach ( self::modules() as $id => $module ) {
+            if ( ! empty( $module['default_enabled'] ) ) { $enabled[] = $id; }
+        }
         return $enabled;
     }
 
@@ -44,18 +143,29 @@ class YBY_Module_Registry {
     }
 
     public static function sanitize_enabled_modules( $raw ) {
-        $known = array_keys( self::modules() );
+        $modules = self::modules();
+        $known = array_keys( $modules );
         $raw = is_array( $raw ) ? $raw : array();
-        $clean = array_values( array_unique( array_filter( array_map( 'sanitize_key', $raw ), static function ( $id ) use ( $known ) { return in_array( $id, $known, true ); } ) ) );
-        return array_values( array_filter( $clean, static function ( $id ) { $module = self::modules()[ $id ]; return 'planned' !== $module['status']; } ) );
+        $clean = array_values( array_unique( array_filter( array_map( 'sanitize_key', $raw ), static function ( $id ) use ( $known ) {
+            return in_array( $id, $known, true );
+        } ) ) );
+
+        return array_values( array_filter( $clean, static function ( $id ) use ( $modules ) {
+            return 'planned' !== $modules[ $id ]['status'];
+        } ) );
     }
 
-    public static function save( $raw ) { return update_option( self::OPTION_KEY, self::sanitize_enabled_modules( $raw ), false ); }
-    public static function is_enabled( $id ) { return in_array( sanitize_key( $id ), self::enabled_modules(), true ); }
+    public static function save( $raw ) {
+        return update_option( self::OPTION_KEY, self::sanitize_enabled_modules( $raw ), false );
+    }
+
+    public static function is_enabled( $id ) {
+        return in_array( sanitize_key( $id ), self::enabled_modules(), true );
+    }
 
     public static function settings_url( $id ) {
-        $module = self::modules()[ sanitize_key( $id ) ] ?? array();
-        $target = $module['settings'] ?? array();
+        $module = self::module( $id );
+        $target = isset( $module['settings'] ) ? $module['settings'] : array();
         if ( empty( $target['page'] ) ) { return ''; }
         $args = array( 'page' => $target['page'] );
         if ( ! empty( $target['tab'] ) ) { $args['tab'] = $target['tab']; }
