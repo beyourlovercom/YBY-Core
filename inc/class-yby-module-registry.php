@@ -92,8 +92,10 @@ class YBY_Module_Registry {
             'bootstrap_class' => isset( $module['bootstrap_class'] ) ? (string) $module['bootstrap_class'] : '',
             'boot' => isset( $module['boot'] ) && is_callable( $module['boot'] ) ? $module['boot'] : null,
             'admin_menu' => isset( $module['admin_menu'] ) && is_callable( $module['admin_menu'] ) ? $module['admin_menu'] : null,
+            'admin_menu_priority' => isset( $module['admin_menu_priority'] ) ? (int) $module['admin_menu_priority'] : 20,
             'settings' => isset( $module['settings'] ) && is_array( $module['settings'] ) ? $module['settings'] : array(),
             'settings_register' => isset( $module['settings_register'] ) && is_callable( $module['settings_register'] ) ? $module['settings_register'] : null,
+            'settings_priority' => isset( $module['settings_priority'] ) ? (int) $module['settings_priority'] : 10,
             'assets' => isset( $module['assets'] ) && is_array( $module['assets'] ) ? $module['assets'] : array( 'admin' => array(), 'frontend' => array() ),
             'dependencies' => isset( $module['dependencies'] ) && is_array( $module['dependencies'] ) ? array_values( array_unique( array_map( 'sanitize_key', $module['dependencies'] ) ) ) : array(),
         );
@@ -129,10 +131,25 @@ class YBY_Module_Registry {
         return isset( $modules[ $id ] ) ? $modules[ $id ] : array();
     }
 
+    public static function registered_modules() {
+        return self::$registered;
+    }
+
+    public static function dependencies_met( $id ) {
+        $module = self::module( $id );
+        if ( empty( $module ) ) { return false; }
+        $foundation = array_keys( self::foundation() );
+        foreach ( $module['dependencies'] as $dependency ) {
+            if ( in_array( $dependency, $foundation, true ) ) { continue; }
+            if ( $dependency === $module['id'] || empty( self::module( $dependency ) ) || ! self::is_enabled( $dependency ) ) { return false; }
+        }
+        return true;
+    }
+
     public static function defaults() {
         $enabled = array();
         foreach ( self::modules() as $id => $module ) {
-            if ( ! empty( $module['default_enabled'] ) ) { $enabled[] = $id; }
+            if ( ! empty( $module['default_enabled'] ) && 'planned' !== $module['status'] ) { $enabled[] = $id; }
         }
         return $enabled;
     }
