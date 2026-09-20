@@ -4,14 +4,22 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `1.6.0`
+- Product version: `1.7.0`
 - Development version: None
 - Database version: `1.5.0`
 - Updater compatibility database version: `1.4.0`
-- Release status: Stable
-- Development status: None
+- Release status: Foundation RC
+- Development status: Local + Owner UAT PASS; Dev UAT pending
 - Plugin path: `yby-core/yby-core.php`
 - Technical namespace: existing `YBY_*` and `yby_*` identifiers retained for compatibility
+
+## v1.7.0 release scope
+
+- Added Registry V2 extension-module contracts with enabled-only boot, dependency fail-close, versioned settings storage, and conditional request-level asset gates.
+- Added canonical `Andy Content` admin IA and moved Docs under it without changing stable Docs routes or data contracts.
+- Restored first-class Landing Pages as `yby_landing_page` with canonical public path `/lp/{slug}` and non-destructive existing-site module adoption.
+- Added Article TOC V1 as a default-off Posts-only module with Inline Summary, desktop Floating TOC, stable H2 anchors, Scroll Spy, responsive gating, and legacy duplicate prevention.
+- Preserved runtime database version `1.5.0` and updater compatibility database version `1.4.0`; no database migration is required.
 
 ## v1.6.0 release scope
 
