@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class YBY_Module_Registry {
     const OPTION_KEY = 'yby_core_enabled_modules_v1';
+    const ADOPTION_OPTION = 'yby_core_module_adoptions_v1';
     const VERSION = '2';
 
     protected static $registered = array();
@@ -68,6 +69,17 @@ class YBY_Module_Registry {
                 'capability' => 'andy_core_settings_manage',
                 'admin_parent' => 'yby-content',
                 'settings' => array( 'page' => 'yby-docs-os' ),
+            ),
+            'landing_pages' => array(
+                'name' => 'Landing Pages',
+                'description' => '广告与 Campaign 独立落地页，公开路径固定为 /lp/{slug}。',
+                'version' => '1.0.0',
+                'schema_version' => '1',
+                'default_enabled' => true,
+                'status' => 'ready',
+                'capability' => 'edit_pages',
+                'admin_parent' => 'yby-content',
+                'settings' => array( 'url' => 'edit.php?post_type=yby_landing_page' ),
             ),
         );
     }
@@ -178,6 +190,33 @@ class YBY_Module_Registry {
         return update_option( self::OPTION_KEY, self::sanitize_enabled_modules( $raw ), false );
     }
 
+    public static function adopt_default_modules_once( $adoption_id, $module_ids ) {
+        $adoption_id = sanitize_key( $adoption_id );
+        if ( '' === $adoption_id ) { return false; }
+
+        $done = get_option( self::ADOPTION_OPTION, array() );
+        $done = is_array( $done ) ? array_values( array_unique( array_map( 'sanitize_key', $done ) ) ) : array();
+        if ( in_array( $adoption_id, $done, true ) ) { return false; }
+
+        $stored = get_option( self::OPTION_KEY, null );
+        if ( is_array( $stored ) ) {
+            $next = self::sanitize_enabled_modules( $stored );
+            foreach ( (array) $module_ids as $module_id ) {
+                $module_id = sanitize_key( $module_id );
+                $module = self::module( $module_id );
+                if ( empty( $module ) || empty( $module['default_enabled'] ) || 'planned' === $module['status'] ) { continue; }
+                if ( ! in_array( $module_id, $next, true ) ) { $next[] = $module_id; }
+            }
+            if ( $next !== self::sanitize_enabled_modules( $stored ) ) {
+                update_option( self::OPTION_KEY, $next, false );
+            }
+        }
+
+        $done[] = $adoption_id;
+        update_option( self::ADOPTION_OPTION, array_values( array_unique( $done ) ), false );
+        return true;
+    }
+
     public static function is_enabled( $id ) {
         return in_array( sanitize_key( $id ), self::enabled_modules(), true );
     }
@@ -185,6 +224,7 @@ class YBY_Module_Registry {
     public static function settings_url( $id ) {
         $module = self::module( $id );
         $target = isset( $module['settings'] ) ? $module['settings'] : array();
+        if ( ! empty( $target['url'] ) ) { return admin_url( ltrim( (string) $target['url'], '/' ) ); }
         if ( empty( $target['page'] ) ) { return ''; }
         $args = array( 'page' => $target['page'] );
         if ( ! empty( $target['tab'] ) ) { $args['tab'] = $target['tab']; }

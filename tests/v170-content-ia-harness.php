@@ -16,6 +16,7 @@ function add_submenu_page( $parent_slug, $page_title, $menu_title, $capability, 
 
 require_once dirname( __DIR__ ) . '/admin/class-yby-content-admin.php';
 require_once dirname( __DIR__ ) . '/admin/class-yby-docs-os-admin.php';
+require_once dirname( __DIR__ ) . '/inc/class-yby-landing-page-cpt.php';
 
 $assert = static function ( $ok, $message ) {
 	if ( ! $ok ) { fwrite( STDERR, "FAIL: {$message}\n" ); exit( 1 ); }
@@ -23,8 +24,10 @@ $assert = static function ( $ok, $message ) {
 
 $content = new YBY_Content_Admin();
 $docs = new YBY_Docs_OS_Admin();
+$landing = new YBY_Landing_Page_CPT();
 $content->add_admin_menu();
 $docs->add_admin_menu();
+$landing->add_admin_menu();
 
 $assert( 1 === count( $GLOBALS['yby_top_menus'] ), 'Content IA must register exactly one top-level menu in this harness' );
 $top = $GLOBALS['yby_top_menus'][0];
@@ -35,18 +38,18 @@ $assert( 21 === $top['position'], 'Andy Content must sit beside WordPress Pages'
 $visible = array_values( array_filter( $GLOBALS['yby_submenus'], static function ( $item ) {
 	return 'yby-content' === $item['parent_slug'];
 } ) );
-$assert( 2 === count( $visible ), 'Only Overview and Docs should be visible under Andy Content at V170-3.5' );
+$assert( 3 === count( $visible ), 'Overview, Docs and Landing Pages should be visible under Andy Content after CPT recovery' );
 $assert( 'yby-content' === $visible[0]['menu_slug'] && 'Overview' === $visible[0]['menu_title'], 'Andy Content Overview missing' );
 $assert( 'yby-docs-os' === $visible[1]['menu_slug'] && 'Docs' === $visible[1]['menu_title'], 'Docs must be a child of Andy Content' );
+$assert( 'edit.php?post_type=yby_landing_page' === $visible[2]['menu_slug'] && 'Landing Pages' === $visible[2]['menu_title'], 'Landing Pages must be a child of Andy Content' );
 
 foreach ( $GLOBALS['yby_top_menus'] as $menu ) {
 	$assert( 'Andy Docs' !== $menu['menu_title'], 'Andy Docs must not be top-level' );
 	$assert( false === stripos( $menu['menu_title'], 'Template' ), 'Template must not be top-level before implementation' );
-	$assert( false === stripos( $menu['menu_title'], 'Landing' ), 'Landing Pages must not be top-level before recovery' );
+	$assert( false === stripos( $menu['menu_title'], 'Landing' ), 'Landing Pages must remain under Andy Content, never top-level' );
 }
 foreach ( $visible as $menu ) {
 	$assert( false === stripos( $menu['menu_title'], 'Template' ), 'Template must not appear as empty Content submenu' );
-	$assert( false === stripos( $menu['menu_title'], 'Landing' ), 'Landing Pages must not appear as empty Content submenu' );
 }
 
 $hidden_slugs = array_values( array_map( static function ( $item ) { return $item['menu_slug']; }, array_filter( $GLOBALS['yby_submenus'], static function ( $item ) {

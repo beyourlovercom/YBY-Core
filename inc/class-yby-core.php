@@ -24,6 +24,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-content.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project-template.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project-cpt.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-landing-page-cpt.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-brand-os.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-social-login.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-token-verifier.php';
@@ -100,6 +101,8 @@ class YBY_Core {
 	public function __construct() {
 		$this->loader = new YBY_Loader();
 
+		YBY_Module_Registry::adopt_default_modules_once( 'v170_landing_pages', array( 'landing_pages' ) );
+
 		$this->define_system_hooks();
 		$this->set_locale();
 		$this->define_admin_hooks();
@@ -153,6 +156,7 @@ class YBY_Core {
 		$social_enabled  = YBY_Module_Registry::is_enabled( 'social_login' );
 		$connector_enabled = YBY_Module_Registry::is_enabled( 'connector' );
 		$docs_enabled      = YBY_Module_Registry::is_enabled( 'docs_os' );
+		$landing_enabled   = YBY_Module_Registry::is_enabled( 'landing_pages' );
 
 		$this->loader->add_action( 'admin_menu', $content_admin, 'add_admin_menu', 15 );
 		$this->loader->add_action( 'admin_menu', $project_studio, 'add_admin_menu' );
@@ -169,6 +173,14 @@ class YBY_Core {
 			$this->loader->add_action( 'admin_enqueue_scripts', $docs_admin, 'enqueue_assets' );
 			$this->loader->add_filter( 'parent_file', $docs_admin, 'filter_parent_file' );
 			$this->loader->add_filter( 'submenu_file', $docs_admin, 'filter_submenu_file' );
+		}
+		if ( $landing_enabled ) {
+			$landing_pages = new YBY_Landing_Page_CPT();
+			$this->loader->add_action( 'init', $landing_pages, 'register', 9, 0 );
+			$this->loader->add_action( 'admin_menu', $landing_pages, 'add_admin_menu', 30 );
+			$this->loader->add_action( 'admin_init', $landing_pages, 'maybe_flush_rewrite_rules', 1, 0 );
+			$this->loader->add_filter( 'parent_file', $landing_pages, 'filter_parent_file' );
+			$this->loader->add_filter( 'submenu_file', $landing_pages, 'filter_submenu_file' );
 		}
 		if ( $inquiry_enabled || $email_enabled ) {
 			$popup_admin = new YBY_Popup_Admin( 'yby-core', YBY_CORE_VERSION );
