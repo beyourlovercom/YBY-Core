@@ -1,5 +1,7 @@
 # V170-1 — Canonical Admin IA / Naming Contract
 
+> **Superseded for top-level Content IA by V170-3.5.** The stable identifiers defined here remain valid, but `Andy Docs` is no longer a top-level WordPress menu. It is a product under the canonical `Andy Content` shell.
+
 ## Baseline
 
 - source branch: `feature/andy-core-v1.7.0-foundation`

@@ -9,17 +9,23 @@ $assert = static function ( $ok, $message ) {
 };
 
 $root = dirname( __DIR__ );
+$content_admin = file_get_contents( $root . '/admin/class-yby-content-admin.php' );
 $docs_admin = file_get_contents( $root . '/admin/class-yby-docs-os-admin.php' );
 $core_menu = file_get_contents( $root . '/admin/class-yby-project-studio.php' );
 $registry = file_get_contents( $root . '/inc/class-yby-module-registry.php' );
 
 $assert( false !== strpos( $core_menu, "__( 'Andy Core', 'yby-core' )" ), 'Andy Core top-level display label missing' );
 $assert( false !== strpos( $core_menu, "return 'yby-os';" ), 'Andy Core stable slug changed' );
-$assert( false !== strpos( $docs_admin, "const MENU_LABEL = 'Andy Docs';" ), 'Andy Docs display label contract missing' );
+$assert( false !== strpos( $content_admin, "const MENU_SLUG = 'yby-content';" ), 'Andy Content stable slug missing' );
+$assert( false !== strpos( $content_admin, "__( 'Andy Content', 'yby-core' )" ), 'Andy Content top-level display label missing' );
+$assert( false !== strpos( $content_admin, "'dashicons-layout',\n\t\t\t21" ), 'Andy Content must stay beside WordPress Pages' );
+$assert( false !== strpos( $docs_admin, "const MENU_LABEL = 'Andy Docs';" ), 'Andy Docs product label contract missing' );
 $assert( false !== strpos( $docs_admin, "const PAGE_SLUG = 'yby-docs-os';" ), 'Andy Docs stable slug changed' );
-$assert( false !== strpos( $docs_admin, "add_menu_page( self::MENU_LABEL, self::MENU_LABEL, 'andy_core_settings_manage', self::PAGE_SLUG" ), 'Andy Docs menu/capability contract changed' );
-$assert( false !== strpos( $registry, "'docs_os' => array('label'=>'Andy Docs'" ), 'Module registry must display Andy Docs' );
-$assert( false !== strpos( $registry, "'settings'=>array('page'=>'yby-docs-os')" ), 'Docs settings URL contract changed' );
+$assert( false === strpos( $docs_admin, 'add_menu_page( self::MENU_LABEL' ), 'Andy Docs must not register a top-level menu' );
+$assert( false !== strpos( $docs_admin, "add_submenu_page( YBY_Content_Admin::MENU_SLUG, self::MENU_LABEL, 'Docs'" ), 'Andy Docs must live under Andy Content' );
+$assert( false !== strpos( $registry, "'name' => 'Andy Docs'" ), 'Module registry must display Andy Docs' );
+$assert( false !== strpos( $registry, "'admin_parent' => 'yby-content'" ), 'Docs content-parent contract missing' );
+$assert( false !== strpos( $registry, "'settings' => array( 'page' => 'yby-docs-os' )" ), 'Docs settings URL contract changed' );
 
 $all_php = '';
 foreach ( new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root, FilesystemIterator::SKIP_DOTS ) ) as $file ) {

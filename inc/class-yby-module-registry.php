@@ -66,6 +66,7 @@ class YBY_Module_Registry {
                 'default_enabled' => false,
                 'status' => 'ready',
                 'capability' => 'andy_core_settings_manage',
+                'admin_parent' => 'yby-content',
                 'settings' => array( 'page' => 'yby-docs-os' ),
             ),
         );
@@ -89,6 +90,7 @@ class YBY_Module_Registry {
             'default' => $default,
             'status' => isset( $module['status'] ) ? sanitize_key( $module['status'] ) : 'ready',
             'capability' => isset( $module['capability'] ) ? (string) $module['capability'] : '',
+            'admin_parent' => isset( $module['admin_parent'] ) ? sanitize_key( $module['admin_parent'] ) : '',
             'bootstrap_class' => isset( $module['bootstrap_class'] ) ? (string) $module['bootstrap_class'] : '',
             'boot' => isset( $module['boot'] ) && is_callable( $module['boot'] ) ? $module['boot'] : null,
             'admin_menu' => isset( $module['admin_menu'] ) && is_callable( $module['admin_menu'] ) ? $module['admin_menu'] : null,

@@ -17,15 +17,31 @@ class YBY_Docs_OS_Admin {
 	const SETTINGS_OPTION = 'yby_docs_os_settings_v1';
 
 	public function add_admin_menu() {
-		add_menu_page( self::MENU_LABEL, self::MENU_LABEL, 'andy_core_settings_manage', self::PAGE_SLUG, array( $this, 'render_page' ), 'dashicons-welcome-learn-more', 59 );
-		add_submenu_page( self::PAGE_SLUG, 'Andy Docs Overview', '概览', 'andy_core_settings_manage', self::PAGE_SLUG, array( $this, 'render_page' ) );
-		add_submenu_page( self::PAGE_SLUG, 'All Docs', '全部文档', 'edit_posts', self::ALL_PAGE_SLUG, array( $this, 'render_all_docs_page' ) );
-		add_submenu_page( self::PAGE_SLUG, 'Docs Categories', '分类目录', 'manage_categories', self::DIRECTORY_PAGE_SLUG, array( $this, 'render_directory_page' ) );
-		add_submenu_page( self::PAGE_SLUG, 'Docs Tags', 'Tags', 'manage_categories', 'edit-tags.php?taxonomy=doc_tag&post_type=docs' );
-		add_submenu_page( self::PAGE_SLUG, 'FAQ', 'FAQ', 'edit_posts', 'yby-docs-faq', array( $this, 'render_faq_page' ) );
-		add_submenu_page( self::PAGE_SLUG, 'Tutorial', 'Tutorial', 'edit_posts', 'yby-docs-tutorial', array( $this, 'render_tutorial_page' ) );
-		add_submenu_page( self::PAGE_SLUG, 'Docs Settings', '设置', 'andy_core_settings_manage', self::SETTINGS_PAGE_SLUG, array( $this, 'render_settings_page' ) );
+		add_submenu_page( YBY_Content_Admin::MENU_SLUG, self::MENU_LABEL, 'Docs', 'andy_core_settings_manage', self::PAGE_SLUG, array( $this, 'render_page' ) );
+		add_submenu_page( null, 'All Docs', 'All Docs', 'edit_posts', self::ALL_PAGE_SLUG, array( $this, 'render_all_docs_page' ) );
+		add_submenu_page( null, 'Docs Categories', 'Docs Categories', 'manage_categories', self::DIRECTORY_PAGE_SLUG, array( $this, 'render_directory_page' ) );
+		add_submenu_page( null, 'FAQ', 'FAQ', 'edit_posts', 'yby-docs-faq', array( $this, 'render_faq_page' ) );
+		add_submenu_page( null, 'Tutorial', 'Tutorial', 'edit_posts', 'yby-docs-tutorial', array( $this, 'render_tutorial_page' ) );
+		add_submenu_page( null, 'Docs Settings', 'Docs Settings', 'andy_core_settings_manage', self::SETTINGS_PAGE_SLUG, array( $this, 'render_settings_page' ) );
 		add_submenu_page( null, 'Docs Editor', 'Docs Editor', 'edit_posts', self::EDITOR_PAGE_SLUG, array( $this, 'render_editor_page' ) );
+	}
+
+	public function filter_parent_file( $parent_file ) {
+		if ( $this->is_docs_admin_screen() ) { return YBY_Content_Admin::MENU_SLUG; }
+		return $parent_file;
+	}
+
+	public function filter_submenu_file( $submenu_file ) {
+		if ( $this->is_docs_admin_screen() ) { return self::PAGE_SLUG; }
+		return $submenu_file;
+	}
+
+	protected function is_docs_admin_screen() {
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( in_array( $page, array( self::PAGE_SLUG, self::ALL_PAGE_SLUG, self::EDITOR_PAGE_SLUG, self::DIRECTORY_PAGE_SLUG, self::SETTINGS_PAGE_SLUG, 'yby-docs-faq', 'yby-docs-tutorial' ), true ) ) { return true; }
+		$taxonomy = isset( $_GET['taxonomy'] ) ? sanitize_key( wp_unslash( $_GET['taxonomy'] ) ) : '';
+		$post_type = isset( $_GET['post_type'] ) ? sanitize_key( wp_unslash( $_GET['post_type'] ) ) : '';
+		return 'docs' === $post_type && in_array( $taxonomy, array( 'doc_category', 'doc_tag' ), true );
 	}
 
 	public function enqueue_assets() {

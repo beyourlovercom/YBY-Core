@@ -72,6 +72,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-update-backup.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-updater.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-docs-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-content-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-inquiry-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-social-login-admin.php';
@@ -142,6 +143,7 @@ class YBY_Core {
 	 */
 	protected function define_admin_hooks() {
 		$admin           = new YBY_Admin( 'yby-core', YBY_CORE_VERSION );
+		$content_admin   = new YBY_Content_Admin();
 		$brand_os        = new YBY_Brand_OS( 'yby-core', YBY_CORE_VERSION );
 		$project_studio  = new YBY_Project_Studio( 'yby-core', YBY_CORE_VERSION );
 		$updater         = new YBY_Updater( YBY_CORE_PLUGIN_FILE, YBY_CORE_VERSION );
@@ -152,6 +154,7 @@ class YBY_Core {
 		$connector_enabled = YBY_Module_Registry::is_enabled( 'connector' );
 		$docs_enabled      = YBY_Module_Registry::is_enabled( 'docs_os' );
 
+		$this->loader->add_action( 'admin_menu', $content_admin, 'add_admin_menu', 15 );
 		$this->loader->add_action( 'admin_menu', $project_studio, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_menu', $brand_os, 'add_admin_menu' );
 		if ( $social_enabled ) {
@@ -164,6 +167,8 @@ class YBY_Core {
 			$docs_admin = new YBY_Docs_OS_Admin();
 			$this->loader->add_action( 'admin_menu', $docs_admin, 'add_admin_menu', 25 );
 			$this->loader->add_action( 'admin_enqueue_scripts', $docs_admin, 'enqueue_assets' );
+			$this->loader->add_filter( 'parent_file', $docs_admin, 'filter_parent_file' );
+			$this->loader->add_filter( 'submenu_file', $docs_admin, 'filter_submenu_file' );
 		}
 		if ( $inquiry_enabled || $email_enabled ) {
 			$popup_admin = new YBY_Popup_Admin( 'yby-core', YBY_CORE_VERSION );

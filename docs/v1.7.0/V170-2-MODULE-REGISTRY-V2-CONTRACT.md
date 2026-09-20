@@ -34,6 +34,7 @@ Every module returned by `YBY_Module_Registry::modules()` exposes:
 - `default` (legacy alias)
 - `status`
 - `capability`
+- `admin_parent`
 - `bootstrap_class`
 - `boot`
 - `admin_menu`
