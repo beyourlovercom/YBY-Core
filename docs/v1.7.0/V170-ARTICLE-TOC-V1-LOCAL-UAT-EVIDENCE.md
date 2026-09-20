@@ -10,7 +10,7 @@ Feature implementation commit:
 
 `aa03ad362755e9f61611b54f62276563ae890fae`
 
-Owner UAT: **PENDING**
+Owner UAT: **PASS — 2026-09-20**
 
 Production: **UNTOUCHED**
 
@@ -289,17 +289,8 @@ Final Local enabled modules restored to:
 
 **Article TOC V1 engineering + Local functional UAT: PASS**
 
-**Owner UAT: PENDING**
+**Owner UAT: PASS — 2026-09-20**
 
-The Owner must still visually inspect:
+Owner explicitly returned `pass` after review of the Article TOC V1 Local UAT result and module integration.
 
-- Andy Core → Settings → Modules row for `文章目录`
-- Article TOC settings UI
-- Desktop floating position/style on a real target theme
-- Inline Summary visual treatment
-- Scroll Spy feel
-- Mobile appearance
-- OFF → both TOCs disappear
-- ON → expected TOC behavior returns
-
-No Owner PASS is claimed by this evidence.
+The Owner gate is therefore closed for Article TOC V1. This PASS covers the current v1.7.0 Article TOC scope and does not authorize Production deployment or unrelated release actions.
