@@ -280,8 +280,7 @@ class YBY_Docs_OS_Admin {
 		$defaults['show_toc'] = 1;
 		$defaults['show_related'] = 1;
 		$defaults['schema_enabled'] = 1;
-		$stored = get_option( self::SETTINGS_OPTION, array() );
-		return wp_parse_args( is_array( $stored ) ? $stored : array(), $defaults );
+		return YBY_Module_Settings_Store::get( 'docs_os', $defaults );
 	}
 	public function render_directory_page() {
 		if ( ! current_user_can( 'manage_categories' ) ) {

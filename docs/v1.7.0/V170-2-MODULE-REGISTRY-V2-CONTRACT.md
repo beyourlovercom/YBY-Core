@@ -39,6 +39,7 @@ Every module returned by `YBY_Module_Registry::modules()` exposes:
 - `boot`
 - `admin_menu`
 - `settings`
+- `storage`
 - `settings_register`
 - `assets`
 - `dependencies`

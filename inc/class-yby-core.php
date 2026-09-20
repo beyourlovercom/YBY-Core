@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-loader.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-helpers.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-registry.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-settings-store.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-security.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-database.php';

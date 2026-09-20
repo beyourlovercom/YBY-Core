@@ -35,6 +35,7 @@ $registered = YBY_Module_Registry::register(
 		'status' => 'ready',
 		'capability' => 'manage_options',
 		'admin_parent' => 'yby-content',
+		'storage' => array( 'schema_version' => '2' ),
 		'bootstrap_class' => 'YBY_Future_Module_Probe',
 		'boot' => array( 'YBY_Future_Module_Probe', 'boot' ),
 		'admin_menu' => array( 'YBY_Future_Module_Probe', 'menu' ),
@@ -52,7 +53,7 @@ $assert( true === $registered, 'future adapter registration failed' );
 $assert( false === YBY_Module_Registry::register( 'future_module_probe', array( 'name' => 'Duplicate' ) ), 'duplicate module registration must be refused' );
 
 $module = YBY_Module_Registry::module( 'future_module_probe' );
-foreach ( array( 'id', 'name', 'label', 'description', 'version', 'schema_version', 'default_enabled', 'default', 'status', 'capability', 'admin_parent', 'bootstrap_class', 'boot', 'admin_menu', 'settings', 'settings_register', 'assets', 'dependencies' ) as $key ) {
+foreach ( array( 'id', 'name', 'label', 'description', 'version', 'schema_version', 'default_enabled', 'default', 'status', 'capability', 'admin_parent', 'bootstrap_class', 'boot', 'admin_menu', 'settings', 'storage', 'settings_register', 'assets', 'dependencies' ) as $key ) {
 	$assert( array_key_exists( $key, $module ), 'normalized metadata key missing: ' . $key );
 }
 
@@ -60,6 +61,8 @@ $assert( 'future_module_probe' === $module['id'], 'normalized module id mismatch
 $assert( 'Andy Future Probe' === $module['name'] && 'Andy Future Probe' === $module['label'], 'name/legacy label bridge mismatch' );
 $assert( false === $module['default_enabled'] && false === $module['default'], 'default bridge mismatch' );
 $assert( 'yby-content' === $module['admin_parent'], 'content parent metadata mismatch' );
+$assert( 'yby_future_module_probe_settings_v2' === $module['storage']['option_key'], 'versioned storage option key normalization mismatch' );
+$assert( '2' === $module['storage']['schema_version'], 'versioned storage schema normalization mismatch' );
 $assert( is_callable( $module['boot'] ), 'boot callback seam missing' );
 $assert( is_callable( $module['admin_menu'] ), 'admin menu callback seam missing' );
 $assert( is_callable( $module['settings_register'] ), 'settings callback seam missing' );

@@ -69,6 +69,7 @@ class YBY_Module_Registry {
                 'capability' => 'andy_core_settings_manage',
                 'admin_parent' => 'yby-content',
                 'settings' => array( 'page' => 'yby-docs-os' ),
+                'storage' => array( 'option_key' => 'yby_docs_os_settings_v1', 'schema_version' => '1' ),
             ),
             'landing_pages' => array(
                 'name' => 'Landing Pages',
@@ -90,6 +91,14 @@ class YBY_Module_Registry {
         $default = array_key_exists( 'default_enabled', $module )
             ? (bool) $module['default_enabled']
             : ! empty( $module['default'] );
+        $storage = isset( $module['storage'] ) && is_array( $module['storage'] ) ? $module['storage'] : array();
+        if ( ! empty( $storage ) ) {
+            $storage_schema = isset( $storage['schema_version'] ) ? sanitize_key( (string) $storage['schema_version'] ) : sanitize_key( (string) ( $module['schema_version'] ?? '1' ) );
+            if ( '' === $storage_schema ) { $storage_schema = '1'; }
+            $storage_key = isset( $storage['option_key'] ) ? sanitize_key( (string) $storage['option_key'] ) : '';
+            if ( '' === $storage_key ) { $storage_key = 'yby_' . sanitize_key( $id ) . '_settings_v' . $storage_schema; }
+            $storage = array( 'option_key' => $storage_key, 'schema_version' => $storage_schema );
+        }
 
         return array(
             'id' => sanitize_key( $id ),
@@ -108,6 +117,7 @@ class YBY_Module_Registry {
             'admin_menu' => isset( $module['admin_menu'] ) && is_callable( $module['admin_menu'] ) ? $module['admin_menu'] : null,
             'admin_menu_priority' => isset( $module['admin_menu_priority'] ) ? (int) $module['admin_menu_priority'] : 20,
             'settings' => isset( $module['settings'] ) && is_array( $module['settings'] ) ? $module['settings'] : array(),
+            'storage' => $storage,
             'settings_register' => isset( $module['settings_register'] ) && is_callable( $module['settings_register'] ) ? $module['settings_register'] : null,
             'settings_priority' => isset( $module['settings_priority'] ) ? (int) $module['settings_priority'] : 10,
             'assets' => isset( $module['assets'] ) && is_array( $module['assets'] ) ? $module['assets'] : array( 'admin' => array(), 'frontend' => array() ),
