@@ -12,6 +12,10 @@ class YBY_Future_Module_Probe {
 	public static function boot() {}
 	public static function menu() {}
 	public static function settings() {}
+	public static function admin_assets() {}
+	public static function admin_asset_condition() { return true; }
+	public static function frontend_assets() {}
+	public static function frontend_asset_condition() { return true; }
 }
 
 require_once dirname( __DIR__ ) . '/inc/class-yby-module-registry.php';
@@ -42,8 +46,18 @@ $registered = YBY_Module_Registry::register(
 		'settings' => array( 'page' => 'future-module-probe', 'tab' => 'general' ),
 		'settings_register' => array( 'YBY_Future_Module_Probe', 'settings' ),
 		'assets' => array(
-			'admin' => array( 'future-probe-admin' ),
-			'frontend' => array( 'future-probe-frontend' ),
+			'admin' => array(
+				'enqueue' => array( 'YBY_Future_Module_Probe', 'admin_assets' ),
+				'condition' => array( 'YBY_Future_Module_Probe', 'admin_asset_condition' ),
+				'priority' => 21,
+				'handles' => array( 'future-probe-admin' ),
+			),
+			'frontend' => array(
+				'enqueue' => array( 'YBY_Future_Module_Probe', 'frontend_assets' ),
+				'condition' => array( 'YBY_Future_Module_Probe', 'frontend_asset_condition' ),
+				'priority' => 22,
+				'handles' => array( 'future-probe-frontend' ),
+			),
 		),
 		'dependencies' => array( 'core_runtime' ),
 	)
@@ -67,8 +81,11 @@ $assert( is_callable( $module['boot'] ), 'boot callback seam missing' );
 $assert( is_callable( $module['admin_menu'] ), 'admin menu callback seam missing' );
 $assert( is_callable( $module['settings_register'] ), 'settings callback seam missing' );
 $assert( array( 'core_runtime' ) === $module['dependencies'], 'dependency metadata mismatch' );
-$assert( array( 'future-probe-admin' ) === $module['assets']['admin'], 'admin asset declaration missing' );
-$assert( array( 'future-probe-frontend' ) === $module['assets']['frontend'], 'frontend asset declaration missing' );
+$assert( array( 'future-probe-admin' ) === $module['assets']['admin']['handles'], 'admin asset handles missing' );
+$assert( array( 'future-probe-frontend' ) === $module['assets']['frontend']['handles'], 'frontend asset handles missing' );
+$assert( is_callable( $module['assets']['admin']['enqueue'] ) && is_callable( $module['assets']['admin']['condition'] ), 'admin asset callbacks missing' );
+$assert( is_callable( $module['assets']['frontend']['enqueue'] ) && is_callable( $module['assets']['frontend']['condition'] ), 'frontend asset callbacks missing' );
+$assert( 21 === $module['assets']['admin']['priority'] && 22 === $module['assets']['frontend']['priority'], 'asset priority normalization mismatch' );
 $assert( false !== strpos( YBY_Module_Registry::settings_url( 'future_module_probe' ), 'page=future-module-probe' ), 'future settings route missing' );
 
 $defaults = YBY_Module_Registry::defaults();

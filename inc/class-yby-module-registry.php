@@ -85,6 +85,21 @@ class YBY_Module_Registry {
         );
     }
 
+    protected static function normalize_asset_channel( $channel, $default_priority ) {
+        if ( is_callable( $channel ) ) {
+            return array( 'enqueue' => $channel, 'condition' => null, 'priority' => (int) $default_priority, 'handles' => array() );
+        }
+        $channel = is_array( $channel ) ? $channel : array();
+        $enqueue = isset( $channel['enqueue'] ) && is_callable( $channel['enqueue'] ) ? $channel['enqueue'] : null;
+        $condition = isset( $channel['condition'] ) && is_callable( $channel['condition'] ) ? $channel['condition'] : null;
+        $priority = isset( $channel['priority'] ) ? max( 1, (int) $channel['priority'] ) : (int) $default_priority;
+        $handles = isset( $channel['handles'] ) && is_array( $channel['handles'] ) ? array_values( array_filter( array_map( 'sanitize_key', $channel['handles'] ) ) ) : array();
+        if ( empty( $handles ) && array_is_list( $channel ) ) {
+            $handles = array_values( array_filter( array_map( 'sanitize_key', $channel ) ) );
+        }
+        return array( 'enqueue' => $enqueue, 'condition' => $condition, 'priority' => $priority, 'handles' => $handles );
+    }
+
     protected static function normalize_module( $id, $module ) {
         $module = is_array( $module ) ? $module : array();
         $name = isset( $module['name'] ) ? $module['name'] : ( isset( $module['label'] ) ? $module['label'] : $id );
@@ -120,7 +135,10 @@ class YBY_Module_Registry {
             'storage' => $storage,
             'settings_register' => isset( $module['settings_register'] ) && is_callable( $module['settings_register'] ) ? $module['settings_register'] : null,
             'settings_priority' => isset( $module['settings_priority'] ) ? (int) $module['settings_priority'] : 10,
-            'assets' => isset( $module['assets'] ) && is_array( $module['assets'] ) ? $module['assets'] : array( 'admin' => array(), 'frontend' => array() ),
+            'assets' => array(
+                'admin' => self::normalize_asset_channel( isset( $module['assets']['admin'] ) ? $module['assets']['admin'] : array(), 10 ),
+                'frontend' => self::normalize_asset_channel( isset( $module['assets']['frontend'] ) ? $module['assets']['frontend'] : array(), 10 ),
+            ),
             'dependencies' => isset( $module['dependencies'] ) && is_array( $module['dependencies'] ) ? array_values( array_unique( array_map( 'sanitize_key', $module['dependencies'] ) ) ) : array(),
         );
     }

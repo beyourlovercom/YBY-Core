@@ -82,5 +82,39 @@ class YBY_Module_Runtime {
 				0
 			);
 		}
+
+		$this->register_asset_channel( $module, 'admin' );
+		$this->register_asset_channel( $module, 'frontend' );
+	}
+
+	protected function register_asset_channel( $module, $channel ) {
+		$config = isset( $module['assets'][ $channel ] ) && is_array( $module['assets'][ $channel ] ) ? $module['assets'][ $channel ] : array();
+		$enqueue = isset( $config['enqueue'] ) ? $config['enqueue'] : null;
+		$condition = isset( $config['condition'] ) ? $config['condition'] : null;
+		if ( ! is_callable( $enqueue ) || ! is_callable( $condition ) ) { return; }
+
+		$priority = isset( $config['priority'] ) ? max( 1, (int) $config['priority'] ) : 10;
+		if ( 'admin' === $channel ) {
+			add_action(
+				'admin_enqueue_scripts',
+				static function ( $hook_suffix ) use ( $enqueue, $condition, $module ) {
+					if ( ! call_user_func( $condition, $hook_suffix, $module ) ) { return; }
+					call_user_func( $enqueue, $hook_suffix, $module );
+				},
+				$priority,
+				1
+			);
+			return;
+		}
+
+		add_action(
+			'wp_enqueue_scripts',
+			static function () use ( $enqueue, $condition, $module ) {
+				if ( ! call_user_func( $condition, $module ) ) { return; }
+				call_user_func( $enqueue, $module );
+			},
+			$priority,
+			0
+		);
 	}
 }

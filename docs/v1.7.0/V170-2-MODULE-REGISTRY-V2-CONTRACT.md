@@ -42,6 +42,8 @@ Every module returned by `YBY_Module_Registry::modules()` exposes:
 - `storage`
 - `settings_register`
 - `assets`
+  - `admin.enqueue / condition / priority / handles`
+  - `frontend.enqueue / condition / priority / handles`
 - `dependencies`
 
 ## Adapter seam
