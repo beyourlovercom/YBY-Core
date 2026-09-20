@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class YBY_Docs_OS_Admin {
 	// Data retention contract: Existing docs, taxonomy, metadata and media are retained when Docs OS is disabled.
+	const MENU_LABEL = 'Andy Docs';
 	const PAGE_SLUG = 'yby-docs-os';
 	const ALL_PAGE_SLUG = 'yby-docs-all';
 	const EDITOR_PAGE_SLUG = 'yby-docs-editor';
@@ -16,8 +17,8 @@ class YBY_Docs_OS_Admin {
 	const SETTINGS_OPTION = 'yby_docs_os_settings_v1';
 
 	public function add_admin_menu() {
-		add_menu_page( 'Docs OS', 'Docs OS', 'andy_core_settings_manage', self::PAGE_SLUG, array( $this, 'render_page' ), 'dashicons-welcome-learn-more', 59 );
-		add_submenu_page( self::PAGE_SLUG, 'Docs OS Overview', '概览', 'andy_core_settings_manage', self::PAGE_SLUG, array( $this, 'render_page' ) );
+		add_menu_page( self::MENU_LABEL, self::MENU_LABEL, 'andy_core_settings_manage', self::PAGE_SLUG, array( $this, 'render_page' ), 'dashicons-welcome-learn-more', 59 );
+		add_submenu_page( self::PAGE_SLUG, 'Andy Docs Overview', '概览', 'andy_core_settings_manage', self::PAGE_SLUG, array( $this, 'render_page' ) );
 		add_submenu_page( self::PAGE_SLUG, 'All Docs', '全部文档', 'edit_posts', self::ALL_PAGE_SLUG, array( $this, 'render_all_docs_page' ) );
 		add_submenu_page( self::PAGE_SLUG, 'Docs Categories', '分类目录', 'manage_categories', self::DIRECTORY_PAGE_SLUG, array( $this, 'render_directory_page' ) );
 		add_submenu_page( self::PAGE_SLUG, 'Docs Tags', 'Tags', 'manage_categories', 'edit-tags.php?taxonomy=doc_tag&post_type=docs' );

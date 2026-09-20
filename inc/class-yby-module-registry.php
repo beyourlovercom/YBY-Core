@@ -28,7 +28,7 @@ class YBY_Module_Registry {
             'project_studio' => array('label'=>'Project Studio','description'=>'项目、Landing Page 与站点项目内容管理。','default'=>true,'status'=>'ready','settings'=>array('page'=>'yby-os'),'dependencies'=>array()),
             'social_login' => array('label'=>'Social Login','description'=>'Google 等第三方登录 Runtime 与管理。','default'=>true,'status'=>'ready','settings'=>array('page'=>'yby-social-login'),'dependencies'=>array()),
             'connector' => array('label'=>'Connector / WP-API','description'=>'ERP 与外部系统的签名 Connector API。','default'=>true,'status'=>'ready','settings'=>array('page'=>'yby-core','tab'=>'wp-api'),'dependencies'=>array()),
-            'docs_os' => array('label'=>'Docs OS','description'=>'FAQ、Tutorial、Docs、搜索、TOC 与 Schema。','default'=>false,'status'=>'ready','settings'=>array('page'=>'yby-docs-os'),'dependencies'=>array()),
+            'docs_os' => array('label'=>'Andy Docs','description'=>'FAQ、Tutorial、Docs、搜索、TOC 与 Schema。','default'=>false,'status'=>'ready','settings'=>array('page'=>'yby-docs-os'),'dependencies'=>array()),
         );
     }
 
