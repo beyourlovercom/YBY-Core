@@ -193,3 +193,75 @@ Security note:
 - password/private key material is not recorded in this repository
 - the existing local SSH alias `yby-irrigation-dev` still points to the historical `194.164.64.172 / u595431186` target and must not be treated as canonical until updated
 - isolation verification must be performed against `193.46.197.115:65002` with username `u686797605`
+
+
+## 2026-09-22 canonical correction — real Dev host recovered
+
+The earlier BLOCKED conclusion above was based on the historical SSH alias `yby-irrigation-dev`, which still pointed to the old Hostinger target `194.164.64.172 / u595431186`. That audit did **not** inspect the current real Dev host and is superseded by the evidence below.
+
+Owner-confirmed current Dev SSH:
+- host: `193.46.197.115`
+- port: `65002`
+- user: `u686797605`
+
+SSH authentication was restored from the Windows development machine using alias `yby-shared-dev`.
+
+Read-only isolation proof on the real Dev host:
+
+### YBY Irrigation Dev
+- docroot: `/home/u686797605/domains/dev.ybyirrigation.com/public_html`
+- stored home: `https://dev.ybyirrigation.com`
+- stored siteurl: `https://dev.ybyirrigation.com`
+- database: `u686797605_eHkKS`
+
+### YBY Bottle Dev
+- docroot: `/home/u686797605/domains/dev.ybybottle.com/public_html`
+- stored home: `https://dev.ybybottle.com`
+- stored siteurl: `https://dev.ybybottle.com`
+- database: `u686797605_GWtSz`
+
+The two Dev sites use distinct docroots and distinct databases.
+
+**DEV ISOLATION GATE: PASS**
+
+## v1.7.0 Dev UAT deployment — 2026-09-22
+
+Frozen RC re-verified before upload:
+- package: `andy-core-v1.7.0.zip`
+- size: `306997 bytes`
+- SHA-256: `c9890568457e77e3998cb80d633c1e5dc927567e0dfe763f7dc6141f7e0a2698`
+
+The same SHA-256 was verified again on the Dev host before deployment.
+
+Pre-deploy Dev state:
+- Andy Core: `1.4.0`
+- status: active
+
+Rollback copy:
+`/home/u686797605/yby-backups/andy-core-v1.4.0-pre-v1.7.0-20260922`
+
+Post-deploy Dev state:
+- Andy Core: `1.7.0`
+- status: active
+- plugin header: `1.7.0`
+- `YBY_CORE_VERSION=1.7.0`
+- runtime database contract: `1.5.0`
+- updater compatibility database contract: `1.4.0`
+- no v1.7.0 database migration required
+
+Runtime checks:
+- canonical `yby_landing_page` CPT registered
+- canonical rewrite slug = `lp`
+- canonical landing archive disabled
+- `yby_article_toc_settings_v1` absent after upgrade, preserving default-OFF behavior
+- homepage response contained zero `yby-article-toc` markers
+- no Dev `wp-content/debug.log` fatal evidence was present
+- legacy site CPT `landing_page` still contains 12 historical entries; canonical `yby_landing_page` currently contains 0. This is migration/compatibility context, not a v1.7.0 release blocker.
+
+**V1.7.0 AUTOMATED DEV UAT: PASS**
+
+Remaining release gates:
+1. Owner Dev UAT / UI confirmation if required.
+2. PR #47 merge approval.
+3. Stable tag / GitHub Release.
+4. Explicit Production deployment approval.
