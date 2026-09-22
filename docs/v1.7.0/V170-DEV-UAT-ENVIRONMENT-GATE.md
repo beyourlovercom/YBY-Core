@@ -141,3 +141,35 @@ RC SHA-256:
 `c9890568457e77e3998cb80d633c1e5dc927567e0dfe763f7dc6141f7e0a2698`
 
 The Dev UAT environment gate is the current blocker. Stable tag, GitHub Release publication and Production deployment remain separate later gates.
+
+
+## 2026-09-22 remediation audit — existing-account staging search
+
+The isolation gate was re-audited before any Dev deployment.
+
+GitHub canonical state remained unchanged at the start of the audit:
+
+- PR #47: open Draft, not merged
+- branch head: `d22ac44107e98071576a1a90030c1c8335bb07cc`
+- base/main: `0d556c4fd1d0a518a553fa20437a4b51754f9bc4`
+- branch relation: 15 commits ahead / 0 behind
+- Release Package Validation #73: success
+- Andy Core Regression #124: success
+- Inquiry Inbox WordPress MySQL Validation #105: success
+
+A fresh read-only filesystem and WordPress identity sweep was performed across the Hostinger account.
+
+Results:
+
+- no new `dev.ybyirrigation.com` WordPress root exists
+- the only YBY Irrigation root remains `/home/u595431186/domains/ybyirrigation.com/public_html`
+- a number of separate `*.hostingersite.com` WordPress installations exist with their own stored `home/siteurl`
+- those discovered Hostinger-site installations identify as unrelated/default WordPress sites (for example `My WordPress`, `biomedimplant`, `kumartedavisi`) and use Blocksy or Hostinger AI themes
+- none of the inspected Hostinger-site installations contains Andy Core
+- therefore none can be treated as the YBY Irrigation staging environment or overwritten/re-purposed without separate ownership confirmation
+
+Decision remains:
+
+**DEV UAT DEPLOYMENT: BLOCKED**
+
+Required next remediation is to create a new Hostinger staging instance from hPanel for YBY Irrigation, or to provision a new explicitly isolated WordPress docroot + database. The resulting environment must satisfy the isolation proof listed above before the v1.7.0 RC can be deployed.
