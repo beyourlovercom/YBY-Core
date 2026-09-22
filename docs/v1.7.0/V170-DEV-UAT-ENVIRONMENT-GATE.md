@@ -173,3 +173,23 @@ Decision remains:
 **DEV UAT DEPLOYMENT: BLOCKED**
 
 Required next remediation is to create a new Hostinger staging instance from hPanel for YBY Irrigation, or to provision a new explicitly isolated WordPress docroot + database. The resulting environment must satisfy the isolation proof listed above before the v1.7.0 RC can be deployed.
+
+
+## Canonical Dev SSH details — 2026-09-22
+
+Owner-confirmed SSH connection details for the real shared Dev host used by both `dev.ybyirrigation.com` and `dev.ybybottle.com`:
+
+- Host/IP: `193.46.197.115`
+- Port: `65002`
+- Username: `u686797605`
+
+Hostinger SSH key entry name observed in hPanel:
+
+- `Svakom@2024`
+- created: `2026-07-10`
+
+Security note:
+
+- password/private key material is not recorded in this repository
+- the existing local SSH alias `yby-irrigation-dev` still points to the historical `194.164.64.172 / u595431186` target and must not be treated as canonical until updated
+- isolation verification must be performed against `193.46.197.115:65002` with username `u686797605`
