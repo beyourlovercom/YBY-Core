@@ -114,7 +114,13 @@ class YBY_Docs_Runtime {
 
 	public function canonical_enabled() {
 		if ( ! (bool) get_option( self::CANONICAL_OPTION, false ) ) { return false; }
-		if ( function_exists( 'wp_get_environment_type' ) && 'local' === wp_get_environment_type() ) { return true; }
+
+		$environment = function_exists( 'wp_get_environment_type' ) ? wp_get_environment_type() : 'production';
+		if ( in_array( $environment, array( 'local', 'development', 'staging' ), true ) ) { return true; }
+
+		$host = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
+		if ( 0 === strpos( $host, 'dev.' ) ) { return true; }
+
 		return defined( 'YBY_DOCS_OS_CANONICAL_PRODUCTION_ENABLED' ) && YBY_DOCS_OS_CANONICAL_PRODUCTION_ENABLED;
 	}
 
