@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v1.7.0 - 2026-09-20
+
+- Added Registry V2 extension-module contracts with enabled-only boot, dependency fail-close, versioned settings storage, and conditional request-level asset gates.
+- Added canonical `Andy Content` admin IA and nested Docs under it while preserving existing Docs slugs, routes, content, taxonomy, and settings contracts.
+- Restored Landing Pages as the namespaced `yby_landing_page` CPT with canonical `/lp/{slug}` public URLs and a one-time non-destructive existing-site module adoption gate.
+- Added Article TOC V1 as a default-off, Posts-only module with Inline Summary, desktop Floating TOC, stable H2 anchors, Scroll Spy, responsive behavior, accessibility states, and legacy TOC duplicate prevention.
+- Preserved runtime database version `1.5.0` and updater compatibility database version `1.4.0`; no database migration is required.
+
 ## v1.6.0 - 2026-09-18
 
 - Added Docs OS V1 as a default-off modular runtime with Home, Category, Document, Search, TOC and Related Docs surfaces.

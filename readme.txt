@@ -4,7 +4,7 @@ Tags: andy-core, yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 License: Proprietary
 License URI: https://ybyglobal.com/
 
@@ -12,7 +12,15 @@ Core platform plugin for managed WordPress websites, including Case ID, tracking
 
 == Description ==
 
-Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.6.0 adds modular Docs OS V1, reversible canonical documentation takeover, Cloudflare R2 render-time asset resolution, and a reusable cross-site Docs contract while preserving existing Andy Core runtime and signed updater contracts.
+Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.7.0 adds Registry V2 extension contracts, Andy Content IA, restored Landing Pages, and Article TOC V1 while preserving existing Andy Core runtime and signed updater contracts.
+
+Included in v1.7.0:
+
+* Registry V2 extension modules with enabled-only boot, dependency fail-close, versioned settings storage, and conditional request-level asset gating
+* Canonical Andy Content admin shell with Docs nested under it while preserving stable Docs routes and data
+* Restored Landing Pages CPT with canonical `/lp/{slug}` public URLs and non-destructive existing-site adoption
+* Article TOC V1 as a default-off Posts-only module with Inline Summary, desktop Floating TOC, stable H2 anchors, Scroll Spy, responsive gating, and legacy duplicate prevention
+* Database schema remains runtime 1.5.0 and updater compatibility 1.4.0; no migration
 
 Included in v1.6.0:
 
@@ -175,6 +183,19 @@ Lead notifications dispatch through `YBY_Notification_Manager` with the Email pr
 The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Recipient Emails, Reply-To Policy, Lead Email Subject Template, and Email Branding settings. Invalid addresses are ignored.
 
 == Changelog ==
+
+= 1.7.0 =
+
+* Added Registry V2 extension contracts, versioned settings storage, and conditional asset gates.
+* Added canonical Andy Content admin IA and restored Landing Pages at `/lp/{slug}`.
+* Added Article TOC V1 as a default-off Posts-only module with Inline Summary, desktop Floating TOC, stable H2 anchors, Scroll Spy, responsive gating, and legacy duplicate prevention.
+* Preserved runtime database version 1.5.0 and updater compatibility database version 1.4.0; no database migration.
+
+= 1.6.0 =
+
+* Added modular Docs OS V1 with native Docs surfaces and reversible canonical ownership.
+* Added Cloudflare R2 render-time asset resolution and reusable Docs adapters.
+* Preserved runtime database version 1.5.0 and updater compatibility database version 1.4.0; no database migration.
 
 = 1.5.3 =
 

@@ -137,6 +137,10 @@ class YBY_Admin {
 			( new YBY_Connector_Admin() )->render_page();
 			return;
 		}
+		if ( 'article-toc' === $tab ) {
+			$this->render_article_toc_settings();
+			return;
+		}
 		if ( 'updates' === $tab ) {
 			( new YBY_Updater( YBY_CORE_PLUGIN_FILE, YBY_CORE_VERSION ) )->render_tab();
 			return;
@@ -175,6 +179,7 @@ class YBY_Admin {
 			$tabs['inquiry-notification'] = '询盘通知';
 		}
 		if ( YBY_Module_Registry::is_enabled( 'connector' ) ) { $tabs['wp-api'] = 'WP-API'; }
+		if ( ! empty( YBY_Module_Registry::module( 'article_toc' ) ) ) { $tabs['article-toc'] = '文章目录'; }
 		$tabs['system-status'] = '系统状态';
 		$tabs['updates'] = '更新';
 		return $tabs;
@@ -192,6 +197,21 @@ class YBY_Admin {
 		$modules = YBY_Module_Registry::modules();
 		$enabled = YBY_Module_Registry::enabled_modules();
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/modules-page.php';
+	}
+
+	protected function render_article_toc_settings() {
+		$tab = 'article-toc';
+		$notice = '';
+		if ( isset( $_POST['yby_article_toc_settings_submit'] ) ) {
+			check_admin_referer( 'yby_article_toc_settings_save', 'yby_article_toc_settings_nonce' );
+			$raw = wp_unslash( $_POST['yby_article_toc_settings'] ?? array() );
+			$raw = is_array( $raw ) ? $raw : array();
+			YBY_Article_TOC_Module::save_settings( $raw );
+			$notice = __( 'Article TOC settings saved.', 'yby-core' );
+		}
+		$options = YBY_Article_TOC_Module::get_settings();
+		$module_enabled = YBY_Module_Registry::is_enabled( YBY_Article_TOC_Module::MODULE_ID );
+		include YBY_CORE_PLUGIN_DIR . 'admin/views/article-toc-settings.php';
 	}
 
 	protected function render_inquiry_settings() {

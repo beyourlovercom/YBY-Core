@@ -23,6 +23,76 @@ class YBY_Docs_Runtime {
 	protected function taxonomy() { $c = $this->contract(); return sanitize_key( $c['taxonomy'] ); }
 	protected function related_meta_key() { $c = $this->contract(); return sanitize_key( $c['related_meta_key'] ); }
 
+	const CONTENT_MODEL_VERSION = '1';
+	const CONTENT_MODEL_OPTION = 'yby_docs_os_content_model_version';
+
+	public function register_content_model() {
+		$contract = $this->contract();
+		$post_type = $this->post_type();
+		$taxonomy = $this->taxonomy();
+
+		if ( ! post_type_exists( $post_type ) ) {
+			register_post_type(
+				$post_type,
+				array(
+					'labels' => array(
+						'name' => __( 'Docs', 'yby-core' ),
+						'singular_name' => __( 'Doc', 'yby-core' ),
+						'add_new_item' => __( 'Add New Doc', 'yby-core' ),
+						'edit_item' => __( 'Edit Doc', 'yby-core' ),
+						'view_item' => __( 'View Doc', 'yby-core' ),
+						'all_items' => __( 'All Docs', 'yby-core' ),
+					),
+					'public' => true,
+					'publicly_queryable' => true,
+					'show_ui' => true,
+					'show_in_menu' => false,
+					'show_in_rest' => true,
+					'has_archive' => 'docs',
+					'rewrite' => array( 'slug' => trim( $contract['base_path'], '/' ), 'with_front' => false ),
+					'supports' => array( 'title', 'editor', 'author', 'thumbnail', 'excerpt', 'revisions', 'custom-fields' ),
+				)
+			);
+		}
+
+		if ( ! taxonomy_exists( $taxonomy ) ) {
+			register_taxonomy(
+				$taxonomy,
+				array( $post_type ),
+				array(
+					'labels' => array( 'name' => __( 'Doc Categories', 'yby-core' ), 'singular_name' => __( 'Doc Category', 'yby-core' ) ),
+					'public' => true,
+					'show_ui' => true,
+					'show_in_rest' => true,
+					'hierarchical' => true,
+					'rewrite' => array( 'slug' => trim( $contract['base_path'], '/' ) . '/category', 'with_front' => false ),
+				)
+			);
+		}
+
+		if ( ! taxonomy_exists( 'doc_tag' ) ) {
+			register_taxonomy(
+				'doc_tag',
+				array( $post_type ),
+				array(
+					'labels' => array( 'name' => __( 'Doc Tags', 'yby-core' ), 'singular_name' => __( 'Doc Tag', 'yby-core' ) ),
+					'public' => true,
+					'show_ui' => true,
+					'show_in_rest' => true,
+					'hierarchical' => false,
+					'rewrite' => array( 'slug' => trim( $contract['base_path'], '/' ) . '/tag', 'with_front' => false ),
+				)
+			);
+		}
+	}
+
+	public function maybe_flush_content_model_rewrite_rules() {
+		if ( self::CONTENT_MODEL_VERSION === (string) get_option( self::CONTENT_MODEL_OPTION, '' ) ) { return; }
+		$this->register_content_model();
+		flush_rewrite_rules( false );
+		update_option( self::CONTENT_MODEL_OPTION, self::CONTENT_MODEL_VERSION, false );
+	}
+
 	protected function settings() {
 		$defaults = array(
 			'site_title' => 'Help Center', 'site_description' => 'Find answers to common questions about orders, shipping, returns, and more.',
@@ -44,7 +114,13 @@ class YBY_Docs_Runtime {
 
 	public function canonical_enabled() {
 		if ( ! (bool) get_option( self::CANONICAL_OPTION, false ) ) { return false; }
-		if ( function_exists( 'wp_get_environment_type' ) && 'local' === wp_get_environment_type() ) { return true; }
+
+		$environment = function_exists( 'wp_get_environment_type' ) ? wp_get_environment_type() : 'production';
+		if ( in_array( $environment, array( 'local', 'development', 'staging' ), true ) ) { return true; }
+
+		$host = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
+		if ( 0 === strpos( $host, 'dev.' ) ) { return true; }
+
 		return defined( 'YBY_DOCS_OS_CANONICAL_PRODUCTION_ENABLED' ) && YBY_DOCS_OS_CANONICAL_PRODUCTION_ENABLED;
 	}
 

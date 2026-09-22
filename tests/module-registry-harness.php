@@ -9,11 +9,12 @@ function add_query_arg( $args, $url ) { return $url . '?' . http_build_query( $a
 require_once dirname( __DIR__ ) . '/inc/class-yby-module-registry.php';
 $assert = static function ( $ok, $message ) { if ( ! $ok ) { fwrite( STDERR, "FAIL: {$message}\n" ); exit( 1 ); } };
 $modules = YBY_Module_Registry::modules();
-$assert( YBY_Module_Registry::VERSION === '1', 'registry version' );
+$assert( YBY_Module_Registry::VERSION === '2', 'registry version' );
+$assert( YBY_Module_Registry::OPTION_KEY === 'yby_core_enabled_modules_v1', 'registry v2 must preserve existing option storage key' );
 $assert( count( YBY_Module_Registry::foundation() ) >= 6, 'foundation must be explicit and locked' );
-foreach ( array( 'inquiry_os', 'email_os', 'project_studio', 'social_login', 'connector', 'docs_os' ) as $id ) { $assert( isset( $modules[ $id ] ), 'missing module: ' . $id ); }
+foreach ( array( 'inquiry_os', 'email_os', 'project_studio', 'social_login', 'connector', 'docs_os', 'landing_pages' ) as $id ) { $assert( isset( $modules[ $id ] ), 'missing module: ' . $id ); }
 $defaults = YBY_Module_Registry::enabled_modules();
-foreach ( array( 'inquiry_os', 'email_os', 'project_studio', 'social_login', 'connector' ) as $id ) { $assert( in_array( $id, $defaults, true ), 'existing site module must default ON: ' . $id ); }
+foreach ( array( 'inquiry_os', 'email_os', 'project_studio', 'social_login', 'connector', 'landing_pages' ) as $id ) { $assert( in_array( $id, $defaults, true ), 'default ON module missing: ' . $id ); }
 $assert( ! in_array( 'docs_os', $defaults, true ), 'Docs OS must default OFF for existing sites' );
 $saved = YBY_Module_Registry::sanitize_enabled_modules( array( 'email_os', 'connector', 'docs_os', 'evil_module', 'email_os' ) );
 $assert( $saved === array( 'email_os', 'connector', 'docs_os' ), 'save sanitizer must accept ready Docs OS while rejecting unknown and duplicate modules' );
@@ -23,6 +24,7 @@ $assert( YBY_Module_Registry::is_enabled( 'email_os' ), 'enabled module lookup' 
 $assert( ! YBY_Module_Registry::is_enabled( 'inquiry_os' ), 'disabled module lookup' );
 $assert( false !== strpos( YBY_Module_Registry::settings_url( 'connector' ), 'tab=wp-api' ), 'connector settings URL' );
 $assert( false !== strpos( YBY_Module_Registry::settings_url( 'docs_os' ), 'page=yby-docs-os' ), 'ready Docs OS must expose settings URL' );
+$assert( false !== strpos( YBY_Module_Registry::settings_url( 'landing_pages' ), 'edit.php?post_type=yby_landing_page' ), 'Landing Pages must expose the CPT list URL' );
 $core = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-core.php' );
 $admin = file_get_contents( dirname( __DIR__ ) . '/admin/class-yby-admin.php' );
 $view = file_get_contents( dirname( __DIR__ ) . '/admin/views/modules-page.php' );
