@@ -7,12 +7,13 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class YBY_Landing_Page_CPT {
-	const POST_TYPE = 'yby_landing_page';
+	const POST_TYPE = 'landing_page';
 	const REWRITE_SLUG = 'lp';
 	const REWRITE_VERSION = '1';
 	const REWRITE_OPTION = 'yby_landing_page_rewrite_version';
 
 	public function register() {
+		if ( post_type_exists( self::POST_TYPE ) ) { return; }
 		register_post_type(
 			self::POST_TYPE,
 			array(
@@ -41,11 +42,12 @@ class YBY_Landing_Page_CPT {
 				'publicly_queryable' => true,
 				'exclude_from_search' => true,
 				'show_ui' => true,
-				'show_in_menu' => false,
+				'show_in_menu' => true,
 				'show_in_admin_bar' => true,
 				'show_in_nav_menus' => false,
 				'show_in_rest' => true,
-				'menu_icon' => 'dashicons-welcome-widgets-menus',
+				'menu_icon' => 'dashicons-megaphone',
+				'menu_position' => 5,
 				'capability_type' => 'page',
 				'map_meta_cap' => true,
 				'hierarchical' => false,
@@ -64,30 +66,19 @@ class YBY_Landing_Page_CPT {
 					'excerpt',
 					'revisions',
 					'custom-fields',
+					'page-attributes',
 				),
 			)
 		);
 	}
 
 	public function add_admin_menu() {
-		add_submenu_page(
-			YBY_Content_Admin::MENU_SLUG,
-			__( 'Landing Pages', 'yby-core' ),
-			__( 'Landing Pages', 'yby-core' ),
-			'edit_pages',
-			'edit.php?post_type=' . self::POST_TYPE
-		);
+		// Canonical Landing Page remains a first-class top-level B2B workbench.
 	}
 
-	public function filter_parent_file( $parent_file ) {
-		if ( $this->is_landing_page_screen() ) { return YBY_Content_Admin::MENU_SLUG; }
-		return $parent_file;
-	}
+	public function filter_parent_file( $parent_file ) { return $parent_file; }
 
-	public function filter_submenu_file( $submenu_file ) {
-		if ( $this->is_landing_page_screen() ) { return 'edit.php?post_type=' . self::POST_TYPE; }
-		return $submenu_file;
-	}
+	public function filter_submenu_file( $submenu_file ) { return $submenu_file; }
 
 	public function maybe_flush_rewrite_rules() {
 		if ( self::REWRITE_VERSION === (string) get_option( self::REWRITE_OPTION, '' ) ) { return; }
