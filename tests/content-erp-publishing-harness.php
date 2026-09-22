@@ -98,6 +98,10 @@ function get_permalink( $post_id ) {
 	$post = get_post( $post_id );
 	return $post ? 'https://example.test/blog/' . $post->post_name . '/' : false;
 }
+function get_preview_post_link( $post_id ) {
+	$url = get_permalink( $post_id );
+	return $url ? $url . '?preview=true' : false;
+}
 
 require_once dirname( __DIR__ ) . '/inc/class-yby-content-erp-contract.php';
 
@@ -155,6 +159,7 @@ content_assert( 1 === $write_counts['insert'] && 0 === $write_counts['update'], 
 content_assert( '77' === (string) get_post_meta( 1, '_yby_erp_article_id', true ), 'ERP article binding must be persisted.' );
 content_assert( str_repeat( 'a', 64 ) === get_post_meta( 1, '_yby_erp_preview_hash', true ), 'Preview hash must be persisted for audit.' );
 content_assert( true === $first['canonical_path_match'], 'Read-back permalink must report canonical path agreement.' );
+content_assert( false !== strpos( $first['url'], '?preview=true' ), 'Draft publish must return a WordPress preview link for Owner UAT.' );
 
 $second_payload = content_payload();
 $second_payload['layout_snapshot_id'] = 10;

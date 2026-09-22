@@ -205,8 +205,15 @@ class YBY_Content_ERP_Contract {
 			return self::provider_failure( 'PROVIDER_READBACK_FAILED', 'WordPress post read-back did not match.' );
 		}
 
-		$url = function_exists( 'get_permalink' ) ? get_permalink( $post_id ) : '';
-		$url = is_string( $url ) ? $url : '';
+		$permalink = function_exists( 'get_permalink' ) ? get_permalink( $post_id ) : '';
+		$permalink = is_string( $permalink ) ? $permalink : '';
+		$url = $permalink;
+		if ( 'draft' === $input['requested_status'] && function_exists( 'get_preview_post_link' ) ) {
+			$preview_url = get_preview_post_link( $post_id );
+			if ( is_string( $preview_url ) && '' !== $preview_url ) {
+				$url = $preview_url;
+			}
+		}
 
 		return array(
 			'resource_contract_version' => self::VERSION,
@@ -219,7 +226,7 @@ class YBY_Content_ERP_Contract {
 			'layout_snapshot_id'        => $input['layout_snapshot_id'],
 			'preview_hash'              => $input['preview_hash'],
 			'canonical_path_expected'   => $input['canonical_path'],
-			'canonical_path_match'      => self::permalink_matches( $url, $input['canonical_path'] ),
+			'canonical_path_match'      => self::permalink_matches( $permalink, $input['canonical_path'] ),
 		);
 	}
 
