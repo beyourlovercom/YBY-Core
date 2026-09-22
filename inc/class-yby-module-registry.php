@@ -80,7 +80,7 @@ class YBY_Module_Registry {
                 'status' => 'ready',
                 'capability' => 'edit_pages',
                 'admin_parent' => 'yby-content',
-                'settings' => array( 'url' => 'edit.php?post_type=yby_landing_page' ),
+                'settings' => array( 'url' => 'edit.php?post_type=landing_page' ),
             ),
         );
     }
