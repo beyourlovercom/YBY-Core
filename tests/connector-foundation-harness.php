@@ -48,15 +48,15 @@ connector_assert( 'beyourlover.com' === $options[ YBY_Connector::OPTION ]['conne
 unset( $options[ YBY_Connector::OPTION ] );
 connector_assert( 'Provider Missing' === YBY_Connector::provider_statuses()['woocommerce']['status'] && 'Provider Missing' === YBY_Connector::provider_statuses()['affiliatewp']['status'], 'Absent providers must be detected gracefully.' );
 $endpoints = YBY_Connector::endpoint_statuses();
-connector_assert( 13 === count( $endpoints ), 'Connector must expose exactly thirteen contract endpoint rows.' );
+connector_assert( 15 === count( $endpoints ), 'Connector must expose exactly fifteen contract endpoint rows.' );
 $expected_routes = array(
 	'GET /health', 'GET /snapshot/affiliates', 'GET /snapshot/coupons', 'GET /snapshot/referrals', 'GET /snapshot/payouts', 'GET /snapshot/subscribers', 'GET /snapshot/email-templates',
-	'POST /affiliates/provision', 'POST /affiliates/{affiliate_id}/status', 'POST /coupons/check', 'POST /coupons/provision', 'POST /payouts/complete', 'POST /wordpress/users/{user_id}/password',
+	'POST /affiliates/provision', 'POST /affiliates/{affiliate_id}/status', 'POST /coupons/check', 'POST /coupons/provision', 'POST /payouts/complete', 'POST /wordpress/users/{user_id}/password', 'POST /content/preview', 'POST /content/publish',
 );
 $actual_routes = array();
 foreach ( $endpoints as $endpoint ) { $actual_routes[] = $endpoint['method'] . ' ' . $endpoint['path']; }
 sort( $expected_routes ); sort( $actual_routes );
-connector_assert( $expected_routes === $actual_routes, 'Endpoint table must contain exactly the thirteen approved routes and no others.' );
+connector_assert( $expected_routes === $actual_routes, 'Endpoint table must contain exactly the fifteen approved routes and no others.' );
 connector_assert( 'Connector Disabled' === $endpoints['health']['status'], 'Disabled connector health must report Connector Disabled.' );
 connector_assert( 'Provider Missing' === $endpoints['affiliate_snapshot']['status'], 'Implemented Affiliate snapshot must report Provider Missing when AffiliateWP is absent.' );
 connector_assert( false === $endpoints['health']['available'] && false === $endpoints['affiliate_snapshot']['available'], 'Disabled health and provider-missing snapshot must remain unavailable.' );
