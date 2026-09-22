@@ -105,6 +105,15 @@ class YBY_Content_ERP_Contract {
 			return self::validation_error();
 		}
 
+		$expected_indexing = 'draft' === $requested_status ? 'noindex' : 'index';
+		if ( $expected_indexing !== $seo['indexing'] ) {
+			return new WP_Error(
+				'INDEXING_STATUS_MISMATCH',
+				'Draft content must request noindex and published content must request index.',
+				array( 'status' => 409, 'retryable' => false )
+			);
+		}
+
 		return array(
 			'connection_key'    => (string) $connection_key,
 			'erp_article_id'    => (int) $body['erp_article_id'],
@@ -150,7 +159,7 @@ class YBY_Content_ERP_Contract {
 	 * @return array<string,mixed>|WP_Error
 	 */
 	public static function publish( $input ) {
-		if ( ! function_exists( 'wp_insert_post' ) || ! function_exists( 'wp_update_post' ) || ! function_exists( 'get_post' ) || ! function_exists( 'update_post_meta' ) || ! function_exists( 'get_post_meta' ) ) {
+		if ( ! function_exists( 'wp_insert_post' ) || ! function_exists( 'wp_update_post' ) || ! function_exists( 'get_post' ) || ! function_exists( 'update_post_meta' ) || ! function_exists( 'get_post_meta' ) || ! function_exists( 'delete_post_meta' ) ) {
 			return self::provider_failure( 'PROVIDER_UNAVAILABLE', 'WordPress post provider is unavailable.' );
 		}
 
@@ -220,6 +229,7 @@ class YBY_Content_ERP_Contract {
 			'preview_hash'              => $input['preview_hash'],
 			'canonical_path_expected'   => $input['canonical_path'],
 			'canonical_path_match'      => self::permalink_matches( $url, $input['canonical_path'] ),
+			'indexing'                  => (string) get_post_meta( $post_id, '_yby_content_indexing', true ),
 		);
 	}
 
@@ -285,6 +295,7 @@ class YBY_Content_ERP_Contract {
 			'_yby_content_type'             => $input['content_type'],
 			'_yby_primary_keyword'          => $input['seo']['primary_keyword'],
 			'_yby_search_intent'            => $input['seo']['search_intent'],
+			'_yby_content_indexing'         => $input['seo']['indexing'],
 		);
 
 		foreach ( $meta as $key => $value ) {
@@ -292,6 +303,20 @@ class YBY_Content_ERP_Contract {
 			update_post_meta( $post_id, $key, $expected );
 			if ( $expected !== (string) get_post_meta( $post_id, $key, true ) ) {
 				return self::provider_failure( 'PROVIDER_SYNC_FAILED', 'WordPress post binding metadata read-back did not match.' );
+			}
+		}
+
+		if ( 'noindex' === $input['seo']['indexing'] ) {
+			update_post_meta( $post_id, 'rank_math_robots', array( 'noindex', 'follow' ) );
+			$robots = get_post_meta( $post_id, 'rank_math_robots', true );
+			if ( ! is_array( $robots ) || ! in_array( 'noindex', $robots, true ) ) {
+				return self::provider_failure( 'PROVIDER_SYNC_FAILED', 'WordPress noindex read-back did not match.' );
+			}
+		} else {
+			delete_post_meta( $post_id, 'rank_math_robots' );
+			$robots = get_post_meta( $post_id, 'rank_math_robots', true );
+			if ( is_array( $robots ) && in_array( 'noindex', $robots, true ) ) {
+				return self::provider_failure( 'PROVIDER_SYNC_FAILED', 'WordPress index read-back still contains a noindex override.' );
 			}
 		}
 
@@ -319,7 +344,7 @@ class YBY_Content_ERP_Contract {
 	 * @return array<string,string|null>|WP_Error
 	 */
 	private static function seo( $value ) {
-		$keys = array( 'primary_keyword', 'search_intent' );
+		$keys = array( 'primary_keyword', 'search_intent', 'indexing' );
 		if ( ! is_array( $value ) || count( $value ) !== count( $keys ) || array_diff( $keys, array_keys( $value ) ) || array_diff( array_keys( $value ), $keys ) ) {
 			return self::validation_error();
 		}
@@ -339,6 +364,11 @@ class YBY_Content_ERP_Contract {
 			}
 			$result[ $key ] = $clean;
 		}
+
+		if ( ! is_string( $value['indexing'] ) || ! in_array( $value['indexing'], array( 'noindex', 'index' ), true ) ) {
+			return self::validation_error();
+		}
+		$result['indexing'] = $value['indexing'];
 
 		return $result;
 	}

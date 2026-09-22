@@ -40,8 +40,8 @@ The request object must contain exactly:
 - `title` — non-empty plain title, max 200 bytes.
 - `html` — non-empty article HTML, max 524288 bytes; re-sanitized with `wp_kses_post`.
 - `canonical_path` — null/empty or a local absolute path; schemes, query strings and fragments are forbidden.
-- `seo` — exact object with `primary_keyword` and `search_intent`, each nullable.
-- `requested_status` — `draft` or `publish`.
+- `seo` — exact object with nullable `primary_keyword`, nullable `search_intent`, and required `indexing` (`noindex` or `index`).
+- `requested_status` — `draft` or `publish`. Draft requires `seo.indexing=noindex`; publish requires `seo.indexing=index`, otherwise the request fails closed with `INDEXING_STATUS_MISMATCH`.
 
 Product/category publishing is intentionally out of scope and must fail closed with `CONTENT_TYPE_UNSUPPORTED`.
 
@@ -61,6 +61,9 @@ Bound metadata:
 - `_yby_content_type`
 - `_yby_primary_keyword`
 - `_yby_search_intent`
+- `_yby_content_indexing`
+
+For Draft, Andy Core also writes Rank Math `rank_math_robots = [noindex, follow]`. On Publish, Andy Core removes that explicit override so the site's normal Rank Math index/follow defaults apply. Both operations are read back before success.
 
 Metadata is read back immediately. A mismatch returns `PROVIDER_SYNC_FAILED`; a newly created half-bound post is compensated with an exact delete when WordPress exposes `wp_delete_post`.
 
@@ -93,6 +96,7 @@ Publish returns bounded data containing:
 - `preview_hash`
 - `canonical_path_expected`
 - `canonical_path_match`
+- `indexing` — provider read-back of `_yby_content_indexing` (`noindex` or `index`).
 
 Preview returns the validated provider projection and `write_performed=false`.
 
