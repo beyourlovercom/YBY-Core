@@ -229,6 +229,8 @@ class YBY_Core {
 
 		if ( $docs_enabled ) {
 			$docs_runtime = new YBY_Docs_Runtime();
+			$this->loader->add_action( 'init', $docs_runtime, 'register_content_model', 8, 0 );
+			$this->loader->add_action( 'admin_init', $docs_runtime, 'maybe_flush_content_model_rewrite_rules', 2, 0 );
 			$this->loader->add_filter( 'query_vars', $docs_runtime, 'register_query_var' );
 			$this->loader->add_action( 'wp_enqueue_scripts', $docs_runtime, 'enqueue_assets', 15, 0 );
 			$this->loader->add_action( 'template_redirect', $docs_runtime, 'maybe_render_preview', 1, 0 );
