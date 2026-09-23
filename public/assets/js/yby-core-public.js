@@ -784,15 +784,16 @@
     }
 
     var eventPayload = sanitizeTrackingPayload(payload);
+    var analyticsSiteProfile = tracking && tracking.siteProfile && typeof tracking.siteProfile === "object" ? tracking.siteProfile : {};
     pushDataLayer(
       Object.assign(
         {
           event: safeString(eventName, 80),
           page_location_clean: cleanLocation(),
           product_interest: getProductInterest(),
-          tracking_group: getCanonicalString("trackingGroup", "", 80),
-          ga4_content_group: getCanonicalString("ga4ContentGroup", "", 80),
-          ads_conversion_group: getCanonicalString("adsConversionGroup", "", 80),
+          tracking_group: safeString(analyticsSiteProfile.tracking_group || getCanonicalString("trackingGroup", "", 80), 80),
+          ga4_content_group: safeString(analyticsSiteProfile.ga4_content_group || getCanonicalString("ga4ContentGroup", "", 80), 80),
+          ads_conversion_group: safeString(analyticsSiteProfile.ads_conversion_group || getCanonicalString("adsConversionGroup", "", 80), 80),
           case_id_available: caseIdAvailable(window.YBYLead.getCaseId())
         },
         eventPayload

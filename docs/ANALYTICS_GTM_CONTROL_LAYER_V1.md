@@ -96,3 +96,11 @@ The V1 registry records event category, dedupe policy identifier, and a hard `pi
 The existing frontend tracking facade keeps one provider push seam. When the Analytics module is OFF, the historical `window.dataLayer` behavior is preserved. When enabled, the adapter may project the validated versioned `data_layer_name` setting.
 
 Dev evidence on 2026-09-23 observed GTM4WP plugin path `duracelltomi-google-tag-manager/duracelltomi-google-tag-manager-for-wordpress.php` with public `GTM4WP_VERSION=2.0.2`.
+
+## V181-5 Analytics Site Profile
+
+`YBY_Analytics_Site_Profile` provides a read-only canonical analytics context without migrating or rewriting existing Project/Page metadata.
+
+The projection contains trusted site identity (`site_brand_key`, `site_brand_name`, `website_host`) plus the existing runtime tracking dimensions (`tracking_group`, `ga4_content_group`, `ads_conversion_group`). Project runtime remains the compatibility source, so Page Profile fallback behavior for `trackingGroup` is preserved.
+
+Frontend business events read the canonical Site Profile first and fall back to the historical `YBYProject` / `YBYPageProfile` keys. The Analytics module can also load the shared public runtime when Inquiry OS and Project Studio are disabled, while remaining default OFF.

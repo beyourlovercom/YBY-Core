@@ -23,6 +23,9 @@ class YBY_Tracking {
 		return array(
 			'enabled'           => YBY_Config::is_tracking_enabled(),
 			'defaultProduct'    => YBY_Config::get_default_product_interest(),
+			'siteProfile'       => class_exists( 'YBY_Analytics_Site_Profile' )
+				? YBY_Analytics_Site_Profile::current()
+				: array(),
 			'analytics'         => class_exists( 'YBY_Analytics_GTM4WP_Adapter' )
 				? YBY_Analytics_GTM4WP_Adapter::runtime_config()
 				: array(),

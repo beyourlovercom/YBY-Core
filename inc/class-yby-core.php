@@ -37,6 +37,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-one-tap-controller.php'
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-social-login-shortcodes.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-session.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-event-contract.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-site-profile.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-gtm4wp-adapter.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-tracking.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-webhook.php';
@@ -230,6 +231,7 @@ class YBY_Core {
 		$social_enabled = YBY_Module_Registry::is_enabled( 'social_login' );
 		$connector_enabled = YBY_Module_Registry::is_enabled( 'connector' );
 		$docs_enabled = YBY_Module_Registry::is_enabled( 'docs_os' );
+		$analytics_enabled = YBY_Module_Registry::is_enabled( 'analytics' );
 
 		if ( $docs_enabled ) {
 			$docs_runtime = new YBY_Docs_Runtime();
@@ -241,7 +243,7 @@ class YBY_Core {
 			$this->loader->add_action( 'template_redirect', $docs_runtime, 'maybe_render_canonical', 2, 0 );
 		}
 
-		if ( $inquiry_enabled || $project_enabled ) {
+		if ( $inquiry_enabled || $project_enabled || $analytics_enabled ) {
 			$public = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
 			$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
 		}
