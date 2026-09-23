@@ -37,7 +37,8 @@ $public = file_get_contents( dirname( __DIR__ ) . '/public/class-yby-public.php'
 $core = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-core.php' );
 $js = file_get_contents( dirname( __DIR__ ) . '/public/assets/js/yby-core-public.js' );
 $assert( false !== strpos( $public, "YBY_Module_Registry::is_enabled( 'analytics' )" ), 'Analytics-alone public runtime gate' );
-$assert( false !== strpos( $core, '$inquiry_enabled || $project_enabled || $analytics_enabled' ), 'core public hook Analytics gate' );
+$assert( false !== strpos( $core, 'Always register the public controller hook' ) && false !== strpos( $core, "add_action( 'wp_enqueue_scripts'" ), 'public runtime hook must always register before extension discovery' );
+$assert( false === strpos( $core, '$inquiry_enabled || $project_enabled || $analytics_enabled' ), 'public hook must not depend on pre-discovery Analytics lookup' );
 $assert( false !== strpos( $js, 'tracking.siteProfile' ), 'frontend canonical Site Profile read missing' );
 $assert( false !== strpos( $js, 'analyticsSiteProfile.tracking_group || getCanonicalString("trackingGroup"' ), 'legacy trackingGroup fallback missing' );
 echo "PASS v181-analytics-site-profile-harness\n";

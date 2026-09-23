@@ -232,7 +232,6 @@ class YBY_Core {
 		$social_enabled = YBY_Module_Registry::is_enabled( 'social_login' );
 		$connector_enabled = YBY_Module_Registry::is_enabled( 'connector' );
 		$docs_enabled = YBY_Module_Registry::is_enabled( 'docs_os' );
-		$analytics_enabled = YBY_Module_Registry::is_enabled( 'analytics' );
 
 		if ( $docs_enabled ) {
 			$docs_runtime = new YBY_Docs_Runtime();
@@ -244,10 +243,11 @@ class YBY_Core {
 			$this->loader->add_action( 'template_redirect', $docs_runtime, 'maybe_render_canonical', 2, 0 );
 		}
 
-		if ( $inquiry_enabled || $project_enabled || $analytics_enabled ) {
-			$public = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
-			$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
-		}
+		// Always register the public controller hook. Extension modules such as
+		// Analytics are discovered on plugins_loaded after this constructor runs;
+		// YBY_Public performs the final enabled-module gate at enqueue time.
+		$public = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
+		$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
 
 		if ( $inquiry_enabled ) {
 			$lead_rest_route = new YBY_Lead_REST_Controller();
