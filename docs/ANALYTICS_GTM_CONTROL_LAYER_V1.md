@@ -112,3 +112,13 @@ The V1 adapter explicitly supports GTM4WP versions `>=2.0.0` and `<3.0.0`. Absen
 When the Analytics module is OFF, the historical tracking/dataLayer behavior remains unchanged. When Analytics is explicitly enabled, event emission fails closed unless the configured GTM4WP provider is detected and compatible. A custom data-layer name is used only when the adapter is runtime-ready.
 
 Observed Dev provider `2.0.2` falls inside the supported V1 range.
+
+## V181-7 Duplicate-GTM Cleanup Support
+
+Duplicate-GTM support is diagnostic-only in V1. Andy Core does not automatically remove or rewrite GTM4WP, theme, snippet-plugin, or manually installed tags.
+
+When the Analytics module is enabled, `yby-analytics-diagnostics.js` can inspect rendered GTM loader scripts and noscript iframes. It reports unique container IDs, duplicate loader IDs, duplicate iframe IDs, multiple-container state, and a frozen `cleanup_policy=diagnose_only`.
+
+A loader script plus its matching noscript iframe is not considered a duplicate by itself; duplication is evaluated within each channel.
+
+Read-only Dev HTML audit on 2026-09-23 found one GTM marker for `GTM-MQS84CR4` and no duplicate injection.

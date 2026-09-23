@@ -19,6 +19,7 @@ $assert( 'Analytics / GTM' === $module['name'], 'module name' );
 $assert( false === $module['default_enabled'], 'analytics must default OFF' );
 $assert( 'yby_analytics_settings_v1' === $module['storage']['option_key'], 'versioned option key' );
 $assert( '1' === $module['storage']['schema_version'], 'schema version' );
+$assert( in_array( 'andy-analytics-diagnostics', $module['assets']['frontend']['handles'], true ), 'diagnostic asset handle' );
 $assert( ! in_array( 'analytics', YBY_Module_Registry::enabled_modules(), true ), 'analytics must not silently enable' );
 $defaults = YBY_Analytics_Module::get_settings();
 $assert( 'gtm4wp' === $defaults['provider'], 'default provider' );

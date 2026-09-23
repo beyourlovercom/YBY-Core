@@ -30,6 +30,14 @@ class YBY_Analytics_Module {
 					'option_key' => 'yby_analytics_settings_v1',
 					'schema_version' => '1',
 				),
+				'assets' => array(
+					'frontend' => array(
+						'enqueue' => array( __CLASS__, 'enqueue_diagnostics' ),
+						'condition' => array( __CLASS__, 'should_enqueue_diagnostics' ),
+						'priority' => 30,
+						'handles' => array( 'andy-analytics-diagnostics' ),
+					),
+				),
 				'dependencies' => array( 'core_runtime', 'module_registry' ),
 			)
 		);
@@ -37,6 +45,32 @@ class YBY_Analytics_Module {
 
 	public static function boot( $module ) {
 		unset( $module );
+	}
+
+
+	public static function should_enqueue_diagnostics( $module ) {
+		unset( $module );
+		return ! is_admin();
+	}
+
+	public static function enqueue_diagnostics( $module ) {
+		unset( $module );
+		$settings = self::get_settings();
+		wp_enqueue_script(
+			'andy-analytics-diagnostics',
+			YBY_CORE_PLUGIN_URL . 'public/js/yby-analytics-diagnostics.js',
+			array(),
+			YBY_CORE_VERSION,
+			true
+		);
+		wp_localize_script(
+			'andy-analytics-diagnostics',
+			'AndyAnalyticsDiagnosticsConfig',
+			array(
+				'debug' => ! empty( $settings['debug'] ),
+				'cleanupPolicy' => 'diagnose_only',
+			)
+		);
 	}
 
 	public static function defaults() {
