@@ -146,7 +146,7 @@ $assert( false === YBY_Article_TOC_Module::should_enqueue_assets( $module ), 'Fe
 $GLOBALS['toc_is_feed'] = false;
 $GLOBALS['toc_post_type'] = 'page';
 $assert( false === YBY_Article_TOC_Module::should_enqueue_assets( $module ), 'Page must fail Posts-only Article TOC asset gate' );
-$GLOBALS['toc_post_type'] = 'yby_landing_page';
+$GLOBALS['toc_post_type'] = 'landing_page';
 $assert( false === YBY_Article_TOC_Module::should_enqueue_assets( $module ), 'Landing Page must fail Posts-only Article TOC asset gate' );
 $GLOBALS['toc_post_type'] = 'docs';
 $assert( false === YBY_Article_TOC_Module::should_enqueue_assets( $module ), 'Andy Docs must fail Posts-only Article TOC asset gate' );
