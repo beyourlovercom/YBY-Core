@@ -38,6 +38,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-social-login-shortcodes.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-session.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-event-contract.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-site-profile.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-consent-adapter.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-gtm4wp-adapter.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-tracking.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-webhook.php';

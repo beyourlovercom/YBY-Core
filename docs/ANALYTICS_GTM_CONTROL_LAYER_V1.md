@@ -122,3 +122,13 @@ When the Analytics module is enabled, `yby-analytics-diagnostics.js` can inspect
 A loader script plus its matching noscript iframe is not considered a duplicate by itself; duplication is evaluated within each channel.
 
 Read-only Dev HTML audit on 2026-09-23 found one GTM marker for `GTM-MQS84CR4` and no duplicate injection.
+
+## V181-8 Consent Adapter Contract
+
+`YBY_Analytics_Consent_Adapter` is read-only and frozen to `respect_existing`. Andy Core does not create a default granted/denied state, does not call Google Consent Mode mutation APIs, and does not modify a CMP.
+
+External consent/CMP integrations may project a normalized state through `andy_analytics_consent_state` and identify their source through `andy_analytics_consent_source`. Allowed V1 state values are `granted`, `denied`, and `unknown` for `analytics_storage`, `ad_storage`, `ad_user_data`, and `ad_personalization`. Unknown keys are discarded and invalid values fail closed to `unknown`.
+
+The consent snapshot is diagnostic/contextual; Andy Core does not reinterpret it into a second consent policy. GTM/CMP remains responsible for applying its existing consent behavior.
+
+Read-only Dev audit on 2026-09-23 found no common CMP plugin directories and no rendered `analytics_storage` / `ad_storage` markers on the sampled Dev home page. Therefore the current default projection remains `unknown` rather than inventing consent.
