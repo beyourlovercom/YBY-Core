@@ -1,10 +1,19 @@
 # CHANGELOG
 
+## v1.8.0 - 2026-09-23
+
+- Added the bounded ERP Content Publishing V1 contract for `blog`, `guide`, and `comparison` article-like content.
+- Added HMAC-authenticated `/content/preview` with zero WordPress writes and `/content/publish` with durable Connector idempotency.
+- Added exact ERP article/layout/hash binding, same-post updates, bounded provider read-back, and fail-closed binding/provider mismatch behavior.
+- Enforced Draft => `noindex` and Publish => `index`, with Rank Math robots read-back verification.
+- Preserved runtime database version `1.5.0` and updater compatibility database version `1.4.0`; no database migration is required.
+- Production deployment remains intentionally deferred while later versions continue through development/UAT.
+
 ## v1.7.0 - 2026-09-20
 
 - Added Registry V2 extension-module contracts with enabled-only boot, dependency fail-close, versioned settings storage, and conditional request-level asset gates.
 - Added canonical `Andy Content` admin IA and nested Docs under it while preserving existing Docs slugs, routes, content, taxonomy, and settings contracts.
-- Restored Landing Pages as the namespaced `yby_landing_page` CPT with canonical `/lp/{slug}` public URLs and a one-time non-destructive existing-site module adoption gate.
+- Preserved the canonical existing `landing_page` CPT as the first-class B2B workbench at `/lp/{slug}` and removed duplicate Andy Core CPT registration.
 - Added Article TOC V1 as a default-off, Posts-only module with Inline Summary, desktop Floating TOC, stable H2 anchors, Scroll Spy, responsive behavior, accessibility states, and legacy TOC duplicate prevention.
 - Preserved runtime database version `1.5.0` and updater compatibility database version `1.4.0`; no database migration is required.
 
