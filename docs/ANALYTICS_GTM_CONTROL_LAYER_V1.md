@@ -88,3 +88,11 @@ The canonical event registry is implemented by `YBY_Analytics_Event_Contract`. T
 Inquiry runtime no longer pushes directly to `window.dataLayer`; it calls `window.YBYTracking.push()` so payload sanitation and the future provider adapter have a single ownership point.
 
 The V1 registry records event category, dedupe policy identifier, and a hard `pii=false` contract. Detailed per-field schemas and provider projection can evolve without allowing arbitrary business-module dataLayer writes.
+
+## V181-4 GTM4WP Adapter
+
+`YBY_Analytics_GTM4WP_Adapter` detects the active provider through GTM4WP's public `GTM4WP_VERSION` constant and exposes bounded runtime diagnostics. The adapter does not call GTM4WP private APIs, mutate GTM4WP settings, inject a container, or take ownership of WooCommerce ecommerce events.
+
+The existing frontend tracking facade keeps one provider push seam. When the Analytics module is OFF, the historical `window.dataLayer` behavior is preserved. When enabled, the adapter may project the validated versioned `data_layer_name` setting.
+
+Dev evidence on 2026-09-23 observed GTM4WP plugin path `duracelltomi-google-tag-manager/duracelltomi-google-tag-manager-for-wordpress.php` with public `GTM4WP_VERSION=2.0.2`.
