@@ -1,0 +1,82 @@
+# Andy Core Analytics / GTM Control Layer V1
+
+Status: V181-0 architecture contract for Andy Core v1.8.1.
+
+## Purpose
+
+Andy Core owns the **Analytics Control Layer** while GTM4WP 2.x remains the WordPress / WooCommerce tracking engine.
+
+Andy Core does not fork GTM4WP, inject a second Google Tag Manager container, or become a second WooCommerce ecommerce tracking engine.
+
+## Ownership boundary
+
+Andy Core owns:
+
+- module enable/disable state
+- versioned Analytics settings
+- Site Profile analytics context
+- canonical Business Event Contract
+- GTM4WP adapter boundary
+- Consent Adapter boundary
+- duplicate-GTM diagnostics / cleanup support
+- debug and contract validation surfaces
+
+GTM4WP owns:
+
+- GTM container/runtime integration already configured by the site
+- WooCommerce ecommerce dataLayer behavior supplied by GTM4WP
+- provider-specific WordPress integration details
+
+Business modules must not depend directly on GTM4WP classes/functions and must not push arbitrary ungoverned payloads directly to `dataLayer`. They publish approved business events through the Andy Core Analytics contract.
+
+## Compatibility
+
+The existing `YBY_Tracking` helper remains a compatibility facade. v1.8.1 must not break existing `window.YBYTracking`, historical event names, page-profile tracking context, or Thank You tracking wrappers while ownership moves behind the Analytics layer.
+
+## Module policy
+
+- module id: `analytics`
+- version: `1.0.0`
+- schema version: `1`
+- default: OFF
+- dependency: Core Runtime + Module Registry
+- settings option: `yby_analytics_settings_v1`
+
+Default OFF is intentional until GTM4WP compatibility and duplicate-GTM cleanup are verified on each target site.
+
+## V1 settings contract
+
+- `provider`: `gtm4wp`
+- `data_layer_name`: `dataLayer`
+- `site_profile`: `auto`
+- `consent_mode`: `respect_existing`
+- `debug`: boolean, default false
+
+The settings contract does **not** store GTM Container IDs, GA4 Measurement IDs, Ads Conversion IDs, Google credentials, or consent-vendor secrets.
+
+## Event ownership rule
+
+The future Business Event Contract must define approved names, required/optional fields, PII policy, dedupe identity, and adapter projection before an event is emitted.
+
+Existing event names observed in the compatibility facade include:
+
+- `generate_lead`
+- `thank_you_page_view`
+- `click_whatsapp`
+- `click_whatsapp_after_lead`
+- `download_catalog`
+- `submit_project_details`
+- `return_to_lp`
+- `view_case_study`
+
+This document records existing names; V181-3 will decide their canonical contract and payload schemas.
+
+## Explicit non-scope for V181-0..2
+
+- no GTM container injection
+- no GA4 tag injection
+- no Google Ads tag injection
+- no GTM4WP setting mutation
+- no WooCommerce ecommerce event replacement
+- no consent-state mutation
+- no Production deployment
