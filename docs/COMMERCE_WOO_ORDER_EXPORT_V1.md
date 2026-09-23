@@ -85,3 +85,15 @@ Orders are fetched in bounded batches via official WooCommerce APIs. No giant al
 legacy template audit → Andy preset migration → same-range CSV diff → Owner UAT → real operating cycle → disable canary → explicit delete approval.
 
 Order Import is not implemented in v1.9.0.
+
+## V190-3 Query Adapter
+
+`YBY_Woo_Order_Query_Adapter` uses `wc_get_orders()` with paginated object results, deterministic date ordering, and bounded batch size 25..500. Supported generic filters: date range, statuses, explicit order IDs, billing email, currency, and payment method. No direct order SQL is used.
+
+## V190-4 CSV Streaming
+
+`YBY_Woo_Order_CSV_Streamer` writes directly to a supplied stream using `fputcsv`, optional UTF-8 BOM, deterministic preset columns, one row per line item, and formula-injection protection for text cells. It never constructs an all-orders CSV string/array in memory.
+
+## V190-5 Security and response contract
+
+Exports use authenticated `admin-post.php` POST only, capability `manage_woocommerce`, dedicated nonce, enabled-module + Woo availability gates, no-cache/no-store response headers, and direct `php://output` streaming. No public or persistent CSV URL/file is created. Bounded audit metadata stores only preset, dates/status/currency/payment summary, order-ID count, boolean email-filter presence, counts, duration, user ID, and result status; it never stores exported customer rows, email value, phone, address, or CSV content.

@@ -32,7 +32,11 @@ class YBY_Woo_Order_Export_Module {
 		return class_exists( 'WooCommerce' ) || defined( 'WC_VERSION' );
 	}
 
-	public static function boot( $module ) { unset( $module ); }
+	public static function boot( $module ) {
+		unset( $module );
+		$controller = new YBY_Woo_Order_Export_Controller();
+		add_action( 'admin_post_' . YBY_Woo_Order_Export_Controller::ACTION, array( $controller, 'handle_export' ) );
+	}
 
 	public static function defaults() {
 		return array( 'default_preset' => 'default', 'batch_size' => 200, 'bom' => true, 'audit_enabled' => true );
