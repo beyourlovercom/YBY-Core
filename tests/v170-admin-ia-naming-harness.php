@@ -22,7 +22,8 @@ $assert( false !== strpos( $content_admin, "'dashicons-layout',\n\t\t\t21" ), 'A
 $assert( false !== strpos( $docs_admin, "const MENU_LABEL = 'Andy Docs';" ), 'Andy Docs product label contract missing' );
 $assert( false !== strpos( $docs_admin, "const PAGE_SLUG = 'yby-docs-os';" ), 'Andy Docs stable slug changed' );
 $assert( false === strpos( $docs_admin, 'add_menu_page( self::MENU_LABEL' ), 'Andy Docs must not register a top-level menu' );
-$assert( false !== strpos( $docs_admin, "add_submenu_page( YBY_Content_Admin::MENU_SLUG, self::MENU_LABEL, 'Docs'" ), 'Andy Docs must live under Andy Content' );
+$assert( false !== strpos( $docs_admin, "\$parent = YBY_Content_Admin::MENU_SLUG" ), 'Andy Docs must resolve Andy Content as its parent' );
+$assert( false !== strpos( $docs_admin, "add_submenu_page( \$parent, self::MENU_LABEL, 'Docs'" ), 'Andy Docs must live under Andy Content' );
 $assert( false !== strpos( $registry, "'name' => 'Andy Docs'" ), 'Module registry must display Andy Docs' );
 $assert( false !== strpos( $registry, "'admin_parent' => 'yby-content'" ), 'Docs content-parent contract missing' );
 $assert( false !== strpos( $registry, "'settings' => array( 'page' => 'yby-docs-os' )" ), 'Docs settings URL contract changed' );

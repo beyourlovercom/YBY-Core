@@ -38,15 +38,25 @@ $assert( 21 === $top['position'], 'Andy Content must sit beside WordPress Pages'
 $visible = array_values( array_filter( $GLOBALS['yby_submenus'], static function ( $item ) {
 	return 'yby-content' === $item['parent_slug'];
 } ) );
-$assert( 3 === count( $visible ), 'Overview, Docs and Landing Pages should be visible under Andy Content after CPT recovery' );
-$assert( 'yby-content' === $visible[0]['menu_slug'] && 'Overview' === $visible[0]['menu_title'], 'Andy Content Overview missing' );
-$assert( 'yby-docs-os' === $visible[1]['menu_slug'] && 'Docs' === $visible[1]['menu_title'], 'Docs must be a child of Andy Content' );
-$assert( 'edit.php?post_type=yby_landing_page' === $visible[2]['menu_slug'] && 'Landing Pages' === $visible[2]['menu_title'], 'Landing Pages must be a child of Andy Content' );
+$assert( 8 === count( $visible ), 'Andy Content should expose Overview plus the full Docs workbench without duplicating Landing Pages' );
+$expected_visible = array(
+	array( 'yby-content', 'Overview' ),
+	array( 'yby-docs-os', 'Docs' ),
+	array( 'yby-docs-all', '全部文档' ),
+	array( 'yby-docs-directory', '分类目录' ),
+	array( 'edit-tags.php?taxonomy=doc_tag&post_type=docs', 'Tags' ),
+	array( 'yby-docs-faq', 'FAQ' ),
+	array( 'yby-docs-tutorial', 'Tutorial' ),
+	array( 'yby-docs-settings', '设置' ),
+);
+foreach ( $expected_visible as $index => $expected ) {
+	$assert( $expected[0] === $visible[ $index ]['menu_slug'] && $expected[1] === $visible[ $index ]['menu_title'], 'Andy Content submenu mismatch at index ' . $index );
+}
 
 foreach ( $GLOBALS['yby_top_menus'] as $menu ) {
 	$assert( 'Andy Docs' !== $menu['menu_title'], 'Andy Docs must not be top-level' );
 	$assert( false === stripos( $menu['menu_title'], 'Template' ), 'Template must not be top-level before implementation' );
-	$assert( false === stripos( $menu['menu_title'], 'Landing' ), 'Landing Pages must remain under Andy Content, never top-level' );
+	$assert( false === stripos( $menu['menu_title'], 'Landing' ), 'Andy Core must not register a duplicate Landing Page top-level menu in the Content shell' );
 }
 foreach ( $visible as $menu ) {
 	$assert( false === stripos( $menu['menu_title'], 'Template' ), 'Template must not appear as empty Content submenu' );
@@ -55,8 +65,6 @@ foreach ( $visible as $menu ) {
 $hidden_slugs = array_values( array_map( static function ( $item ) { return $item['menu_slug']; }, array_filter( $GLOBALS['yby_submenus'], static function ( $item ) {
 	return null === $item['parent_slug'];
 } ) ) );
-foreach ( array( 'yby-docs-all', 'yby-docs-directory', 'yby-docs-settings', 'yby-docs-editor', 'yby-docs-faq', 'yby-docs-tutorial' ) as $slug ) {
-	$assert( in_array( $slug, $hidden_slugs, true ), 'Docs stable hidden route missing: ' . $slug );
-}
+$assert( array( 'yby-docs-editor' ) === $hidden_slugs, 'Only Docs Editor should remain a hidden route' );
 
 echo "PASS v170-content-ia-harness\n";

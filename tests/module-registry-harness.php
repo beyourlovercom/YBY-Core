@@ -24,7 +24,7 @@ $assert( YBY_Module_Registry::is_enabled( 'email_os' ), 'enabled module lookup' 
 $assert( ! YBY_Module_Registry::is_enabled( 'inquiry_os' ), 'disabled module lookup' );
 $assert( false !== strpos( YBY_Module_Registry::settings_url( 'connector' ), 'tab=wp-api' ), 'connector settings URL' );
 $assert( false !== strpos( YBY_Module_Registry::settings_url( 'docs_os' ), 'page=yby-docs-os' ), 'ready Docs OS must expose settings URL' );
-$assert( false !== strpos( YBY_Module_Registry::settings_url( 'landing_pages' ), 'edit.php?post_type=yby_landing_page' ), 'Landing Pages must expose the CPT list URL' );
+$assert( false !== strpos( YBY_Module_Registry::settings_url( 'landing_pages' ), 'edit.php?post_type=landing_page' ), 'Landing Pages must expose the CPT list URL' );
 $core = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-core.php' );
 $admin = file_get_contents( dirname( __DIR__ ) . '/admin/class-yby-admin.php' );
 $view = file_get_contents( dirname( __DIR__ ) . '/admin/views/modules-page.php' );
