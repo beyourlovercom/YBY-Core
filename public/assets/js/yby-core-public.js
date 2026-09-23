@@ -155,7 +155,7 @@
 
   function pushDataLayer(payload) {
     var analytics = tracking && tracking.analytics && typeof tracking.analytics === "object" ? tracking.analytics : {};
-    var layerName = analytics.enabled && typeof analytics.data_layer_name === "string" && /^[A-Za-z_$][A-Za-z0-9_$]{0,63}$/.test(analytics.data_layer_name)
+    var layerName = analytics.runtime_ready && typeof analytics.data_layer_name === "string" && /^[A-Za-z_$][A-Za-z0-9_$]{0,63}$/.test(analytics.data_layer_name)
       ? analytics.data_layer_name
       : "dataLayer";
 
@@ -780,6 +780,11 @@
 
   window.YBYTracking.push = function (eventName, payload) {
     if (!runtime.enableTracking && !tracking.enabled) {
+      return false;
+    }
+
+    var analyticsRuntime = tracking && tracking.analytics && typeof tracking.analytics === "object" ? tracking.analytics : {};
+    if (analyticsRuntime.enabled && analyticsRuntime.runtime_ready === false) {
       return false;
     }
 

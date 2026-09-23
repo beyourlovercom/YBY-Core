@@ -104,3 +104,11 @@ Dev evidence on 2026-09-23 observed GTM4WP plugin path `duracelltomi-google-tag-
 The projection contains trusted site identity (`site_brand_key`, `site_brand_name`, `website_host`) plus the existing runtime tracking dimensions (`tracking_group`, `ga4_content_group`, `ads_conversion_group`). Project runtime remains the compatibility source, so Page Profile fallback behavior for `trackingGroup` is preserved.
 
 Frontend business events read the canonical Site Profile first and fall back to the historical `YBYProject` / `YBYPageProfile` keys. The Analytics module can also load the shared public runtime when Inquiry OS and Project Studio are disabled, while remaining default OFF.
+
+## V181-6 GTM4WP 2.x Compatibility Gate
+
+The V1 adapter explicitly supports GTM4WP versions `>=2.0.0` and `<3.0.0`. Absence is reported as `not_detected`; versions outside the frozen 2.x range are `unsupported`. Future major versions require a deliberate compatibility update rather than being assumed compatible.
+
+When the Analytics module is OFF, the historical tracking/dataLayer behavior remains unchanged. When Analytics is explicitly enabled, event emission fails closed unless the configured GTM4WP provider is detected and compatible. A custom data-layer name is used only when the adapter is runtime-ready.
+
+Observed Dev provider `2.0.2` falls inside the supported V1 range.
