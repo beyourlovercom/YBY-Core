@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 require_once __DIR__ . '/class-yby-subscriber-snapshot.php';
+require_once __DIR__ . '/class-yby-content-erp-contract.php';
 
 /**
  * Connector foundation settings and truthful environment detection.
@@ -197,6 +198,148 @@ class YBY_Connector {
 		register_rest_route( self::REST_NAMESPACE, '/coupons/provision', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_coupon_provision' ), 'permission_callback' => '__return_true' ) );
 		register_rest_route( self::REST_NAMESPACE, '/payouts/complete', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_payout_complete' ), 'permission_callback' => '__return_true' ) );
 		register_rest_route( self::REST_NAMESPACE, '/wordpress/users/(?P<user_id>\\d+)/password', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_wordpress_password' ), 'permission_callback' => '__return_true' ) );
+		register_rest_route( self::REST_NAMESPACE, '/content/preview', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_content_preview' ), 'permission_callback' => '__return_true' ) );
+		register_rest_route( self::REST_NAMESPACE, '/content/publish', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'dispatch_content_publish' ), 'permission_callback' => '__return_true' ) );
+	}
+
+
+	public static function dispatch_content_preview( $request ) {
+		$auth = self::authenticate( $request );
+		if ( is_wp_error( $auth ) ) {
+			return self::error_response( $auth, $request );
+		}
+
+		$input = YBY_Content_ERP_Contract::validate(
+			self::json_params( $request ),
+			self::request_header( $request, 'X-YBY-Connection-Key' )
+		);
+		if ( is_wp_error( $input ) ) {
+			return self::error_response( $input, $request );
+		}
+
+		return array(
+			'ok'               => true,
+			'contract_version' => self::CONTRACT_VERSION,
+			'request_id'       => self::request_id(),
+			'connection_key'   => self::request_header( $request, 'X-YBY-Connection-Key' ),
+			'data'             => YBY_Content_ERP_Contract::preview( $input ),
+		);
+	}
+
+	public static function dispatch_content_publish( $request ) {
+		$auth = self::authenticate( $request );
+		if ( is_wp_error( $auth ) ) {
+			return self::error_response( $auth, $request );
+		}
+
+		$request_id      = self::request_id();
+		$endpoint        = '/content/publish';
+		$idempotency_key = self::request_header( $request, 'X-YBY-Idempotency-Key' );
+
+		if ( '' === $idempotency_key ) {
+			return self::mutation_failure(
+				'VALIDATION_FAILED',
+				'X-YBY-Idempotency-Key is required.',
+				400,
+				false,
+				$request,
+				$request_id,
+				$endpoint,
+				$idempotency_key
+			);
+		}
+
+		$input = YBY_Content_ERP_Contract::validate(
+			self::json_params( $request ),
+			self::request_header( $request, 'X-YBY-Connection-Key' )
+		);
+		if ( is_wp_error( $input ) ) {
+			return self::mutation_failure(
+				$input->get_error_code(),
+				$input->get_error_message(),
+				self::error_status( $input ),
+				! empty( $input->get_error_data()['retryable'] ),
+				$request,
+				$request_id,
+				$endpoint,
+				$idempotency_key
+			);
+		}
+
+		$begin = YBY_Connector_Idempotency::begin(
+			$input['connection_key'],
+			'content.publish',
+			$idempotency_key,
+			$input
+		);
+		if ( is_wp_error( $begin ) ) {
+			return self::mutation_failure(
+				$begin->get_error_code(),
+				$begin->get_error_message(),
+				self::error_status( $begin ),
+				! empty( $begin->get_error_data()['retryable'] ),
+				$request,
+				$request_id,
+				$endpoint,
+				$idempotency_key,
+				$input
+			);
+		}
+
+		if ( 'replay' === $begin['status'] ) {
+			self::audit( $request, $request_id, $endpoint, $idempotency_key, $begin['record']['result'], 'OK', true, false );
+			return self::mutation_success( $begin['record']['result'], $request, $request_id );
+		}
+
+		if ( 'failed' === $begin['status'] ) {
+			$failed_code = $begin['record']['failure_code'];
+			return self::mutation_failure(
+				$failed_code,
+				'The previous mutation failed.',
+				self::failure_replay_status( $failed_code ),
+				false,
+				$request,
+				$request_id,
+				$endpoint,
+				$idempotency_key,
+				$input
+			);
+		}
+
+		$result = YBY_Content_ERP_Contract::publish( $input );
+		if ( is_wp_error( $result ) ) {
+			$retryable = ! empty( $result->get_error_data()['retryable'] );
+			YBY_Connector_Idempotency::fail( $begin['id'], $result->get_error_code(), $retryable );
+			return self::mutation_failure(
+				$result->get_error_code(),
+				$result->get_error_message(),
+				self::error_status( $result ),
+				$retryable,
+				$request,
+				$request_id,
+				$endpoint,
+				$idempotency_key,
+				$input,
+				$result
+			);
+		}
+
+		if ( ! YBY_Connector_Idempotency::succeed( $begin['id'], $result ) ) {
+			return self::mutation_failure(
+				'IDEMPOTENCY_UNAVAILABLE',
+				'Could not persist mutation result.',
+				503,
+				true,
+				$request,
+				$request_id,
+				$endpoint,
+				$idempotency_key,
+				$input
+			);
+		}
+
+		self::audit( $request, $request_id, $endpoint, $idempotency_key, $result, 'OK', true, false );
+		return self::mutation_success( $result, $request, $request_id );
 	}
 
 	public static function dispatch_coupon_check( $request ) {
@@ -509,7 +652,7 @@ class YBY_Connector {
 
 	private static function failure_replay_status( $code ) {
 		if ( in_array( $code, array( 'AFFILIATE_NOT_FOUND', 'WP_USER_NOT_FOUND' ), true ) ) { return 404; }
-		if ( in_array( $code, array( 'IDEMPOTENCY_CONFLICT', 'AFFILIATE_ID_CONFLICT', 'WP_USER_CONFLICT', 'AFFILIATE_CONFLICT', 'COUPON_CONFLICT', 'BINDING_MISMATCH', 'PROVIDER_IDENTITY_MISMATCH' ), true ) ) { return 409; }
+		if ( in_array( $code, array( 'IDEMPOTENCY_CONFLICT', 'AFFILIATE_ID_CONFLICT', 'WP_USER_CONFLICT', 'AFFILIATE_CONFLICT', 'COUPON_CONFLICT', 'BINDING_MISMATCH', 'PROVIDER_IDENTITY_MISMATCH', 'TARGET_SITE_MISMATCH', 'CONTENT_BINDING_CONFLICT' ), true ) ) { return 409; }
 		return in_array( $code, array( 'PROVIDER_UNAVAILABLE', 'PROVIDER_WRITE_FAILED', 'PROVIDER_READ_FAILED', 'PROVIDER_READBACK_FAILED', 'PROVIDER_SYNC_FAILED', 'IDEMPOTENCY_UNAVAILABLE', 'AFFILIATE_BINDING_UNAVAILABLE', 'PROVISION_IN_PROGRESS', 'PAYOUT_IN_PROGRESS' ), true ) ? 503 : 400;
 	}
 
@@ -641,7 +784,7 @@ class YBY_Connector {
 	}
 	private static function audit( $request, $request_id, $endpoint, $idempotency_key, $result, $code, $success, $retryable ) {
 		$targets = array();
-		foreach ( array( 'wp_user_id', 'wordpress_user_id', 'affiliate_id', 'coupon_id', 'payout_id', 'referral_id', 'referral_ids' ) as $key ) { if ( isset( $result[ $key ] ) && is_scalar( $result[ $key ] ) ) { $targets[ $key ] = array( (int) $result[ $key ] ); } elseif ( isset( $result[ $key ] ) && is_array( $result[ $key ] ) ) { $targets[ $key ] = array_map( 'absint', array_slice( $result[ $key ], 0, 20 ) ); } }
+		foreach ( array( 'wp_user_id', 'wordpress_user_id', 'post_id', 'affiliate_id', 'coupon_id', 'payout_id', 'referral_id', 'referral_ids' ) as $key ) { if ( isset( $result[ $key ] ) && is_scalar( $result[ $key ] ) ) { $targets[ $key ] = array( (int) $result[ $key ] ); } elseif ( isset( $result[ $key ] ) && is_array( $result[ $key ] ) ) { $targets[ $key ] = array_map( 'absint', array_slice( $result[ $key ], 0, 20 ) ); } }
 		YBY_Connector_Audit::record( array( 'request_id' => $request_id, 'key_id' => self::request_header( $request, 'X-YBY-Key-Id' ), 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'endpoint_action' => $endpoint, 'idempotency_key_hash' => YBY_Connector_Idempotency::key_hash( $idempotency_key ), 'target_provider_ids' => $targets, 'result_code' => $code, 'success' => $success, 'retryable' => $retryable ) );
 	}
 
@@ -926,8 +1069,10 @@ class YBY_Connector {
 			'coupon_provision'    => array( 'label' => '创建优惠券', 'method' => 'POST', 'path' => '/coupons/provision', 'providers' => array( 'woocommerce', 'affiliatewp' ) ),
 			'payout_complete'     => array( 'label' => '完成结算', 'method' => 'POST', 'path' => '/payouts/complete', 'providers' => array( 'affiliatewp' ) ),
 			'wordpress_password'  => array( 'label' => '更新 WordPress 密码', 'method' => 'POST', 'path' => '/wordpress/users/{user_id}/password', 'providers' => array( 'wordpress', 'affiliatewp' ) ),
+			'content_preview'       => array( 'label' => 'Content Preview', 'method' => 'POST', 'path' => '/content/preview', 'providers' => array( 'wordpress' ) ),
+			'content_publish'       => array( 'label' => 'Content Publish', 'method' => 'POST', 'path' => '/content/publish', 'providers' => array( 'wordpress' ) ),
 		);
-		$implemented = array( '/health', '/snapshot/affiliates', '/snapshot/coupons', '/snapshot/referrals', '/snapshot/payouts', '/snapshot/subscribers', '/snapshot/email-templates', '/affiliates/provision', '/affiliates/{affiliate_id}/status', '/coupons/check', '/coupons/provision', '/payouts/complete', '/wordpress/users/{user_id}/password' );
+		$implemented = array( '/health', '/snapshot/affiliates', '/snapshot/coupons', '/snapshot/referrals', '/snapshot/payouts', '/snapshot/subscribers', '/snapshot/email-templates', '/affiliates/provision', '/affiliates/{affiliate_id}/status', '/coupons/check', '/coupons/provision', '/payouts/complete', '/wordpress/users/{user_id}/password', '/content/preview', '/content/publish' );
 		foreach ( $endpoints as &$endpoint ) {
 			if ( ! in_array( $endpoint['path'], $implemented, true ) ) {
 				$endpoint['status'] = 'Not Available'; $endpoint['available'] = false; unset( $endpoint['providers'] ); continue;
