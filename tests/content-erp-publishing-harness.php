@@ -84,6 +84,12 @@ function get_post_meta( $post_id, $key, $single = false ) {
 	}
 	return $post_meta[ (int) $post_id ][ (string) $key ] ?? '';
 }
+function delete_post_meta( $post_id, $key ) {
+	global $post_meta, $write_counts;
+	unset( $post_meta[ (int) $post_id ][ (string) $key ] );
+	++$write_counts['meta'];
+	return true;
+}
 function wp_delete_post( $post_id, $force_delete = false ) {
 	global $posts, $post_meta, $write_counts;
 	unset( $posts[ (int) $post_id ], $post_meta[ (int) $post_id ] );
@@ -122,7 +128,7 @@ function content_payload() {
 		'title' => 'Irrigation Guide',
 		'html' => '<h2>Selection</h2><script>alert(1)</script><p>Choose from verified project requirements.</p>',
 		'canonical_path' => '/blog/irrigation-guide/',
-		'seo' => array( 'primary_keyword' => 'irrigation guide', 'search_intent' => 'informational' ),
+		'seo' => array( 'primary_keyword' => 'irrigation guide', 'search_intent' => 'informational', 'indexing' => 'noindex' ),
 		'requested_status' => 'draft',
 	);
 }
@@ -131,6 +137,7 @@ $input = YBY_Content_ERP_Contract::validate( content_payload(), 'ybyirrigation.c
 content_assert( is_array( $input ), 'Valid article payload must pass.' );
 content_assert( false === strpos( $input['html'], '<script' ), 'Unsafe script markup must be removed before provider write.' );
 content_assert( 'post' === $input['post_type'] && 'draft' === $input['requested_status'], 'V1 must remain bounded to WordPress posts and explicit draft/publish states.' );
+content_assert( 'noindex' === $input['seo']['indexing'], 'Draft content must carry explicit noindex intent.' );
 
 $writes_before = $write_counts;
 $preview = YBY_Content_ERP_Contract::preview( $input );
@@ -153,6 +160,11 @@ $unsafe_path['canonical_path'] = 'https://evil.example/path';
 $unsafe_path = YBY_Content_ERP_Contract::validate( $unsafe_path, 'ybyirrigation.com' );
 content_assert( is_wp_error( $unsafe_path ) && 'VALIDATION_FAILED' === $unsafe_path->get_error_code(), 'Canonical path must be a local path only.' );
 
+$bad_indexing = content_payload();
+$bad_indexing['seo']['indexing'] = 'index';
+$bad_indexing = YBY_Content_ERP_Contract::validate( $bad_indexing, 'ybyirrigation.com' );
+content_assert( is_wp_error( $bad_indexing ) && 'INDEXING_STATUS_MISMATCH' === $bad_indexing->get_error_code(), 'Draft with index intent must fail closed.' );
+
 $first = YBY_Content_ERP_Contract::publish( $input );
 content_assert( is_array( $first ) && 1 === $first['post_id'] && true === $first['created'], 'First publish must create exactly one bound WordPress post.' );
 content_assert( 1 === $write_counts['insert'] && 0 === $write_counts['update'], 'First publish must create rather than update.' );
@@ -160,17 +172,24 @@ content_assert( '77' === (string) get_post_meta( 1, '_yby_erp_article_id', true 
 content_assert( str_repeat( 'a', 64 ) === get_post_meta( 1, '_yby_erp_preview_hash', true ), 'Preview hash must be persisted for audit.' );
 content_assert( true === $first['canonical_path_match'], 'Read-back permalink must report canonical path agreement.' );
 content_assert( false !== strpos( $first['url'], '?preview=true' ), 'Draft publish must return a WordPress preview link for Owner UAT.' );
+content_assert( 'noindex' === $first['indexing'], 'Draft provider response must confirm noindex.' );
+content_assert( 'noindex' === get_post_meta( 1, '_yby_content_indexing', true ), 'ERP indexing audit metadata must persist noindex.' );
+content_assert( in_array( 'noindex', (array) get_post_meta( 1, 'rank_math_robots', true ), true ), 'Draft must persist Rank Math noindex.' );
 
 $second_payload = content_payload();
 $second_payload['layout_snapshot_id'] = 10;
 $second_payload['preview_hash'] = str_repeat( 'b', 64 );
 $second_payload['title'] = 'Irrigation Guide Revised';
 $second_payload['requested_status'] = 'publish';
+$second_payload['seo']['indexing'] = 'index';
 $second = YBY_Content_ERP_Contract::validate( $second_payload, 'ybyirrigation.com' );
 $second = YBY_Content_ERP_Contract::publish( $second );
 content_assert( is_array( $second ) && 1 === $second['post_id'] && false === $second['created'], 'Later layout must update the same bound WordPress post.' );
 content_assert( 1 === $write_counts['insert'] && 1 === $write_counts['update'] && 1 === count( $posts ), 'Re-publish must never create a duplicate article.' );
 content_assert( 'publish' === get_post( 1 )->post_status && 'Irrigation Guide Revised' === get_post( 1 )->post_title, 'Update must read back the requested status and title.' );
+content_assert( 'index' === $second['indexing'], 'Published provider response must confirm index.' );
+content_assert( 'index' === get_post_meta( 1, '_yby_content_indexing', true ), 'ERP indexing audit metadata must persist index.' );
+content_assert( ! in_array( 'noindex', (array) get_post_meta( 1, 'rank_math_robots', true ), true ), 'Publish must clear the Rank Math noindex override.' );
 
 $failed_payload = content_payload();
 $failed_payload['erp_article_id'] = 88;
