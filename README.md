@@ -4,14 +4,27 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `1.8.0`
+- Product version: `1.8.1`
 - Development version: None
 - Database version: `1.5.0`
 - Updater compatibility database version: `1.4.0`
-- Release status: Content Publishing V1 Release Candidate
-- Development status: Feature merged; release closure / Dev UAT in progress; Production deploy deferred
+- Release status: Analytics / GTM Control Layer V1 Release Candidate
+- Development status: Feature merged; Dev + Owner UAT PASS; release closure in progress; Production deploy deferred
 - Plugin path: `yby-core/yby-core.php`
 - Technical namespace: existing `YBY_*` and `yby_*` identifiers retained for compatibility
+
+## v1.8.1 release scope
+
+- Added Analytics / GTM Control Layer V1 while keeping GTM4WP 2.x as the WordPress / WooCommerce tracking engine.
+- Added a default-OFF `analytics` module with versioned settings under `yby_analytics_settings_v1`.
+- Added a canonical Business Event Contract while preserving the existing `YBY_Tracking` compatibility facade and historical event names.
+- Removed direct Inquiry-module ownership of `dataLayer.push`; business events now route through the governed tracking facade.
+- Added a GTM4WP adapter with explicit `>=2.0.0 <3.0.0` compatibility gating; Andy Core does not inject a second GTM container or mutate GTM4WP settings.
+- Added a read-only Analytics Site Profile over trusted site identity and existing Project/Page tracking context; no metadata migration or rewrite.
+- Added duplicate-GTM diagnostics with `diagnose_only` cleanup policy; no third-party tag is automatically removed.
+- Added a read-only Consent Adapter frozen to `respect_existing`; Andy Core does not invent, grant, deny, or overwrite consent state.
+- Runtime database version remains `1.5.0` and updater compatibility database version remains `1.4.0`; no database migration is required.
+- Production deployment remains intentionally deferred while v1.9.0 development continues.
 
 ## v1.8.0 release scope
 

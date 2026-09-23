@@ -4,7 +4,7 @@ Tags: andy-core, yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.8.0
+Stable tag: 1.8.1
 License: Proprietary
 License URI: https://ybyglobal.com/
 
@@ -12,7 +12,19 @@ Core platform plugin for managed WordPress websites, including Case ID, tracking
 
 == Description ==
 
-Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.8.0 adds bounded ERP Content Publishing V1 while preserving existing Andy Core runtime, signed updater, and database contracts.
+Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.8.1 adds Analytics / GTM Control Layer V1 while preserving GTM4WP ownership, existing tracking APIs, signed updater, and database contracts.
+
+Included in v1.8.1:
+
+* Default-OFF Analytics / GTM Control Layer V1
+* GTM4WP 2.x remains the WordPress / WooCommerce tracking engine; Andy Core does not inject a second GTM container
+* Canonical Business Event Contract with the existing YBYTracking API preserved as a compatibility facade
+* Governed GTM4WP adapter with explicit `>=2.0.0 <3.0.0` compatibility gating
+* Read-only Analytics Site Profile over existing site/project/page tracking context; no metadata migration
+* Duplicate-GTM diagnostics only; no automatic tag deletion or GTM4WP setting mutation
+* Consent Adapter in `respect_existing` mode; no consent-state ownership or mutation
+* Runtime database remains 1.5.0 and updater compatibility remains 1.4.0; no migration
+* Production deployment remains deferred while v1.9.0 development continues
 
 Included in v1.8.0:
 
@@ -192,6 +204,13 @@ Lead notifications dispatch through `YBY_Notification_Manager` with the Email pr
 The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Recipient Emails, Reply-To Policy, Lead Email Subject Template, and Email Branding settings. Invalid addresses are ignored.
 
 == Changelog ==
+
+= 1.8.1 =
+
+* Added Analytics / GTM Control Layer V1 with a default-OFF module and versioned settings.
+* Added the canonical Business Event Contract and GTM4WP 2.x adapter without injecting a second GTM container.
+* Added read-only Analytics Site Profile, duplicate-GTM diagnostics, and `respect_existing` Consent Adapter.
+* Preserved existing tracking APIs and database contracts; no database migration.
 
 = 1.8.0 =
 

@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v1.8.1 - 2026-09-23
+
+- Added Analytics / GTM Control Layer V1 as a default-OFF Registry V2 extension module with versioned settings.
+- Added the canonical Analytics Business Event Contract while preserving historical `YBY_Tracking` event names and browser API compatibility.
+- Routed Inquiry tracking through the governed tracking facade instead of direct business-module `dataLayer.push` ownership.
+- Added a GTM4WP provider adapter with explicit `>=2.0.0 <3.0.0` compatibility gating and no dependency on private GTM4WP APIs.
+- Added a read-only Analytics Site Profile over trusted site identity plus existing Project/Page tracking dimensions without metadata migration.
+- Added duplicate-GTM diagnostics with a strict `diagnose_only` policy; Andy Core does not automatically remove third-party tags.
+- Added a read-only Consent Adapter in `respect_existing` mode; Andy Core does not own or mutate consent state.
+- Dev UAT confirmed GTM4WP 2.0.2, one GTM container (`GTM-MQS84CR4`), no duplicate injection, and clean OFF/ON/restoration behavior.
+- Preserved runtime database version `1.5.0` and updater compatibility database version `1.4.0`; no database migration is required.
+
 ## v1.8.0 - 2026-09-23
 
 - Added the bounded ERP Content Publishing V1 contract for `blog`, `guide`, and `comparison` article-like content.
