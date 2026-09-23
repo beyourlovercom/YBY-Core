@@ -18,15 +18,15 @@
 </tr></thead><tbody><?php foreach ( $foundation as $id => $label ) : ?>
 <tr class="is-foundation"><td><strong><?php echo esc_html( $label ); ?></strong><code><?php echo esc_html( $id ); ?></code></td><td>Andy Core 基础设施。</td><td><span class="yby-module-type">Foundation</span></td><td><span class="yby-status-badge yby-status-ready">Always On</span></td><td><span class="dashicons dashicons-lock" aria-hidden="true"></span></td><td>—</td><td>—</td></tr>
 <?php endforeach; ?>
-<?php foreach ( $modules as $id => $module ) : $is_planned = 'planned' === $module['status']; $is_enabled = in_array( $id, $enabled, true ); $settings_url = YBY_Module_Registry::settings_url( $id ); ?>
-<tr class="<?php echo $is_planned ? 'is-planned' : ''; ?>">
+<?php foreach ( $modules as $id => $module ) : $is_planned = 'planned' === $module['status']; $is_selected = in_array( $id, $enabled, true ); $is_available = YBY_Module_Registry::is_available( $id ); $is_enabled = $is_selected && $is_available; $availability_message = YBY_Module_Registry::availability_message( $id ); $settings_url = YBY_Module_Registry::settings_url( $id ); ?>
+<tr class="<?php echo $is_planned ? 'is-planned' : ( $is_available ? '' : 'is-unavailable' ); ?>">
 <td><strong><?php echo esc_html( $module['label'] ); ?></strong><code><?php echo esc_html( $id ); ?></code></td>
-<td><?php echo esc_html( $module['description'] ); ?></td>
+<td><?php echo esc_html( $module['description'] ); ?><?php if ( ! $is_available && $availability_message ) : ?><br><span class="description"><?php echo esc_html( $availability_message ); ?></span><?php endif; ?></td>
 <td><span class="yby-module-type">Feature</span></td>
-<td><span class="yby-status-badge <?php echo $is_planned ? 'yby-status-neutral' : ( $is_enabled ? 'yby-status-ready' : 'yby-status-disabled' ); ?>"><?php echo esc_html( $is_planned ? 'Planned' : ( $is_enabled ? '已开启' : '已关闭' ) ); ?></span></td>
-<td><label class="yby-module-switch"><input type="checkbox" name="yby_core_modules[]" value="<?php echo esc_attr( $id ); ?>" <?php checked( $is_enabled ); ?> <?php disabled( $is_planned ); ?>><span class="yby-module-switch__track"></span><span class="screen-reader-text"><?php echo esc_html( $module['label'] ); ?></span></label></td>
-<td><?php if ( $settings_url && ! $is_planned ) : ?><a class="button button-small" href="<?php echo esc_url( $settings_url ); ?>">设置</a><?php else : ?>—<?php endif; ?></td>
-<td><?php if ( $settings_url && ! $is_planned ) : ?><a class="yby-module-enter" href="<?php echo esc_url( $settings_url ); ?>">进入 →</a><?php else : ?><span class="description">待接入</span><?php endif; ?></td>
+<td><span class="yby-status-badge <?php echo $is_planned ? 'yby-status-neutral' : ( $is_enabled ? 'yby-status-ready' : 'yby-status-disabled' ); ?>"><?php echo esc_html( $is_planned ? 'Planned' : ( ! $is_available ? '不可用' : ( $is_enabled ? '已开启' : '已关闭' ) ) ); ?></span></td>
+<td><?php if ( $is_selected && ! $is_available ) : ?><input type="hidden" name="yby_core_modules[]" value="<?php echo esc_attr( $id ); ?>"><?php endif; ?><label class="yby-module-switch"><input type="checkbox" name="yby_core_modules[]" value="<?php echo esc_attr( $id ); ?>" <?php checked( $is_selected ); ?> <?php disabled( $is_planned || ! $is_available ); ?>><span class="yby-module-switch__track"></span><span class="screen-reader-text"><?php echo esc_html( $module['label'] ); ?></span></label></td>
+<td><?php if ( $settings_url && ! $is_planned && $is_available ) : ?><a class="button button-small" href="<?php echo esc_url( $settings_url ); ?>">设置</a><?php else : ?>—<?php endif; ?></td>
+<td><?php if ( $settings_url && ! $is_planned && $is_available ) : ?><a class="yby-module-enter" href="<?php echo esc_url( $settings_url ); ?>">进入 →</a><?php else : ?><span class="description">待接入</span><?php endif; ?></td>
 </tr>
 <?php endforeach; ?>
 </tbody></table></div><div class="yby-modules-footer"><p class="submit"><button type="submit" class="button button-primary">保存模块设置</button></p><p class="description">模块关闭后仅停止对应菜单、Hooks、REST、Assets 与 Runtime；已有数据保持不变。</p></div>

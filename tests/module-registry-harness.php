@@ -32,5 +32,5 @@ $assert( false !== strpos( $core, 'class-yby-module-registry.php' ), 'registry b
 $assert( false !== strpos( $admin, "'modules' === \$tab" ), 'Modules settings tab routing missing' );
 $assert( false !== strpos( $view, 'yby-modules-table' ) && false !== strpos( $view, 'Foundation' ) && false !== strpos( $view, 'Feature' ), 'compact module table contract missing' );
 $assert( false !== strpos( $view, '功能说明' ) && false !== strpos( $view, '运行状态' ) && false !== strpos( $view, '启用' ), 'module table columns missing' );
-$assert( false !== strpos( $view, 'disabled( $is_planned )' ), 'planned modules must remain non-toggleable' );
+$assert( false !== strpos( $view, 'disabled( $is_planned || ! $is_available )' ), 'planned and unavailable modules must remain non-toggleable' );
 echo "PASS module-registry-harness\n";

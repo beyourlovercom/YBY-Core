@@ -16,6 +16,8 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-settings-store.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-article-toc-module.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-module.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-woo-order-export-presets.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-woo-order-export-module.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-security.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-database.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-config.php';
@@ -88,6 +90,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-popup-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-connector-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-email-template-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-docs-os-admin.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-commerce-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'public/class-yby-public.php';
 
 /**
@@ -127,6 +130,7 @@ class YBY_Core {
 
 		$this->loader->add_action( 'andy_core_register_modules', 'YBY_Article_TOC_Module', 'register_module', 10, 0 );
 		$this->loader->add_action( 'andy_core_register_modules', 'YBY_Analytics_Module', 'register_module', 11, 0 );
+		$this->loader->add_action( 'andy_core_register_modules', 'YBY_Woo_Order_Export_Module', 'register_module', 12, 0 );
 		$this->loader->add_action( 'plugins_loaded', 'YBY_Activator', 'sync_capabilities', 1, 0 );
 		$this->loader->add_action( 'plugins_loaded', $database, 'maybe_upgrade', 5, 0 );
 		$this->loader->add_action( 'plugins_loaded', $module_runtime, 'discover_and_boot', 20, 0 );
@@ -176,6 +180,8 @@ class YBY_Core {
 			$this->loader->add_action( 'admin_enqueue_scripts', $social_login, 'enqueue_assets' );
 		}
 		$this->loader->add_action( 'admin_menu', $admin, 'add_admin_menu' );
+		$commerce_admin = new YBY_Commerce_Admin();
+		$this->loader->add_action( 'admin_menu', $commerce_admin, 'add_admin_menu', 35, 0 );
 		if ( $docs_enabled ) {
 			$docs_admin = new YBY_Docs_OS_Admin();
 			$this->loader->add_action( 'admin_menu', $docs_admin, 'add_admin_menu', 25 );
