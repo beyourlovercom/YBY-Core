@@ -15,6 +15,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-registry.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-settings-store.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-article-toc-module.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-module.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-security.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-database.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-config.php';
@@ -35,6 +36,10 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-auth-rest-controller.ph
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-one-tap-controller.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-social-login-shortcodes.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-session.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-event-contract.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-site-profile.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-consent-adapter.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-gtm4wp-adapter.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-tracking.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-webhook.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template.php';
@@ -121,6 +126,7 @@ class YBY_Core {
 		$module_runtime = new YBY_Module_Runtime();
 
 		$this->loader->add_action( 'andy_core_register_modules', 'YBY_Article_TOC_Module', 'register_module', 10, 0 );
+		$this->loader->add_action( 'andy_core_register_modules', 'YBY_Analytics_Module', 'register_module', 11, 0 );
 		$this->loader->add_action( 'plugins_loaded', 'YBY_Activator', 'sync_capabilities', 1, 0 );
 		$this->loader->add_action( 'plugins_loaded', $database, 'maybe_upgrade', 5, 0 );
 		$this->loader->add_action( 'plugins_loaded', $module_runtime, 'discover_and_boot', 20, 0 );
@@ -237,10 +243,11 @@ class YBY_Core {
 			$this->loader->add_action( 'template_redirect', $docs_runtime, 'maybe_render_canonical', 2, 0 );
 		}
 
-		if ( $inquiry_enabled || $project_enabled ) {
-			$public = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
-			$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
-		}
+		// Always register the public controller hook. Extension modules such as
+		// Analytics are discovered on plugins_loaded after this constructor runs;
+		// YBY_Public performs the final enabled-module gate at enqueue time.
+		$public = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
+		$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
 
 		if ( $inquiry_enabled ) {
 			$lead_rest_route = new YBY_Lead_REST_Controller();

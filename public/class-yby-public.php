@@ -47,7 +47,8 @@ class YBY_Public {
 	public function enqueue_assets() {
 		$inquiry_enabled = ! class_exists( 'YBY_Module_Registry' ) || YBY_Module_Registry::is_enabled( 'inquiry_os' );
 		$project_enabled = ! class_exists( 'YBY_Module_Registry' ) || YBY_Module_Registry::is_enabled( 'project_studio' );
-		if ( ! $inquiry_enabled && ! $project_enabled ) { return; }
+		$analytics_enabled = class_exists( 'YBY_Module_Registry' ) && YBY_Module_Registry::is_enabled( 'analytics' );
+		if ( ! $inquiry_enabled && ! $project_enabled && ! $analytics_enabled ) { return; }
 		wp_enqueue_style(
 			$this->plugin_name . '-public',
 			YBY_CORE_PLUGIN_URL . 'public/assets/css/yby-core-public.css',
@@ -123,7 +124,7 @@ class YBY_Public {
 		$data = array(
 			'config'      => YBY_Config::get_runtime_config(),
 			'leadSession' => $inquiry_enabled ? ( new YBY_Lead_Session() )->get_frontend_config() : array(),
-			'tracking'    => $inquiry_enabled ? ( new YBY_Tracking() )->get_frontend_config() : array(),
+			'tracking'    => ( $inquiry_enabled || $analytics_enabled ) ? ( new YBY_Tracking() )->get_frontend_config() : array(),
 			'project'     => $project,
 			'pageProfile' => $page_profile,
 			'content'     => $content,
