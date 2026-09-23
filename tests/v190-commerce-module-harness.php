@@ -29,9 +29,11 @@ $assert($d['default_preset']==='default' && $d['batch_size']===200 && $d['bom']=
 $c=YBY_Woo_Order_Export_Module::sanitize_settings(array('default_preset'=>'evil','batch_size'=>9999,'bom'=>0,'audit_enabled'=>0));
 $assert($c['default_preset']==='default' && $c['batch_size']===500 && $c['bom']===false && $c['audit_enabled']===false,'settings sanitize');
 $p=YBY_Woo_Order_Export_Presets::presets();
-$assert(isset($p['default'],$p['full']),'generic presets');
-$assert(!isset($p['byl_logistics'],$p['byl_accounting'],$p['byl_customer']),'must not invent BYL presets before audit');
-$assert($p['default']['row_mode']==='line_item','default line item rows');
+$assert(array_keys($p)===array('default','full','byl_processing_orders','byl_full_order_report'),'exact audited preset set');
+$assert($p['byl_processing_orders']['label']==='BYL Processing Orders'&&$p['byl_processing_orders']['row_mode']==='order_row','processing BYL preset');
+$assert($p['byl_full_order_report']['label']==='BYL Full Report'&&$p['byl_full_order_report']['row_mode']==='order_row','full BYL preset');
+$assert($p['default']['row_mode']==='line_item'&&$p['full']['row_mode']==='line_item','generic line item rows');
+$assert(!isset($p['byl_logistics'],$p['byl_accounting'],$p['byl_customer'],$p['byl_attribution']),'must not invent BYL presets');
 $core=file_get_contents(dirname(__DIR__).'/inc/class-yby-core.php');
 $assert(false!==strpos($core,"'YBY_Woo_Order_Export_Module', 'register_module'"),'core registration hook');
 $assert(false!==strpos($core,'class-yby-commerce-admin.php'),'commerce admin bootstrap');

@@ -37,7 +37,7 @@ The Commerce menu is visible only when the Woo Order Export module is registered
 
 The engine is preset-driven. Generic V1 presets use **flat line-item rows**: each WooCommerce line item produces one CSV row and order-level fields repeat. Orders with no line items still produce one row with empty item fields.
 
-This does not pre-guess BYL legacy preset shape. BYL presets are added only after reading the real five legacy templates and diffing real exports.
+BYL compatibility presets are recorded from the V190-6 audit: `byl_processing_orders` (BYL Processing Orders) and `byl_full_order_report` (BYL Full Report). Both use `order_row` mode: one order per row with deterministic repeated item columns after the canonical base fields; generic `default` and `full` remain `line_item` presets. Canonical audited H18/H65 base headers are preserved. `wt_import_key` remains a read-only compatibility column using the legacy order-number value; stale provider-specific fields remain expected V190-9 differences.
 
 ## Settings V1
 
@@ -53,7 +53,7 @@ No GTM/analytics tracking of exports. No public/static export files.
 - `default`: operational essentials
 - `full`: full generic field contract
 
-BYL-specific presets are intentionally absent until V190-6/7 legacy-template audit.
+BYL-specific presets are limited to the two audited compatibility jobs. No accounting, customer, attribution, logistics, import, or third BYL preset is part of this contract.
 
 ## Extensibility hooks
 
