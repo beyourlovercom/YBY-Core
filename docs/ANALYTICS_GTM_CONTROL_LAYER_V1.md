@@ -80,3 +80,11 @@ This document records existing names; V181-3 will decide their canonical contrac
 - no WooCommerce ecommerce event replacement
 - no consent-state mutation
 - no Production deployment
+
+## V181-3 Business Event Contract
+
+The canonical event registry is implemented by `YBY_Analytics_Event_Contract`. The existing `YBY_Tracking` facade sources its public event list from that contract, preserving the historical event names and order.
+
+Inquiry runtime no longer pushes directly to `window.dataLayer`; it calls `window.YBYTracking.push()` so payload sanitation and the future provider adapter have a single ownership point.
+
+The V1 registry records event category, dedupe policy identifier, and a hard `pii=false` contract. Detailed per-field schemas and provider projection can evolve without allowing arbitrary business-module dataLayer writes.

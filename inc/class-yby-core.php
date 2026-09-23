@@ -36,6 +36,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-auth-rest-controller.ph
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-one-tap-controller.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-social-login-shortcodes.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-session.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-event-contract.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-tracking.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-webhook.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-email-template.php';

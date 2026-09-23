@@ -335,15 +335,11 @@
   function pushTracking(form, eventName, extra) {
     var payload = getTrackingPayload(form, extra || {});
 
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push(
-      Object.assign(
-        {
-          event: safeString(eventName, 80)
-        },
-        payload
-      )
-    );
+    if (!window.YBYTracking || typeof window.YBYTracking.push !== "function") {
+      return false;
+    }
+
+    return window.YBYTracking.push(safeString(eventName, 80), payload);
   }
 
   function enableFormIfReady(form) {
