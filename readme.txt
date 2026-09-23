@@ -4,7 +4,7 @@ Tags: andy-core, yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.8.0
 License: Proprietary
 License URI: https://ybyglobal.com/
 
@@ -12,7 +12,16 @@ Core platform plugin for managed WordPress websites, including Case ID, tracking
 
 == Description ==
 
-Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.7.0 adds Registry V2 extension contracts, Andy Content IA, restored Landing Pages, and Article TOC V1 while preserving existing Andy Core runtime and signed updater contracts.
+Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.8.0 adds bounded ERP Content Publishing V1 while preserving existing Andy Core runtime, signed updater, and database contracts.
+
+Included in v1.8.0:
+
+* Authenticated ERP-to-WordPress Content Publishing V1 for blog, guide, and comparison articles
+* Zero-write `/content/preview` and durable-idempotent `/content/publish` Connector routes
+* Exact ERP article/layout/hash binding with same-post update and provider read-back
+* Draft requires `noindex`; Publish requires `index`; Rank Math robots behavior is verified on read-back
+* Database schema remains runtime 1.5.0 and updater compatibility 1.4.0; no migration
+* Production deployment is deferred while v1.8.1 / v1.9.0 development continues
 
 Included in v1.7.0:
 
@@ -183,6 +192,13 @@ Lead notifications dispatch through `YBY_Notification_Manager` with the Email pr
 The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Recipient Emails, Reply-To Policy, Lead Email Subject Template, and Email Branding settings. Invalid addresses are ignored.
 
 == Changelog ==
+
+= 1.8.0 =
+
+* Added bounded ERP Content Publishing V1 for article-like content.
+* Added zero-write preview and durable-idempotent publish routes using the existing Connector HMAC security contract.
+* Added exact binding/read-back checks and Draft noindex / Publish index enforcement.
+* Preserved runtime database version 1.5.0 and updater compatibility database version 1.4.0; no database migration.
 
 = 1.7.0 =
 

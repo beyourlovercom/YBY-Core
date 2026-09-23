@@ -1,7 +1,6 @@
 # Andy Core ERP Content Publishing Contract V1
 
-Status: C7B feature contract for Andy Core v1.8.0 integration.
-Stable plugin version metadata is intentionally not changed by this branch.
+Status: Canonical Content Publishing V1 contract for Andy Core v1.8.0 release closure.
 
 ## Purpose
 
