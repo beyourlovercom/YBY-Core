@@ -71,8 +71,8 @@ class BylRichOrder extends BylOrder {
     public function get_coupon_codes() { return array( 'SAVE' ); }
     public function get_refunds() { return array( new BylRefund() ); }
 }
-require_once dirname( __DIR__ ) . '/inc/class-yby-woo-order-export-presets.php';
-require_once dirname( __DIR__ ) . '/inc/class-yby-woo-order-csv-streamer.php';
+require_once dirname( __DIR__ ) . '/includes/class-yby-woo-order-export-presets.php';
+require_once dirname( __DIR__ ) . '/includes/class-yby-woo-order-csv-streamer.php';
 $assert = function ( $ok, $message ) { if ( ! $ok ) { fwrite( STDERR, "FAIL: {$message}\n" ); exit( 1 ); } };
 
 $p = YBY_Woo_Order_Export_Presets::presets();
@@ -141,7 +141,7 @@ $assert( 'rate_id:4|code:VAT-20|total:1.20|label:VAT|tax_rate_compound:' === $ri
 $assert( 'code:SAVE|amount:7.50' === $rich_map['coupon_items'], 'legacy coupon amount semantics' );
 $assert( 'amount:4|reason:Changed mind|date:2026-09-23 10:00:00' === $rich_map['refund_items'], 'legacy refund serialization' );
 
-$source = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-woo-order-csv-streamer.php' ) . file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-woo-order-export-presets.php' );
+$source = file_get_contents( dirname( __DIR__ ) . '/includes/class-yby-woo-order-csv-streamer.php' ) . file_get_contents( dirname( __DIR__ ) . '/includes/class-yby-woo-order-export-presets.php' );
 foreach ( array( 'update_post_meta', 'update_meta_data', '->save(', 'set_status', 'wf_order_exported_status' ) as $forbidden ) {
     $assert( false === strpos( $source, $forbidden ), 'no business write: ' . $forbidden );
 }
