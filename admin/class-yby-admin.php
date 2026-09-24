@@ -205,7 +205,7 @@ class YBY_Admin {
 
 	protected function render_addons_page() {
 		$tab = 'addons';
-		$addons = YBY_Addon_Registry::addons();
+		$addons = YBY_Addon_Registry::catalog();
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/addons-page.php';
 	}
 
@@ -289,7 +289,7 @@ class YBY_Admin {
 			$email_tables_ok = YBY_Database::email_tables_exist();
 			$status = array(
 				'plugin_version' => YBY_CORE_VERSION,
-				'addon_registry' => count( YBY_Addon_Registry::addons() ) . ' registered',
+				'addon_registry' => count( YBY_Addon_Registry::catalog() ) . ' installed',
 				'database_version' => get_option( YBY_Database::VERSION_OPTION, 'unknown' ),
 				'lead_table' => YBY_Database::leads_table_exists(),
 				'management_table' => $management_tables_ok,
