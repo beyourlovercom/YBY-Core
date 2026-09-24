@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v1.9.0 - 2026-09-24
+
+- Added generic Addon Registry V1 and the `andy_core_register_addons` registration contract.
+- Added read-only Addons administration with installed, active, Core compatibility, and plugin dependency states.
+- Added generic inactive-installed discovery using `Andy Core Addon` and `Requires Andy Core` plugin headers.
+- Added Addon Registry projection to System Status.
+- Preserved Core-only operation when no Addon is installed.
+- Kept Andy Commerce / Woo Order Export outside the Andy Core runtime package.
+- Preserved runtime database version `1.5.0` and updater compatibility database version `1.4.0`; no database migration is required.
+
 ## v1.8.1 - 2026-09-23
 
 - Added Analytics / GTM Control Layer V1 as a default-OFF Registry V2 extension module with versioned settings.

@@ -4,14 +4,26 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `1.8.1`
+- Product version: `1.9.0`
 - Development version: None
 - Database version: `1.5.0`
 - Updater compatibility database version: `1.4.0`
-- Release status: Analytics / GTM Control Layer V1 Release Candidate
-- Development status: Feature merged; Dev + Owner UAT PASS; release closure in progress; Production deploy deferred
+- Release status: Addon Foundation V1 Release Candidate
+- Development status: Addon Foundation implemented; Core-only regression PASS; localdev Owner UAT pending; Production deploy deferred
 - Plugin path: `yby-core/yby-core.php`
 - Technical namespace: existing `YBY_*` and `yby_*` identifiers retained for compatibility
+
+## v1.9.0 release scope
+
+- Added generic Addon Registry V1 with the `andy_core_register_addons` registration contract.
+- Added installed / active / Core-version / plugin-dependency status reporting without embedding product-specific Addon logic in Core.
+- Added a read-only Addons management surface and System Status projection.
+- Added inactive installed Addon discovery through the optional `Andy Core Addon` and `Requires Andy Core` plugin headers.
+- Andy Core does not automatically install, delete, activate, or deactivate Addons.
+- Andy Commerce and Woo Order Export are intentionally not bundled in the Core package.
+- Runtime database version remains `1.5.0` and updater compatibility database version remains `1.4.0`; no database migration is required.
+- Historical provider-specific Commerce Connector bindings are compatibility debt and are not expanded by this release; extraction requires a coordinated receiving Addon and regression evidence.
+- Production deployment remains a separate explicit gate.
 
 ## v1.8.1 release scope
 

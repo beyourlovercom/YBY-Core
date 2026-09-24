@@ -4,7 +4,7 @@ Tags: andy-core, yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.8.1
+Stable tag: 1.9.0
 License: Proprietary
 License URI: https://ybyglobal.com/
 
@@ -12,7 +12,18 @@ Core platform plugin for managed WordPress websites, including Case ID, tracking
 
 == Description ==
 
-Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.8.1 adds Analytics / GTM Control Layer V1 while preserving GTM4WP ownership, existing tracking APIs, signed updater, and database contracts.
+Andy Core is the shared foundation plugin for managed WordPress websites. Version 1.9.0 adds the generic Addon Foundation while keeping product-specific B2C / Commerce runtime outside the Core package.
+
+Included in v1.9.0:
+
+* Generic Addon Registry V1 with the `andy_core_register_addons` registration contract
+* Installed / active / Core-version / plugin-dependency status reporting
+* Read-only Addons administration and System Status projection
+* Optional inactive-installed discovery through `Andy Core Addon` and `Requires Andy Core` plugin headers
+* No automatic Addon install, delete, activation, or deactivation
+* Andy Commerce and Woo Order Export are not bundled in Andy Core
+* Runtime database remains 1.5.0 and updater compatibility remains 1.4.0; no migration
+* Production deployment remains separately gated
 
 Included in v1.8.1:
 
@@ -204,6 +215,13 @@ Lead notifications dispatch through `YBY_Notification_Manager` with the Email pr
 The Email provider supports Primary Recipient Email, CC Recipient Emails, BCC Recipient Emails, Reply-To Policy, Lead Email Subject Template, and Email Branding settings. Invalid addresses are ignored.
 
 == Changelog ==
+
+= 1.9.0 =
+
+* Added generic Addon Registry V1 and read-only Addons administration.
+* Added Core compatibility and plugin dependency state reporting for Addons.
+* Preserved Core-only operation and kept Andy Commerce / Woo Order Export outside the Core package.
+* Preserved database contracts; no database migration.
 
 = 1.8.1 =
 
