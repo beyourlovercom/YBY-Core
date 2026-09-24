@@ -37,7 +37,12 @@ class Andy_Commerce_Admin {
 		}
 
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
-		if ( ! in_array( $tab, array( 'overview', 'order-export', 'settings' ), true ) ) { $tab = 'overview'; }
+		if ( ! in_array( $tab, array( 'overview', 'order-export', 'checkout-shipping', 'settings' ), true ) ) { $tab = 'overview'; }
+
+		if ( 'checkout-shipping' === $tab ) {
+			include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/checkout-shipping.php';
+			return;
+		}
 
 		if ( 'overview' === $tab ) {
 			$status = andy_commerce_dependency_status();
