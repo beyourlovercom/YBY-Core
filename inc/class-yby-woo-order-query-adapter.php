@@ -56,7 +56,7 @@ class YBY_Woo_Order_Query_Adapter {
 			'order' => 'ASC',
 		);
 		if ( $filters['statuses'] ) { $args['status'] = $filters['statuses']; }
-		if ( $filters['order_ids'] ) { $args['include'] = $filters['order_ids']; }
+		if ( $filters['order_ids'] ) { $args['post__in'] = $filters['order_ids']; }
 		if ( $filters['date_from'] && $filters['date_to'] ) { $args['date_created'] = $filters['date_from'] . '...' . $filters['date_to']; }
 		elseif ( $filters['date_from'] ) { $args['date_created'] = '>=' . $filters['date_from']; }
 		elseif ( $filters['date_to'] ) { $args['date_created'] = '<=' . $filters['date_to']; }

@@ -15,7 +15,7 @@ class BylItem {
     public function get_product() { return new BylProduct(); }
     public function get_product_id() { return 9; }
     public function get_variation_id() { return 0; }
-    public function get_name() { return '+BAD-NAME'; }
+    public function get_name() { return '+BAD-NAME &amp; FRIEND'; }
     public function get_quantity() { return 2; }
     public function get_total() { return 18; }
     public function get_subtotal() { return 20; }
@@ -89,10 +89,10 @@ $header = str_getcsv( $lines[0] );
 $row = str_getcsv( $lines[1] );
 $assert( $stats['order_count'] === 1 && $stats['row_count'] === 1 && $adapter->passes === 2, 'bounded two-pass one-row export' );
 $assert( array_slice( $header, 0, 18 ) === $processing, 'processing CSV base headers exact' );
-$assert( $header[18] === 'line_item_1' && $header[19] === 'Product Item 1 Name' && $header[20] === 'Product Item 1 id', 'item 1 dynamic headers' );
+$assert( $header[18] === 'line_item_1' && $header[19] === 'Product Item 1 Name' && $header[20] === 'Product Item 1 id' && $header[21] === 'Product Item 1 SKU', 'item 1 dynamic headers' );
 $assert( $header[25] === 'line_item_2' && $header[31] === 'Product Item 2 Subtotal', 'item 2 dynamic headers' );
 $joined = implode( ',', $row );
-$assert( false !== strpos( $joined, "'=ORDER" ) && false !== strpos( $joined, "'+BAD-NAME" ) && false !== strpos( $joined, "'=BAD-SKU" ), 'formula injection protection' );
+$assert( false !== strpos( $joined, "'=ORDER" ) && false !== strpos( $joined, "'+BAD-NAME & FRIEND" ) && false !== strpos( $joined, "'=BAD-SKU" ), 'formula injection protection and HTML entity decode' );
 $assert( in_array( 'registered@example.com', $row, true ), 'BYL customer_email preserves registered-user semantics' );
 
 $empty_adapter = new BylAdapter( array( new BylOrder( array() ) ) );

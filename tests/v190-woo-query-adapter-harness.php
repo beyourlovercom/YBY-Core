@@ -18,6 +18,7 @@ $a($f['payment_method']==='stripecard','payment sanitize');
 $q=YBY_Woo_Order_Query_Adapter::build_query_args($f,2,999);
 $a($q['limit']===500&&$q['page']===2&&$q['paginate']===true&&$q['return']==='objects','bounded pagination');
 $a($q['date_created']==='2026-09-01...2026-09-30','date query');
+$a($q['post__in']===array(12,13,14)&&!isset($q['include']),'order ID query uses HPOS/posts compatible post__in');
 $a($q['billing_email']==='a@example.com'&&$q['currency']==='USD','official query fields');
 $GLOBALS['wc_pages'][1]=(object)array('orders'=>array('A','B'),'max_num_pages'=>2);
 $GLOBALS['wc_pages'][2]=(object)array('orders'=>array('C'),'max_num_pages'=>2);

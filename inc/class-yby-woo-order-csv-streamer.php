@@ -22,7 +22,7 @@ class YBY_Woo_Order_CSV_Streamer {
 			for ( $index = 1; $index <= $max_items; $index++ ) {
 				$dynamic_columns[] = array( 'key' => 'line_item_' . $index, 'label' => 'line_item_' . $index, 'type' => 'text' );
 				foreach ( array( 'name', 'product_id', 'sku', 'quantity', 'total', 'subtotal' ) as $suffix ) {
-					$label = 'name' === $suffix ? 'Name' : ( 'product_id' === $suffix ? 'id' : ucfirst( $suffix ) );
+					$label = 'name' === $suffix ? 'Name' : ( 'product_id' === $suffix ? 'id' : ( 'sku' === $suffix ? 'SKU' : ucfirst( $suffix ) ) );
 					$dynamic_columns[] = array( 'key' => 'line_item_' . $index . '_' . $suffix, 'label' => 'Product Item ' . $index . ' ' . $label, 'type' => 'text' );
 				}
 			}
@@ -158,7 +158,7 @@ class YBY_Woo_Order_CSV_Streamer {
 	}
 
 	protected function add_dynamic_item_values( &$row, $index, $item ) {
-		$product = $item && method_exists( $item, 'get_product' ) ? $item->get_product() : null; $name = $this->call( $item, 'get_name' ); $id = $this->call( $item, 'get_product_id', 0 ); $sku = $product ? $this->call( $product, 'get_sku' ) : ''; $quantity = $this->call( $item, 'get_quantity', 0 ); $total = $this->call( $item, 'get_total', 0 ); $subtotal = $this->call( $item, 'get_subtotal', 0 );
+		$product = $item && method_exists( $item, 'get_product' ) ? $item->get_product() : null; $name = html_entity_decode( (string) $this->call( $item, 'get_name' ), ENT_NOQUOTES, 'UTF-8' ); $id = $this->call( $item, 'get_product_id', 0 ); $sku = $product ? $this->call( $product, 'get_sku' ) : ''; $quantity = $this->call( $item, 'get_quantity', 0 ); $total = $this->call( $item, 'get_total', 0 ); $subtotal = $this->call( $item, 'get_subtotal', 0 );
 		$row[ 'line_item_' . $index ] = implode( ' | ', array( 'name=' . $name, 'product_id=' . $id, 'sku=' . $sku, 'quantity=' . $quantity, 'total=' . $total, 'subtotal=' . $subtotal ) );
 		$row[ 'line_item_' . $index . '_name' ] = $name; $row[ 'line_item_' . $index . '_product_id' ] = $id; $row[ 'line_item_' . $index . '_sku' ] = $sku; $row[ 'line_item_' . $index . '_quantity' ] = $quantity; $row[ 'line_item_' . $index . '_total' ] = $total; $row[ 'line_item_' . $index . '_subtotal' ] = $subtotal;
 	}
