@@ -125,6 +125,10 @@ class YBY_Admin {
 			$this->render_modules_page();
 			return;
 		}
+		if ( 'addons' === $tab ) {
+			$this->render_addons_page();
+			return;
+		}
 		if ( 'inquiry' === $tab ) {
 			$this->render_inquiry_settings();
 			return;
@@ -173,7 +177,7 @@ class YBY_Admin {
 	}
 
 	public static function settings_tabs() {
-		$tabs = array( 'general' => '常规', 'modules' => '模块' );
+		$tabs = array( 'general' => '常规', 'modules' => '模块', 'addons' => 'Addons' );
 		if ( YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) {
 			$tabs['inquiry'] = '询盘';
 			$tabs['inquiry-notification'] = '询盘通知';
@@ -197,6 +201,12 @@ class YBY_Admin {
 		$modules = YBY_Module_Registry::modules();
 		$enabled = YBY_Module_Registry::enabled_modules();
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/modules-page.php';
+	}
+
+	protected function render_addons_page() {
+		$tab = 'addons';
+		$addons = YBY_Addon_Registry::addons();
+		include YBY_CORE_PLUGIN_DIR . 'admin/views/addons-page.php';
 	}
 
 	protected function render_article_toc_settings() {
@@ -279,6 +289,7 @@ class YBY_Admin {
 			$email_tables_ok = YBY_Database::email_tables_exist();
 			$status = array(
 				'plugin_version' => YBY_CORE_VERSION,
+				'addon_registry' => count( YBY_Addon_Registry::addons() ) . ' registered',
 				'database_version' => get_option( YBY_Database::VERSION_OPTION, 'unknown' ),
 				'lead_table' => YBY_Database::leads_table_exists(),
 				'management_table' => $management_tables_ok,
