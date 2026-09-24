@@ -23,6 +23,7 @@ $assert( $contains( $subscribe, "public function register()" ) && $contains( $su
 $assert( false === strpos( $inquiry, "'yby_subscribe'" ), 'Inquiry shortcodes must not register the subscribe shortcode.' );
 $assert( $contains( $core, "class-yby-inquiry-renderer.php" ) && $contains( $popup, '$this->renderer->render_modal(' ), 'Inquiry must reuse the canonical renderer.' );
 $assert( $contains( $popup, '$this->renderer->render_modal(' ) && false === strpos( $popup, 'new YBY_Inquiry_Renderer' ), 'Global Popup must render through its injected renderer.' );
+$assert( false !== strpos( $popup, "apply_filters( 'yby_inquiry_default_preset'" ) && false === strpos( $popup, "get_preset( 'irrigation_quick_inquiry' )" ), 'Global Popup must resolve its preset through the shared default-preset filter instead of hard-coding irrigation.' );
 $assert( $contains( $popup, "const OPTION = 'yby_core_popup_settings'" ) && $contains( $admin, 'update_option( YBY_Global_Popup::OPTION' ), 'Popup settings must use a WordPress option.' );
 $assert( false !== strpos( $popup, 'data-yby-subscribe-contract' ) && false !== strpos( $popup, 'not configured' ), 'Subscribe must expose missing authority clearly.' );
 $assert( false !== strpos( $js, 'data-yby-popup-open' ) && false !== strpos( $js, 'page_profile' ) && false !== strpos( $js, 'trigger_source' ), 'Trigger context contract missing.' );
