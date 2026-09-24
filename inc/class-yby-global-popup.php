@@ -35,7 +35,12 @@ class YBY_Global_Popup {
 	}
 	public function render() {
 		$settings = self::sanitize( self::settings() );
-		$preset = $this->manager->get_preset_manager()->get_preset( 'irrigation_quick_inquiry' );
+		$preset_id = 'irrigation_quick_inquiry';
+		if ( function_exists( 'apply_filters' ) ) {
+			$preset_id = apply_filters( 'yby_inquiry_default_preset', $preset_id, array( 'context' => 'global_popup' ) );
+		}
+		$preset_id = sanitize_key( $preset_id );
+		$preset    = $this->manager->get_preset_manager()->get_preset( $preset_id );
 		if ( ! is_array( $preset ) || empty( $preset['enabled'] ) ) { return; }
 		$fields = $this->manager->get_field_manager()->get_fields(); $ordered = array();
 		foreach ( $preset['fields'] as $id ) { if ( isset( $fields[ $id ] ) && ! empty( $fields[ $id ]['enabled'] ) ) { $ordered[] = $fields[ $id ]; } }
