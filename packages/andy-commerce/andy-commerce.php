@@ -27,6 +27,9 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-csv-stream
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-audit.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-controller.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-module.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-site-preset.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-promotion-policy.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-promotion-runtime.php';
 
 add_action( 'andy_core_register_modules', array( 'YBY_Woo_Order_Export_Module', 'register_module' ), 12, 0 );
 
