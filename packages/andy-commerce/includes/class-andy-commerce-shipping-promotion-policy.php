@@ -56,7 +56,14 @@ final class Andy_Commerce_Shipping_Promotion_Policy {
 		if ( ! self::is_valid_code( $saved['free_shipping_code'] ?? null ) ) { return false; }
 		if ( ! self::is_valid_number( $saved['global_threshold'] ?? null ) || (float) $saved['global_threshold'] < 0 ) { return false; }
 		if ( ( $saved['eligibility_basis'] ?? null ) !== self::ELIGIBILITY_BASIS ) { return false; }
-		return isset( $saved['zone_overrides'] ) && is_array( $saved['zone_overrides'] );
+		if ( ! isset( $saved['zone_overrides'] ) || ! is_array( $saved['zone_overrides'] ) ) { return false; }
+		foreach ( $saved['zone_overrides'] as $zone_id => $config ) {
+			if ( ! is_string( $zone_id ) && ! is_int( $zone_id ) ) { return false; }
+			if ( ! preg_match( '/^\\d+$/', (string) $zone_id ) || ! is_array( $config ) ) { return false; }
+			if ( ! in_array( $config['mode'] ?? null, array( 'global', 'override' ), true ) ) { return false; }
+			if ( ! self::is_valid_number( $config['threshold'] ?? null ) || (float) $config['threshold'] < 0 ) { return false; }
+		}
+		return true;
 	}
 
 	public static function get_settings(): array {
