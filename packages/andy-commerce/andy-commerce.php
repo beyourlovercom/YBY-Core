@@ -28,7 +28,7 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-aud
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-controller.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-module.php';
 
-add_action( 'andy_core_register_modules', 'YBY_Woo_Order_Export_Module::register_module', 12 );
+add_action( 'andy_core_register_modules', array( 'YBY_Woo_Order_Export_Module', 'register_module' ), 12, 0 );
 
 function andy_commerce_dependency_status() {
 	$core_loaded = defined( 'YBY_CORE_VERSION' ) && class_exists( 'YBY_Addon_Registry' );
