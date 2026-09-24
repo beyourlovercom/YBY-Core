@@ -1,0 +1,212 @@
+<?php
+/** Bounded Woo order CSV streaming engine. @package Andy_Commerce */
+if ( ! defined( 'ABSPATH' ) ) { exit; }
+
+class YBY_Woo_Order_CSV_Streamer {
+	public function stream( $handle, $preset_id, $filters, $settings, $adapter = null ) {
+		if ( ! is_resource( $handle ) ) { throw new InvalidArgumentException( 'CSV stream handle is required.' ); }
+		$preset_id = sanitize_key( (string) $preset_id );
+		$preset = YBY_Woo_Order_Export_Presets::get( $preset_id );
+		if ( empty( $preset ) ) { $preset_id = 'default'; $preset = YBY_Woo_Order_Export_Presets::get( 'default' ); }
+		$catalog = YBY_Woo_Order_Export_Presets::column_catalog();
+		$columns = array_values( array_filter( (array) ( $preset['columns'] ?? array() ), static function ( $key ) use ( $catalog ) { return isset( $catalog[ $key ] ); } ) );
+		if ( empty( $columns ) ) { throw new RuntimeException( 'Export preset has no valid columns.' ); }
+		$settings = wp_parse_args( is_array( $settings ) ? $settings : array(), YBY_Woo_Order_Export_Module::defaults() );
+		$adapter = $adapter ?: new YBY_Woo_Order_Query_Adapter();
+		$row_mode = isset( $preset['row_mode'] ) ? $preset['row_mode'] : 'line_item';
+		$order_mode = 'order_row' === $row_mode;
+		$dynamic_columns = array();
+		if ( 'order_row' === $row_mode ) {
+			$max_items = 0;
+			foreach ( $adapter->iterate_orders( $filters, $settings['batch_size'] ) as $order ) { $max_items = max( $max_items, count( $this->order_items( $order ) ) ); }
+			for ( $index = 1; $index <= $max_items; $index++ ) {
+				$dynamic_columns[] = array( 'key' => 'line_item_' . $index, 'label' => 'line_item_' . $index, 'type' => 'text' );
+			}
+			for ( $index = 1; $index <= $max_items; $index++ ) {
+				foreach ( array( 'name', 'product_id', 'sku', 'quantity', 'total', 'subtotal' ) as $suffix ) {
+					$label = 'name' === $suffix ? 'Name' : ( 'product_id' === $suffix ? 'id' : ( 'sku' === $suffix ? 'SKU' : ucfirst( $suffix ) ) );
+					$dynamic_columns[] = array( 'key' => 'line_item_' . $index . '_' . $suffix, 'label' => 'Product Item ' . $index . ' ' . $label, 'type' => 'text' );
+				}
+			}
+		}
+		if ( ! empty( $settings['bom'] ) ) { fwrite( $handle, "\xEF\xBB\xBF" ); }
+		$labels = (array) ( $preset['header_labels'] ?? array() );
+		$headers = array_map( static function ( $key ) use ( $catalog, $labels ) { return $labels[ $key ] ?? $catalog[ $key ]['label']; }, $columns );
+		foreach ( $dynamic_columns as $dynamic ) { $headers[] = $dynamic['label']; }
+		fputcsv( $handle, $headers );
+		$order_count = 0; $row_count = 0;
+		foreach ( $adapter->iterate_orders( $filters, $settings['batch_size'] ) as $order ) {
+			$order_count++;
+			if ( $order_mode ) {
+				$row = $this->build_row( $order, null, 'order_row' );
+				foreach ( $this->order_items( $order ) as $index => $item ) { $this->add_dynamic_item_values( $row, $index + 1, $item ); }
+				if ( function_exists( 'apply_filters' ) ) { $row = apply_filters( 'andy_core_order_export_row', $row, $order, null, $preset_id ); }
+				$out = array();
+				foreach ( $columns as $key ) { $out[] = $this->csv_cell( $row[ $key ] ?? '', $catalog[ $key ]['type'] ?? 'text' ); }
+				foreach ( $dynamic_columns as $dynamic ) { $out[] = $this->csv_cell( $row[ $dynamic['key'] ] ?? '', $dynamic['type'] ); }
+				fputcsv( $handle, $out ); $row_count++;
+				if ( 0 === $row_count % 100 && function_exists( 'flush' ) ) { flush(); }
+				continue;
+			}
+			$items = $this->order_items( $order );
+			if ( empty( $items ) ) { $items = array( null ); }
+			foreach ( $items as $item ) {
+				$row = $this->build_row( $order, $item, 'line_item' );
+				if ( function_exists( 'apply_filters' ) ) { $row = apply_filters( 'andy_core_order_export_row', $row, $order, $item, $preset_id ); }
+				$out = array();
+				foreach ( $columns as $key ) { $out[] = $this->csv_cell( $row[ $key ] ?? '', $catalog[ $key ]['type'] ?? 'text' ); }
+				fputcsv( $handle, $out ); $row_count++;
+				if ( 0 === $row_count % 100 && function_exists( 'flush' ) ) { flush(); }
+			}
+		}
+		return array( 'preset' => $preset_id, 'order_count' => $order_count, 'row_count' => $row_count );
+	}
+
+	protected function order_items( $order ) {
+		if ( ! is_object( $order ) || ! method_exists( $order, 'get_items' ) ) { return array(); }
+		try { $items = $order->get_items( 'line_item' ); } catch ( Throwable $e ) { return array(); }
+		return is_array( $items ) ? array_values( $items ) : array();
+	}
+
+	protected function call( $object, $method, $default = '' ) {
+		if ( ! is_object( $object ) || ! method_exists( $object, $method ) ) { return $default; }
+		try { return $object->{$method}(); } catch ( Throwable $e ) { return $default; }
+	}
+	protected function date_value( $date ) { return is_object( $date ) && method_exists( $date, 'date' ) ? $date->date( 'Y-m-d H:i:s' ) : ''; }
+	protected function meta( $order, $key ) {
+		if ( ! is_object( $order ) || ! method_exists( $order, 'get_meta' ) ) { return ''; }
+		try { return $order->get_meta( $key, true ); } catch ( Throwable $e ) { return ''; }
+	}
+
+	protected function order_collection( $order, $type ) {
+		if ( ! is_object( $order ) || ! method_exists( $order, 'get_items' ) ) { return array(); }
+		try { $items = $order->get_items( $type ); } catch ( Throwable $e ) { return array(); }
+		return is_array( $items ) ? $items : array();
+	}
+
+	protected function decimal_value( $value ) {
+		if ( function_exists( 'wc_format_decimal' ) ) { return wc_format_decimal( $value, 2 ); }
+		return number_format( (float) $value, 2, '.', '' );
+	}
+
+	protected function item_meta( $item, $key, $default = '' ) {
+		if ( ! is_object( $item ) || ! method_exists( $item, 'get_meta' ) ) { return $default; }
+		try { return $item->get_meta( $key, true ); } catch ( Throwable $e ) { return $default; }
+	}
+
+	protected function legacy_json( $value ) {
+		if ( is_string( $value ) ) {
+			$unserialized = function_exists( 'maybe_unserialize' ) ? maybe_unserialize( $value ) : @unserialize( $value );
+			if ( $unserialized !== $value ) { $value = $unserialized; }
+		}
+		return function_exists( 'wp_json_encode' ) ? wp_json_encode( $value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) : json_encode( $value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+	}
+
+	protected function legacy_collection( $values, $separator, $formatter ) {
+		$values = array_slice( is_array( $values ) ? $values : array(), 0, 100 );
+		if ( empty( $values ) ) { return ''; }
+		$formatted = array(); foreach ( $values as $value ) { $formatted[] = call_user_func( $formatter, $value ); }
+		return implode( $separator, $formatted );
+	}
+
+	protected function stable_normalize( $value ) {
+		if ( is_object( $value ) ) { $value = method_exists( $value, 'get_data' ) ? $value->get_data() : array(); }
+		if ( is_array( $value ) ) {
+			if ( array_keys( $value ) !== range( 0, count( $value ) - 1 ) ) { ksort( $value ); }
+			foreach ( $value as $key => $child ) { $value[ $key ] = $this->stable_normalize( $child ); }
+		}
+		return $value;
+	}
+
+	protected function stable_json( $value ) {
+		$value = $this->stable_normalize( $value );
+		return function_exists( 'wp_json_encode' ) ? wp_json_encode( $value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) : json_encode( $value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+	}
+
+	protected function collection_value( $order, $type ) {
+		$items = $this->order_collection( $order, $type );
+		if ( 'fee' === $type ) { return $this->legacy_collection( $items, '||', function ( $fee ) { $data = method_exists( $fee, 'get_data' ) ? (array) $fee->get_data() : array(); $tax_data = array_key_exists( 'line_tax_data', $data ) ? $data['line_tax_data'] : ( method_exists( $fee, 'get_taxes' ) ? $fee->get_taxes() : null ); return implode( '|', array( 'name:' . html_entity_decode( (string) $this->call( $fee, 'get_name' ), ENT_NOQUOTES, 'UTF-8' ), 'total:' . $this->decimal_value( $this->call( $fee, 'get_total', 0 ) ), 'tax:' . $this->decimal_value( $this->call( $fee, 'get_total_tax', 0 ) ), 'tax_data:' . json_encode( $tax_data ) ) ); } ); }
+		if ( 'tax' === $type ) { return $this->legacy_collection( $items, ';', function ( $tax ) { return implode( '|', array( 'rate_id:' . $this->call( $tax, 'get_rate_id' ), 'code:' . $this->call( $tax, 'get_rate_code' ), 'total:' . $this->decimal_value( $this->call( $tax, 'get_tax_total', 0 ) ), 'label:' . $this->call( $tax, 'get_label' ), 'tax_rate_compound:' . $this->call( $tax, 'get_compound' ) ) ); } ); }
+		if ( 'shipping' === $type ) { return $this->legacy_collection( $items, ';', function ( $shipping ) { $taxes = $this->item_meta( $shipping, 'taxes', '' ); $taxes = '' === $taxes ? '' : $this->legacy_json( $taxes ); return trim( implode( '|', array( 'items:' . $this->item_meta( $shipping, 'Items', '' ), 'method_id:' . $this->item_meta( $shipping, 'method_id', '' ), 'taxes:' . $taxes ) ) ); } ); }
+		if ( 'coupon' === $type ) { return $this->coupon_value( $order, $items ); }
+		return '';
+	}
+	protected function coupon_value( $order, $items ) {
+		$codes = method_exists( $order, 'get_coupon_codes' ) ? $this->call( $order, 'get_coupon_codes', array() ) : array();
+		if ( ! is_array( $codes ) || empty( $codes ) ) { $codes = $items; }
+		return $this->legacy_collection( $codes, ';', function ( $coupon ) {
+			$code = is_string( $coupon ) ? $coupon : (string) ( $this->call( $coupon, 'get_code', $this->call( $coupon, 'get_name', '' ) ) ); $amount = 0;
+			if ( is_string( $coupon ) && class_exists( 'WC_Coupon' ) ) { $coupon_object = new WC_Coupon( $coupon ); $amount = $this->call( $coupon_object, 'get_amount', 0 ); }
+			elseif ( is_object( $coupon ) && method_exists( $coupon, 'get_data' ) ) { $data = (array) $coupon->get_data(); if ( '' === $code ) { $code = (string) ( $data['code'] ?? ( $data['name'] ?? '' ) ); } $amount = $this->call( $coupon, 'get_amount', 0 ); if ( ! $amount ) { $amount = $data['amount'] ?? ( $data['discount'] ?? 0 ); } }
+			return 'code:' . $code . '|amount:' . $this->decimal_value( $amount );
+		} );
+	}
+	protected function refund_value( $order ) { return $this->legacy_collection( $this->call( $order, 'get_refunds', array() ), ';', function ( $refund ) { $data = is_object( $refund ) && method_exists( $refund, 'get_data' ) ? (array) $refund->get_data() : array(); $amount = $this->call( $refund, 'get_amount', $this->call( $refund, 'get_refund_amount', $data['amount'] ?? 0 ) ); $reason = $this->call( $refund, 'get_reason', $data['reason'] ?? '' ); $date_raw = $this->call( $refund, 'get_date_created', $data['date_created'] ?? null ); $date = is_string( $date_raw ) ? $date_raw : $this->date_value( $date_raw ); return implode( '|', array( 'amount:' . $amount, 'reason:' . $reason, 'date:' . $date ) ); } ); }
+	protected function fee_total( $order ) {
+		$total = 0;
+		foreach ( array_slice( $this->order_collection( $order, 'fee' ), 0, 100 ) as $fee ) { $total += (float) $this->call( $fee, 'get_total', 0 ); }
+		return $total;
+	}
+	protected function fee_tax_total( $order ) {
+		$total = 0;
+		foreach ( array_slice( $this->order_collection( $order, 'fee' ), 0, 100 ) as $fee ) { $total += (float) $this->call( $fee, 'get_total_tax', 0 ); }
+		return $total;
+	}
+	protected function registered_customer_email( $customer_id ) {
+		if ( ! $customer_id || ! function_exists( 'get_userdata' ) ) { return ''; }
+		try { $user = get_userdata( $customer_id ); } catch ( Throwable $e ) { return ''; }
+		return $user && isset( $user->user_email ) ? (string) $user->user_email : '';
+	}
+
+	protected function order_notes_value( $order ) {
+		if ( ! function_exists( 'wc_get_order_notes' ) || ! is_object( $order ) || ! method_exists( $order, 'get_id' ) ) { return ''; }
+		try { $notes = wc_get_order_notes( array( 'order_id' => (int) $order->get_id(), 'order_by' => 'date_created', 'order' => 'ASC' ) ); } catch ( Throwable $e ) { return ''; }
+		if ( ! is_array( $notes ) ) { return ''; }
+		$serialized = array();
+		foreach ( array_slice( $notes, 0, 100 ) as $note ) {
+			if ( ! is_object( $note ) ) { continue; }
+			$content = isset( $note->content ) ? $note->content : $this->call( $note, 'get_content', '' );
+			$date_raw = isset( $note->date_created ) ? $note->date_created : $this->call( $note, 'get_date_created', null );
+			$date = is_string( $date_raw ) ? $date_raw : $this->date_value( $date_raw );
+			$customer_raw = isset( $note->customer_note ) ? $note->customer_note : $this->call( $note, 'is_customer_note', false );
+			$customer = $customer_raw ? '1' : '';
+			$added_by = isset( $note->added_by ) ? $note->added_by : $this->call( $note, 'get_added_by', '' );
+			$flatten = static function ( $value ) { return preg_replace( '/\s+/', ' ', trim( (string) $value ) ); };
+			$serialized[] = 'content:' . $flatten( $content ) . '|date:' . $flatten( $date ) . '|customer:' . $customer . '|added_by:' . $flatten( $added_by );
+		}
+		return implode( '||', $serialized );
+	}
+
+	protected function build_row( $order, $item, $row_mode = 'line_item' ) {
+		$product = $item && method_exists( $item, 'get_product' ) ? $item->get_product() : null;
+		$customer_id = 'order_row' === $row_mode ? $this->call( $order, 'get_user_id', 0 ) : $this->call( $order, 'get_customer_id', 0 );
+		$shipping_phone = $this->call( $order, 'get_shipping_phone', $this->meta( $order, '_shipping_phone' ) );
+		$discount = $this->call( $order, 'get_discount_total', 0 );
+		$byl_discount = $this->call( $order, 'get_total_discount', $discount );
+		$customer_email = 'order_row' === $row_mode ? $this->registered_customer_email( $customer_id ) : $this->call( $order, 'get_billing_email' );
+		$row = array(
+			'order_id' => $this->call( $order, 'get_id', 0 ), 'order_number' => $this->call( $order, 'get_order_number' ), 'order_date' => $this->date_value( $this->call( $order, 'get_date_created', null ) ), 'paid_date' => $this->date_value( $this->call( $order, 'get_date_paid', null ) ), 'status' => $this->call( $order, 'get_status' ),
+			'currency' => $this->call( $order, 'get_currency' ), 'subtotal' => $this->call( $order, 'get_subtotal', 0 ), 'discount' => $discount, 'shipping' => $this->call( $order, 'get_shipping_total', 0 ), 'tax' => $this->call( $order, 'get_total_tax', 0 ), 'total' => $this->call( $order, 'get_total', 0 ),
+			'shipping_total' => $this->call( $order, 'get_shipping_total', 0 ), 'shipping_tax_total' => $this->call( $order, 'get_shipping_tax', 0 ), 'fee_total' => $this->fee_total( $order ), 'fee_tax_total' => $this->fee_tax_total( $order ), 'tax_total' => $this->call( $order, 'get_total_tax', 0 ), 'cart_discount' => $byl_discount, 'order_discount' => $byl_discount, 'discount_total' => $byl_discount, 'order_total' => $this->call( $order, 'get_total', 0 ), 'order_subtotal' => $this->call( $order, 'get_subtotal', 0 ),
+			'order_key' => $this->call( $order, 'get_order_key' ), 'order_currency' => $this->call( $order, 'get_currency' ), 'payment_method' => $this->call( $order, 'get_payment_method' ), 'payment_method_title' => $this->call( $order, 'get_payment_method_title' ), 'transaction_id' => $this->call( $order, 'get_transaction_id' ), 'customer_ip_address' => $this->call( $order, 'get_customer_ip_address' ), 'customer_user_agent' => $this->call( $order, 'get_customer_user_agent' ), 'shipping_method' => $this->call( $order, 'get_shipping_method' ), 'customer_id' => $customer_id, 'customer_user' => $customer_id ? (string) $customer_id : '', 'customer_email' => $customer_email,
+			'billing_first_name' => $this->call( $order, 'get_billing_first_name' ), 'billing_last_name' => $this->call( $order, 'get_billing_last_name' ), 'billing_company' => $this->call( $order, 'get_billing_company' ), 'billing_email' => $this->call( $order, 'get_billing_email' ), 'billing_phone' => $this->call( $order, 'get_billing_phone' ), 'billing_address_1' => $this->call( $order, 'get_billing_address_1' ), 'billing_address_2' => $this->call( $order, 'get_billing_address_2' ), 'billing_postcode' => $this->call( $order, 'get_billing_postcode' ), 'billing_city' => $this->call( $order, 'get_billing_city' ), 'billing_state' => $this->call( $order, 'get_billing_state' ), 'billing_country' => $this->call( $order, 'get_billing_country' ),
+			'shipping_first_name' => $this->call( $order, 'get_shipping_first_name' ), 'shipping_last_name' => $this->call( $order, 'get_shipping_last_name' ), 'shipping_company' => $this->call( $order, 'get_shipping_company' ), 'shipping_phone' => $shipping_phone, 'shipping_address_1' => $this->call( $order, 'get_shipping_address_1' ), 'shipping_address_2' => $this->call( $order, 'get_shipping_address_2' ), 'shipping_postcode' => $this->call( $order, 'get_shipping_postcode' ), 'shipping_city' => $this->call( $order, 'get_shipping_city' ), 'shipping_state' => $this->call( $order, 'get_shipping_state' ), 'shipping_country' => $this->call( $order, 'get_shipping_country' ), 'customer_note' => $this->call( $order, 'get_customer_note' ), 'wt_import_key' => $this->call( $order, 'get_order_number' ),
+			'tax_items' => $this->collection_value( $order, 'tax' ), 'shipping_items' => $this->collection_value( $order, 'shipping' ), 'fee_items' => $this->collection_value( $order, 'fee' ), 'coupon_items' => $this->collection_value( $order, 'coupon' ), 'refund_items' => $this->refund_value( $order ), 'order_notes' => $this->order_notes_value( $order ), 'download_permissions' => $this->call( $order, 'is_download_permitted', false ) ? '1' : '0',
+		);
+		foreach ( array( 'subtotal','discount','shipping','tax','total','shipping_tax_total','fee_total','fee_tax_total','tax_total','cart_discount','order_discount','discount_total','order_total','order_subtotal' ) as $money ) { $row[ $money ] = $this->decimal_value( $row[ $money ] ); }
+		foreach ( array( 'device_type','referrer','session_count','session_entry','session_pages','session_start_time','source_type','user_agent','utm_source' ) as $attribution ) { $row[ 'meta:_wc_order_attribution_' . $attribution ] = $this->meta( $order, '_wc_order_attribution_' . $attribution ); }
+		$row['product_id'] = $item ? $this->call( $item, 'get_product_id', 0 ) : ''; $row['variation_id'] = $item ? $this->call( $item, 'get_variation_id', 0 ) : ''; $row['sku'] = $product ? $this->call( $product, 'get_sku' ) : ''; $row['product_name'] = $item ? $this->call( $item, 'get_name' ) : ''; $row['quantity'] = $item ? $this->call( $item, 'get_quantity', 0 ) : ''; $row['line_subtotal'] = $item ? $this->call( $item, 'get_subtotal', 0 ) : ''; $row['line_total'] = $item ? $this->call( $item, 'get_total', 0 ) : '';
+		return $row;
+	}
+
+	protected function add_dynamic_item_values( &$row, $index, $item ) {
+		$product = $item && method_exists( $item, 'get_product' ) ? $item->get_product() : null; $name = html_entity_decode( (string) $this->call( $item, 'get_name' ), ENT_NOQUOTES, 'UTF-8' ); $id = $this->call( $item, 'get_product_id', 0 ); $sku = $product ? $this->call( $product, 'get_sku' ) : ''; $quantity = $this->call( $item, 'get_quantity', 0 ); $total = $this->call( $item, 'get_total', 0 ); $subtotal = $this->call( $item, 'get_subtotal', 0 );
+		$row[ 'line_item_' . $index ] = implode( '|', array( 'name:' . $name, 'product_id:' . $id, 'sku:' . $sku, 'quantity:' . $quantity, 'total:' . $this->decimal_value( $total ), 'sub_total:' . $this->decimal_value( $subtotal ) ) );
+		$row[ 'line_item_' . $index . '_name' ] = $name; $row[ 'line_item_' . $index . '_product_id' ] = $id; $row[ 'line_item_' . $index . '_sku' ] = $sku; $row[ 'line_item_' . $index . '_quantity' ] = $quantity; $row[ 'line_item_' . $index . '_total' ] = $this->decimal_value( $total ); $row[ 'line_item_' . $index . '_subtotal' ] = $this->decimal_value( $subtotal );
+	}
+
+	protected function csv_cell( $value, $type ) {
+		if ( is_bool( $value ) ) { $value = $value ? '1' : '0'; } if ( ! is_scalar( $value ) && null !== $value ) { $value = ''; } $value = null === $value ? '' : (string) $value; $value = str_replace( "\0", '', $value );
+		if ( 'number' !== $type ) { $probe = ltrim( $value ); if ( '' !== $probe && in_array( $probe[0], array( '=', '+', '-', '@' ), true ) ) { $value = "'" . $value; } } return $value;
+	}
+}
