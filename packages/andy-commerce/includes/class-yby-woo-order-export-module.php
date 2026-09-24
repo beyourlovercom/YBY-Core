@@ -20,7 +20,7 @@ class YBY_Woo_Order_Export_Module {
 				'availability' => array( __CLASS__, 'woocommerce_available' ),
 				'availability_message' => '需要已启用的 WooCommerce。',
 				'boot' => array( __CLASS__, 'boot' ),
-				'settings' => array( 'page' => 'yby-commerce', 'tab' => 'order-export' ),
+				'settings' => array( 'page' => 'andy-commerce', 'tab' => 'order-export' ),
 				'storage' => array( 'option_key' => 'yby_woo_order_export_settings_v1', 'schema_version' => '1' ),
 				'dependencies' => array( 'core_runtime', 'module_registry' ),
 			)
