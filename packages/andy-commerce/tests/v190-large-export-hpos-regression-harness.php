@@ -122,8 +122,8 @@ class V190ScaleAdapter {
 		for ( $i = 1; $i <= $this->count; $i++ ) { yield new V190Order( $i, 'scale' ); }
 	}
 }
-require_once dirname( __DIR__ ) . '/inc/class-yby-woo-order-export-presets.php';
-require_once dirname( __DIR__ ) . '/inc/class-yby-woo-order-csv-streamer.php';
+require_once dirname( __DIR__ ) . '/includes/class-yby-woo-order-export-presets.php';
+require_once dirname( __DIR__ ) . '/includes/class-yby-woo-order-csv-streamer.php';
 $assert = function ( $ok, $message ) { if ( ! $ok ) { fwrite( STDERR, "FAIL: {$message}\n" ); exit( 1 ); } };
 $scenarios = array( 'one','multi_item','variable','coupon','refunded','cancelled','failed','guest','registered','multi_currency','missing_phone','missing_company','international','long_text','emoji' );
 $orders = array(); foreach ( $scenarios as $index => $scenario ) { $orders[] = new V190Order( $index + 1, $scenario ); }
@@ -133,7 +133,7 @@ rewind( $handle ); $csv = stream_get_contents( $handle ); fclose( $handle );
 $assert( 15 === $stats['order_count'] && 15 === $stats['row_count'] && 2 === $adapter->passes, 'scenario matrix count and two-pass streaming' );
 foreach ( array( 'VAR-SKU','coupon-code','refund-test','cancelled','failed','EUR','JPY','東京','😀' ) as $needle ) { $assert( false !== strpos( $csv, $needle ), 'scenario output: ' . $needle ); }
 $assert( false !== strpos( $csv, 'Product Item 2 Name' ), 'multi-item dynamic columns' );
-$source = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-woo-order-query-adapter.php' ) . file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-woo-order-csv-streamer.php' );
+$source = file_get_contents( dirname( __DIR__ ) . '/includes/class-yby-woo-order-query-adapter.php' ) . file_get_contents( dirname( __DIR__ ) . '/includes/class-yby-woo-order-csv-streamer.php' );
 foreach ( array( '$wpdb','wp_posts','wp_postmeta' ) as $forbidden ) { $assert( false === strpos( $source, $forbidden ), 'HPOS/storage abstraction: ' . $forbidden ); }
 $assert( false !== strpos( $source, 'wc_get_orders' ), 'official Woo order API contract' );
 
