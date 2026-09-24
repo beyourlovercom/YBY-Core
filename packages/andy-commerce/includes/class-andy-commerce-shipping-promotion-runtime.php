@@ -10,7 +10,11 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class Andy_Commerce_Shipping_Promotion_Runtime {
 	public static function boot(): void {
-		add_action( 'woocommerce_blocks_loaded', array( self::class, 'register_store_api_endpoint_data' ) );
+		if ( function_exists( 'did_action' ) && did_action( 'woocommerce_blocks_loaded' ) ) {
+			self::register_store_api_endpoint_data();
+		} else {
+			add_action( 'woocommerce_blocks_loaded', array( self::class, 'register_store_api_endpoint_data' ) );
+		}
 		add_filter( 'woocommerce_shipping_free_shipping_is_available', array( self::class, 'filter_free_shipping' ), 10, 3 );
 		add_filter( 'woocommerce_get_shop_coupon_data', array( self::class, 'filter_virtual_coupon' ), 10, 3 );
 		add_filter( 'woocommerce_coupon_get_individual_use', array( self::class, 'force_individual_use' ), 10, 2 );
