@@ -7,6 +7,8 @@
  * Author:            YBY Global
  * Text Domain:       andy-commerce
  * Requires Plugins:  yby-core,woocommerce
+ * Andy Core Addon ID: andy_commerce
+ * Andy Core Min Version: 1.9.0
  *
  * @package Andy_Commerce
  */
