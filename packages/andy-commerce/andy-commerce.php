@@ -21,6 +21,15 @@ define( 'ANDY_COMMERCE_PLUGIN_FILE', __FILE__ );
 define( 'ANDY_COMMERCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ANDY_COMMERCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-presets.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-query-adapter.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-csv-streamer.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-audit.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-controller.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-module.php';
+
+add_action( 'andy_core_register_modules', 'YBY_Woo_Order_Export_Module::register_module', 12 );
+
 function andy_commerce_dependency_status() {
 	$core_loaded = defined( 'YBY_CORE_VERSION' ) && class_exists( 'YBY_Addon_Registry' );
 	$core_compatible = $core_loaded && version_compare( YBY_CORE_VERSION, ANDY_COMMERCE_MIN_CORE_VERSION, '>=' );
