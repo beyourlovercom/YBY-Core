@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-loader.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-helpers.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-registry.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-addon-registry.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-settings-store.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-article-toc-module.php';
@@ -129,6 +130,7 @@ class YBY_Core {
 		$this->loader->add_action( 'andy_core_register_modules', 'YBY_Analytics_Module', 'register_module', 11, 0 );
 		$this->loader->add_action( 'plugins_loaded', 'YBY_Activator', 'sync_capabilities', 1, 0 );
 		$this->loader->add_action( 'plugins_loaded', $database, 'maybe_upgrade', 5, 0 );
+		$this->loader->add_action( 'plugins_loaded', 'YBY_Addon_Registry', 'discover', 15, 0 );
 		$this->loader->add_action( 'plugins_loaded', $module_runtime, 'discover_and_boot', 20, 0 );
 
 		if ( YBY_Module_Registry::is_enabled( 'email_os' ) ) {

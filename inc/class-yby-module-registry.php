@@ -21,6 +21,7 @@ class YBY_Module_Registry {
             'updater' => 'Signed Updater',
             'site_identity' => 'Site Identity',
             'module_registry' => 'Module Registry',
+            'addon_registry' => 'Addon Registry',
         );
     }
 
@@ -126,6 +127,8 @@ class YBY_Module_Registry {
             'default' => $default,
             'status' => isset( $module['status'] ) ? sanitize_key( $module['status'] ) : 'ready',
             'capability' => isset( $module['capability'] ) ? (string) $module['capability'] : '',
+            'availability' => isset( $module['availability'] ) && is_callable( $module['availability'] ) ? $module['availability'] : null,
+            'availability_message' => isset( $module['availability_message'] ) ? (string) $module['availability_message'] : '',
             'admin_parent' => isset( $module['admin_parent'] ) ? sanitize_key( $module['admin_parent'] ) : '',
             'bootstrap_class' => isset( $module['bootstrap_class'] ) ? (string) $module['bootstrap_class'] : '',
             'boot' => isset( $module['boot'] ) && is_callable( $module['boot'] ) ? $module['boot'] : null,
@@ -177,9 +180,21 @@ class YBY_Module_Registry {
         return self::$registered;
     }
 
-    public static function dependencies_met( $id ) {
+    public static function is_available( $id ) {
         $module = self::module( $id );
         if ( empty( $module ) ) { return false; }
+        if ( empty( $module['availability'] ) ) { return true; }
+        try { return (bool) call_user_func( $module['availability'], $module ); } catch ( Throwable $e ) { return false; }
+    }
+
+    public static function availability_message( $id ) {
+        $module = self::module( $id );
+        return isset( $module['availability_message'] ) ? (string) $module['availability_message'] : '';
+    }
+
+    public static function dependencies_met( $id ) {
+        $module = self::module( $id );
+        if ( empty( $module ) || ! self::is_available( $id ) ) { return false; }
         $foundation = array_keys( self::foundation() );
         foreach ( $module['dependencies'] as $dependency ) {
             if ( in_array( $dependency, $foundation, true ) ) { continue; }
@@ -246,7 +261,8 @@ class YBY_Module_Registry {
     }
 
     public static function is_enabled( $id ) {
-        return in_array( sanitize_key( $id ), self::enabled_modules(), true );
+        $id = sanitize_key( $id );
+        return in_array( $id, self::enabled_modules(), true ) && self::is_available( $id );
     }
 
     public static function settings_url( $id ) {
