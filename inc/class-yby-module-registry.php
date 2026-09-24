@@ -21,6 +21,7 @@ class YBY_Module_Registry {
             'updater' => 'Signed Updater',
             'site_identity' => 'Site Identity',
             'module_registry' => 'Module Registry',
+            'addon_registry' => 'Addon Registry',
         );
     }
 

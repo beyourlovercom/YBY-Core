@@ -9,10 +9,10 @@ $assert = static function ( $ok, $message ) {
 };
 
 $root = dirname( __DIR__ );
-$content_admin = file_get_contents( $root . '/admin/class-yby-content-admin.php' );
-$docs_admin = file_get_contents( $root . '/admin/class-yby-docs-os-admin.php' );
-$core_menu = file_get_contents( $root . '/admin/class-yby-project-studio.php' );
-$registry = file_get_contents( $root . '/inc/class-yby-module-registry.php' );
+$content_admin = str_replace( "\r\n", "\n", file_get_contents( $root . '/admin/class-yby-content-admin.php' ) );
+$docs_admin = str_replace( "\r\n", "\n", file_get_contents( $root . '/admin/class-yby-docs-os-admin.php' ) );
+$core_menu = str_replace( "\r\n", "\n", file_get_contents( $root . '/admin/class-yby-project-studio.php' ) );
+$registry = str_replace( "\r\n", "\n", file_get_contents( $root . '/inc/class-yby-module-registry.php' ) );
 
 $assert( false !== strpos( $core_menu, "__( 'Andy Core', 'yby-core' )" ), 'Andy Core top-level display label missing' );
 $assert( false !== strpos( $core_menu, "return 'yby-os';" ), 'Andy Core stable slug changed' );
