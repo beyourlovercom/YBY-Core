@@ -11,6 +11,11 @@ class YBY_Woo_Order_Export_Module { public static function defaults() { return a
 class BylDate { public function date( $format ) { return '2026-09-23 10:00:00'; } }
 class BylProduct { public function get_sku() { return '=BAD-SKU'; } }
 class BylFee { public function get_total() { return 3.25; } public function get_total_tax() { return 0.25; } }
+class BylTax { public function get_rate_id() { return 4; } public function get_rate_code() { return 'VAT-20'; } public function get_tax_total() { return 1.2; } public function get_label() { return 'VAT'; } public function get_compound() { return false; } }
+class BylShipping { public function get_meta( $key, $single = true ) { return array( 'Items' => '1x Standard', 'method_id' => 'flat_rate', 'taxes' => array( '4' => '1.20' ) )[ $key ] ?? ''; } }
+class BylCoupon { public function get_code() { return 'SAVE'; } }
+class WC_Coupon { public function __construct( $code ) {} public function get_amount() { return 7.5; } }
+class BylRefund { public function get_amount() { return 4; } public function get_reason() { return 'Changed mind'; } public function get_date_created() { return new BylDate(); } }
 class BylItem {
     public function get_product() { return new BylProduct(); }
     public function get_product_id() { return 9; }
@@ -55,6 +60,17 @@ class BylAdapter {
     public function __construct( $orders ) { $this->orders = $orders; }
     public function iterate_orders( $filters, $batch = 200 ) { $this->passes++; foreach ( $this->orders as $order ) { yield $order; } }
 }
+class BylRichOrder extends BylOrder {
+    public function get_items( $type = 'line_item' ) {
+        if ( 'fee' === $type ) { return array( new BylFee() ); }
+        if ( 'tax' === $type ) { return array( new BylTax() ); }
+        if ( 'shipping' === $type ) { return array( new BylShipping() ); }
+        if ( 'coupon' === $type ) { return array( new BylCoupon() ); }
+        return parent::get_items( $type );
+    }
+    public function get_coupon_codes() { return array( 'SAVE' ); }
+    public function get_refunds() { return array( new BylRefund() ); }
+}
 require_once dirname( __DIR__ ) . '/inc/class-yby-woo-order-export-presets.php';
 require_once dirname( __DIR__ ) . '/inc/class-yby-woo-order-csv-streamer.php';
 $assert = function ( $ok, $message ) { if ( ! $ok ) { fwrite( STDERR, "FAIL: {$message}\n" ); exit( 1 ); } };
@@ -89,11 +105,12 @@ $header = str_getcsv( $lines[0] );
 $row = str_getcsv( $lines[1] );
 $assert( $stats['order_count'] === 1 && $stats['row_count'] === 1 && $adapter->passes === 2, 'bounded two-pass one-row export' );
 $assert( array_slice( $header, 0, 18 ) === $processing, 'processing CSV base headers exact' );
-$assert( $header[18] === 'line_item_1' && $header[19] === 'Product Item 1 Name' && $header[20] === 'Product Item 1 id' && $header[21] === 'Product Item 1 SKU', 'item 1 dynamic headers' );
-$assert( $header[25] === 'line_item_2' && $header[31] === 'Product Item 2 Subtotal', 'item 2 dynamic headers' );
+$assert( array_slice( $header, 18 ) === array( 'line_item_1','line_item_2','Product Item 1 Name','Product Item 1 id','Product Item 1 SKU','Product Item 1 Quantity','Product Item 1 Total','Product Item 1 Subtotal','Product Item 2 Name','Product Item 2 id','Product Item 2 SKU','Product Item 2 Quantity','Product Item 2 Total','Product Item 2 Subtotal' ), 'legacy dynamic header order' );
 $joined = implode( ',', $row );
 $assert( false !== strpos( $joined, "'=ORDER" ) && false !== strpos( $joined, "'+BAD-NAME & FRIEND" ) && false !== strpos( $joined, "'=BAD-SKU" ), 'formula injection protection and HTML entity decode' );
 $assert( in_array( 'registered@example.com', $row, true ), 'BYL customer_email preserves registered-user semantics' );
+$row_map = array_combine( $header, $row );
+$assert( 'name:+BAD-NAME & FRIEND|product_id:9|sku:=BAD-SKU|quantity:2|total:18.00|sub_total:20.00' === $row_map['line_item_1'], 'legacy line item serialization and decimals' );
 
 $empty_adapter = new BylAdapter( array( new BylOrder( array() ) ) );
 $h = fopen( 'php://temp', 'w+' );
@@ -108,9 +125,21 @@ $full_map = array_combine( $full_header, $full_row );
 $assert( '77' === (string) $full_map['customer_id'] && '77' === $full_map['customer_user'], 'registered customer id semantics' );
 $assert( 'registered@example.com' === $full_map['customer_email'], 'registered customer email semantics' );
 $assert( '3.25' === $full_map['fee_total'] && '0.25' === $full_map['fee_tax_total'], 'fee totals use fee items' );
+$assert( '' === $full_map['tax_items'] && '' === $full_map['shipping_items'] && '' === $full_map['coupon_items'] && '' === $full_map['refund_items'], 'empty legacy collections are blank' );
 $assert( "'=ORDER" === $full_map['wt_import_key'], 'wt_import_key preserves formula-safe order number' );
 $assert( false !== strpos( $full_map['order_notes'], 'content:Packed now|date:2026-09-23 11:00:00|customer:1|added_by:operator' ), 'legacy note serialization' );
 $assert( 'newsletter' === $full_map['meta:_wc_order_attribution_utm_source'], 'attribution meta value' );
+
+$rich_adapter = new BylAdapter( array( new BylRichOrder( array( new BylItem() ) ) ) );
+$h = fopen( 'php://temp', 'w+' );
+( new YBY_Woo_Order_CSV_Streamer() )->stream( $h, 'byl_full_order_report', array(), array( 'batch_size' => 200, 'bom' => false ), $rich_adapter );
+rewind( $h ); $rich_lines = array_values( array_filter( explode( "\n", trim( stream_get_contents( $h ) ) ) ) ); fclose( $h );
+$rich_map = array_combine( str_getcsv( $rich_lines[0] ), str_getcsv( $rich_lines[1] ) );
+$assert( 'items:1x Standard|method_id:flat_rate|taxes:{"4":"1.20"}' === $rich_map['shipping_items'], 'legacy shipping serialization' );
+$assert( 'name:|total:3.25|tax:0.25|tax_data:null' === $rich_map['fee_items'], 'legacy fee serialization' );
+$assert( 'rate_id:4|code:VAT-20|total:1.20|label:VAT|tax_rate_compound:' === $rich_map['tax_items'], 'legacy tax serialization' );
+$assert( 'code:SAVE|amount:7.50' === $rich_map['coupon_items'], 'legacy coupon amount semantics' );
+$assert( 'amount:4|reason:Changed mind|date:2026-09-23 10:00:00' === $rich_map['refund_items'], 'legacy refund serialization' );
 
 $source = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-woo-order-csv-streamer.php' ) . file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-woo-order-export-presets.php' );
 foreach ( array( 'update_post_meta', 'update_meta_data', '->save(', 'set_status', 'wf_order_exported_status' ) as $forbidden ) {
