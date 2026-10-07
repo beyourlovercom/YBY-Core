@@ -39,4 +39,9 @@ $source = file_get_contents( dirname( __DIR__ ) . '/andy-commerce.php' );
 $assert( false !== strpos( $source, 'Requires Plugins:  yby-core,woocommerce' ), 'WordPress dependency metadata missing' );
 $assert( false !== strpos( $source, "add_action( 'plugins_loaded', 'andy_commerce_bootstrap', 30 )" ), 'safe deferred bootstrap missing' );
 
+$overview = file_get_contents( dirname( __DIR__ ) . '/admin/views/overview.php' );
+$assert( false !== strpos( $overview, "'tab' => 'checkout-shipping'" ), 'Overview navigation must expose Checkout / Shipping' );
+$assert( false !== strpos( $overview, '<th>Checkout / Shipping</th>' ), 'Overview runtime status must include Checkout / Shipping' );
+$assert( false === strpos( $overview, 'migration remains a later ACV1 stage' ), 'Overview must not claim completed Checkout / Shipping migration is pending' );
+
 echo "PASS andy-commerce-foundation-harness\n";
