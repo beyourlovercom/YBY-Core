@@ -4,14 +4,25 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `1.8.1`
+- Product version: `1.9.0`
 - Development version: None
 - Database version: `1.5.0`
 - Updater compatibility database version: `1.4.0`
-- Release status: Analytics / GTM Control Layer V1 Release Candidate
-- Development status: Feature merged; Dev + Owner UAT PASS; release closure in progress; Production deploy deferred
+- Release status: Addon Foundation V1 Release Candidate
+- Development status: Addon Framework + Andy Commerce integration merged; Dev is the primary integration/UAT environment; Production deploy deferred
 - Plugin path: `yby-core/yby-core.php`
 - Technical namespace: existing `YBY_*` and `yby_*` identifiers retained for compatibility
+
+## v1.9.0 release scope
+
+- Added the generic Andy Core Addon Registry and andy_core_register_addons extension contract.
+- Added installed/inactive Addon discovery through Andy Core Addon ID and Andy Core Min Version plugin headers.
+- Added generic Core-version and dependency readiness reporting without moving Addon business runtime into Andy Core.
+- Added the read-only Addons administration surface and Addon status projection in System Status.
+- Preserved Core-only operation for B2B sites that do not install any Commerce Addon.
+- Andy Commerce is a separate approved Addon and is intentionally excluded from the Andy Core release package.
+- Runtime database version remains 1.5.0 and updater compatibility database version remains 1.4.0; no database migration is required.
+- Dev is the primary integration and Owner UAT environment for the new BYL Website; www.beyourlover.com remains unchanged until the separate Final Cutover Gate.
 
 ## v1.8.1 release scope
 
