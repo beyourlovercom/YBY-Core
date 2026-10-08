@@ -8,7 +8,7 @@ Requirement
 -> Planning
 -> Feature Branch
 -> Development
--> Local Validation
+-> Site-appropriate validation (Local-first where applicable; Dev-first for BYL V3)
 -> Code Review
 -> Merge
 -> Release Preparation
@@ -157,32 +157,16 @@ Examples:
 - `refactor: simplify config loader`
 - `release: publish YBY Core v1.1.2`
 
-## Testing requirements
+## Risk-based validation (Governance V2)
 
-Before merge:
+Before merge, test what the change can break. Do not omit tests merely to save tokens; do not mandate a costly whole-repo scan for every documentation or isolated UI task.
 
-### PHP changes require
-
-- PHP Syntax Check
-- Run:
-
-```bash
-find . -name "*.php" -print0 | xargs -0 -n1 php -l
-```
-
-- Required: every file returns `No syntax errors detected`
-
-### Frontend changes require
-
-- Browser testing
-- Console error check
-- Feature verification
-
-### Admin changes require
-
-- WordPress activation test
-- Settings save test
-- Permission test
+- PHP source changes: syntax-check changed PHP files and run affected unit/integration regression; use whole-repository lint for broader refactors or release gates.
+- Frontend changes: inspect actual rendered UI on the target site's development/UAT environment and test behavior, browser console and responsive states.
+- Admin changes: test applicable activation, configuration save and capability/permission checks.
+- Payments, shipping policy, security, order state or data migrations: use dedicated negative tests, real environment compatibility evidence, safety gates and rollback.
+- The **target site** determines the validation environment: BYL V3 Dev-first; YBY Bottle/Irrigation Local-first unless those projects approve a different policy.
+- Required checks and branch protections are never bypassed. Absent CI or failed tests are not PASS. Owner visual/UAT acceptance stays mandatory when applicable.
 
 ## Pull request standard
 
