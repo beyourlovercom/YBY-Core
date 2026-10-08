@@ -16,11 +16,20 @@ final class Andy_Commerce_Shipping_Promotion_Runtime {
 			add_action( 'woocommerce_blocks_loaded', array( self::class, 'register_store_api_endpoint_data' ) );
 		}
 		add_filter( 'woocommerce_shipping_free_shipping_is_available', array( self::class, 'filter_free_shipping' ), 10, 3 );
-		add_filter( 'woocommerce_shipping_chosen_method', array( self::class, 'prefer_available_free_shipping' ), 20, 3 );
+		self::boot_default_shipping_preference();
 		add_filter( 'woocommerce_get_shop_coupon_data', array( self::class, 'filter_virtual_coupon' ), 10, 3 );
 		add_filter( 'woocommerce_coupon_get_individual_use', array( self::class, 'force_individual_use' ), 10, 2 );
 		add_filter( 'woocommerce_apply_with_individual_use_coupon', array( self::class, 'allow_store_api_individual_use_coupon' ), 10, 4 );
 		add_action( 'woocommerce_cart_loaded_from_session', array( self::class, 'normalize_stale_coupons' ), 20, 1 );
+	}
+
+	/**
+	 * Compatibility bridge for an active legacy BYL Shipping Promotion runtime.
+	 * Registers only the default-selection preference, never availability,
+	 * coupon mutation, session normalization, or Store API callbacks.
+	 */
+	public static function boot_default_shipping_preference(): void {
+		add_filter( 'woocommerce_shipping_chosen_method', array( self::class, 'prefer_available_free_shipping' ), 20, 3 );
 	}
 
 	public static function register_store_api_endpoint_data(): void {
