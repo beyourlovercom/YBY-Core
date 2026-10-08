@@ -50,6 +50,12 @@ jobs:
           set -euo pipefail
           for file in tests/*-harness.php; do php "$file"; done
 
+      - name: Andy Commerce regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in packages/andy-commerce/tests/*-harness.php; do php "$file"; done
+
       - name: JavaScript harnesses
         shell: bash
         run: |

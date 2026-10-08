@@ -16,10 +16,20 @@ final class Andy_Commerce_Shipping_Promotion_Runtime {
 			add_action( 'woocommerce_blocks_loaded', array( self::class, 'register_store_api_endpoint_data' ) );
 		}
 		add_filter( 'woocommerce_shipping_free_shipping_is_available', array( self::class, 'filter_free_shipping' ), 10, 3 );
+		self::boot_default_shipping_preference();
 		add_filter( 'woocommerce_get_shop_coupon_data', array( self::class, 'filter_virtual_coupon' ), 10, 3 );
 		add_filter( 'woocommerce_coupon_get_individual_use', array( self::class, 'force_individual_use' ), 10, 2 );
 		add_filter( 'woocommerce_apply_with_individual_use_coupon', array( self::class, 'allow_store_api_individual_use_coupon' ), 10, 4 );
 		add_action( 'woocommerce_cart_loaded_from_session', array( self::class, 'normalize_stale_coupons' ), 20, 1 );
+	}
+
+	/**
+	 * Compatibility bridge for an active legacy BYL Shipping Promotion runtime.
+	 * Registers only the default-selection preference, never availability,
+	 * coupon mutation, session normalization, or Store API callbacks.
+	 */
+	public static function boot_default_shipping_preference(): void {
+		add_filter( 'woocommerce_shipping_chosen_method', array( self::class, 'prefer_available_free_shipping' ), 20, 3 );
 	}
 
 	public static function register_store_api_endpoint_data(): void {
@@ -113,6 +123,32 @@ final class Andy_Commerce_Shipping_Promotion_Runtime {
 			if ( Andy_Commerce_Shipping_Promotion_Policy::normalize_code( (string) $code ) === $policy_code ) { return true; }
 		}
 		return false;
+	}
+
+	/**
+	 * Prefer an actually available free-shipping rate when WooCommerce chooses
+	 * a new default (first cart load, zone/rates transition, or invalid method).
+	 *
+	 * Woo only calls this filter while selecting a DEFAULT shipping method.
+	 * An existing valid customer choice remains untouched on ordinary refreshes.
+	 * Do not alter Woo rates, zone thresholds, or the customer's manual choice.
+	 */
+	public static function prefer_available_free_shipping($default, $rates, $previous_choice) {
+		if ( ! Andy_Commerce_Shipping_Promotion_Policy::is_runtime_active() || ! is_array( $rates ) ) { return $default; }
+		// Preserve an intentionally selected local-pickup option if still available.
+		if ( is_string( $previous_choice ) && isset( $rates[ $previous_choice ] ) &&
+			( 'local_pickup' === $previous_choice || 0 === strpos( $previous_choice, 'local_pickup:' ) ) ) {
+			return $default;
+		}
+		foreach ( $rates as $key => $rate ) {
+			if ( ! is_object( $rate ) || ! method_exists( $rate, 'get_method_id' ) ||
+				'free_shipping' !== $rate->get_method_id() || ! method_exists( $rate, 'get_cost' ) ) {
+				continue;
+			}
+			// Only prefer a true zero-cost Woo free_shipping method.
+			if ( 0.0 === (float) $rate->get_cost() ) { return (string) $key; }
+		}
+		return $default;
 	}
 
 	public static function filter_virtual_coupon($coupon_data, $code, $coupon) {

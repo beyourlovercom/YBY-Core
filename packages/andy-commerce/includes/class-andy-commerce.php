@@ -14,6 +14,10 @@ class Andy_Commerce {
 		Andy_Commerce_Shipping_Promotion_Policy::boot();
 		if ( ! class_exists( 'BYL_Shipping_Promotion_Runtime' ) ) {
 			Andy_Commerce_Shipping_Promotion_Runtime::boot();
+		} else {
+			// Keep legacy shipping eligibility/coupon hooks as sole authority
+			// until separately approved retirement; register only a default choice.
+			Andy_Commerce_Shipping_Promotion_Runtime::boot_default_shipping_preference();
 		}
 		if ( is_admin() ) {
 			$admin = new Andy_Commerce_Admin();
