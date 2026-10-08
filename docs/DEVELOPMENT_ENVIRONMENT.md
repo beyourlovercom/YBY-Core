@@ -1,114 +1,29 @@
-# YBY Core Development Environment
+# YBY Core — Site-Specific Development Environments (V2)
 
 ## Purpose
+Andy Core is shared by several websites. **Source authority is always GitHub**, but runtime integration/UAT differs by site. This document supersedes the previous claim that every site must be Local-first.
 
-Define local environment configuration rules for YBY Core development.
+## Environment matrix
 
-## Mandatory Local-First Flow
+| Consumer site | Development/integration and Owner UAT | Optional/earlier verification | Production |
+| --- | --- | --- | --- |
+| **BYL Website V3** | **`https://dev.beyourlover.com` (Dev-first)** | `https://localdev.beyourlover.com` for isolation/high-risk experiments | Existing `www.beyourlover.com` untouched; eventual full Dev-to-WWW cutover needs Owner authorization |
+| YBY Bottle | Established Windows Local-first process | `D:\ai\devybybottle` → `https://localdev.ybybottle.com` | Separate explicit release gate |
+| YBY Irrigation | Established Windows Local-first process | `D:\ai\devybyirrigation` → `https://localdev.ybyirrigation.com` | Separate explicit release gate |
 
-The mandatory development and delivery flow is:
+For shared Core changes run scoped unit/compatibility checks before site integration. A successful Local test in Bottle does not constitute BYL Dev Owner UAT PASS; BYL Dev-first also does not revoke Local-first on the other sites.
 
-1. GitHub/GPT analysis and task definition.
-2. Windows Local Codex implementation.
-3. Local test/UAT.
-4. Dev environment-specific UAT, only after Local test/UAT passes.
-5. WWW production deployment, only after Dev UAT passes and with separate authorization.
+## Canonical source and local sync
+- Repo: `beyourlovercom/YBY-Core` (`main`), Windows checkout `D:\ai\_repos\YBY-Core`.
+- Never edit the installed plugin runtime copy as source; use a Git branch/worktree and deploy reproducible package/files.
+- For the **Bottle LocalWP** runtime:
+  `powershell -ExecutionPolicy Bypass -File D:\ai\_system\sync-yby-core-local.ps1`
+- Local runtime destination: `D:\ai\devybybottle\app\public\wp-content\plugins\yby-core`.
+- After `YBY_CORE_LOCAL_SYNC=PASS`, run local browser/UAT checks as relevant to that work package.
+- For BYL, use the BYL Website V3 `AGENTS.md` and Dev integration gate instead of treating the Bottle-specific sync as a prerequisite.
 
-Dev and WWW must not be used as the default development environment.
+## Secrets and access
+Never store or publish real credentials in Git, docs, source, screenshots or logs. Local-only WordPress REST credentials may live in a protected local `.env.ybyirrigation.local` containing `WP_URL`, `WP_USER`, `WP_APP_PASSWORD`. Load them only for relevant authorized Irrigation integration tests; never print them or copy them into BYL/Dev/Production.
 
-## Canonical Local Development Baseline
-
-- Canonical GitHub repository: `beyourlovercom/YBY-Core` on `main`
-- Canonical Windows local Git checkout: `D:\ai\_repos\YBY-Core`
-- Local Bottle site: `D:\ai\devybybottle` -> `https://localdev.ybybottle.com`
-- Local Irrigation site: `D:\ai\devybyirrigation` -> `https://localdev.ybyirrigation.com`
-
-After source changes, sync the canonical checkout to the local WordPress runtime with:
-
-`powershell -ExecutionPolicy Bypass -File D:\ai\_system\sync-yby-core-local.ps1`
-
-The runtime target is:
-
-`D:\ai\devybybottle\app\public\wp-content\plugins\yby-core`
-
-Run local browser or UAT checks only after the sync returns `YBY_CORE_LOCAL_SYNC=PASS`.
-
-## Environment Deployment Targets
-
-- Dev validation: `dev.ybyirrigation.com`
-- Production: `ybyirrigation.com`
-
-Dev is for environment-specific validation after Local PASS, consistent with `AGENTS.md`; it is not the default development environment.
-
-## Credentials
-
-Credentials must never be stored in:
-
-- Git repository
-- README
-- Documentation
-- Source code
-
-Credentials are stored in:
-
-- `.env.ybyirrigation.local`
-
-## Required Variables
-
-`WP_URL`
-
-WordPress site URL.
-
-`WP_USER`
-
-WordPress API username.
-
-`WP_APP_PASSWORD`
-
-WordPress Application Password.
-
-## WordPress Connection
-
-Use:
-
-- WordPress REST API
-
-Authentication:
-
-- Application Password
-
-Example:
-
-GET:
-
-- `/wp-json/wp/v2/users/me`
-
-Expected:
-
-- Authenticated user response.
-
-## Codex Usage
-
-Before running WordPress integration tests:
-
-Load:
-
-- `.env.ybyirrigation.local`
-
-Required:
-
-- `WP_URL` exists
-- `WP_USER` exists
-- `WP_APP_PASSWORD` exists
-
-## Security Rules
-
-Never:
-
-- Commit `.env` files
-- Share Application Password publicly
-- Put credentials into code
-
-If credentials are exposed:
-
-- Immediately revoke the Application Password.
+## Production and rollback
+Every site requires its own explicit production release authorization. BYL will complete a separate whole-site cutover, not deploy each new Andy Core/Commerce feature individually onto the legacy WWW. Preserve exact SHA, dependency compatibility, backup and read-only smoke evidence.
