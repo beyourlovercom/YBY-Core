@@ -51,9 +51,22 @@ Andy_Commerce_Shipping_Promotion_Runtime::register_store_api_endpoint_data();
 $assert(($GLOBALS['endpoint_data']['namespace'] ?? '') === 'byl-shipping-promotion', 'BYL theme-compatible namespace');
 $assert(is_callable($GLOBALS['endpoint_data']['data_callback']), 'Store API callback stays callable');
 
+// A Commerce option already exists on the actual Dev site but has a
+// different global threshold. Preserve the current BYL Platform $49 behavior.
+$GLOBALS['options'][$key] = array_replace($legacy, array('global_threshold' => 69.0));
+$assert(Andy_Commerce_Shipping_Promotion_Policy::settings_source() === 'byl-platform-legacy', 'existing legacy config wins over divergent Commerce option');
+$assert(Andy_Commerce_Shipping_Promotion_Policy::get_persisted_zone_effective_threshold(0) === 49.0, 'no $49->$69 shipping regression');
+$assert($GLOBALS['writes'] === array(), 'conflicting settings comparison is read only');
+$GLOBALS['options'][Andy_Commerce_Shipping_Promotion_Policy::BYL_HANDOFF_OPTION] = 'commerce';
+$assert(Andy_Commerce_Shipping_Promotion_Policy::settings_source() === 'andy-commerce', 'explicit handoff changes owner');
+$assert(Andy_Commerce_Shipping_Promotion_Policy::get_persisted_zone_effective_threshold(0) === 69.0, 'handoff uses separately configured Commerce value');
+unset($GLOBALS['options'][Andy_Commerce_Shipping_Promotion_Policy::BYL_HANDOFF_OPTION]);
+
 $GLOBALS['options'][$key] = array('schema_version' => 9);
-$assert(!Andy_Commerce_Shipping_Promotion_Policy::is_runtime_active(), 'invalid Commerce option must fail closed');
-$assert(Andy_Commerce_Shipping_Promotion_Policy::get_persisted_settings() === null, 'no legacy fallback on invalid new option');
+$assert(Andy_Commerce_Shipping_Promotion_Policy::is_runtime_active(), 'valid legacy remains effective until handoff');
+$GLOBALS['options'][Andy_Commerce_Shipping_Promotion_Policy::BYL_HANDOFF_OPTION] = 'commerce';
+$assert(Andy_Commerce_Shipping_Promotion_Policy::get_persisted_settings() === null, 'invalid Commerce option fails closed after explicit handoff');
+unset($GLOBALS['options'][Andy_Commerce_Shipping_Promotion_Policy::BYL_HANDOFF_OPTION]);
 unset($GLOBALS['options'][$key]);
 $assert(Andy_Commerce_Shipping_Promotion_Policy::maybe_migrate_legacy_settings(), 'explicit legacy config migration works');
 $assert($GLOBALS['options'][$key]['mode'] === 'require_code', 'mode kept');

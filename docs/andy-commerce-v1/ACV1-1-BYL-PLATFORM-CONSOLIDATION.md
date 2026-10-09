@@ -49,3 +49,17 @@ ledger. Dev Safety MU plugin stays installed and G2 test gate stays closed.
 `php packages/andy-commerce/tests/shipping-promotion-migration-harness.php`
 `php packages/andy-commerce/tests/shipping-legacy-coexistence-harness.php`
 `php packages/andy-commerce/tests/shipping-default-selection-harness.php`
+
+## Dev runtime conflict discovered before deployment (2026-10-09)
+Read-only Dev verification found legacy BYL Platform global threshold $49, while
+an already-persisted Andy Commerce option has $69. Changing hook authority
+without reconciling this would silently change shipping rates. To prevent this,
+BYL's validated legacy option remains authoritative **even if Commerce
+settings exist** until an explicitly authorized handoff marker
+`andy_commerce_byl_promotion_handoff_v1=commerce` is written after verifying
+the copied policy values. The Commerce admin page is read-only during the
+transition. **This PR never writes the marker or business configuration.**
+Neither auto-import nor admin bootstrap mutates that setting. After Owner UAT,
+the approved cutover may update Commerce settings to match active BYL settings,
+validate parity and record the handoff marker (separate gated configuration
+write, backed up and reversible). No secret/payment/order data involved.

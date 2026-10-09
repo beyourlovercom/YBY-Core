@@ -9,13 +9,14 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class Andy_Commerce_Shipping_Promotion_Policy {
 	public const OPTION_NAME = 'andy_commerce_shipping_promotion_settings_v1';
+	public const BYL_HANDOFF_OPTION = 'andy_commerce_byl_promotion_handoff_v1';
 	public const SETTINGS_GROUP = 'andy_commerce_checkout_shipping';
 	public const SCHEMA_VERSION = 1;
 	public const ELIGIBILITY_BASIS = 'pre_discount_merchandise_subtotal';
 
 	public static function boot(): void {
 		add_action( 'admin_init', array( self::class, 'register_settings' ) );
-		add_action( 'admin_init', array( self::class, 'maybe_migrate_legacy_settings' ), 5 );
+		// No implicit option write: handoff requires a separately approved Dev gate.
 	}
 
 	public static function preset(): array { return Andy_Commerce_Site_Preset::current(); }
@@ -79,6 +80,23 @@ final class Andy_Commerce_Shipping_Promotion_Policy {
 		return is_array( $legacy ) && self::legacy_settings_valid( $legacy ) ? $legacy : null;
 	}
 
+	/**
+	 * An existing BYL Platform option remains the effective policy until a
+	 * separately authorized, explicit Commerce ownership handoff.
+	 * This is essential if old and new options differ (e.g. $49 vs $69).
+	 */
+	public static function settings_source(): string {
+		$preset = self::preset();
+		if ( 'byl' === ( $preset['id'] ?? '' )
+			&& 'commerce' !== get_option( self::BYL_HANDOFF_OPTION, '' )
+			&& null !== self::legacy_persisted_settings() ) {
+			return 'byl-platform-legacy';
+		}
+		$saved = get_option( self::OPTION_NAME, null );
+		return is_array( $saved ) && self::legacy_settings_valid( $saved )
+			? 'andy-commerce' : 'none';
+	}
+
 	public static function get_settings(): array {
 		$saved = self::get_persisted_settings();
 		return is_array( $saved ) ? self::sanitize_settings( $saved ) : self::defaults( true );
@@ -91,9 +109,11 @@ final class Andy_Commerce_Shipping_Promotion_Policy {
 	public static function is_runtime_active(): bool { return self::has_persisted_settings(); }
 
 	public static function get_persisted_settings(): ?array {
-		$saved = get_option( self::OPTION_NAME, null );
-		// Never fall back when a Commerce config exists but is invalid. Fail closed.
-		if ( null === $saved ) { $saved = self::legacy_persisted_settings(); }
+		$source = self::settings_source();
+		if ( 'none' === $source ) { return null; }
+		$saved = 'byl-platform-legacy' === $source
+			? self::legacy_persisted_settings()
+			: get_option( self::OPTION_NAME, null );
 		if ( ! is_array( $saved ) || ! self::legacy_settings_valid( $saved ) ) { return null; }
 		$saved['free_shipping_code'] = self::normalize_code( $saved['free_shipping_code'] );
 		return $saved;
