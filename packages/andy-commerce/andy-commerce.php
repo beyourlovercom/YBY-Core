@@ -3,7 +3,7 @@
  * Plugin Name:       Andy Commerce
  * Plugin URI:        https://ybyglobal.com/
  * Description:       Reusable B2C / WooCommerce Addon for Andy Core.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Author:            YBY Global
  * Text Domain:       andy-commerce
  * Requires Plugins:  yby-core,woocommerce
@@ -15,7 +15,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'ANDY_COMMERCE_VERSION', '1.0.0' );
+define( 'ANDY_COMMERCE_VERSION', '1.0.1' );
 define( 'ANDY_COMMERCE_MIN_CORE_VERSION', '1.9.0' );
 define( 'ANDY_COMMERCE_PLUGIN_FILE', __FILE__ );
 define( 'ANDY_COMMERCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -28,6 +28,23 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-aud
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-controller.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-module.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-site-preset.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-v3-migration-runner.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-v3-cli-migrate.php';
+/** Register after all active plugins load, to avoid duplicate BYL legacy CLI commands. */
+function andy_commerce_register_migration_cli(): void {
+    if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) { return; }
+    $existing = method_exists( 'WP_CLI', 'has_command' )
+        && WP_CLI::has_command( 'byl migrate' );
+    if ( ! class_exists( 'BYL_CLI_Migrate_Command' ) && ! $existing ) {
+        WP_CLI::add_command( 'byl migrate', 'Andy_Commerce_V3_CLI_Migrate_Command' );
+    }
+    if ( ! method_exists( 'WP_CLI', 'has_command' )
+        || ! WP_CLI::has_command( 'andy-commerce migrate' ) ) {
+        WP_CLI::add_command( 'andy-commerce migrate', 'Andy_Commerce_V3_CLI_Migrate_Command' );
+    }
+}
+add_action( 'plugins_loaded', 'andy_commerce_register_migration_cli', 35 );
+
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-promotion-policy.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-promotion-runtime.php';
 

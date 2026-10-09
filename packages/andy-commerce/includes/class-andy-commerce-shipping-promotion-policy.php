@@ -9,13 +9,14 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class Andy_Commerce_Shipping_Promotion_Policy {
 	public const OPTION_NAME = 'andy_commerce_shipping_promotion_settings_v1';
+	public const BYL_HANDOFF_OPTION = 'andy_commerce_byl_promotion_handoff_v1';
 	public const SETTINGS_GROUP = 'andy_commerce_checkout_shipping';
 	public const SCHEMA_VERSION = 1;
 	public const ELIGIBILITY_BASIS = 'pre_discount_merchandise_subtotal';
 
 	public static function boot(): void {
 		add_action( 'admin_init', array( self::class, 'register_settings' ) );
-		add_action( 'admin_init', array( self::class, 'maybe_migrate_legacy_settings' ), 5 );
+		// No implicit option write: handoff requires a separately approved Dev gate.
 	}
 
 	public static function preset(): array { return Andy_Commerce_Site_Preset::current(); }
@@ -41,7 +42,8 @@ final class Andy_Commerce_Shipping_Promotion_Policy {
 	}
 
 	public static function maybe_migrate_legacy_settings(): bool {
-		if ( is_array( get_option( self::OPTION_NAME, null ) ) ) { return false; }
+		// A present (even invalid) Commerce value is authoritative: never overwrite it.
+		if ( null !== get_option( self::OPTION_NAME, null ) ) { return false; }
 		$preset = self::preset();
 		$legacy_option = (string) ( $preset['legacy_option_name'] ?? '' );
 		if ( '' === $legacy_option ) { return false; }
@@ -66,27 +68,55 @@ final class Andy_Commerce_Shipping_Promotion_Policy {
 		return true;
 	}
 
-	public static function get_settings(): array {
-		$saved = get_option( self::OPTION_NAME, null );
-		$settings = self::defaults( true );
-		if ( is_array( $saved ) ) {
-			$settings = self::sanitize_settings( $saved );
+	/**
+	 * Read the validated BYL Platform option without writing WordPress options.
+	 * This keeps the existing checkout live before an explicit config migration.
+	 */
+	private static function legacy_persisted_settings(): ?array {
+		$preset = self::preset();
+		$key = (string) ( $preset['legacy_option_name'] ?? '' );
+		if ( '' === $key ) { return null; }
+		$legacy = get_option( $key, null );
+		return is_array( $legacy ) && self::legacy_settings_valid( $legacy ) ? $legacy : null;
+	}
+
+	/**
+	 * An existing BYL Platform option remains the effective policy until a
+	 * separately authorized, explicit Commerce ownership handoff.
+	 * This is essential if old and new options differ (e.g. $49 vs $69).
+	 */
+	public static function settings_source(): string {
+		$preset = self::preset();
+		if ( 'byl' === ( $preset['id'] ?? '' )
+			&& 'commerce' !== get_option( self::BYL_HANDOFF_OPTION, '' )
+			&& null !== self::legacy_persisted_settings() ) {
+			return 'byl-platform-legacy';
 		}
-		return $settings;
+		$saved = get_option( self::OPTION_NAME, null );
+		return is_array( $saved ) && self::legacy_settings_valid( $saved )
+			? 'andy-commerce' : 'none';
+	}
+
+	public static function get_settings(): array {
+		$saved = self::get_persisted_settings();
+		return is_array( $saved ) ? self::sanitize_settings( $saved ) : self::defaults( true );
 	}
 
 	public static function has_persisted_settings(): bool {
-		$saved = get_option( self::OPTION_NAME, null );
-		return is_array( $saved ) && self::legacy_settings_valid( $saved );
+		return null !== self::get_persisted_settings();
 	}
 
 	public static function is_runtime_active(): bool { return self::has_persisted_settings(); }
 
 	public static function get_persisted_settings(): ?array {
-		if ( ! self::has_persisted_settings() ) { return null; }
-		$settings = get_option( self::OPTION_NAME, null );
-		$settings['free_shipping_code'] = self::normalize_code( $settings['free_shipping_code'] );
-		return $settings;
+		$source = self::settings_source();
+		if ( 'none' === $source ) { return null; }
+		$saved = 'byl-platform-legacy' === $source
+			? self::legacy_persisted_settings()
+			: get_option( self::OPTION_NAME, null );
+		if ( ! is_array( $saved ) || ! self::legacy_settings_valid( $saved ) ) { return null; }
+		$saved['free_shipping_code'] = self::normalize_code( $saved['free_shipping_code'] );
+		return $saved;
 	}
 
 	public static function normalize_code(string $code): string {

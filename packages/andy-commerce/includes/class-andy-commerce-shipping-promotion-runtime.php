@@ -34,9 +34,12 @@ final class Andy_Commerce_Shipping_Promotion_Runtime {
 
 	public static function register_store_api_endpoint_data(): void {
 		if ( ! function_exists( 'woocommerce_store_api_register_endpoint_data' ) || ! class_exists( 'Automattic\WooCommerce\StoreApi\Schemas\V1\CartSchema' ) ) { return; }
+		// Preserve the BYL V3 Cart/Checkout Store API extension contract on cutover.
+		$preset = Andy_Commerce_Site_Preset::current();
+		$namespace = ( $preset['id'] ?? '' ) === 'byl' ? 'byl-shipping-promotion' : 'andy-commerce-shipping-promotion';
 		woocommerce_store_api_register_endpoint_data( array(
 			'endpoint' => 'cart',
-			'namespace' => 'andy-commerce-shipping-promotion',
+			'namespace' => $namespace,
 			'data_callback' => array( self::class, 'get_cart_presentation_state' ),
 			'schema_callback' => array( self::class, 'get_cart_presentation_schema' ),
 		) );
