@@ -3,7 +3,7 @@
  * Plugin Name:       Andy Commerce
  * Plugin URI:        https://ybyglobal.com/
  * Description:       Reusable B2C / WooCommerce Addon for Andy Core.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Author:            YBY Global
  * Text Domain:       andy-commerce
  * Requires Plugins:  yby-core,woocommerce
@@ -15,7 +15,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'ANDY_COMMERCE_VERSION', '1.0.0' );
+define( 'ANDY_COMMERCE_VERSION', '1.0.1' );
 define( 'ANDY_COMMERCE_MIN_CORE_VERSION', '1.9.0' );
 define( 'ANDY_COMMERCE_PLUGIN_FILE', __FILE__ );
 define( 'ANDY_COMMERCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -28,6 +28,13 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-aud
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-controller.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-module.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-site-preset.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-v3-migration-runner.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-v3-cli-migrate.php';
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+    WP_CLI::add_command( 'byl migrate', 'Andy_Commerce_V3_CLI_Migrate_Command' );
+    WP_CLI::add_command( 'andy-commerce migrate', 'Andy_Commerce_V3_CLI_Migrate_Command' );
+}
+
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-promotion-policy.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-promotion-runtime.php';
 

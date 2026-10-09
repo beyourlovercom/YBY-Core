@@ -41,7 +41,8 @@ final class Andy_Commerce_Shipping_Promotion_Policy {
 	}
 
 	public static function maybe_migrate_legacy_settings(): bool {
-		if ( is_array( get_option( self::OPTION_NAME, null ) ) ) { return false; }
+		// A present (even invalid) Commerce value is authoritative: never overwrite it.
+		if ( null !== get_option( self::OPTION_NAME, null ) ) { return false; }
 		$preset = self::preset();
 		$legacy_option = (string) ( $preset['legacy_option_name'] ?? '' );
 		if ( '' === $legacy_option ) { return false; }
@@ -66,27 +67,36 @@ final class Andy_Commerce_Shipping_Promotion_Policy {
 		return true;
 	}
 
+	/**
+	 * Read the validated BYL Platform option without writing WordPress options.
+	 * This keeps the existing checkout live before an explicit config migration.
+	 */
+	private static function legacy_persisted_settings(): ?array {
+		$preset = self::preset();
+		$key = (string) ( $preset['legacy_option_name'] ?? '' );
+		if ( '' === $key ) { return null; }
+		$legacy = get_option( $key, null );
+		return is_array( $legacy ) && self::legacy_settings_valid( $legacy ) ? $legacy : null;
+	}
+
 	public static function get_settings(): array {
-		$saved = get_option( self::OPTION_NAME, null );
-		$settings = self::defaults( true );
-		if ( is_array( $saved ) ) {
-			$settings = self::sanitize_settings( $saved );
-		}
-		return $settings;
+		$saved = self::get_persisted_settings();
+		return is_array( $saved ) ? self::sanitize_settings( $saved ) : self::defaults( true );
 	}
 
 	public static function has_persisted_settings(): bool {
-		$saved = get_option( self::OPTION_NAME, null );
-		return is_array( $saved ) && self::legacy_settings_valid( $saved );
+		return null !== self::get_persisted_settings();
 	}
 
 	public static function is_runtime_active(): bool { return self::has_persisted_settings(); }
 
 	public static function get_persisted_settings(): ?array {
-		if ( ! self::has_persisted_settings() ) { return null; }
-		$settings = get_option( self::OPTION_NAME, null );
-		$settings['free_shipping_code'] = self::normalize_code( $settings['free_shipping_code'] );
-		return $settings;
+		$saved = get_option( self::OPTION_NAME, null );
+		// Never fall back when a Commerce config exists but is invalid. Fail closed.
+		if ( null === $saved ) { $saved = self::legacy_persisted_settings(); }
+		if ( ! is_array( $saved ) || ! self::legacy_settings_valid( $saved ) ) { return null; }
+		$saved['free_shipping_code'] = self::normalize_code( $saved['free_shipping_code'] );
+		return $saved;
 	}
 
 	public static function normalize_code(string $code): string {
