@@ -20,7 +20,8 @@ verified on Dev. Never deploy this work to current WWW or mutate customer orders
 - Non-BYL sites continue to use `andy-commerce-shipping-promotion`.
 - Preserve the historical no-op `V3_DB_001` and the
   `byl_v3_applied_migrations` ledger. The old CLI command `wp byl migrate`
-  remains supported, along with `wp andy-commerce migrate`.
+  remains supported when BYL Platform is inactive, alongside `wp andy-commerce migrate`.
+  If legacy BYL Platform is still active, do not double-register its old CLI command.
 - Existing legacy BYL Platform coexistence guard prevents double-running hooks.
 
 ## Controlled Dev cutover (not executed by this source PR)
