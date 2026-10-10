@@ -24,6 +24,18 @@ final class YBY_Newsletter_REST_Controller {
             && '1' === (string) get_option( 'yby_newsletter_outbound_enabled', '0' );
     }
 
+    /** Keep one-time email-link tokens out of third-party Referer and caches. */
+    public static function protect_token_landing() {
+        if ( empty( $_GET['yby_newsletter_action'] ) || empty( $_GET['token'] ) ||
+             ! is_string( $_GET['token'] ) ||
+             ! preg_match( '/^[a-f0-9]{64}$/D', $_GET['token'] ) ) {
+            return;
+        }
+        header( 'Referrer-Policy: no-referrer' );
+        header( 'Cache-Control: no-store, private' );
+        header( 'X-Robots-Tag: noindex, nofollow' );
+    }
+
     public function register_routes() {
         // Confirm/unsubscribe remain possible after new signups are paused.
         if ( ! self::enabled() && ! YBY_Newsletter_Store::exists() ) { return; }
