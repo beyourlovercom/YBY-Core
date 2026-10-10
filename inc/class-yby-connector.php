@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once __DIR__ . '/class-yby-subscriber-snapshot.php';
 require_once __DIR__ . '/class-yby-native-subscriber-snapshot.php';
+require_once __DIR__ . '/class-yby-connector-newsletter-readonly.php';
 require_once __DIR__ . '/class-yby-content-erp-contract.php';
 
 /**
@@ -159,6 +160,8 @@ class YBY_Connector {
 	}
 
 	public static function authenticate( $request ) {
+		$scoped = YBY_Connector_Newsletter_Readonly::authenticate( $request );
+		if ( null !== $scoped ) { return $scoped; }
 		if ( ! self::is_https() ) { return self::auth_error( 'AUTH_INVALID', 'HTTPS is required.', 403, false ); }
 		$options = self::get_options();
 		$secret = self::get_secret();
