@@ -36,15 +36,15 @@ add_filter( 'pre_wp_mail', function ( $pre, $atts ) use ( &$captured ) {
 $server = rest_get_server(); // Fully bootstrap the REST router in WP-CLI.
 $controller = new YBY_Newsletter_REST_Controller();
 $controller->register_routes();
-$uri = '/andy-core/v1/newsletter/';
+define( 'YBY_NEWSLETTER_TEST_URI', '/andy-core/v1/newsletter/' );
+$uri = YBY_NEWSLETTER_TEST_URI;
 $routes = $server->get_routes();
 nl_check( isset( $routes[ $uri . 'subscribe' ] ), 'Core newsletter POST route registered in actual WP REST server' );
 echo 'DIAG_ROUTE_METHODS=' . wp_json_encode( array_map( static function ( $route ) {
     return $route['methods'] ?? array();
 }, $routes[ $uri . 'subscribe' ] ) ) . "\n";
 function nl_request( $action, $params = array(), $origin = '' ) {
-    global $uri;
-    $r = new WP_REST_Request( 'POST', $uri . $action );
+    $r = new WP_REST_Request( 'POST', YBY_NEWSLETTER_TEST_URI . $action );
     $r->set_header( 'content-type', 'application/json' );
     $r->set_body( wp_json_encode( $params ) );
     foreach ( $params as $key => $value ) { $r->set_param( $key, $value ); }
