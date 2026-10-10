@@ -32,6 +32,8 @@ m1assert( false !== strpos( $api, 'YBY_NEWSLETTER_API_ENABLED' ) && false !== st
 m1assert( false !== strpos( $api, "get_option( 'yby_newsletter_enabled'" ) && false !== strpos( $api, "get_option( 'yby_newsletter_outbound_enabled'" ), 'site-level double gating' );
 m1assert( false !== strpos( $api, "marketing_consent" ) && false !== strpos( $api, 'consent_ok' ), 'server explicitly requires marketing consent' );
 m1assert( false !== strpos( $api, 'MINUTE_IN_SECONDS' ) && false !== strpos( $api, 'get_transient(' ), 'bounded per-request rate gate' );
+m1assert( false !== strpos( $api, "yby_nl_ip_" ) && false !== strpos( $api, '$ip_n >= 20' ), 'site-wide IP rate cap cannot be bypassed by rotating email' );
+m1assert( false !== strpos( $api, 'hash_equals( self::policy_version(), $policy )' ), 'server pins actual consent policy version independently of caller' );
 m1assert( false !== strpos( $api, "valid_origin( " ) && false !== strpos( $api, 'self::MAX_BODY' ), 'same-origin and bounded payload' );
 m1assert( false !== strpos( $api, 'Cache-Control' ) && false !== strpos( $api, 'no-store' ), 'private no-cache responses' );
 m1assert( false !== strpos( $api, "'/newsletter/confirm'" ) && false !== strpos( $api, "'/newsletter/unsubscribe'" ), 'separate POST token routes' );
