@@ -33,16 +33,12 @@ add_filter( 'pre_wp_mail', function ( $pre, $atts ) use ( &$captured ) {
     $captured[] = $atts;
     return true; // Synthetic interception; absolutely no outbound email.
 }, 1, 2 );
-$server = rest_get_server(); // Fully bootstrap the REST router in WP-CLI.
-$controller = new YBY_Newsletter_REST_Controller();
-$controller->register_routes();
+$server = rest_get_server(); // Normal rest_api_init registers route once.
 define( 'YBY_NEWSLETTER_TEST_URI', '/andy-core/v1/newsletter/' );
 $uri = YBY_NEWSLETTER_TEST_URI;
 $routes = $server->get_routes();
 nl_check( isset( $routes[ $uri . 'subscribe' ] ), 'Core newsletter POST route registered in actual WP REST server' );
-echo 'DIAG_ROUTE_METHODS=' . wp_json_encode( array_map( static function ( $route ) {
-    return $route['methods'] ?? array();
-}, $routes[ $uri . 'subscribe' ] ) ) . "\n";
+nl_check( 1 === count( $routes[ $uri . 'subscribe' ] ), 'Single Core-owned newsletter POST route registered' );
 function nl_request( $action, $params = array(), $origin = '' ) {
     $r = new WP_REST_Request( 'POST', YBY_NEWSLETTER_TEST_URI . $action );
     $r->set_header( 'content-type', 'application/json' );
@@ -124,4 +120,4 @@ for ( $i = 0; $i < 25; $i++ ) {
     }
 }
 nl_check( $ip_blocked, 'Rotating synthetic emails still hits bounded IP anti-abuse limit' );
-echo 'NEWSLETTER_M1_WP_MYSQL_E2E_PASS ' . $n . ' assertions (synthetic, no outbound)' . "\n";
+echo 'NEWSLETTER_M1_WP_MYSQL_E2E_PASS ' . (int) ( $GLOBALS['n'] ?? 0 ) . ' assertions (synthetic, no outbound)' . "\n";
