@@ -78,6 +78,11 @@ final class YBY_Newsletter_Consent {
             return null;
         }
         $new = $record;
+        // Out-of-order state updates must never rewind a newer unsubscribe
+        // or suppression event when processing delayed confirmations/syncs.
+        $latest = isset( $record['status_updated_at'] ) && is_string( $record['status_updated_at'] )
+            ? strtotime( $record['status_updated_at'] ) : false;
+        if ( false !== $latest && strtotime( $time ) < $latest ) { return $new; }
         if ( 'suppressed' === $status ) {
             return $new; // Future manual suppression review is separately gated.
         }
