@@ -6,13 +6,13 @@ define( 'AUTH_KEY', 'synthetic-auth' );
 define( 'SECURE_AUTH_KEY', 'synthetic-secure-auth' );
 define( 'LOGGED_IN_KEY', 'synthetic-logged-in' );
 define( 'NONCE_KEY', 'synthetic-nonce' );
-$options = array(); $autoload = array(); $transients = array(); $https = true;
+$options = array(); $autoload = array(); $transients = array(); $https = true; $transient_writable = true;
 function get_option( $k, $default = false ) { global $options; return $options[ $k ] ?? $default; }
 function add_option( $k, $v, $deprecated = '', $auto = true ) { global $options, $autoload; if ( isset( $options[ $k ] ) ) { return false; } $options[ $k ] = $v; $autoload[ $k ] = $auto; return true; }
 function update_option( $k, $v, $auto = null ) { global $options; $options[ $k ] = $v; return true; }
 function delete_option( $k ) { global $options; unset( $options[ $k ] ); return true; }
 function get_transient( $k ) { global $transients; return $transients[ $k ] ?? false; }
-function set_transient( $k, $v, $ttl ) { global $transients; $transients[ $k ] = $v; return true; }
+function set_transient( $k, $v, $ttl ) { global $transients, $transient_writable; if ( ! $transient_writable ) { return false; } $transients[ $k ] = $v; return true; }
 function is_ssl() { global $https; return $https; }
 function wp_json_encode( $v ) { return json_encode( $v ); }
 function is_wp_error( $x ) { return $x instanceof WP_Error; }
@@ -138,6 +138,11 @@ $r = req( $path, $secret, 'deny-expired-001' );
 ndeny( YBY_Connector::authenticate( $r ), 'AUTH_INVALID', 'Expired issued credential must fail' );
 $options[ YBY_Connector_Newsletter_Readonly::OPTION ]['expires_at'] = time() + 600;
 
+$transients = array();
+$transient_writable = false;
+$r = req( $path, $secret, 'nonce-store-failure' );
+ndeny( YBY_Connector::authenticate( $r ), 'AUTH_UNAVAILABLE', 'Failed replay-store write must fail closed' );
+$transient_writable = true;
 $transients = array();
 for ( $n = 0; $n < YBY_Connector::RATE_LIMIT_MAX_REQUESTS; $n++ ) {
 	$r = req( $path, $secret, 'nonce-rate-' . str_pad( (string) $n, 8, '0', STR_PAD_LEFT ) );
