@@ -39,6 +39,9 @@ $controller->register_routes();
 $uri = '/andy-core/v1/newsletter/';
 $routes = $server->get_routes();
 nl_check( isset( $routes[ $uri . 'subscribe' ] ), 'Core newsletter POST route registered in actual WP REST server' );
+echo 'DIAG_ROUTE_METHODS=' . wp_json_encode( array_map( static function ( $route ) {
+    return $route['methods'] ?? array();
+}, $routes[ $uri . 'subscribe' ] ) ) . "\n";
 function nl_request( $action, $params = array(), $origin = '' ) {
     global $uri;
     $r = new WP_REST_Request( 'POST', $uri . $action );
