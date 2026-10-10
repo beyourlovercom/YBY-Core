@@ -42,6 +42,8 @@ nl_check( isset( $routes[ $uri . 'subscribe' ] ), 'Core newsletter POST route re
 function nl_request( $action, $params = array(), $origin = '' ) {
     global $uri;
     $r = new WP_REST_Request( 'POST', $uri . $action );
+    $r->set_header( 'content-type', 'application/json' );
+    $r->set_body( wp_json_encode( $params ) );
     foreach ( $params as $key => $value ) { $r->set_param( $key, $value ); }
     if ( '' !== $origin ) { $r->set_header( 'origin', $origin ); }
     return rest_do_request( $r );
