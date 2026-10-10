@@ -115,6 +115,7 @@ final class YBY_Newsletter_REST_Controller {
             // Honeypot: do not store or send. Deliberately generic response.
             return self::respond( true, 'If eligible, please check your inbox.', 200 );
         }
+        $email = YBY_Newsletter_Consent::normalize_email( $email );
         if ( ! self::throttle( $email ) ) {
             return self::respond( false, 'Please try again later.', 429 );
         }
@@ -128,11 +129,11 @@ final class YBY_Newsletter_REST_Controller {
         $confirm_url = add_query_arg( array(
             'yby_newsletter_action' => 'confirm',
             'token' => $result['confirm_token'],
-        ), home_url( '/newsletter/' ) );
+        ), home_url( '/' ) );
         $unsubscribe_url = add_query_arg( array(
             'yby_newsletter_action' => 'unsubscribe',
             'token' => $result['unsubscribe_token'],
-        ), home_url( '/newsletter/' ) );
+        ), home_url( '/' ) );
         $message = "Please confirm your email subscription by visiting:\n" . $confirm_url .
             "\n\nIf you did not request this, ignore this email. You can unsubscribe using:\n" . $unsubscribe_url;
         // No external email unless BOTH explicit gates are set. No default
