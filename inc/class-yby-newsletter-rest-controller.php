@@ -8,12 +8,17 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class YBY_Newsletter_REST_Controller {
     const NAMESPACE = 'andy-core/v1';
     const MAX_BODY = 4096;
+    public static function policy_version() {
+        $policy = defined( 'YBY_NEWSLETTER_POLICY_VERSION' ) ? YBY_NEWSLETTER_POLICY_VERSION : 'newsletter-v1';
+        return is_string( $policy ) && 1 === preg_match( '/^[a-zA-Z0-9_.-]{1,100}$/D', $policy ) ? $policy : '';
+    }
 
     /** Both code-level AND site-level explicit approval required. */
     public static function enabled() {
         return defined( 'YBY_NEWSLETTER_API_ENABLED' )
             && true === YBY_NEWSLETTER_API_ENABLED
             && '1' === (string) get_option( 'yby_newsletter_enabled', '0' )
+            && '' !== self::policy_version()
             && YBY_Newsletter_Store::exists();
     }
 
@@ -97,9 +102,12 @@ final class YBY_Newsletter_REST_Controller {
         $key = 'yby_nl_rate_' . substr( hash_hmac(
             'sha256', $ip . '|' . (string) $email, wp_salt( 'auth' )
         ), 0, 32 );
+        $ip_key = 'yby_nl_ip_' . substr( hash_hmac( 'sha256', $ip, wp_salt( 'auth' ) ), 0, 32 );
         $n = (int) get_transient( $key );
-        if ( $n >= 5 ) { return false; }
+        $ip_n = (int) get_transient( $ip_key );
+        if ( $n >= 5 || $ip_n >= 20 ) { return false; }
         set_transient( $key, $n + 1, 15 * MINUTE_IN_SECONDS );
+        set_transient( $ip_key, $ip_n + 1, 15 * MINUTE_IN_SECONDS );
         return true;
     }
 
@@ -118,7 +126,7 @@ final class YBY_Newsletter_REST_Controller {
         $consent = $request->get_param( 'marketing_consent' );
         $consent_ok = true === $consent || '1' === $consent || 1 === $consent;
         if ( null === $email || null === YBY_Newsletter_Consent::normalize_email( $email ) ||
-             ! $consent_ok || null === $policy || '' === $policy ||
+             ! $consent_ok || null === $policy || ! hash_equals( self::policy_version(), $policy ) ||
              null === $source || '' === $source || null === $page || null === $locale ) {
             return self::respond( false, 'Email and explicit marketing consent are required.', 400 );
         }
