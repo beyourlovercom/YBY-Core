@@ -50,3 +50,9 @@ jobs:
           set -euo pipefail
           wp eval-file "$GITHUB_WORKSPACE/tests/newsletter-wordpress-mysql.php" --path="$RUNNER_TEMP/wordpress"
           echo "NEWSLETTER_WORDPRESS_ISOLATED_ONLY=PASS"
+      - name: Native HMAC newsletter snapshot with 111 synthetic records (no mail)
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/tests/newsletter-m2-wordpress-mysql.php" --path="$RUNNER_TEMP/wordpress"
+          echo "NEWSLETTER_M2_NATIVE_WP_MYSQL_ONLY=PASS"

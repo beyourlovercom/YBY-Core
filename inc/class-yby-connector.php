@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 require_once __DIR__ . '/class-yby-subscriber-snapshot.php';
+require_once __DIR__ . '/class-yby-native-subscriber-snapshot.php';
 require_once __DIR__ . '/class-yby-content-erp-contract.php';
 
 /**
@@ -820,7 +821,11 @@ class YBY_Connector {
 			if ( ! self::provider_available( 'woocommerce' ) || ! function_exists( 'get_posts' ) || ! class_exists( 'WC_Coupon' ) ) { return self::provider_unavailable(); }
 			return self::coupon_snapshot( $query );
 		}
-		if ( 'subscribers' === $resource ) { return YBY_Subscriber_Snapshot::snapshot( $query ); }
+		if ( 'subscribers' === $resource ) {
+			return 'andy_core_newsletter' === $query['source']
+				? YBY_Native_Subscriber_Snapshot::snapshot( $query )
+				: YBY_Subscriber_Snapshot::snapshot( $query );
+		}
 		if ( 'email-templates' === $resource ) { return self::email_template_snapshot( $query ); }
 		return new WP_Error( 'VALIDATION_FAILED', 'Snapshot resource is not supported.', array( 'status' => 400, 'retryable' => false ) );
 	}
@@ -862,6 +867,12 @@ class YBY_Connector {
 			if ( is_object( $request ) && method_exists( $request, 'get_param' ) ) { return $request->get_param( $key ); }
 			return isset( $_GET[ $key ] ) ? ( function_exists( 'wp_unslash' ) ? wp_unslash( $_GET[ $key ] ) : $_GET[ $key ] ) : null;
 		};
+		$source = $get( 'source' );
+		if ( null !== $source && '' !== $source ) {
+			if ( 'subscribers' !== $resource || ! is_string( $source ) || 'andy_core_newsletter' !== $source ) {
+				return new WP_Error( 'VALIDATION_FAILED', 'Subscriber snapshot source is unsupported.', array( 'status' => 400, 'retryable' => false ) );
+			}
+		} else { $source = null; }
 		$limit = $get( 'limit' );
 		if ( null === $limit || '' === $limit ) { $limit = 50; }
 		if ( ! is_scalar( $limit ) || ! ctype_digit( (string) $limit ) || (int) $limit < 1 || (int) $limit > self::SNAPSHOT_MAX_LIMIT ) {
@@ -873,9 +884,11 @@ class YBY_Connector {
 			if ( ! is_scalar( $cursor ) ) { return new WP_Error( 'VALIDATION_FAILED', 'cursor is invalid.', array( 'status' => 400, 'retryable' => false ) ); }
 			$decoded = base64_decode( strtr( (string) $cursor, '-_', '+/' ), true );
 			$state = false === $decoded ? null : json_decode( $decoded, true );
-			if ( 'subscribers' === $resource ) {
+			if ( 'subscribers' === $resource && null === $source ) {
 				if ( ! is_array( $state ) || 'subscribers' !== ( $state['resource'] ?? '' ) || ! isset( $state['email'] ) || ! is_string( $state['email'] ) || '' === $state['email'] || $state['email'] !== strtolower( trim( $state['email'] ) ) ) { return new WP_Error( 'VALIDATION_FAILED', 'cursor is invalid.', array( 'status' => 400, 'retryable' => false ) ); }
 				$cursor_key = $state['email'];
+			} elseif ( 'subscribers' === $resource && 'andy_core_newsletter' === $source ) {
+				// Native cursor is independently HMAC-verified and bound to source + updated_after by its adapter.
 			} elseif ( ! is_array( $state ) || ! isset( $state['resource'], $state['offset'] ) || $state['resource'] !== $resource || ! ctype_digit( (string) $state['offset'] ) ) { return new WP_Error( 'VALIDATION_FAILED', 'cursor is invalid.', array( 'status' => 400, 'retryable' => false ) ); }
 			else { $offset = (int) $state['offset']; }
 		}
@@ -884,7 +897,7 @@ class YBY_Connector {
 			if ( ! is_scalar( $updated_after ) || false === self::iso_timestamp( (string) $updated_after ) ) { return new WP_Error( 'VALIDATION_FAILED', 'updated_after must be ISO-8601.', array( 'status' => 400, 'retryable' => false ) ); }
 			$updated_after = (string) $updated_after;
 		} else { $updated_after = null; }
-		return array( 'resource' => $resource, 'limit' => (int) $limit, 'offset' => $offset, 'cursor_key' => $cursor_key, 'updated_after' => $updated_after );
+		return array( 'resource' => $resource, 'source' => $source, 'cursor' => 'andy_core_newsletter' === $source ? $cursor : null, 'limit' => (int) $limit, 'offset' => $offset, 'cursor_key' => $cursor_key, 'updated_after' => $updated_after );
 	}
 
 	private static function iso_timestamp( $value ) {
