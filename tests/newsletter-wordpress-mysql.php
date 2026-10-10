@@ -83,10 +83,16 @@ nl_check( 1 === (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . YBY_Newsletter_S
 nl_check( '200' === (string) nl_request( 'subscribe', $payload )->get_status(), 'Repeat submission returns generic response' );
 nl_check( 1 === (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . YBY_Newsletter_Store::table_name() ), 'Repeat submission did not create duplicate row' );
 
-$email_body = $captured[0]['message'];
+$old_body = $captured[0]['message'];
+preg_match( '/yby_newsletter_action=confirm&token=([0-9a-f]{64})/', $old_body, $old_confirm );
+$email_body = $captured[ count( $captured ) - 1 ]['message'];
 preg_match( '/yby_newsletter_action=confirm&token=([0-9a-f]{64})/', $email_body, $cm );
 preg_match( '/yby_newsletter_action=unsubscribe&token=([0-9a-f]{64})/', $email_body, $um );
 nl_check( isset( $cm[1], $um[1] ) && $cm[1] !== $um[1], 'Distinct random confirmation and unsubscribe links' );
+nl_check( count( $captured ) > 1 && isset( $old_confirm[1] ) && $old_confirm[1] !== $cm[1],
+    'Repeated pending request rotates old confirmation token' );
+nl_check( 400 === nl_request( 'confirm', array( 'token' => $old_confirm[1] ) )->get_status(),
+    'Old superseded inbox link cannot confirm newer pending request' );
 nl_check( 400 === nl_request( 'confirm', array( 'token' => 'invalid' ) )->get_status(), 'Malformed confirmation token denied' );
 nl_check( 200 === nl_request( 'confirm', array( 'token' => $cm[1] ) )->get_status(), 'Single-use confirmation changes state' );
 nl_check( 'subscribed' === YBY_Newsletter_Store::find_email( 'synthetic+nl@example.test' )['status'], 'Confirmed status persisted in WP MySQL' );
