@@ -6,7 +6,8 @@
     if (node) node.textContent = message;
   }
   function endpoint(form, action) {
-    var base = form.getAttribute("data-yby-newsletter-endpoint") || "";
+    var base = (form && form.getAttribute("data-yby-newsletter-endpoint")) ||
+      window.YBYNewsletterEndpoint || "";
     if (!/^https?:\/\//.test(base)) return "";
     try {
       var url = new URL(base, location.href);
@@ -82,14 +83,13 @@
    * Remove token from address bar after capturing it in closure memory.
    */
   document.addEventListener("DOMContentLoaded", function () {
-    if (!/\/newsletter\/?$/.test(location.pathname)) return;
+    // Universal site landing: works even when no /newsletter/ Page exists.
     var params = new URLSearchParams(location.search);
     var action = params.get("yby_newsletter_action");
     var token = params.get("token");
     if ((action !== "confirm" && action !== "unsubscribe") ||
         !/^[a-f0-9]{64}$/.test(token || "")) return;
     var form = document.querySelector("[data-yby-subscribe-contract]");
-    if (!form) return;
     var url = endpoint(form, action);
     if (!url) return;
     params.delete("token"); params.delete("yby_newsletter_action");
@@ -104,7 +104,11 @@
     info.setAttribute("role", "status");
     info.setAttribute("aria-live", "polite");
     box.appendChild(button); box.appendChild(info);
-    form.parentNode.insertBefore(box, form);
+    // A dedicated accessible action surface even on a generic homepage.
+    box.setAttribute("role", "region");
+    box.setAttribute("aria-label", "Newsletter " + action);
+    if (form && form.parentNode) form.parentNode.insertBefore(box, form);
+    else document.body.insertBefore(box, document.body.firstChild);
     button.addEventListener("click", function () {
       button.disabled = true;
       info.textContent = "Processing…";
