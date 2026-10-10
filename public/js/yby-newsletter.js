@@ -59,7 +59,7 @@
     post(url, {
       email: emailField.value,
       marketing_consent: "1",
-      consent_policy: "newsletter-v1",
+      consent_policy: form.getAttribute("data-yby-newsletter-policy") || "newsletter-v1",
       source: form.closest("[data-yby-global-popup]") ? "popup" : "shortcode",
       source_page: location.pathname.slice(0, 255),
       locale: document.documentElement.lang.slice(0, 20),
