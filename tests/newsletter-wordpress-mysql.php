@@ -69,6 +69,8 @@ if ( 400 !== $unchecked_response->get_status() ) {
 nl_check( 400 === $unchecked_response->get_status(), 'Unchecked consent rejected server side' );
 $bad = $payload; $bad['email'] = 'invalid-mail';
 nl_check( 400 === nl_request( 'subscribe', $bad )->get_status(), 'Invalid email rejected server side' );
+$bad = $payload; $bad['consent_policy'] = 'forged-policy-version';
+nl_check( 400 === nl_request( 'subscribe', $bad )->get_status(), 'Untrusted browser cannot invent a different consent policy version' );
 nl_check( 400 === nl_request( 'subscribe', $payload, 'https://evil.test' )->get_status(), 'Cross-origin request rejected' );
 $honeypot = $payload; $honeypot['website'] = 'bot';
 nl_check( 200 === nl_request( 'subscribe', $honeypot )->get_status() && 0 === count( $captured ), 'Honeypot fakes acknowledgment but writes/sends nothing' );
