@@ -109,6 +109,86 @@ $cross_window = m2_signed_request( array_merge( $base, array(
 ) ), $secret );
 m2_mysql_assert( $cross_window instanceof WP_REST_Response && 400 === $cross_window->get_status(),
     'HMAC-authenticated cursor cannot switch updated_after window' );
+
+/**
+ * M2.8 scoped-key integration in actual disposable WordPress/MySQL.
+ * The old general Connector remains enabled in this fixture: the scoped key
+ * must be denied for every non-native route even when general Connector is ON.
+ */
+$readonly_secret = YBY_Connector_Newsletter_Readonly::provision(
+	'm2-only-ci.example.test', 'ci-newsletter-only', 600
+);
+m2_mysql_assert( is_string( $readonly_secret ) && strlen( $readonly_secret ) >= 64,
+	'M2.8 scoped identity provisioned only in disposable WP-CLI' );
+m2_mysql_assert( get_option( YBY_Connector_Newsletter_Readonly::OPTION )['expires_at'] > time(),
+	'M2.8 scoped identity has finite valid expiry' );
+
+function m28_scoped_request( $path, $secret, $method = 'GET', $route = '/andy-core/v1/erp/snapshot/subscribers', $nonce = null ) {
+	static $serial = 0;
+	++$serial;
+	$_SERVER['REQUEST_URI'] = $path;
+	$query = parse_url( $path, PHP_URL_QUERY );
+	$params = array();
+	if ( is_string( $query ) ) { parse_str( $query, $params ); }
+	$req = new WP_REST_Request( $method, $route );
+	$req->set_query_params( $params );
+	$ts = (string) time();
+	$nonce = $nonce ?: 'ci-m28-once-' . str_pad( (string) $serial, 10, '0', STR_PAD_LEFT );
+	$headers = array(
+		'X-YBY-Key-Id' => 'ci-newsletter-only',
+		'X-YBY-Connection-Key' => 'm2-only-ci.example.test',
+		'X-YBY-Timestamp' => $ts,
+		'X-YBY-Nonce' => $nonce,
+		'X-YBY-Signature-Version' => 'v1',
+		'X-YBY-Signature' => YBY_Connector::sign(
+			$method, $path, $ts, $nonce, 'm2-only-ci.example.test', '', '', $secret
+		),
+	);
+	foreach ( $headers as $key => $value ) { $req->set_header( $key, $value ); }
+	return $req;
+}
+$scoped_path = '/wp-json/andy-core/v1/erp/snapshot/subscribers?source=andy_core_newsletter&limit=1';
+$scoped_positive = YBY_Connector::dispatch_snapshot( m28_scoped_request( $scoped_path, $readonly_secret ) );
+m2_mysql_assert( is_array( $scoped_positive ) && true === ( $scoped_positive['ok'] ?? false ) &&
+	count( $scoped_positive['data']['items'] ?? array() ) === 1 &&
+	'newsletter-validation.test' === ( $scoped_positive['data']['source_site'] ?? '' ),
+	'M2.8 real WordPress REST handler accepts scoped native-only HMAC GET' );
+$scoped_replay = m28_scoped_request( $scoped_path, $readonly_secret, 'GET',
+	'/andy-core/v1/erp/snapshot/subscribers', 'ci-m28-repeat-123456789' );
+$scoped_first = YBY_Connector::dispatch_snapshot( $scoped_replay );
+$scoped_again = YBY_Connector::dispatch_snapshot( $scoped_replay );
+m2_mysql_assert( is_array( $scoped_first ) && $scoped_again instanceof WP_REST_Response &&
+	409 === $scoped_again->get_status(), 'M2.8 replay is denied by real REST dispatch' );
+
+$legacy = YBY_Connector::dispatch_snapshot( m28_scoped_request(
+	'/wp-json/andy-core/v1/erp/snapshot/subscribers?limit=1', $readonly_secret
+) );
+m2_mysql_assert( $legacy instanceof WP_REST_Response && 403 === $legacy->get_status(),
+	'M2.8 scoped HMAC cannot read legacy Elementor source' );
+$other = YBY_Connector::dispatch_snapshot( m28_scoped_request(
+	'/wp-json/andy-core/v1/erp/snapshot/affiliates?limit=1', $readonly_secret,
+	'GET', '/andy-core/v1/erp/snapshot/affiliates'
+) );
+m2_mysql_assert( $other instanceof WP_REST_Response && 403 === $other->get_status(),
+	'M2.8 scoped HMAC cannot read unrelated snapshots' );
+$write = YBY_Connector::dispatch_content_publish( m28_scoped_request(
+	'/wp-json/andy-core/v1/erp/content/publish', $readonly_secret,
+	'POST', '/andy-core/v1/erp/content/publish'
+) );
+m2_mysql_assert( $write instanceof WP_REST_Response && 403 === $write->get_status(),
+	'M2.8 scoped HMAC cannot call Content Publish even with general Connector active' );
+
+$scoped_options = get_option( YBY_Connector_Newsletter_Readonly::OPTION );
+$scoped_options['expires_at'] = time() - 1;
+update_option( YBY_Connector_Newsletter_Readonly::OPTION, $scoped_options, false );
+$expired = YBY_Connector::dispatch_snapshot( m28_scoped_request( $scoped_path, $readonly_secret ) );
+m2_mysql_assert( $expired instanceof WP_REST_Response && 401 === $expired->get_status(),
+	'M2.8 expired scoped HMAC is denied in real WordPress REST dispatch' );
+m2_mysql_assert( true === YBY_Connector_Newsletter_Readonly::revoke() &&
+	false === get_option( YBY_Connector_Newsletter_Readonly::OPTION, false ) &&
+	false === get_option( YBY_Connector_Newsletter_Readonly::SECRET_OPTION, false ),
+	'M2.8 scoped key and encrypted secret revoked in disposable WP' );
+
 if ( null === $old_uri ) { unset( $_SERVER['REQUEST_URI'] ); } else { $_SERVER['REQUEST_URI'] = $old_uri; }
 if ( null === $old_https ) { unset( $_SERVER['HTTPS'] ); } else { $_SERVER['HTTPS'] = $old_https; }
 echo "NEWSLETTER_M2_WP_MYSQL_HMAC_PASS 111 synthetic records, no actual email\n";
