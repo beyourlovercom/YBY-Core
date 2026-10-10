@@ -113,7 +113,7 @@ final class YBY_Native_Subscriber_Snapshot {
         $p = false === $json ? null : json_decode( $json, true );
         if ( ! is_array( $p ) || count( $p ) !== 6 ||
             ( $p['v'] ?? null ) !== 1 || ( $p['resource'] ?? null ) !== 'subscribers' ||
-            ( $p['source'] ?? null ) !== self::SOURCE || ( $p['after'] ?? false ) !== $boundary ||
+            ( $p['source'] ?? null ) !== self::SOURCE || ! array_key_exists( 'after', $p ) || $p['after'] !== $boundary ||
             ! is_string( $p['changed_at'] ?? null ) || false === self::utc_timestamp( $p['changed_at'] ) ||
             ! is_int( $p['id'] ?? null ) || $p['id'] < 1 ) { return null; }
         return $p;
