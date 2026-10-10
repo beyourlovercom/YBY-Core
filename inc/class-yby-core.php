@@ -63,6 +63,9 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-lead-mapper.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-renderer.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-shortcodes.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-newsletter-consent.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-newsletter-store.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-newsletter-rest-controller.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-subscribe-shortcode.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-global-popup.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-global-inquiry-dock.php';
@@ -251,17 +254,20 @@ class YBY_Core {
 		$public = new YBY_Public( 'yby-core', YBY_CORE_VERSION );
 		$this->loader->add_action( 'wp_enqueue_scripts', $public, 'enqueue_assets' );
 
+		$subscribe_shortcode = new YBY_Subscribe_Shortcode();
+		$this->loader->add_action( 'init', $subscribe_shortcode, 'register', 10, 0 );
+		$newsletter_rest = new YBY_Newsletter_REST_Controller();
+		$this->loader->add_action( 'rest_api_init', $newsletter_rest, 'register_routes' );
+
 		if ( $inquiry_enabled ) {
 			$lead_rest_route = new YBY_Lead_REST_Controller();
 			$inquiry_manager = new YBY_Inquiry_Manager();
 			$inquiry_renderer = new YBY_Inquiry_Renderer();
 			$inquiry_shortcodes = new YBY_Inquiry_Shortcodes( $inquiry_manager, $inquiry_renderer );
-			$subscribe_shortcode = new YBY_Subscribe_Shortcode();
 			$global_popup = new YBY_Global_Popup( $inquiry_manager, $inquiry_renderer );
 			$inquiry_dock = new YBY_Global_Inquiry_Dock();
 			$this->loader->add_action( 'rest_api_init', $lead_rest_route, 'register_routes' );
 			$this->loader->add_action( 'init', $inquiry_shortcodes, 'register', 10, 0 );
-			$this->loader->add_action( 'init', $subscribe_shortcode, 'register', 10, 0 );
 			$this->loader->add_filter( 'the_content', $inquiry_shortcodes, 'capture_modal_shortcodes_in_content', 9, 1 );
 			$this->loader->add_action( 'wp_footer', $inquiry_shortcodes, 'render_deferred_modals', 100, 0 );
 			$this->loader->add_action( 'wp_footer', $global_popup, 'render', 110, 0 );
