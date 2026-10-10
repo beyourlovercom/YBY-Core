@@ -45,6 +45,11 @@ class YBY_Public {
 	 * @return void
 	 */
 	public function enqueue_assets() {
+		// Portable Core Newsletter UX (available even without Inquiry OS).
+		// Without the separate database/API/outbound gates, submit stays inert.
+		wp_enqueue_style( 'yby-newsletter', YBY_CORE_PLUGIN_URL . 'public/css/yby-newsletter.css', array(), $this->asset_version( 'public/css/yby-newsletter.css' ) );
+		wp_enqueue_script( 'yby-newsletter', YBY_CORE_PLUGIN_URL . 'public/js/yby-newsletter.js', array(), $this->asset_version( 'public/js/yby-newsletter.js' ), true );
+		wp_add_inline_script( 'yby-newsletter', 'window.YBYNewsletterEndpoint = ' . wp_json_encode( function_exists( 'rest_url' ) ? rest_url( 'andy-core/v1/newsletter/' ) : '' ) . ';', 'before' );
 		$inquiry_enabled = ! class_exists( 'YBY_Module_Registry' ) || YBY_Module_Registry::is_enabled( 'inquiry_os' );
 		$project_enabled = ! class_exists( 'YBY_Module_Registry' ) || YBY_Module_Registry::is_enabled( 'project_studio' );
 		$analytics_enabled = class_exists( 'YBY_Module_Registry' ) && YBY_Module_Registry::is_enabled( 'analytics' );

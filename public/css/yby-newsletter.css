@@ -1,0 +1,50 @@
+/* Andy Core Newsletter portable consent; no BYL-only brand hardcodes. */
+.yby-shortcode-subscribe [data-yby-subscribe-contract],
+.yby-global-popup--subscribe [data-yby-subscribe-contract] { box-sizing:border-box; }
+.yby-shortcode-subscribe [data-yby-subscribe-contract] {
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px; max-width:500px;
+}
+.yby-shortcode-subscribe [data-yby-subscribe-contract] > input[type=email] {
+  box-sizing:border-box; flex:1 1 240px; min-width:0; height:44px;
+  padding:10px; border:1px solid var(--yby-theme-border,#d1d5db);
+  border-radius:var(--yby-theme-border-radius,12px);
+}
+.yby-shortcode-subscribe [data-yby-subscribe-contract] > button {
+  min-height:44px; padding:10px 18px; border:0;
+  border-radius:var(--yby-theme-border-radius,12px);
+  background:var(--yby-theme-cta-background,var(--yby-theme-primary,#333));
+  color:var(--yby-theme-button-text,#fff); cursor:pointer;
+}
+.yby-shortcode-subscribe .yby-newsletter-consent,
+.yby-global-popup--subscribe .yby-newsletter-consent {
+  display:flex; align-items:flex-start; gap:10px;
+  order:3; flex:0 0 100%; margin:5px 0 0;
+  font:inherit; font-size:13px; line-height:1.5;
+  color:var(--yby-theme-text,#1f2937);
+}
+.yby-shortcode-subscribe .yby-newsletter-consent input[type=checkbox],
+.yby-global-popup--subscribe .yby-newsletter-consent input[type=checkbox] {
+  appearance:auto; display:inline-block; width:18px; height:18px; min-width:18px;
+  padding:0; margin:1px 0 0; flex:none; border-radius:3px;
+}
+.yby-shortcode-subscribe [data-yby-subscribe-status] {
+  order:4; flex:0 0 100%; margin:0; font-size:13px;
+}
+.yby-shortcode-subscribe [data-yby-subscribe-status]:empty { display:none; }
+.yby-shortcode-subscribe .yby-newsletter-honeypot,
+.yby-global-popup--subscribe .yby-newsletter-honeypot {
+  position:absolute!important; width:1px!important; height:1px!important;
+  overflow:hidden!important; clip-path:inset(50%)!important; white-space:nowrap!important;
+}
+.yby-global-popup--subscribe .yby-newsletter-consent { margin:12px 0; }
+.yby-shortcode-subscribe button:disabled,
+.yby-global-popup--subscribe button[type=submit]:disabled { opacity:.6; cursor:wait; }
+.yby-newsletter-token-action { padding:16px; margin:12px 0; border:1px solid var(--yby-theme-border,#d1d5db); border-radius:12px; }
+.yby-newsletter-token-action button { cursor:pointer; min-height:40px; padding:9px 18px; border-radius:10px; }
+.yby-newsletter-token-action [role=status] { margin:10px 0 0; font-size:14px; }
+@media (max-width:520px) {
+  .yby-shortcode-subscribe [data-yby-subscribe-contract] { flex-direction:column; align-items:stretch; max-width:100%; }
+  .yby-shortcode-subscribe [data-yby-subscribe-contract] > input[type=email],
+  .yby-shortcode-subscribe [data-yby-subscribe-contract] > button { flex:auto; width:100%; }
+  .yby-shortcode-subscribe .yby-newsletter-consent { order:3; }
+}

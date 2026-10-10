@@ -1,0 +1,52 @@
+name: Newsletter M1 Disposable WordPress MySQL
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  newsletter-mysql:
+    runs-on: ubuntu-24.04
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: newsletter_validation
+          MYSQL_USER: newsletter
+          MYSQL_PASSWORD: newsletter
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli
+          coverage: none
+      - name: Install disposable WordPress and isolated database
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          chmod +x /usr/local/bin/wp
+          wp core download --path="$RUNNER_TEMP/wordpress" --version=6.6.2
+          wp config create --path="$RUNNER_TEMP/wordpress" --dbname=newsletter_validation --dbuser=newsletter --dbpass=newsletter --dbhost=127.0.0.1 --skip-check
+          wp core install --path="$RUNNER_TEMP/wordpress" --url=http://newsletter-validation.test --title=NewsletterSynthetic --admin_user=admin --admin_password=synthetic-only --admin_email=admin@example.test --skip-email
+          mkdir -p "$RUNNER_TEMP/wordpress/wp-content/plugins/yby-core"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/wordpress/wp-content/plugins/yby-core"
+          wp plugin activate yby-core --path="$RUNNER_TEMP/wordpress"
+      - name: Confirm default-off and exercise Core REST entirely with intercepted email
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/tests/newsletter-wordpress-mysql.php" --path="$RUNNER_TEMP/wordpress"
+          echo "NEWSLETTER_WORDPRESS_ISOLATED_ONLY=PASS"
