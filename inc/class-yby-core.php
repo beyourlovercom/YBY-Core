@@ -258,6 +258,7 @@ class YBY_Core {
 		$this->loader->add_action( 'init', $subscribe_shortcode, 'register', 10, 0 );
 		$newsletter_rest = new YBY_Newsletter_REST_Controller();
 		$this->loader->add_action( 'rest_api_init', $newsletter_rest, 'register_routes' );
+		$this->loader->add_action( 'send_headers', 'YBY_Newsletter_REST_Controller', 'protect_token_landing', 1, 0 );
 
 		if ( $inquiry_enabled ) {
 			$lead_rest_route = new YBY_Lead_REST_Controller();
