@@ -10,9 +10,18 @@
     if (!/^https?:\/\//.test(base)) return "";
     try {
       var url = new URL(base, location.href);
-      if (url.origin !== location.origin ||
-          !/\/andy-core\/v1\/newsletter\/?$/.test(url.pathname)) return "";
-      return url.href.replace(/\/?$/, "/") + action;
+      if (url.origin !== location.origin) return "";
+      if (/\/andy-core\/v1\/newsletter\/?$/.test(url.pathname)) {
+        url.pathname = url.pathname.replace(/\/?$/, "/") + action;
+        return url.href;
+      }
+      // WordPress supports REST even when pretty permalinks are disabled.
+      var route = url.searchParams.get("rest_route");
+      if (route === "/andy-core/v1/newsletter/" || route === "/andy-core/v1/newsletter") {
+        url.searchParams.set("rest_route", "/andy-core/v1/newsletter/" + action);
+        return url.href;
+      }
+      return "";
     } catch (e) { return ""; }
   }
   function post(url, body) {
