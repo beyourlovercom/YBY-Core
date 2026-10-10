@@ -25,7 +25,7 @@ m1assert( ! YBY_Newsletter_Store::install_schema(), 'schema disabled without exp
 m1assert( false !== strpos( $store, "defined( 'WP_CLI' )" ) && false !== strpos( $store, "YBY_NEWSLETTER_SCHEMA_APPLY" ), 'schema explicit-only' );
 m1assert( false === strpos( $core, "'plugins_loaded', 'YBY_Newsletter_Store'" ), 'no auto install on plugin upgrade' );
 m1assert( false !== strpos( $store, 'UNIQUE KEY email_hash' ) && false !== strpos( $store, 'UNIQUE KEY external_subscription_id' ), 'database uniqueness enforced' );
-m1assert( false !== strpos( $store, "status = 'pending'" ) && false !== strpos( $store, "status = 'subscribed'" ), 'pending default and atomic confirmation' );
+m1assert( false !== strpos( $store, "'status' => 'pending'" ) && false !== strpos( $store, "status = 'subscribed'" ), 'pending default and atomic confirmation' );
 m1assert( false !== strpos( $store, 'confirm_expires_at > UTC_TIMESTAMP()' ) && false !== strpos( $store, 'confirm_hash = NULL' ), 'confirmation expires and burns token' );
 m1assert( false !== strpos( $store, "status IN ('pending','subscribed')" ), 'opt-out never reactivated by stale token' );
 m1assert( false !== strpos( $api, 'YBY_NEWSLETTER_API_ENABLED' ) && false !== strpos( $api, 'YBY_NEWSLETTER_OUTBOUND_ENABLED' ), 'API and mail independent code gates' );
@@ -41,6 +41,6 @@ m1assert( false !== strpos( $short, 'name="website"' ) && false !== strpos( $pop
 m1assert( false !== strpos( $browser, 'credentials: "omit"' ) && false !== strpos( $browser, 'fetch(url,' ), 'no authenticated cookie/client-side fake success' );
 m1assert( false !== strpos( $browser, 'history.replaceState' ) && false !== strpos( $browser, 'button.addEventListener("click"' ), 'token link requires click and removed from URL bar' );
 m1assert( false !== strpos( $browser, 'url.searchParams.set("rest_route"' ), 'permalinkless WordPress REST supported' );
-m1assert( false !== strpos( $public, "'yby-newsletter'" ) && false !== strpos( $core, "'YBY_Newsletter_REST_Controller'" ) === false, 'Core runtime resources and class wired' );
+m1assert( false !== strpos( $public, "'yby-newsletter'" ) && false !== strpos( $core, "'inc/class-yby-newsletter-rest-controller.php'" ), 'Core runtime resources and class wired' );
 m1assert( false !== strpos( $core, "new YBY_Newsletter_REST_Controller()" ) && false !== strpos( $core, '$subscribe_shortcode, ' ), 'Core connects REST and shared inline shortcode' );
 echo 'NEWSLETTER_M1_OFFLINE_SECURITY_PASS ' . $n . ' assertions' . "\n";
