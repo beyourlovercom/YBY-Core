@@ -6,11 +6,11 @@ define( 'AUTH_KEY', 'synthetic-auth' );
 define( 'SECURE_AUTH_KEY', 'synthetic-secure-auth' );
 define( 'LOGGED_IN_KEY', 'synthetic-logged-in' );
 define( 'NONCE_KEY', 'synthetic-nonce' );
-$options = array(); $autoload = array(); $transients = array(); $https = true; $transient_writable = true;
+$options = array(); $autoload = array(); $transients = array(); $https = true; $transient_writable = true; $delete_writable = true;
 function get_option( $k, $default = false ) { global $options; return $options[ $k ] ?? $default; }
 function add_option( $k, $v, $deprecated = '', $auto = true ) { global $options, $autoload; if ( isset( $options[ $k ] ) ) { return false; } $options[ $k ] = $v; $autoload[ $k ] = $auto; return true; }
 function update_option( $k, $v, $auto = null ) { global $options; $options[ $k ] = $v; return true; }
-function delete_option( $k ) { global $options; unset( $options[ $k ] ); return true; }
+function delete_option( $k ) { global $options, $delete_writable; if ( ! $delete_writable ) { return false; } unset( $options[ $k ] ); return true; }
 function get_transient( $k ) { global $transients; return $transients[ $k ] ?? false; }
 function set_transient( $k, $v, $ttl ) { global $transients, $transient_writable; if ( ! $transient_writable ) { return false; } $transients[ $k ] = $v; return true; }
 function is_ssl() { global $https; return $https; }
@@ -167,6 +167,12 @@ $r = req( '/wp-json/andy-core/v1/erp/health', $secret, 'deny-crosskey-001' );
 $r->route = '/andy-core/v1/erp/health';
 ndeny( YBY_Connector::authenticate( $r ), 'AUTH_FORBIDDEN', 'Scoped identity cannot fall through to general Connector' );
 
+$delete_writable = false;
+nassert( false === YBY_Connector_Newsletter_Readonly::revoke(),
+	'Failed option delete cannot be reported as successful revocation' );
+nassert( false !== get_option( YBY_Connector_Newsletter_Readonly::OPTION, false ),
+	'Failed revocation preserves outstanding scope until retry or expiry' );
+$delete_writable = true;
 nassert( true === YBY_Connector_Newsletter_Readonly::revoke(), 'Trusted CLI revocation must succeed' );
 nassert( false === get_option( YBY_Connector_Newsletter_Readonly::OPTION, false ) &&
 	false === get_option( YBY_Connector_Newsletter_Readonly::SECRET_OPTION, false ), 'Both scoped credentials must be revoked' );
