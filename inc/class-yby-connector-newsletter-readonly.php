@@ -93,8 +93,10 @@ final class YBY_Connector_Newsletter_Readonly {
 		$count = (int) get_transient( $rate_key );
 		if ( $count >= YBY_Connector::RATE_LIMIT_MAX_REQUESTS ) { return self::denied( 'RATE_LIMITED', 429 ); }
 		$remaining = max( 1, $options['expires_at'] - time() );
-		set_transient( $nonce_key, 1, min( $remaining, YBY_Connector::NONCE_TTL ) );
-		set_transient( $rate_key, $count + 1, min( $remaining, YBY_Connector::RATE_LIMIT_WINDOW ) );
+		if ( ! set_transient( $nonce_key, 1, min( $remaining, YBY_Connector::NONCE_TTL ) ) ||
+			! set_transient( $rate_key, $count + 1, min( $remaining, YBY_Connector::RATE_LIMIT_WINDOW ) ) ) {
+			return self::denied( 'AUTH_UNAVAILABLE', 503 );
+		}
 		return true;
 	}
 
