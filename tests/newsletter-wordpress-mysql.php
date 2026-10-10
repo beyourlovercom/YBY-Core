@@ -112,4 +112,16 @@ nl_check( 0 === (int) $wpdb->get_var( $wpdb->prepare(
     'SELECT COUNT(*) FROM ' . YBY_Newsletter_Store::table_name() . " WHERE status = %s", 'subscribed'
 ) ), 'No unconfirmed subscriber eligible for EDM' );
 nl_check( count( $captured ) >= 2, 'Reconsent generated a fresh intercepted confirmation, not real email' );
+// Synthetic abuse check runs last, after the single-email/unique-row assertions.
+// It must cap a client that changes email addresses on the same source IP.
+$ip_blocked = false;
+for ( $i = 0; $i < 25; $i++ ) {
+    $fresh = $payload;
+    $fresh['email'] = 'synthetic-rotate-' . $i . '@example.test';
+    if ( 429 === nl_request( 'subscribe', $fresh )->get_status() ) {
+        $ip_blocked = true;
+        break;
+    }
+}
+nl_check( $ip_blocked, 'Rotating synthetic emails still hits bounded IP anti-abuse limit' );
 echo 'NEWSLETTER_M1_WP_MYSQL_E2E_PASS ' . $n . ' assertions (synthetic, no outbound)' . "\n";
