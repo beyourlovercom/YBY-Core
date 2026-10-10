@@ -40,6 +40,10 @@ m3e_assert( isset( rest_get_server()->get_routes()['/andy-core/v1/newsletter/sub
 
 $api_option = get_option( 'yby_newsletter_enabled', '__M3_NOT_SET__' );
 $mail_option = get_option( 'yby_newsletter_outbound_enabled', '__M3_NOT_SET__' );
+// Earlier disposable M1 tests intentionally exhaust their own IP rate limit.
+// Give M3 a unique RFC5737 documentation-only fixture client IP, and restore.
+$prior_ip = $_SERVER['REMOTE_ADDR'] ?? null;
+$_SERVER['REMOTE_ADDR'] = '192.0.2.' . random_int( 10, 200 );
 $mail_attempts = 0;
 $captured = array();
 $rejects = 0;
@@ -109,7 +113,10 @@ try {
 
     $result = m3e_request( 'POST', 'subscribe', $payload );
     m3e_assert( 200 === $result->get_status() && 1 === count( $captured ) &&
-        1 === $mail_attempts && 0 === $rejects, 'Exactly one approved synthetic confirmation intercepted, no transport' );
+        1 === $mail_attempts && 0 === $rejects,
+        'Exactly one approved synthetic confirmation intercepted, no transport'
+        . ' (REST=' . (int) $result->get_status() . ', attempts=' . (int) $mail_attempts
+        . ', accepted=' . count( $captured ) . ', rejected=' . (int) $rejects . ')' );
     m3e_assert( $captured[0]['to'] === $email &&
         $captured[0]['subject'] === 'Confirm your newsletter subscription', 'Synthetic mail strictly bound to one mailbox and subject' );
     $row = YBY_Newsletter_Store::find_email( $email );
@@ -167,6 +174,8 @@ try {
     else { update_option( 'yby_newsletter_enabled', $api_option ); }
     if ( $mail_option === '__M3_NOT_SET__' ) { delete_option( 'yby_newsletter_outbound_enabled' ); }
     else { update_option( 'yby_newsletter_outbound_enabled', $mail_option ); }
+    if ( null === $prior_ip ) { unset( $_SERVER['REMOTE_ADDR'] ); }
+    else { $_SERVER['REMOTE_ADDR'] = $prior_ip; }
 }
 m3e_assert( null === YBY_Newsletter_Store::find_email( $email ) &&
     (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . $table ) === $before_rows,
