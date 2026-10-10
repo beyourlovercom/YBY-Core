@@ -43,9 +43,10 @@ final class YBY_Connector_Newsletter_Readonly {
 	/** Explicit revocation; the expiration check also denies stale keys. */
 	public static function revoke() {
 		if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) { return false; }
-		delete_option( self::OPTION );
-		delete_option( self::SECRET_OPTION );
-		return true;
+		// Never report revocation success if a failed delete leaves a live key.
+		if ( false !== get_option( self::OPTION, false ) && ! delete_option( self::OPTION ) ) { return false; }
+		if ( false !== get_option( self::SECRET_OPTION, false ) && ! delete_option( self::SECRET_OPTION ) ) { return false; }
+		return false === get_option( self::OPTION, false ) && false === get_option( self::SECRET_OPTION, false );
 	}
 
 	/**
