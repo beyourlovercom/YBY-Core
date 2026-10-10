@@ -53,7 +53,12 @@ $payload = array(
     'website' => '',
 );
 $bad = $payload; $bad['marketing_consent'] = '0';
-nl_check( 400 === nl_request( 'subscribe', $bad )->get_status(), 'Unchecked consent rejected server side' );
+$unchecked_response = nl_request( 'subscribe', $bad );
+if ( 400 !== $unchecked_response->get_status() ) {
+    echo 'DIAG_UNCHECKED_STATUS=' . $unchecked_response->get_status() . ' DATA=' .
+        wp_json_encode( $unchecked_response->get_data() ) . "\n";
+}
+nl_check( 400 === $unchecked_response->get_status(), 'Unchecked consent rejected server side' );
 $bad = $payload; $bad['email'] = 'invalid-mail';
 nl_check( 400 === nl_request( 'subscribe', $bad )->get_status(), 'Invalid email rejected server side' );
 nl_check( 400 === nl_request( 'subscribe', $payload, 'https://evil.test' )->get_status(), 'Cross-origin request rejected' );
