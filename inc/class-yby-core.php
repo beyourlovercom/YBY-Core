@@ -65,6 +65,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-renderer.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-shortcodes.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-newsletter-consent.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-newsletter-store.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-mail-transport.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-newsletter-rest-controller.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-subscribe-shortcode.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-global-popup.php';
