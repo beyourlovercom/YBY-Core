@@ -6,6 +6,7 @@
 define( 'ABSPATH', __DIR__ );
 define( 'YBY_MAIL_TRANSPORT_ENABLED', true );
 define( 'YBY_MAIL_TRANSPORT_DRIVER', 'smtp' );
+define( 'YBY_MAIL_TRANSPORT_PROVIDER', 'tencent_exmail' );
 $GLOBALS['mt_hooks'] = array();
 $GLOBALS['mt_attempts'] = 0;
 $GLOBALS['mt_sender_calls'] = 0;
@@ -57,9 +58,9 @@ function wp_mail( $to, $subject, $message ) {
 require dirname( __DIR__ ) . '/inc/class-yby-mail-transport.php';
 
 $cfg = array(
-    'enabled' => true, 'driver' => 'smtp',
-    'host' => 'smtp.example.test', 'port' => '587', 'security' => 'tls',
-    'user' => 'synthetic@example.test', 'password' => 'CI_ONLY_NEVER_REAL',
+    'enabled' => true, 'driver' => 'smtp', 'provider' => 'tencent_exmail',
+    'host' => 'smtp.exmail.qq.com', 'port' => '465', 'security' => 'ssl',
+    'user' => 'newsletter@example.test', 'password' => 'CI_ONLY_NEVER_REAL',
     'from' => 'newsletter@example.test', 'from_name' => 'BeYourLover Newsletter',
 );
 foreach ( array(
@@ -74,13 +75,19 @@ mt_assert( YBY_Mail_Transport::readiness()['reason'] === 'configured_not_deliver
 mt_assert( ! str_contains( json_encode( YBY_Mail_Transport::readiness() ), $cfg['password'] ), 'No password in status' );
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'enabled' => false ) ) ) === null, 'Default disabled rejected' );
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'driver' => 'wp_mail' ) ) ) === null, 'No transport fallback' );
+mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'provider' => 'generic' ) ) ) === null, 'Unknown SMTP profile denied' );
+mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'host' => 'smtp.example.test' ) ) ) === null, 'Non-Tencent relay denied' );
+mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'host' => 'hwsmtp.exmail.qq.com' ) ) ) !== null, 'Explicit overseas Tencent relay accepted' );
+mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'port' => '587', 'security' => 'tls' ) ) ) === null, 'TLS587 not in Tencent initial profile' );
+mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'from' => 'alias@example.test' ) ) ) === null, 'Unverified sender alias denied' );
+mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'user' => 'not-an-email' ) ) ) === null, 'Incomplete SMTP login denied' );
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'security' => 'none' ) ) ) === null, 'Plaintext SMTP rejected' );
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'port' => '25' ) ) ) === null, 'Port 25 rejected' );
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'host' => "bad\r\nhost" ) ) ) === null, 'CRLF hostname rejected' );
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'host' => 'a..b.com' ) ) ) === null, 'Ambiguous hostname rejected' );
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'from' => 'invalid' ) ) ) === null, 'Invalid From denied' );
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'from_name' => "Name\nBcc:fake" ) ) ) === null, 'Header injection rejected' );
-mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'port' => '465', 'security' => 'ssl' ) ) ) !== null, 'Explicit implicit TLS/465 accepted' );
+mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'port' => '465', 'security' => 'ssl' ) ) ) !== null, 'Tencent SSL/465 accepted' );
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'port' => '465', 'security' => 'tls' ) ) ) === null, 'TLS/port mismatch rejected' );
 mt_assert( YBY_Mail_Transport::send_newsletter_confirmation( 'notmail', 'Confirm your newsletter subscription', 'text' ) === false, 'Invalid To denied' );
 mt_assert( YBY_Mail_Transport::send_newsletter_confirmation( 'a@example.test', 'Customer order receipt', 'text' ) === false, 'Woo/order email rejected' );
@@ -95,8 +102,8 @@ unset( $GLOBALS['mt_hooks']['pre_wp_mail'] );
 mt_assert( YBY_Mail_Transport::send_newsletter_confirmation( 'a@example.test', 'Confirm your newsletter subscription', 'text' ),
     'Synthetic stub accepts correctly scoped confirmation' );
 $mailer = $GLOBALS['mt_last_mailer'];
-mt_assert( $mailer->is_smtp && $mailer->Host === $cfg['host'] && $mailer->Port === 587 &&
-    $mailer->SMTPSecure === 'tls' && $mailer->SMTPAuth && $mailer->SMTPAutoTLS, 'Real TLS config assigned only to scoped synthetic mailer' );
+mt_assert( $mailer->is_smtp && $mailer->Host === $cfg['host'] && $mailer->Port === 465 &&
+    $mailer->SMTPSecure === 'ssl' && $mailer->SMTPAuth && $mailer->SMTPAutoTLS, 'Real TLS config assigned only to scoped synthetic mailer' );
 mt_assert( $mailer->SMTPOptions['ssl']['verify_peer'] === true &&
     $mailer->SMTPOptions['ssl']['verify_peer_name'] === true &&
     $mailer->SMTPOptions['ssl']['allow_self_signed'] === false, 'TLS identity verification enforced' );
