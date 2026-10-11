@@ -8,6 +8,7 @@
  * mailbox, never creates a Dev or Production subscriber, never uses live data.
  */
 if ( ! defined( 'WP_CLI' ) || true !== WP_CLI ) { exit( 8 ); }
+if ( ! defined( 'YBY_MAIL_TRANSPORT_TEST_INTERCEPT_ONLY' ) ) { define( 'YBY_MAIL_TRANSPORT_TEST_INTERCEPT_ONLY', true ); }
 if ( ! defined( 'ABSPATH' ) || 'newsletter-validation.test' !== wp_parse_url( home_url( '/' ), PHP_URL_HOST ) ) {
     fwrite( STDERR, "M3_E2E_REFUSED_NON_DISPOSABLE_WP\n" );
     exit( 8 );
