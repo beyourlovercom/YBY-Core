@@ -14,6 +14,7 @@ The installed Dev Safety MU retains its terminal pre_wp_mail deny for non-author
 | --- | --- |
 | YBY_MAIL_TRANSPORT_ENABLED | WordPress code constant must equal boolean true |
 | YBY_MAIL_TRANSPORT_DRIVER | WordPress code constant must be "smtp" |
+| YBY_MAIL_TRANSPORT_PROVIDER | WordPress code constant must be "tencent_exmail"; default OFF |
 | YBY_MAIL_SMTP_HOST | Hosting-controlled SMTP hostname |
 | YBY_MAIL_SMTP_PORT | 587 for tls/STARTTLS or 465 for ssl/implicit TLS |
 | YBY_MAIL_SMTP_SECURITY | Only "tls" or "ssl" |
@@ -25,6 +26,21 @@ The installed Dev Safety MU retains its terminal pre_wp_mail deny for non-author
 Configuration is OFF unless all values validate. No PHP mail fallback, no plaintext SMTP, no auto-retries, no TLS-peer-verification override, no WordPress option for SMTP credentials.
 
 The existing two independent Newsletter release flags still apply: API requires both YBY_NEWSLETTER_API_ENABLED and yby_newsletter_enabled; outbound requires YBY_NEWSLETTER_OUTBOUND_ENABLED and yby_newsletter_outbound_enabled. The REST subscribe handler calls the new read-only transport readiness check **before beginning pending subscription**; unconfigured transport returns 503 without inserting a pending subscriber. This checks readiness of configuration, NOT SMTP connectivity/delivery.
+
+
+## Tencent Enterprise Mail profile — selected by Owner
+
+Owner selected Tencent Enterprise Mail as the BeYourLover confirmation sender. The first runtime adapter explicitly accepts only these **user-configured** relay hostnames, without automatic fallback:
+- Primary: smtp.exmail.qq.com — SSL / port 465.
+- Overseas alternative: hwsmtp.exmail.qq.com — SSL / port 465, only after separately verifying the host and selecting it explicitly.
+
+Username must be the **complete Tencent Enterprise Mail address**. From must be the **same authenticated email**, pending separate verified alias authorizations. The corporate login/client app-specific password, if required, is entered **only in the secret manager / approved private host configuration**; it is never pasted into chat, GitHub, .env committed to repo, WP options or normal logs.
+
+Tencent Enterprise Mail admin may need to allow SMTP client access to that account; if secure login is enabled, the member may need a client authorization password. Official service information: https://service.rtxmail.net/help/232.html. Do not assume MX, SPF inclusion, or successful webmail sign-in means SMTP authentication is ready.
+
+BeYourLover DNS baseline (observed, not a send-pass guarantee): root MX includes Tencent Enterprise Mail, SPF includes spf.mail.qq.com and amazonses.com, DMARC p=none. DKIM must be verified against the **real chosen Tencent sender identity** through provider admin/actual received mail headers before claiming alignment. Do not alter DNS without separate approval.
+
+**Safe Canary recipient**: Owner must explicitly confirm the exact test recipient to the approved secure execution workflow, not to source or logs. Only one approved email is allowed; no duplicate retries after uncertain transport acceptance. A transport-ready configuration means only **static validity**, not SMTP login, provider acceptance, spam-folder receipt, or confirmed subscription.
 
 ## Synthetic CI scope
 
