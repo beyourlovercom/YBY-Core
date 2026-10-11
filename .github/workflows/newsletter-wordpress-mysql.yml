@@ -56,3 +56,9 @@ jobs:
           set -euo pipefail
           wp eval-file "$GITHUB_WORKSPACE/tests/newsletter-m2-wordpress-mysql.php" --path="$RUNNER_TEMP/wordpress"
           echo "NEWSLETTER_M2_NATIVE_WP_MYSQL_ONLY=PASS"
+      - name: M3 single-recipient double-opt-in zero-network synthetic E2E
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/tests/newsletter-m3-single-recipient-wordpress-mysql.php" --path="$RUNNER_TEMP/wordpress"
+          echo "NEWSLETTER_M3_SINGLE_RECIPIENT_ISOLATED_ONLY=PASS"
