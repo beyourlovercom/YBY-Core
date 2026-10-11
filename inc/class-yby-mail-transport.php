@@ -37,6 +37,7 @@ final class YBY_Mail_Transport {
         return array(
             'enabled'   => defined( 'YBY_MAIL_TRANSPORT_ENABLED' ) && true === YBY_MAIL_TRANSPORT_ENABLED,
             'driver'    => defined( 'YBY_MAIL_TRANSPORT_DRIVER' ) ? YBY_MAIL_TRANSPORT_DRIVER : '',
+            'provider'  => defined( 'YBY_MAIL_TRANSPORT_PROVIDER' ) ? YBY_MAIL_TRANSPORT_PROVIDER : '',
             'host'      => getenv( 'YBY_MAIL_SMTP_HOST' ),
             'port'      => getenv( 'YBY_MAIL_SMTP_PORT' ),
             'security'  => getenv( 'YBY_MAIL_SMTP_SECURITY' ),
@@ -49,11 +50,13 @@ final class YBY_Mail_Transport {
 
     /**
      * Pure configuration validation; tests may provide synthetic input.
+     * First live profile is Tencent Enterprise Mail only (SSL/465, exact sender).
      * No automatic PHP mail fallback and no insecure/no-TLS SMTP option.
      */
     public static function validated_config( $raw ) {
         if ( ! is_array( $raw ) || true !== ( $raw['enabled'] ?? false ) ||
-             'smtp' !== ( $raw['driver'] ?? null ) ) { return null; }
+             'smtp' !== ( $raw['driver'] ?? null ) ||
+             'tencent_exmail' !== ( $raw['provider'] ?? null ) ) { return null; }
 
         foreach ( array( 'host', 'port', 'security', 'user', 'password', 'from', 'from_name' ) as $key ) {
             if ( ! isset( $raw[ $key ] ) || ! is_string( $raw[ $key ] ) ||
@@ -67,7 +70,17 @@ final class YBY_Mail_Transport {
              ! in_array( $security, array( 'tls', 'ssl' ), true ) ||
              ( 'tls' === $security && '587' !== $port ) ||
              ( 'ssl' === $security && '465' !== $port ) ) { return null; }
-        if ( false === filter_var( $raw['from'], FILTER_VALIDATE_EMAIL ) ||
+        // Tencent Enterprise Mail 2026: authenticated SSL/465 only. The
+        // overseas relay is an explicit choice, never an automatic failover.
+        $allowed_hosts = array( 'smtp.exmail.qq.com', 'hwsmtp.exmail.qq.com' );
+        if ( ! in_array( $host, $allowed_hosts, true ) ||
+             'ssl' !== $security || '465' !== $port ) { return null; }
+
+        // Initial release permits only the authenticated mailbox as From.
+        // Sending as an alias/delegated address requires a separate review.
+        if ( false === filter_var( $raw['user'], FILTER_VALIDATE_EMAIL ) ||
+             false === filter_var( $raw['from'], FILTER_VALIDATE_EMAIL ) ||
+             ! hash_equals( strtolower( $raw['user'] ), strtolower( $raw['from'] ) ) ||
              preg_match( '/[\r\n]/', $raw['user'] . $raw['from_name'] ) ||
              strlen( $raw['from_name'] ) > 90 ) { return null; }
         return array(
