@@ -45,6 +45,11 @@ final class Andy_Commerce_M3_Draft_Admin_Adapter {
         return $this->repository->duplicate($id,$revision,$actor,$newId);
     }
 
+    public function archiveBatch(array $versions,string $nonce):int {
+        $actor=$this->authorize($nonce);
+        return $this->repository->archiveBatch($versions,$actor);
+    }
+
     public function archive(string $campaignId, int $revision, string $nonce): void {
         $actor = $this->authorize($nonce);
         if (!preg_match('/^[a-z0-9][a-z0-9_-]{2,59}$/D', $campaignId)) {
