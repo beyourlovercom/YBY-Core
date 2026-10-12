@@ -31,9 +31,17 @@ final class WC_Shipping_Zones {public static function get_zone_matching_package(
 final class Andy_Commerce_Shipping_Promotion_Policy {
  public const OPTION_NAME='andy_commerce_shipping_promotion_settings_v1';
  public const ELIGIBILITY_BASIS='pre_discount_merchandise_subtotal';
+
+ public static function settings_source():string{return 'byl-platform-legacy';}
+ public static function preset():array{return ['legacy_option_name'=>'byl_shipping_promotion_settings'];}
+ public static function get_persisted_settings():?array{
+  $v=get_option('byl_shipping_promotion_settings');
+  if(is_array($v))$v['free_shipping_code']=strtolower($v['free_shipping_code']);
+  return $v;
+ }
  public static function is_runtime_active():bool{return true;}
  public static function get_persisted_zone_effective_threshold(int $id):?float{
-   $cfg=get_option(self::OPTION_NAME);
+   $cfg=self::get_persisted_settings();
    $z=$cfg['zone_overrides'][(string)$id]??[];
    return ($z['mode']??'')==='override'?(float)$z['threshold']:(float)$cfg['global_threshold'];
  }
@@ -43,27 +51,28 @@ require_once dirname(__DIR__).'/includes/class-andy-commerce-m5-progress-project
 require_once dirname(__DIR__).'/includes/class-andy-commerce-m5-store-api-readonly-extension.php';
 $settings=[
  'schema_version'=>1,'eligibility_basis'=>'pre_discount_merchandise_subtotal',
- 'mode'=>'automatic','global_threshold'=>69,'free_shipping_code'=>'BYL49',
+ 'mode'=>'automatic','global_threshold'=>49,'free_shipping_code'=>'BYL49',
  'zone_overrides'=>[
- '0'=>['mode'=>'global','threshold'=>69],
+ '0'=>['mode'=>'global','threshold'=>49],
  '1'=>['mode'=>'override','threshold'=>0],
  '3'=>['mode'=>'override','threshold'=>169],
  '4'=>['mode'=>'override','threshold'=>129],
  '5'=>['mode'=>'override','threshold'=>69]]];
-$GLOBALS['options'][Andy_Commerce_Shipping_Promotion_Policy::OPTION_NAME]=$settings;
+$commerce=$settings;$commerce['global_threshold']=69;$commerce['zone_overrides']['0']['threshold']=69;
+$GLOBALS['options'][Andy_Commerce_Shipping_Promotion_Policy::OPTION_NAME]=$commerce;
+$GLOBALS['options']['byl_shipping_promotion_settings']=$settings;
 $N=0;
 $assert=static function(bool $v,string $what)use(&$N):void {
  $N++;if(!$v)throw new RuntimeException('M5 STORE ACTUAL FAIL '.$what);
 };
 $hidden=Andy_Commerce_M5_Store_API_Readonly_Extension::data();
 $assert(!$hidden['show_progress']&&$hidden['reason']==='v2_canary_not_authoritative','option off fail closed');
-$GLOBALS['options'][Andy_Commerce_M4_V2_Dev_Canary::OPTION_NAME]=[
- 'token'=>Andy_Commerce_M4_V2_Dev_Canary::TOKEN,'enabled'=>true,
- 'expires_utc'=>time()+1800,'v1_fingerprint'=>Andy_Commerce_M4_V2_Dev_Canary::fingerprint($settings)];
+$GLOBALS['options'][Andy_Commerce_M4_V2_Dev_Canary::OPTION_NAME]=
+ Andy_Commerce_M4_V2_Dev_Canary::candidate_gate();
 $ready=Andy_Commerce_M5_Store_API_Readonly_Extension::data();
 $assert($ready['show_progress']&&$ready['qualified_minor']===4500,'eligible line discounted $45 (gift excluded)');
-$assert($ready['threshold_minor']===6900&&$ready['remaining_minor']===2400,'live zone0 threshold $69 not $49');
-$assert($ready['percent']===65,'fraction matches actual zone');
+$assert($ready['threshold_minor']===4900&&$ready['remaining_minor']===400,'real active BYL zone0 threshold $49');
+$assert($ready['percent']===91,'fraction matches actual zone');
 $assert(!$ready['gift_enabled']&&!$ready['claim_free_shipping'],'never issues gifts or shipping');
 $GLOBALS['zone']=5;
 $assert(Andy_Commerce_M5_Store_API_Readonly_Extension::data()['threshold_minor']===6900,'zone 5 $69');
@@ -85,11 +94,11 @@ $GLOBALS['picked']=['flat_rate:8'];
 $GLOBALS['host']='www.beyourlover.com';
 $assert(!Andy_Commerce_M5_Store_API_Readonly_Extension::data()['show_progress'],'WWW host disallowed');
 $GLOBALS['host']='dev.beyourlover.com';
-$old=$settings;$old['global_threshold']=49;
-$GLOBALS['options'][Andy_Commerce_Shipping_Promotion_Policy::OPTION_NAME]=$old;
-$assert(!Andy_Commerce_M5_Store_API_Readonly_Extension::data()['show_progress'],'settings drift hides progress');
-$GLOBALS['options'][Andy_Commerce_Shipping_Promotion_Policy::OPTION_NAME]=$settings;
-$GLOBALS['wc']->cart->lines=[['line_total'=>69.0]];
+$old=$settings;$old['global_threshold']=69;
+$GLOBALS['options']['byl_shipping_promotion_settings']=$old;
+$assert(!Andy_Commerce_M5_Store_API_Readonly_Extension::data()['show_progress'],'active policy drift hides progress');
+$GLOBALS['options']['byl_shipping_promotion_settings']=$settings;
+$GLOBALS['wc']->cart->lines=[['line_total'=>49.0]];
 $full=Andy_Commerce_M5_Store_API_Readonly_Extension::data();
 $assert($full['percent']===100&&$full['remaining_minor']===0&&!$full['claim_free_shipping'],'100% no false free award');
 $GLOBALS['wc']->cart->lines=[['line_total'=>-1]];
