@@ -29,6 +29,12 @@ final class YBY_Newsletter_REST_Controller {
             && '1' === (string) get_option( 'yby_newsletter_outbound_enabled', '0' );
     }
 
+    /** The same final readiness gate is used by REST, footer and popup UI. */
+    public static function subscribe_ready() {
+        $transport = YBY_Mail_Transport::readiness();
+        return self::enabled() && self::outbound_enabled() && ! empty( $transport['ready'] );
+    }
+
     /** Keep one-time email-link tokens out of third-party Referer and caches. */
     public static function protect_token_landing() {
         if ( empty( $_GET['yby_newsletter_action'] ) || empty( $_GET['token'] ) ||
@@ -112,7 +118,7 @@ final class YBY_Newsletter_REST_Controller {
     }
 
     public function subscribe( $request ) {
-        if ( ! self::enabled() || ! self::outbound_enabled() || ! YBY_Mail_Transport::readiness()['ready'] ) {
+        if ( ! self::subscribe_ready() ) {
             return self::respond( false, 'Newsletter is not available yet.', 503 );
         }
         if ( ! self::valid_origin( $request ) || ! self::valid_size( $request ) ) {
