@@ -30,7 +30,7 @@ $requirements=[
  'Bulk version form'=>'campaign_versions[',
  'Archive action'=>'draft_action" value="archive"',
  'Duplicate action'=>'draft_action" value="duplicate"',
- 'CSRF nonce'=>"wp_nonce_field($nonce_action)",
+ 'CSRF nonce'=>'wp_nonce_field($nonce_action)',
  'Real pagination'=>'m3_page',
  'Safe escaping'=>'esc_html',
 ];
