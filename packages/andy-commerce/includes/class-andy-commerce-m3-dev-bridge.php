@@ -23,7 +23,8 @@ final class Andy_Commerce_M3_Dev_Bridge {
         return defined('ANDY_COMMERCE_M3_DEV_DRAFTS_ENABLED')
             && ANDY_COMMERCE_M3_DEV_DRAFTS_ENABLED === true
             && defined('WP_ENVIRONMENT_TYPE')
-            && WP_ENVIRONMENT_TYPE === 'development';
+            && in_array(WP_ENVIRONMENT_TYPE, ['development','staging'], true)
+            && parse_url(home_url(), PHP_URL_HOST) === 'dev.beyourlover.com';
     }
 
     public function register(): void {
