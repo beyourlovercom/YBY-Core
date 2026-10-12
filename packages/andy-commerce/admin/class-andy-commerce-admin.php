@@ -49,6 +49,13 @@ class Andy_Commerce_Admin {
 					echo '<a class="nav-tab'.($key==='marketing-promotions'?' nav-tab-active':'').'" href="'.esc_url($link).'">'.esc_html($name).'</a>';
 				}
 				echo '</nav></div>';
+                // M4/M5 dedicated, read-only lab. Dev + manage_woocommerce
+                // are checked above and also inside the view. Never touch
+                // shipping policy, Woo hooks, Store API or campaign runtime.
+                if (isset($_GET['m45_preview']) && $_GET['m45_preview'] === '1') {
+                    include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-m45-shadow-lab.php';
+                    return;
+                }
 				$edit_id = isset($_GET['m3_edit']) && is_string($_GET['m3_edit'])
 					? sanitize_key(wp_unslash($_GET['m3_edit'])) : '';
 				if ($edit_id === '') {
