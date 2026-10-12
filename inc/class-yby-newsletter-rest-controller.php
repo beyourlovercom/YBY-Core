@@ -29,6 +29,12 @@ final class YBY_Newsletter_REST_Controller {
             && '1' === (string) get_option( 'yby_newsletter_outbound_enabled', '0' );
     }
 
+    /** The same final readiness gate is used by REST, footer and popup UI. */
+    public static function subscribe_ready() {
+        return self::enabled() && self::outbound_enabled()
+            && ! empty( YBY_Mail_Transport::readiness()['ready'] );
+    }
+
     /** Keep one-time email-link tokens out of third-party Referer and caches. */
     public static function protect_token_landing() {
         if ( empty( $_GET['yby_newsletter_action'] ) || empty( $_GET['token'] ) ||
@@ -112,7 +118,7 @@ final class YBY_Newsletter_REST_Controller {
     }
 
     public function subscribe( $request ) {
-        if ( ! self::enabled() || ! self::outbound_enabled() ) {
+        if ( ! self::subscribe_ready() ) {
             return self::respond( false, 'Newsletter is not available yet.', 503 );
         }
         if ( ! self::valid_origin( $request ) || ! self::valid_size( $request ) ) {
@@ -158,7 +164,7 @@ final class YBY_Newsletter_REST_Controller {
             "\n\nIf you did not request this, ignore this email. You can unsubscribe using:\n" . $unsubscribe_url;
         // No external email unless BOTH explicit gates are set. No default
         // activation, and any sender failure returns a truthful 503.
-        if ( ! wp_mail( $result['email'], 'Confirm your newsletter subscription', $message ) ) {
+        if ( ! YBY_Mail_Transport::send_newsletter_confirmation( $result['email'], 'Confirm your newsletter subscription', $message ) ) {
             return self::respond( false, 'Email confirmation is not available. Please try later.', 503 );
         }
         return self::respond( true, 'If eligible, please check your inbox.', 200 );

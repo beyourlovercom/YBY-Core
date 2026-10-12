@@ -5,6 +5,7 @@
  * All wp_mail calls intercepted. Never import actual emails/customers.
  */
 if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) { exit( 8 ); }
+define( 'YBY_MAIL_TRANSPORT_TEST_INTERCEPT_ONLY', true );
 if ( ! defined( 'YBY_NEWSLETTER_SCHEMA_APPLY' ) ) { define( 'YBY_NEWSLETTER_SCHEMA_APPLY', true ); }
 if ( ! defined( 'YBY_NEWSLETTER_API_ENABLED' ) ) { define( 'YBY_NEWSLETTER_API_ENABLED', true ); }
 if ( ! defined( 'YBY_NEWSLETTER_OUTBOUND_ENABLED' ) ) { define( 'YBY_NEWSLETTER_OUTBOUND_ENABLED', true ); }
