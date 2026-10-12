@@ -9,6 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class Andy_Commerce_Admin {
 	const PAGE_SLUG = 'andy-commerce';
+	private $m3_bridge;
+	public function __construct($m3_bridge = null) { $this->m3_bridge = $m3_bridge; }
 
 	public function add_admin_menu() {
 		add_menu_page(
@@ -37,7 +39,43 @@ class Andy_Commerce_Admin {
 		}
 
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
-		if ( ! in_array( $tab, array( 'overview', 'order-export', 'checkout-shipping', 'settings' ), true ) ) { $tab = 'overview'; }
+		if ( ! in_array( $tab, array( 'overview', 'order-export', 'checkout-shipping', 'marketing-promotions', 'settings' ), true ) ) { $tab = 'overview'; }
+
+		if ( 'marketing-promotions' === $tab ) {
+			// Owner-gated M1 UI shell: no form handlers, options, coupons or runtime hooks.
+			include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-promotions.php';
+			if ($this->m3_bridge && Andy_Commerce_M3_Dev_Bridge::enabled()) {
+				$drafts = $this->m3_bridge->drafts();
+				include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-m3-draft-preview.php';
+				$edit_id = isset($_GET['m3_edit']) && is_string($_GET['m3_edit'])
+					? sanitize_key(wp_unslash($_GET['m3_edit'])) : '';
+				if ($edit_id !== '') {
+					$row = $this->m3_bridge->draft($edit_id);
+					if ($row) {
+						$mode = 'revise';
+						$revision = (int)$row['revision'];
+						$stored = json_decode((string)$row['payload'], true);
+						$allowed = ['schema_version','id','name','type','currency','status','active','priority',
+							'countries','start_utc','end_utc','stack_with_coupon','rule','notes'];
+						$campaign = array_intersect_key(is_array($stored)?$stored:[], array_flip($allowed));
+					} else {
+						echo '<div class="notice notice-error"><p>Draft not found or archived.</p></div>';
+						return;
+					}
+				} else {
+					$mode = 'create';
+					$revision = 0;
+					$campaign = [
+						'schema_version'=>1,'id'=>'m3-'.strtolower(wp_generate_password(8,false,false)),
+						'name'=>'New campaign draft','type'=>'spend_save','currency'=>'USD',
+						'status'=>'draft','active'=>false,'priority'=>0,'countries'=>['US'],
+						'rule'=>['threshold_minor'=>10000,'discount_minor'=>1000]
+					];
+				}
+				include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-m3-draft-editor.php';
+			}
+			return;
+		}
 
 		if ( 'checkout-shipping' === $tab ) {
 			include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/checkout-shipping.php';
