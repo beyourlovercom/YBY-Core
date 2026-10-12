@@ -52,6 +52,33 @@ final class Andy_Commerce_M3_Draft_Repository {
         ];
     }
 
+
+    /** Non-mutating recent draft listing, bounded for the Marketing admin. */
+    public function listDrafts(int $limit=40): array {
+        $limit = max(1, min(100, $limit));
+        $rows = $this->db->get_results(
+            "SELECT campaign_id,campaign_type,revision,status,active,payload
+             FROM {$this->drafts} WHERE status='draft' AND active=0
+             ORDER BY updated_at DESC LIMIT " . $limit,
+            ARRAY_A
+        );
+        if (!is_array($rows)) { return []; }
+        $out = [];
+        foreach ($rows as $row) {
+            $decoded = json_decode((string)$row['payload'], true);
+            if (!is_array($decoded) || ($decoded['active'] ?? null) !== false) { continue; }
+            $out[] = [
+                'campaign_id' => (string)$row['campaign_id'],
+                'campaign_type' => (string)$row['campaign_type'],
+                'revision' => (int)$row['revision'],
+                'name' => (string)($decoded['name'] ?? ''),
+                'status' => 'draft',
+                'active' => false,
+            ];
+        }
+        return $out;
+    }
+
     public function find(string $id): ?array {
         $sql = $this->db->prepare("SELECT * FROM {$this->drafts} WHERE campaign_id = %s", $id);
         $row = $this->db->get_row($sql, ARRAY_A);
