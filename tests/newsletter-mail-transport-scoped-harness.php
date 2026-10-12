@@ -7,6 +7,7 @@ define( 'ABSPATH', __DIR__ );
 define( 'YBY_MAIL_TRANSPORT_ENABLED', true );
 define( 'YBY_MAIL_TRANSPORT_DRIVER', 'smtp' );
 define( 'YBY_MAIL_TRANSPORT_PROVIDER', 'tencent_exmail' );
+define( 'YBY_MAIL_APPROVED_FROM_EMAIL', 'support@beyourlover.com' );
 $GLOBALS['mt_hooks'] = array();
 $GLOBALS['mt_attempts'] = 0;
 $GLOBALS['mt_sender_calls'] = 0;
@@ -60,8 +61,8 @@ require dirname( __DIR__ ) . '/inc/class-yby-mail-transport.php';
 $cfg = array(
     'enabled' => true, 'driver' => 'smtp', 'provider' => 'tencent_exmail',
     'host' => 'smtp.exmail.qq.com', 'port' => '465', 'security' => 'ssl',
-    'user' => 'newsletter@example.test', 'password' => 'CI_ONLY_NEVER_REAL',
-    'from' => 'newsletter@example.test', 'from_name' => 'BeYourLover Newsletter',
+    'user' => 'support@beyourlover.com', 'password' => 'CI_ONLY_NEVER_REAL',
+    'from' => 'support@beyourlover.com', 'approved_from' => 'support@beyourlover.com', 'from_name' => 'BeYourLover Newsletter',
 );
 foreach ( array(
     'YBY_MAIL_SMTP_HOST' => $cfg['host'], 'YBY_MAIL_SMTP_PORT' => $cfg['port'],
@@ -80,6 +81,8 @@ mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'host
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'host' => 'hwsmtp.exmail.qq.com' ) ) ) !== null, 'Explicit overseas Tencent relay accepted' );
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'port' => '587', 'security' => 'tls' ) ) ) === null, 'TLS587 not in Tencent initial profile' );
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'from' => 'alias@example.test' ) ) ) === null, 'Unverified sender alias denied' );
+mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'approved_from' => 'another@beyourlover.com' ) ) ) === null, 'Site-specific unauthorized From denied' );
+mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'approved_from' => '' ) ) ) === null, 'Missing site approval fails closed' );
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'user' => 'not-an-email' ) ) ) === null, 'Incomplete SMTP login denied' );
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'security' => 'none' ) ) ) === null, 'Plaintext SMTP rejected' );
 mt_assert( YBY_Mail_Transport::validated_config( array_merge( $cfg, array( 'port' => '25' ) ) ) === null, 'Port 25 rejected' );
