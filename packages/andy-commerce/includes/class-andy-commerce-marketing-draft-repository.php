@@ -72,6 +72,7 @@ final class Andy_Commerce_M3_Draft_Repository {
                 'campaign_type' => (string)$row['campaign_type'],
                 'revision' => (int)$row['revision'],
                 'name' => (string)($decoded['name'] ?? ''),
+                'summary' => Andy_Commerce_M3_Human_Form::summary($decoded),
                 'status' => 'draft',
                 'active' => false,
             ];
