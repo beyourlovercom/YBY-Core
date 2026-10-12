@@ -137,6 +137,14 @@ blockedThrows(fn()=>runEval(cart([line('a',1,0,0)]),[]),'invalid quantity');
 blockedThrows(fn()=>runEval(cart([line('a',1,1,100),line('a',2,1,100)]),[]),'duplicate line key');
 blockedThrows(fn()=>runEval(cart([line('a',1,1,1000000000001)]),[]),'money upper bound');
 blockedThrows(fn()=>runEval(cart([line('a',1,5001,100)]),[]),'unit upper bound');
+blockedThrows(fn()=>runEval($base,[offer('same','spend_save',['threshold_minor'=>1,'discount_minor'=>10]),
+    offer('same','spend_save',['threshold_minor'=>1,'discount_minor'=>100])]),
+    'duplicate campaign ID must be rejected');
+check(runEval(cart([line('pay',11,1,1500),line('free',11,2,0)]),[$tier])['discount_minor']===0,
+    'free zero-priced merchandise cannot artificially unlock quantity tier');
+check(runEval(cart([line('pay',11,3,4500),line('free',11,2,0)]),[$tier])['discount_minor']===900,
+    'real paid units keep tier reward while free units are ignored');
+
 $bootstrap=file_get_contents(dirname(__DIR__).'/andy-commerce.php');
 $runtime=file_get_contents(dirname(__DIR__).'/includes/class-andy-commerce.php');
 check(!str_contains($bootstrap,'marketing-pure-evaluator')&&!str_contains($runtime,'marketing-pure-evaluator'),
