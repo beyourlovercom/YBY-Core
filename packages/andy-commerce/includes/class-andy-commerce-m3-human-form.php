@@ -162,6 +162,35 @@ final class Andy_Commerce_M3_Human_Form {
         return $draft;
     }
 
+    public static function summary(array $draft):string {
+        $type=(string)($draft['type']??'');
+        $r=is_array($draft['rule']??null)?$draft['rule']:[];
+        $currency=(string)($draft['currency']??'USD');
+        $amount=static fn(int $value):string=>$currency.' '.self::moneyLabel($value);
+        $discount=isset($r['discount_bps'])
+            ? self::percentLabel((int)$r['discount_bps']).'%'
+            : $amount((int)($r['discount_minor']??0));
+        switch($type) {
+            case 'spend_save':
+                return '满 '.$amount((int)($r['threshold_minor']??0))
+                    .(isset($r['discount_bps'])?'，优惠 '.$discount:'，立减 '.$discount);
+            case 'bogo':
+                return '买 '.(int)($r['buy_qty']??1).' 件，另 '.(int)($r['get_qty']??1).' 件优惠 '
+                    .self::percentLabel((int)($r['reward_bps']??10000)).'%';
+            case 'bundle':
+                return '组合 '.count((array)($r['requires']??[])).' 种商品，'
+                    .(isset($r['bundle_price_minor'])
+                        ? '套装价 '.$amount((int)$r['bundle_price_minor'])
+                        : '折扣 '.self::percentLabel((int)($r['discount_bps']??0)).'%');
+            case 'tiered':
+                return '多买多折 · '.count((array)($r['tiers']??[])).' 档阶梯';
+            case 'free_gift':
+                return '满 '.$amount((int)($r['threshold_minor']??0)).'，赠送指定商品';
+            case 'free_shipping':
+                return '满 '.$amount((int)($r['threshold_minor']??0)).'，免运费（仅草稿）';
+            default: return '仅草稿 · OFF';
+        }
+    }
     public static function moneyLabel(int $minor):string { return number_format($minor/100,2,'.',''); }
     public static function percentLabel(int $bps):string { return number_format($bps/100,2,'.',''); }
 }
