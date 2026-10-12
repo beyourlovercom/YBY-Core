@@ -42,13 +42,20 @@ class Andy_Commerce_Admin {
 		if ( ! in_array( $tab, array( 'overview', 'order-export', 'checkout-shipping', 'marketing-promotions', 'settings' ), true ) ) { $tab = 'overview'; }
 
 		if ( 'marketing-promotions' === $tab ) {
-			// Owner-gated M1 UI shell: no form handlers, options, coupons or runtime hooks.
-			include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-promotions.php';
 			if ($this->m3_bridge && Andy_Commerce_M3_Dev_Bridge::enabled()) {
-				$drafts = $this->m3_bridge->drafts();
-				include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-m3-draft-preview.php';
+				echo '<div class="wrap"><h1>Andy Commerce</h1><nav class="nav-tab-wrapper" aria-label="Commerce sections">';
+				foreach (['overview'=>'Overview','order-export'=>'Order Export','checkout-shipping'=>'Checkout / Shipping','marketing-promotions'=>'Marketing / Promotions','settings'=>'Settings'] as $key=>$name) {
+					$link=add_query_arg(['page'=>self::PAGE_SLUG,'tab'=>$key],admin_url('admin.php'));
+					echo '<a class="nav-tab'.($key==='marketing-promotions'?' nav-tab-active':'').'" href="'.esc_url($link).'">'.esc_html($name).'</a>';
+				}
+				echo '</nav></div>';
 				$edit_id = isset($_GET['m3_edit']) && is_string($_GET['m3_edit'])
 					? sanitize_key(wp_unslash($_GET['m3_edit'])) : '';
+				if ($edit_id === '') {
+					$drafts = $this->m3_bridge->drafts();
+					include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-m3-draft-preview.php';
+					return;
+				}
 				if ($edit_id !== '' && $edit_id !== 'new') {
 					$row = $this->m3_bridge->draft($edit_id);
 					if ($row) {
@@ -73,6 +80,9 @@ class Andy_Commerce_Admin {
 					];
 				}
 				include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-m3-draft-editor.php';
+			} else {
+				// Original M1 read-only design shell when M3 is disabled.
+				include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-promotions.php';
 			}
 			return;
 		}
