@@ -44,6 +44,8 @@ final class YBY_Mail_Transport {
             'user'      => getenv( 'YBY_MAIL_SMTP_USER' ),
             'password'  => getenv( 'YBY_MAIL_SMTP_PASSWORD' ),
             'from'      => getenv( 'YBY_MAIL_FROM_EMAIL' ),
+            // Site-local approved sender, never a universal BYL value.
+            'approved_from' => defined( 'YBY_MAIL_APPROVED_FROM_EMAIL' ) ? YBY_MAIL_APPROVED_FROM_EMAIL : '',
             'from_name' => getenv( 'YBY_MAIL_FROM_NAME' ),
         );
     }
@@ -58,7 +60,7 @@ final class YBY_Mail_Transport {
              'smtp' !== ( $raw['driver'] ?? null ) ||
              'tencent_exmail' !== ( $raw['provider'] ?? null ) ) { return null; }
 
-        foreach ( array( 'host', 'port', 'security', 'user', 'password', 'from', 'from_name' ) as $key ) {
+        foreach ( array( 'host', 'port', 'security', 'user', 'password', 'from', 'approved_from', 'from_name' ) as $key ) {
             if ( ! isset( $raw[ $key ] ) || ! is_string( $raw[ $key ] ) ||
                  '' === trim( $raw[ $key ] ) || strlen( $raw[ $key ] ) > 255 ) { return null; }
         }
@@ -81,6 +83,8 @@ final class YBY_Mail_Transport {
         if ( false === filter_var( $raw['user'], FILTER_VALIDATE_EMAIL ) ||
              false === filter_var( $raw['from'], FILTER_VALIDATE_EMAIL ) ||
              ! hash_equals( strtolower( $raw['user'] ), strtolower( $raw['from'] ) ) ||
+             false === filter_var( $raw['approved_from'], FILTER_VALIDATE_EMAIL ) ||
+             ! hash_equals( strtolower( $raw['approved_from'] ), strtolower( $raw['from'] ) ) ||
              preg_match( '/[\r\n]/', $raw['user'] . $raw['from_name'] ) ||
              strlen( $raw['from_name'] ) > 90 ) { return null; }
         return array(
