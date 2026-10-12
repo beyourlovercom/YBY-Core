@@ -19,6 +19,15 @@ class Andy_Commerce {
 			// until separately approved retirement; register only a default choice.
 			Andy_Commerce_Shipping_Promotion_Runtime::boot_default_shipping_preference();
 		}
+        // M5 Dev-only: Store API read-only extension advertises HIDDEN state.
+        // No BYL49 migration, no Store API updates or cart/shipping filters.
+        if ( defined('ANDY_COMMERCE_M3_DEV_DRAFTS_ENABLED') && ANDY_COMMERCE_M3_DEV_DRAFTS_ENABLED === true
+            && defined('WP_ENVIRONMENT_TYPE') && in_array(WP_ENVIRONMENT_TYPE, ['development','staging'], true)
+            && parse_url(home_url(), PHP_URL_HOST) === 'dev.beyourlover.com' ) {
+            require_once ANDY_COMMERCE_PLUGIN_DIR.'includes/class-andy-commerce-m5-progress-projection.php';
+            require_once ANDY_COMMERCE_PLUGIN_DIR.'includes/class-andy-commerce-m5-store-api-readonly-extension.php';
+            Andy_Commerce_M5_Store_API_Readonly_Extension::boot();
+        }
 		if ( is_admin() ) {
 			$m3_bridge = null;
 			// M3 Dev-only. No automatic migrations or checkout/cart hooks.
