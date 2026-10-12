@@ -1,6 +1,6 @@
 # Andy Core Mail Transport V1 — Newsletter-scoped SMTP, default OFF
 
-Status: **DRAFT / CODE-ONLY**. This change does not send real mail, enable Newsletter API/outbound, configure SMTP credentials, write subscribers, alter WooCommerce mail, or add a plugin.
+Status: **Core Mail Transport V1 source merged via PR #75; isolated Dev code installation reported PASS.** This sender-identity update is code/doc/test only. Newsletter API and outbound remain OFF, SMTP credentials remain unconfigured, and no real mail or subscriber data change has been authorized. The second independent Dev readback was blocked by execution safety; its result remains unverified.
 
 ## Source and ownership
 
@@ -15,7 +15,7 @@ The installed Dev Safety MU retains its terminal pre_wp_mail deny for non-author
 | YBY_MAIL_TRANSPORT_ENABLED | WordPress code constant must equal boolean true |
 | YBY_MAIL_TRANSPORT_DRIVER | WordPress code constant must be "smtp" |
 | YBY_MAIL_TRANSPORT_PROVIDER | WordPress code constant must be "tencent_exmail"; default OFF |
-| YBY_MAIL_APPROVED_FROM_EMAIL | Required site-local constant: `support@beyourlover.com` for BeYourLover only. Other Andy Core installations must set their own approved sender; never hard-code BYL sender globally |
+| YBY_MAIL_APPROVED_FROM_EMAIL | Required site-local constant: `newsletter@beyourlover.com` for BeYourLover Newsletter only. Other Andy Core installations must set their own approved sender; never hard-code BYL sender globally |
 | YBY_MAIL_SMTP_HOST | Hosting-controlled SMTP hostname |
 | YBY_MAIL_SMTP_PORT | **465 only** for this Tencent Enterprise Mail V1 profile; other ports blocked |
 | YBY_MAIL_SMTP_SECURITY | Only "tls" or "ssl" |
@@ -31,17 +31,17 @@ The existing two independent Newsletter release flags still apply: API requires 
 
 ## Tencent Enterprise Mail profile — selected by Owner
 
-Owner selected Tencent Enterprise Mail with **`support@beyourlover.com` as the canonical BeYourLover sender**. User confirms WWW already uses this address publicly; that does not prove WWW transports through Tencent SMTP or expose its existing secrets. No automatic WWW configuration migration is assumed. The first runtime adapter explicitly accepts only these **user-configured** relay hostnames, without automatic fallback:
+Owner selected Tencent Enterprise Mail with **`newsletter@beyourlover.com` as the separate Andy Core Newsletter confirmation sender**. The Owner revised the earlier support-account testing plan. **`support@beyourlover.com` remains WWW's existing public/customer-service and transactional communication address; it must not be switched or repurposed for this Newsletter Canary.** Whether the newsletter mailbox itself exists, permits independent Tencent SMTP login, and has a client authorization credential must be verified independently before any real auth or mail. No automatic WWW configuration migration is assumed. The first runtime adapter explicitly accepts only these **user-configured** relay hostnames, without automatic fallback:
 - Primary: smtp.exmail.qq.com — SSL / port 465.
 - Overseas alternative: hwsmtp.exmail.qq.com — SSL / port 465, only after separately verifying the host and selecting it explicitly.
 
-The intended BeYourLover SMTP username and From must both be **`support@beyourlover.com`**, matching the site-local approved constant. This is a planned identity contract, not proof that a separate Tencent client-app SMTP credential is active. Other Andy Core sites may independently configure their own email; no global hardcoding. Sending as an alias/delegated address requires separate review. The corporate login/client app-specific password, if required, is entered **only in the secret manager / approved private host configuration**; it is never pasted into chat, GitHub, .env committed to repo, WP options or normal logs.
+For this Newsletter, the intended Tencent SMTP username, From and site-local approved constant must all be **`newsletter@beyourlover.com`**. This is a planned identity contract, not proof that a separate Tencent client-app SMTP credential is active. Other Andy Core sites may independently configure their own email; no global hardcoding. Sending as an alias/delegated address requires separate review. The corporate login/client app-specific password, if required, is entered **only in the secret manager / approved private host configuration**; it is never pasted into chat, GitHub, .env committed to repo, WP options or normal logs.
 
 Tencent Enterprise Mail admin may need to allow SMTP client access to that account; if secure login is enabled, the member may need a client authorization password. Official service information: https://service.rtxmail.net/help/232.html. Do not assume MX, SPF inclusion, or successful webmail sign-in means SMTP authentication is ready.
 
 BeYourLover DNS baseline (observed, not a send-pass guarantee): root MX includes Tencent Enterprise Mail, SPF includes spf.mail.qq.com and amazonses.com, DMARC p=none. DKIM must be verified against the **real chosen Tencent sender identity** through provider admin/actual received mail headers before claiming alignment. Do not alter DNS without separate approval.
 
-**Safe Canary recipient**: Owner must explicitly confirm the exact test recipient to the approved secure execution workflow, not to source or logs. Only one approved email is allowed; no duplicate retries after uncertain transport acceptance. A transport-ready configuration means only **static validity**, not SMTP login, provider acceptance, spam-folder receipt, or confirmed subscription.
+**Sender / recipient are different roles:** `newsletter@beyourlover.com` is the planned **outbound SMTP sender**, not automatically the recipient. **Safe Canary recipient**: Owner must separately confirm the exact test recipient to the approved secure execution workflow, not to source or logs. Only one approved email is allowed; no duplicate retries after uncertain transport acceptance. A transport-ready configuration means only **static validity**, not SMTP login, provider acceptance, spam-folder receipt, or confirmed subscription.
 
 ## Synthetic CI scope
 
