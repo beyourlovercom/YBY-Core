@@ -49,7 +49,7 @@ class Andy_Commerce_Admin {
 				include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-m3-draft-preview.php';
 				$edit_id = isset($_GET['m3_edit']) && is_string($_GET['m3_edit'])
 					? sanitize_key(wp_unslash($_GET['m3_edit'])) : '';
-				if ($edit_id !== '') {
+				if ($edit_id !== '' && $edit_id !== 'new') {
 					$row = $this->m3_bridge->draft($edit_id);
 					if ($row) {
 						$mode = 'revise';
