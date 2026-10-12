@@ -65,7 +65,11 @@ final class Andy_Commerce_Marketing_Draft_Sandbox {
     }
 
     public function find(string $id): ?array { return $this->drafts[$id] ?? null; }
-    public function listDrafts(): array { return array_values($this->drafts); }
+    public function listDrafts(): array {
+        return array_values(array_filter($this->drafts, static fn(array $item): bool => !$item['archived']));
+    }
+    // Archived records are available only through explicit ID lookup; they are
+    // not displayed as actionable draft campaigns.
     public function auditEvents(): array { return $this->events; }
 
     private function requireDraft(string $id, int $revision): void {
