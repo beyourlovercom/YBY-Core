@@ -70,6 +70,7 @@ check($archived['archived']===true && $archived['revision']===3 && !$archived['a
 blocked(fn()=> $sandbox->archive('marketing-test-100',3,guard()),'repeat archival');
 blocked(fn()=> $sandbox->revise('marketing-test-100',3,$c,guard()),'cannot edit archived');
 check($sandbox->find('marketing-test-100')['archived']===true,'archive state persisted in memory only');
+check(count($sandbox->listDrafts())===0,'archived campaigns disappear from actionable draft list');
 $log=$sandbox->auditEvents();
 check(count($log)===3 && array_column($log,'event')===['create','revise','archive'],
    'append-only synthetic audit');
