@@ -15,6 +15,7 @@ The installed Dev Safety MU retains its terminal pre_wp_mail deny for non-author
 | YBY_MAIL_TRANSPORT_ENABLED | WordPress code constant must equal boolean true |
 | YBY_MAIL_TRANSPORT_DRIVER | WordPress code constant must be "smtp" |
 | YBY_MAIL_TRANSPORT_PROVIDER | WordPress code constant must be "tencent_exmail"; default OFF |
+| YBY_MAIL_APPROVED_FROM_EMAIL | Required site-local constant: `support@beyourlover.com` for BeYourLover only. Other Andy Core installations must set their own approved sender; never hard-code BYL sender globally |
 | YBY_MAIL_SMTP_HOST | Hosting-controlled SMTP hostname |
 | YBY_MAIL_SMTP_PORT | 587 for tls/STARTTLS or 465 for ssl/implicit TLS |
 | YBY_MAIL_SMTP_SECURITY | Only "tls" or "ssl" |
@@ -30,11 +31,11 @@ The existing two independent Newsletter release flags still apply: API requires 
 
 ## Tencent Enterprise Mail profile — selected by Owner
 
-Owner selected Tencent Enterprise Mail as the BeYourLover confirmation sender. The first runtime adapter explicitly accepts only these **user-configured** relay hostnames, without automatic fallback:
+Owner selected Tencent Enterprise Mail with **`support@beyourlover.com` as the canonical BeYourLover sender**. User confirms WWW already uses this address publicly; that does not prove WWW transports through Tencent SMTP or expose its existing secrets. No automatic WWW configuration migration is assumed. The first runtime adapter explicitly accepts only these **user-configured** relay hostnames, without automatic fallback:
 - Primary: smtp.exmail.qq.com — SSL / port 465.
 - Overseas alternative: hwsmtp.exmail.qq.com — SSL / port 465, only after separately verifying the host and selecting it explicitly.
 
-Username must be the **complete Tencent Enterprise Mail address**. From must be the **same authenticated email**, pending separate verified alias authorizations. The corporate login/client app-specific password, if required, is entered **only in the secret manager / approved private host configuration**; it is never pasted into chat, GitHub, .env committed to repo, WP options or normal logs.
+The intended BeYourLover SMTP username and From must both be **`support@beyourlover.com`**, matching the site-local approved constant. This is a planned identity contract, not proof that a separate Tencent client-app SMTP credential is active. Other Andy Core sites may independently configure their own email; no global hardcoding. Sending as an alias/delegated address requires separate review. The corporate login/client app-specific password, if required, is entered **only in the secret manager / approved private host configuration**; it is never pasted into chat, GitHub, .env committed to repo, WP options or normal logs.
 
 Tencent Enterprise Mail admin may need to allow SMTP client access to that account; if secure login is enabled, the member may need a client authorization password. Official service information: https://service.rtxmail.net/help/232.html. Do not assume MX, SPF inclusion, or successful webmail sign-in means SMTP authentication is ready.
 
