@@ -146,7 +146,13 @@ final class Andy_Commerce_M3_Draft_Repository {
                  'countries','start_utc','end_utc','stack_with_coupon','rule','notes'];
         $draft=array_intersect_key($payload,array_flip($fields));
         $draft['id']=$newId;
-        $draft['name']=mb_substr((string)($draft['name']??'活动'),0,113).' (副本)';
+        $original=(string)($draft['name']??'活动');
+        $short='';
+        foreach (preg_split('//u',$original,-1,PREG_SPLIT_NO_EMPTY) ?: [] as $char) {
+            if (strlen($short.$char)>108) { break; }
+            $short.=$char;
+        }
+        $draft['name']=$short.' (副本)';
         $draft['status']='draft';
         $draft['active']=false;
         return $this->save($draft,$actor);
