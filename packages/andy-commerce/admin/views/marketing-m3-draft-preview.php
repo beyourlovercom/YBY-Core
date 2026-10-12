@@ -11,12 +11,12 @@ $drafts = isset($drafts) && is_array($drafts) ? $drafts : [];
 $notice = isset($notice) ? sanitize_text_field((string)$notice) : '';
 ?>
 <div class="wrap andy-commerce-m3-drafts">
-    <h1><?php esc_html_e('Marketing / Promotions — Drafts', 'andy-commerce'); ?></h1>
+    <h2><?php esc_html_e('Saved inactive campaign drafts', 'andy-commerce'); ?></h2>
     <div class="notice notice-warning inline"><p><strong><?php esc_html_e('Draft only — every promotion is OFF.', 'andy-commerce'); ?></strong> <?php esc_html_e('Saving a draft never publishes, applies a discount, changes shipping, adds a gift, or changes WooCommerce orders.', 'andy-commerce'); ?></p></div>
     <?php if ($notice !== '') : ?>
         <div class="notice notice-info inline"><p><?php echo esc_html($notice); ?></p></div>
     <?php endif; ?>
-    <h2><?php esc_html_e('Saved campaign drafts', 'andy-commerce'); ?></h2>
+    <p><a class="button button-primary" href="<?php echo esc_url(add_query_arg(['page'=>'andy-commerce','tab'=>'marketing-promotions','m3_edit'=>'new'], admin_url('admin.php'))); ?>">Create draft</a></p>
     <div style="max-width:100%;overflow-x:auto">
       <table class="widefat striped">
         <thead><tr>
@@ -30,7 +30,7 @@ $notice = isset($notice) ? sanitize_text_field((string)$notice) : '';
           <?php foreach ($drafts as $draft) : ?>
             <?php if (($draft['status'] ?? '') !== 'draft' || !empty($draft['active'])) { continue; } ?>
             <tr>
-              <td><code><?php echo esc_html((string)($draft['campaign_id'] ?? '')); ?></code></td>
+              <td><a href="<?php echo esc_url(add_query_arg(['page'=>'andy-commerce','tab'=>'marketing-promotions','m3_edit'=>(string)($draft['campaign_id'] ?? '')], admin_url('admin.php'))); ?>"><code><?php echo esc_html((string)($draft['campaign_id'] ?? '')); ?></code></a></td>
               <td><?php echo esc_html((string)($draft['name'] ?? '')); ?></td>
               <td><?php echo esc_html((string)($draft['campaign_type'] ?? '')); ?></td>
               <td><?php echo esc_html((string)($draft['revision'] ?? '')); ?></td>
@@ -43,5 +43,5 @@ $notice = isset($notice) ? sanitize_text_field((string)$notice) : '';
         </tbody>
       </table>
     </div>
-    <p class="description"><?php esc_html_e('Create, edit and archive actions are not enabled on this preview until database migration, nonce/capability handlers and Owner Dev UAT are approved.', 'andy-commerce'); ?></p>
+    <p class="description"><?php esc_html_e('All drafts stay OFF. Create, edit and archive are only available in the separately enabled Dev environment.', 'andy-commerce'); ?></p>
 </div>
