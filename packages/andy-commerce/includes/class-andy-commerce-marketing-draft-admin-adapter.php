@@ -35,6 +35,16 @@ final class Andy_Commerce_M3_Draft_Admin_Adapter {
         return $this->repository->save($input, $actor, $expectedRevision);
     }
 
+    /** Copy creates a new inactive campaign with its own revision/audit history. */
+    public function duplicate(string $id,int $revision,string $nonce):array {
+        $actor=$this->authorize($nonce);
+        if (!preg_match('/^[a-z0-9][a-z0-9_-]{2,59}$/D',$id) || $revision<1) {
+            throw new DomainException('Invalid draft to copy');
+        }
+        $newId='copy-'.strtolower(wp_generate_password(14,false,false));
+        return $this->repository->duplicate($id,$revision,$actor,$newId);
+    }
+
     public function archive(string $campaignId, int $revision, string $nonce): void {
         $actor = $this->authorize($nonce);
         if (!preg_match('/^[a-z0-9][a-z0-9_-]{2,59}$/D', $campaignId)) {
