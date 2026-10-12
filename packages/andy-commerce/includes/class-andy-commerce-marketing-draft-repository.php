@@ -80,6 +80,78 @@ final class Andy_Commerce_M3_Draft_Repository {
         return $out;
     }
 
+
+    /** Dev-only list: both tabs have real DB totals, usage is NOT inferred. */
+    public function listCampaigns(string $status='draft',string $search='',int $page=1):array {
+        if (!in_array($status,['draft','archived'],true)) { throw new InvalidArgumentException('Invalid campaign status'); }
+        $page=max(1,min(10000,$page));
+        $search=trim($search);
+        if (strlen($search)>100) { throw new InvalidArgumentException('Search too long'); }
+        $where="WHERE status=%s AND active=0";
+        $params=[$status];
+        if ($search!=='') {
+            $where.=" AND (campaign_id LIKE %s OR payload LIKE %s)";
+            $like='%'.$this->db->esc_like($search).'%';
+            $params[]=$like;
+            $params[]=$like;
+        }
+        $count=(int)$this->db->get_var($this->db->prepare(
+            "SELECT COUNT(*) FROM {$this->drafts} {$where}",...$params
+        ));
+        $sql=$this->db->prepare(
+            "SELECT campaign_id,campaign_type,revision,status,active,payload,updated_at
+              FROM {$this->drafts} {$where} ORDER BY updated_at DESC,id DESC LIMIT %d OFFSET %d",
+            ...array_merge($params,[25,($page-1)*25])
+        );
+        $rows=$this->db->get_results($sql,ARRAY_A);
+        $items=[];
+        foreach (is_array($rows)?$rows:[] as $row) {
+            $decoded=json_decode((string)$row['payload'],true);
+            if (!is_array($decoded) || ($decoded['active']??null)!==false || $row['status']!==$status) { continue; }
+            $items[]=[
+                'campaign_id'=>(string)$row['campaign_id'],
+                'campaign_type'=>(string)$row['campaign_type'],
+                'name'=>(string)($decoded['name']??''),
+                'description'=>(string)($decoded['notes']??''),
+                'summary'=>Andy_Commerce_M3_Human_Form::summary($decoded),
+                'revision'=>(int)$row['revision'],
+                'status'=>$status,
+                'active'=>false,
+                'start_utc'=>$decoded['start_utc']??null,
+                'end_utc'=>$decoded['end_utc']??null,
+                'updated_at'=>(string)$row['updated_at'],
+                'usage_count'=>null, // No real runtime usage source yet.
+            ];
+        }
+        return ['items'=>$items,'total'=>$count,'page'=>$page,'per_page'=>25];
+    }
+
+    public function countByStatus(string $status):int {
+        if (!in_array($status,['draft','archived'],true)) { return 0; }
+        return (int)$this->db->get_var($this->db->prepare(
+            "SELECT COUNT(*) FROM {$this->drafts} WHERE status=%s AND active=0",$status
+        ));
+    }
+
+    /** Inactive copy from one current draft; original is never edited. */
+    public function duplicate(string $id,int $revision,int $actor,string $newId):array {
+        if ($actor<1 || $revision<1) { throw new DomainException('Invalid duplicate request'); }
+        $old=$this->find($id);
+        if (!$old || $old['status']!=='draft' || (int)$old['active']!==0 || (int)$old['revision']!==$revision) {
+            throw new DomainException('Draft is missing, archived or changed');
+        }
+        $payload=json_decode((string)$old['payload'],true);
+        if (!is_array($payload)) { throw new DomainException('Invalid source draft'); }
+        $fields=['schema_version','id','name','type','currency','status','active','priority',
+                 'countries','start_utc','end_utc','stack_with_coupon','rule','notes'];
+        $draft=array_intersect_key($payload,array_flip($fields));
+        $draft['id']=$newId;
+        $draft['name']=mb_substr((string)($draft['name']??'活动'),0,113).' (副本)';
+        $draft['status']='draft';
+        $draft['active']=false;
+        return $this->save($draft,$actor);
+    }
+
     public function find(string $id): ?array {
         $sql = $this->db->prepare("SELECT * FROM {$this->drafts} WHERE campaign_id = %s", $id);
         $row = $this->db->get_row($sql, ARRAY_A);
