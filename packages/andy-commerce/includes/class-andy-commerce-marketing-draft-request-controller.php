@@ -24,10 +24,17 @@ final class Andy_Commerce_M3_Draft_Request_Controller {
             throw new DomainException('Invalid nonce');
         }
         $action = isset($post['draft_action']) && is_string($post['draft_action']) ? $post['draft_action'] : '';
-        if (!in_array($action, ['create','revise','archive'], true)) {
+        if (!in_array($action, ['create','revise','archive','duplicate'], true)) {
             throw new DomainException('Unsupported action');
         }
         $revision = filter_var($post['expected_revision'] ?? null, FILTER_VALIDATE_INT);
+        if ($action === 'duplicate') {
+            $id=$post['campaign_id']??null;
+            if (!is_string($id) || $revision===false || $revision<1) {
+                throw new DomainException('Invalid duplication request');
+            }
+            return $this->adapter->duplicate($id,$revision,$nonce);
+        }
         if ($action === 'archive') {
             $id = $post['campaign_id'] ?? null;
             if (!is_string($id) || $revision === false || $revision < 1) {
