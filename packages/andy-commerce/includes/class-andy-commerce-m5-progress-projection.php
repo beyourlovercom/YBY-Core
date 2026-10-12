@@ -25,8 +25,13 @@ final class Andy_Commerce_M5_Progress_Projection {
         if (($source['effective_policy_basis'] ?? '') !== self::TARGET_BASIS) {
             return $base + ['reason'=>'legacy_policy_migration_pending'];
         }
+        // This field is supplied by a future Woo-only adapter, never a promo
+        // evaluator or visitor input. A missing selected rate fails closed.
+        $selectedRate = $source['selected_rate_id'] ?? null;
         if (($source['woocommerce_rate_confirmed'] ?? false) !== true
-            || ($source['source'] ?? '') !== 'woocommerce_selected_shipping_rate') {
+            || ($source['source'] ?? '') !== 'woocommerce_selected_shipping_rate'
+            || !is_string($selectedRate) || strlen($selectedRate) > 128
+            || !preg_match('/^[A-Za-z0-9_-]+:[A-Za-z0-9_.-]+$/D', $selectedRate)) {
             return $base + ['reason'=>'woo_authority_unconfirmed'];
         }
         $current=$source['discounted_merchandise_minor'] ?? null;
