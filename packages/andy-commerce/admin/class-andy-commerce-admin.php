@@ -52,7 +52,12 @@ class Andy_Commerce_Admin {
 				$edit_id = isset($_GET['m3_edit']) && is_string($_GET['m3_edit'])
 					? sanitize_key(wp_unslash($_GET['m3_edit'])) : '';
 				if ($edit_id === '') {
-					$drafts = $this->m3_bridge->drafts();
+					$m3_view = isset($_GET['m3_view']) && $_GET['m3_view']==='trash' ? 'trash':'all';
+					$m3_search = isset($_GET['m3_q']) && is_string($_GET['m3_q'])
+						? substr(sanitize_text_field(wp_unslash($_GET['m3_q'])),0,100) : '';
+					$m3_page = isset($_GET['m3_page']) ? max(1,absint($_GET['m3_page'])) : 1;
+					$m3_result = $this->m3_bridge->campaignListing($m3_view,$m3_search,$m3_page);
+					$m3_counts = $this->m3_bridge->campaignCounts();
 					include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-m3-draft-preview.php';
 					return;
 				}
