@@ -31,8 +31,8 @@ final class YBY_Newsletter_REST_Controller {
 
     /** The same final readiness gate is used by REST, footer and popup UI. */
     public static function subscribe_ready() {
-        $transport = YBY_Mail_Transport::readiness();
-        return self::enabled() && self::outbound_enabled() && ! empty( $transport['ready'] );
+        return self::enabled() && self::outbound_enabled()
+            && ! empty( YBY_Mail_Transport::readiness()['ready'] );
     }
 
     /** Keep one-time email-link tokens out of third-party Referer and caches. */
