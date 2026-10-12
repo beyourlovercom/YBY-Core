@@ -10,7 +10,8 @@ $check=static function(bool $condition,string $name) use (&$cases):void {
 };
 $check(Andy_Commerce_M3_Dev_Bridge::enabled()===false,'disabled unless explicitly opted-in');
 $source=file_get_contents(dirname(__DIR__).'/includes/class-andy-commerce-m3-dev-bridge.php');
-$check(str_contains($source,"WP_ENVIRONMENT_TYPE === 'development'"),'development restriction');
+$check(str_contains($source,"['development','staging']"),'Dev environment allowlist');
+$check(str_contains($source,"dev.beyourlover.com"),'exact Dev host restriction');
 $check(str_contains($source,"ANDY_COMMERCE_M3_DEV_DRAFTS_ENABLED"),'explicit site opt-in');
 $check(str_contains($source,"admin_post_andy_commerce_m3_draft_request"),'authenticated route only');
 $check(!str_contains($source,'admin_post_nopriv_'),'no anonymous route');
