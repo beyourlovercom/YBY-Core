@@ -25,6 +25,7 @@ $assert( $contains( $core, "class-yby-inquiry-renderer.php" ) && $contains( $pop
 $assert( $contains( $popup, '$this->renderer->render_modal(' ) && false === strpos( $popup, 'new YBY_Inquiry_Renderer' ), 'Global Popup must render through its injected renderer.' );
 $assert( $contains( $popup, "const OPTION = 'yby_core_popup_settings'" ) && $contains( $admin, 'update_option( YBY_Global_Popup::OPTION' ), 'Popup settings must use a WordPress option.' );
 $assert( false !== strpos( $popup, 'data-yby-subscribe-contract' ) && false !== strpos( $popup, 'not configured' ), 'Subscribe must expose missing authority clearly.' );
+$assert( false !== strpos( $subscribe, 'YBY_Newsletter_REST_Controller::subscribe_ready()' ) && false !== strpos( $popup, 'YBY_Newsletter_REST_Controller::subscribe_ready()' ), 'Shortcode and popup must share REST transport readiness gate before exposing active subscription.' );
 $assert( false !== strpos( $js, 'data-yby-popup-open' ) && false !== strpos( $js, 'page_profile' ) && false !== strpos( $js, 'trigger_source' ), 'Trigger context contract missing.' );
 $assert( false !== strpos( $js, 'Escape' ) && false !== strpos( $js, 'focusable' ) && false !== strpos( $js, 'data-yby-popup-close' ), 'Accessible close and focus behavior missing.' );
 $assert( false !== strpos( $css, '--yby-theme-primary' ) && false !== strpos( $css, '@media' ), 'Responsive Brand Theme popup styling missing.' );
