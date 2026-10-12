@@ -19,6 +19,14 @@ class Andy_Commerce {
 			// until separately approved retirement; register only a default choice.
 			Andy_Commerce_Shipping_Promotion_Runtime::boot_default_shipping_preference();
 		}
+        // M4 V2: opt-in, short-lived Dev-only canary. Boot does nothing
+        // until a separately authorized, v1-fingerprint-pinned gate is set.
+        // A single old availability filter is replaced in this request only.
+        if ( defined('WP_ENVIRONMENT_TYPE') && in_array(WP_ENVIRONMENT_TYPE, ['development','staging'], true)
+            && parse_url(home_url(), PHP_URL_HOST) === 'dev.beyourlover.com' ) {
+            require_once ANDY_COMMERCE_PLUGIN_DIR.'includes/class-andy-commerce-m4-v2-dev-canary.php';
+            Andy_Commerce_M4_V2_Dev_Canary::boot();
+        }
         // M5 Dev-only: Store API read-only extension advertises HIDDEN state.
         // No BYL49 migration, no Store API updates or cart/shipping filters.
         if ( defined('ANDY_COMMERCE_M3_DEV_DRAFTS_ENABLED') && ANDY_COMMERCE_M3_DEV_DRAFTS_ENABLED === true
