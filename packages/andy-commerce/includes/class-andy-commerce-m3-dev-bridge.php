@@ -32,6 +32,17 @@ final class Andy_Commerce_M3_Dev_Bridge {
         return self::enabled() ? $this->repository->listDrafts() : [];
     }
 
+    public function campaignListing(string $view,string $search,int $page):array {
+        if (!self::enabled()) { return ['items'=>[],'total'=>0,'page'=>1,'per_page'=>25]; }
+        return $this->repository->listCampaigns($view==='trash'?'archived':'draft',$search,$page);
+    }
+
+    public function campaignCounts():array {
+        if (!self::enabled()) { return ['draft'=>0,'archived'=>0]; }
+        return ['draft'=>$this->repository->countByStatus('draft'),
+                'archived'=>$this->repository->countByStatus('archived')];
+    }
+
     public function draft(string $id): ?array {
         if (!self::enabled() || !preg_match('/^[a-z0-9][a-z0-9_-]{2,59}$/D', $id)) { return null; }
         $row = $this->repository->find($id);
@@ -58,11 +69,12 @@ final class Andy_Commerce_M3_Dev_Bridge {
             $result = $this->controller->handle($posted);
             $revision = isset($result['revision']) ? (int)$result['revision'] : 0;
             $campaignId = isset($result['id']) && is_string($result['id']) ? $result['id'] : '';
-            $success = ($result['status'] ?? '') === 'archived' ? 'archived' : 'draft_saved';
+            $success = in_array(($result['status'] ?? ''),['archived','bulk_archived'],true)
+                ? (string)$result['status'] : (($posted['draft_action']??'')==='duplicate'?'duplicated':'draft_saved');
             $url = add_query_arg(
                 ['page'=>'andy-commerce','tab'=>'marketing-promotions',
                  'm3_result'=>$success,'m3_revision'=>$revision,
-                 'm3_edit'=>$success==='archived' ? '' : $campaignId],
+                 'm3_edit'=>in_array($success,['archived','bulk_archived'],true) ? '' : $campaignId],
                 admin_url('admin.php')
             );
             wp_safe_redirect($url, 303);
