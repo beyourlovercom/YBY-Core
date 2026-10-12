@@ -6,24 +6,24 @@ define('WP_ENVIRONMENT_TYPE','staging');
 define('DAY_IN_SECONDS',86400);
 $GLOBALS['host']='dev.beyourlover.com';
 $GLOBALS['options']=[];
-$GLOBALS['hooks']=['woocommerce_shipping_free_shipping_is_available'=>[
-  10=>[['function'=>['Andy_Commerce_Shipping_Promotion_Runtime','filter_free_shipping']]]]];
+$GLOBALS['wp_filter']=['woocommerce_shipping_free_shipping_is_available'=>(object)['callbacks'=>[
+  10=>[['function'=>['Andy_Commerce_Shipping_Promotion_Runtime','filter_free_shipping']]]]]];
 function home_url():string{return 'https://'.$GLOBALS['host'].'/';}
 function get_option(string $k,$fallback=null){return $GLOBALS['options'][$k]??$fallback;}
 function wp_json_encode($x,int $flags=0):string{return json_encode($x,$flags);}
 function has_filter(string $name,$callback):int|false{
- foreach($GLOBALS['hooks'][$name]??[] as $priority=>$rows)
+ foreach(($GLOBALS['wp_filter'][$name]->callbacks??[]) as $priority=>$rows)
   foreach($rows as $row)if($row['function']===$callback)return (int)$priority;
  return false;
 }
 function remove_filter(string $name,$callback,int $priority):bool {
- foreach($GLOBALS['hooks'][$name][$priority]??[] as $i=>$r)if($r['function']===$callback){
-   array_splice($GLOBALS['hooks'][$name][$priority],$i,1);return true;
+ foreach(($GLOBALS['wp_filter'][$name]->callbacks[$priority]??[]) as $i=>$r)if($r['function']===$callback){
+   array_splice($GLOBALS['wp_filter'][$name]->callbacks[$priority],$i,1);return true;
  }
  return false;
 }
 function add_filter(string $name,$callback,int $priority,int $args):void {
- $GLOBALS['hooks'][$name][$priority][]= ['function'=>$callback,'args'=>$args];
+ $GLOBALS['wp_filter'][$name]->callbacks[$priority][]= ['function'=>$callback,'args'=>$args];
 }
 final class Andy_Commerce_Shipping_Promotion_Runtime {
  public static function filter_free_shipping($prior,$p,$m):bool{return $prior;}
