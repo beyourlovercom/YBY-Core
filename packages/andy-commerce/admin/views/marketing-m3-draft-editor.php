@@ -40,7 +40,10 @@ $countries = function_exists('WC') && WC() && WC()->countries ? WC()->countries-
 $shipping_choices = array();
 if (class_exists('WC_Shipping_Zones')) {
     $zones = WC_Shipping_Zones::get_zones();
-    $zones[0] = array('zone_name'=>'Rest of World','shipping_methods'=>WC_Shipping_Zones::get_zone(0)->get_shipping_methods());
+    $rest = WC_Shipping_Zones::get_zone(0);
+    if (is_object($rest) && method_exists($rest, 'get_shipping_methods')) {
+        $zones[0] = array('zone_name'=>'Rest of World','shipping_methods'=>$rest->get_shipping_methods());
+    }
     foreach ($zones as $zone) {
         if (!is_array($zone)) { continue; }
         foreach (($zone['shipping_methods'] ?? array()) as $method) {
@@ -70,6 +73,9 @@ if (class_exists('WC_Shipping_Zones')) {
 @media(max-width:782px){.m3-operator .m3-grid{grid-template-columns:1fr}.m3-operator .m3-card{padding:16px}.m3-operator input,.m3-operator select{font-size:16px!important}}
 </style>
 <div class="m3-operator" id="m3-operator-form">
+    <?php if (isset($_GET['m3_result']) && is_string($_GET['m3_result']) && in_array($_GET['m3_result'],array('draft_saved','archived'),true)): ?>
+    <div class="notice notice-success inline"><p><?php echo $_GET['m3_result']==='archived' ? '草稿已归档，未启用任何优惠。' : '草稿保存成功！可以继续编辑，所有优惠仍为 OFF。'; ?></p></div>
+    <?php endif; ?>
     <div class="m3-card">
       <h2 style="margin:0 0 6px"><?php echo esc_html($mode === 'create' ? '创建营销活动' : '编辑营销活动'); ?></h2>
       <p class="m3-soft">填写运营规则并保存草稿。当前仅支持草稿管理，所有优惠保持关闭，不影响现有 BYL49、WooCommerce 订单和支付。</p>
@@ -227,6 +233,7 @@ if (class_exists('WC_Shipping_Zones')) {
       g.querySelectorAll('input,select,textarea').forEach(el=>el.disabled=!active);
     });
     const group=groups.find(g=>g.dataset.m3Rule===t);
+    if(!group) return;
     const val=(name)=>group?.querySelector('[name="campaign_fields[rule]['+name+']"]')?.value||'';
     const labels={spend_save:'满减',bogo:'买赠',bundle:'组合优惠',tiered:'阶梯优惠',free_gift:'满额赠礼',free_shipping:'满额包邮'};
     if(t==='spend_save') {
