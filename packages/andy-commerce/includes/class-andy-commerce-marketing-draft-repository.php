@@ -234,6 +234,46 @@ final class Andy_Commerce_M3_Draft_Repository {
         }
     }
 
+
+    /** All-or-nothing bulk move to Trash with revision checks and audit. */
+    public function archiveBatch(array $versions,int $actor):int {
+        if ($actor<1 || count($versions)<1 || count($versions)>25) {
+            throw new DomainException('Invalid selection size');
+        }
+        ksort($versions,SORT_STRING);
+        foreach ($versions as $id=>$revision) {
+            if (!is_string($id) || !preg_match('/^[a-z0-9][a-z0-9_-]{2,59}$/D',$id)
+                || !is_int($revision) || $revision<1) {
+                throw new DomainException('Invalid selection revision');
+            }
+        }
+        if ($this->db->query('START TRANSACTION')===false) { throw new RuntimeException('Transaction unavailable'); }
+        try {
+            $now=gmdate('Y-m-d H:i:s');
+            foreach ($versions as $id=>$revision) {
+                $row=$this->findForUpdate($id);
+                if (!$row || $row['status']!=='draft' || (int)$row['active']!==0
+                    || (int)$row['revision']!==$revision) {
+                    throw new DomainException('Selected draft changed; nothing archived');
+                }
+                $next=$revision+1;
+                $ok=$this->db->update($this->drafts,
+                    ['status'=>'archived','active'=>0,'revision'=>$next,'updated_by'=>$actor,'updated_at'=>$now],
+                    ['campaign_id'=>$id,'status'=>'draft','revision'=>$revision]);
+                if ($ok!==1) { throw new RuntimeException('Bulk archive update failed'); }
+                if ($this->db->insert($this->events,[
+                    'campaign_id'=>$id,'revision'=>$next,'actor_id'=>$actor,
+                    'event'=>'archived','payload_sha256'=>$row['payload_sha256'],'recorded_at'=>$now
+                ])!==1) { throw new RuntimeException('Bulk archive audit failed'); }
+            }
+            if ($this->db->query('COMMIT')===false) { throw new RuntimeException('Bulk commit failed'); }
+            return count($versions);
+        } catch (Throwable $e) {
+            $this->db->query('ROLLBACK');
+            throw $e;
+        }
+    }
+
     private function findForUpdate(string $id): ?array {
         $row = $this->db->get_row($this->db->prepare(
             "SELECT * FROM {$this->drafts} WHERE campaign_id=%s FOR UPDATE", $id
