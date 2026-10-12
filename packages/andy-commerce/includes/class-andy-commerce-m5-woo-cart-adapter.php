@@ -6,7 +6,7 @@
 declare(strict_types=1);
 
 final class Andy_Commerce_M5_Woo_Cart_Adapter {
-    public static function source(array $cart, string $serverPolicyBasis, int $serverThresholdMinor): array {
+    public static function source(array $cart, string $serverPolicyBasis, int $serverThresholdMinor, bool $trustedServerWooSnapshot = false): array {
         $base = [
             'effective_policy_basis' => $serverPolicyBasis,
             'source' => 'unverified',
@@ -17,7 +17,7 @@ final class Andy_Commerce_M5_Woo_Cart_Adapter {
         ];
         // Trust only server-side Woo snapshots and a trusted policy parameter.
         // A client-supplied body cannot establish this source assertion.
-        if (($cart['_trusted_woo_server_snapshot'] ?? false) !== true
+        if ($trustedServerWooSnapshot !== true
             || !isset($cart['items'], $cart['shipping_rates'], $cart['totals'])
             || !is_array($cart['items']) || !is_array($cart['shipping_rates'])
             || !is_array($cart['totals']) || $serverThresholdMinor <= 0
