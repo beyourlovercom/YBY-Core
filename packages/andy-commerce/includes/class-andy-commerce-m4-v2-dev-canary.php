@@ -23,19 +23,59 @@ final class Andy_Commerce_M4_V2_Dev_Canary {
         return hash('sha256', wp_json_encode($settings, JSON_UNESCAPED_SLASHES));
     }
 
-    /** Fail-closed against concurrent changes to the v1 global/zone policy. */
+    /**
+     * Read both records because Dev's active BYL legacy policy ($49) differs
+     * from the dormant Andy Commerce v1 option ($69). A switch of ownership
+     * is not itself authorized by the discount-basis Canary.
+     */
+    public static function snapshot(): ?array {
+        $cls=Andy_Commerce_Shipping_Promotion_Policy::class;
+        if (!self::environment_ok() || !class_exists($cls)
+            || !method_exists($cls,'settings_source')
+            || $cls::settings_source() !== 'byl-platform-legacy') return null;
+        $preset=$cls::preset();
+        $name=$preset['legacy_option_name']??null;
+        if (!is_string($name) || $name!== 'byl_shipping_promotion_settings') return null;
+        $effective=$cls::get_persisted_settings();
+        $legacy=get_option($name,null);
+        $commerce=get_option($cls::OPTION_NAME,null);
+        if (!is_array($effective) || !is_array($legacy) || !is_array($commerce)
+            || ($effective['eligibility_basis']??null)!==$cls::ELIGIBILITY_BASIS
+            || ($legacy['eligibility_basis']??null)!==$cls::ELIGIBILITY_BASIS
+            || ($commerce['eligibility_basis']??null)!==$cls::ELIGIBILITY_BASIS) return null;
+        return [
+            'effective_source'=>'byl-platform-legacy',
+            'v1_fingerprint'=>self::fingerprint($effective),
+            'legacy_raw_fingerprint'=>self::fingerprint($legacy),
+            'commerce_v1_fingerprint'=>self::fingerprint($commerce),
+        ];
+    }
+
+    /** Construct a candidate; does not persist options or modify hooks. */
+    public static function candidate_gate(int $ttlSeconds=1800): ?array {
+        if ($ttlSeconds < 60 || $ttlSeconds > 43200) return null;
+        $snapshot=self::snapshot();
+        if (!$snapshot) return null;
+        return ['token'=>self::TOKEN,'enabled'=>true,
+            'expires_utc'=>time()+$ttlSeconds]+$snapshot;
+    }
+
+    /** Fail closed on source switch, policy drift, expiry or tampered gate. */
     public static function enabled(): bool {
-        if (!self::environment_ok() || !class_exists('Andy_Commerce_Shipping_Promotion_Policy')) return false;
-        $gate=get_option(self::OPTION_NAME, false);
+        if (!self::environment_ok()) return false;
+        $gate=get_option(self::OPTION_NAME,false);
         if (!is_array($gate) || ($gate['token']??null)!==self::TOKEN
             || ($gate['enabled']??null)!==true
-            || ($gate['expires_utc']??0) < time()
-            || ($gate['expires_utc']??0) > time() + DAY_IN_SECONDS
-            || !is_string($gate['v1_fingerprint']??null)) return false;
-        $settings=get_option(Andy_Commerce_Shipping_Promotion_Policy::OPTION_NAME, null);
-        return is_array($settings)
-            && ($settings['eligibility_basis']??null) === Andy_Commerce_Shipping_Promotion_Policy::ELIGIBILITY_BASIS
-            && self::fingerprint($settings) === $gate['v1_fingerprint'];
+            || !is_int($gate['expires_utc']??null)
+            || $gate['expires_utc'] < time()
+            || $gate['expires_utc'] > time() + 43200) return false;
+        $snapshot=self::snapshot();
+        if (!$snapshot) return false;
+        foreach($snapshot as $key=>$value){
+            if (!isset($gate[$key]) || !is_string($gate[$key])
+                || !hash_equals($value,$gate[$key])) return false;
+        }
+        return true;
     }
 
     /** Only the old PHP hook may be replaced; unknown hooks prevent takeover. */
@@ -101,7 +141,7 @@ final class Andy_Commerce_M4_V2_Dev_Canary {
         if (!self::enabled() || !Andy_Commerce_Shipping_Promotion_Policy::is_runtime_active()
             || !function_exists('WC') || !WC() || !WC()->cart
             || !method_exists(WC()->cart,'get_cart') || !class_exists('WC_Shipping_Zones')
-            || !is_array($package)) return (bool)$prior;
+            || !is_array($package)) return false;
         // Multiple shipping packages never flatten into a fictional rate.
         $shipping=WC()->shipping();
         if (!$shipping || !method_exists($shipping,'get_packages')
