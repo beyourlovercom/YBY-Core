@@ -60,8 +60,13 @@ final class Andy_Commerce_Marketing_Pure_Evaluator {
             throw new InvalidArgumentException('Invalid campaign collection');
         }
         $candidates = [];
+        $observedOfferIds = [];
         foreach ($offers as $offer) {
             if (!is_array($offer) || !self::eligibleOffer($offer, $currency, $couponCount, $context)) { continue; }
+            if (isset($observedOfferIds[$offer['id']])) {
+                throw new InvalidArgumentException('Duplicate campaign ID in the sandbox');
+            }
+            $observedOfferIds[$offer['id']] = true;
             try {
                 $discount = self::compute($offer, $lines, $basis);
             } catch (InvalidArgumentException $invalidOffer) {
@@ -296,7 +301,8 @@ final class Andy_Commerce_Marketing_Pure_Evaluator {
 
     private static function tiered(array $o,array $lines): int {
         $ids=isset($o['product_ids'])?self::ids($o['product_ids']):null;
-        $chosen=self::chosen($lines,$ids);
+        $chosen=array_values(array_filter(self::chosen($lines,$ids),static fn($l)=>$l['total']>0));
+        // Zero-value products must not inflate a quantity-tier threshold.
         $qty=self::countUnits($chosen);$base=self::subtotal($chosen);
         $tiers=$o['tiers']??null;
         if (!is_array($tiers)||!$tiers||count($tiers)>20) { return 0; }
