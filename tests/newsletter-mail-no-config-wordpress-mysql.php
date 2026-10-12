@@ -27,6 +27,10 @@ try {
     if ( ! YBY_Newsletter_REST_Controller::enabled() || ! YBY_Newsletter_REST_Controller::outbound_enabled() ) {
         throw new RuntimeException( 'Core options were not enabled in isolated WP fixture' );
     }
+    if ( YBY_Newsletter_REST_Controller::subscribe_ready() ||
+         ! str_contains( do_shortcode( '[yby_subscribe]' ), 'data-yby-newsletter-enabled="0"' ) ) {
+        throw new RuntimeException( 'Public subscription form shown enabled without SMTP credentials' );
+    }
     $request = new WP_REST_Request( 'POST', '/andy-core/v1/newsletter/subscribe' );
     $payload = array(
         'email' => $email,
