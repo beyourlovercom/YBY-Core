@@ -28,12 +28,20 @@ class Andy_Commerce {
 				require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-marketing-draft-sandbox.php';
 				require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-marketing-draft-repository.php';
 				require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-marketing-draft-admin-adapter.php';
+				require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m3-human-form.php';
 				require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-marketing-draft-request-controller.php';
 				require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m3-dev-bridge.php';
 				if ( Andy_Commerce_M3_Dev_Bridge::enabled() ) {
 					global $wpdb;
 					$m3_bridge = new Andy_Commerce_M3_Dev_Bridge( $wpdb );
 					$m3_bridge->register();
+					add_action('admin_enqueue_scripts', static function():void {
+						if (!is_admin() || !current_user_can('manage_woocommerce')) { return; }
+						if (isset($_GET['page']) && $_GET['page']==='andy-commerce'
+							&& isset($_GET['tab']) && $_GET['tab']==='marketing-promotions') {
+							wp_enqueue_script('wc-enhanced-select');
+							}
+					});
 				}
 			}
 			$admin = new Andy_Commerce_Admin( $m3_bridge );
