@@ -37,7 +37,7 @@ $assert($registration['endpoint']==='cart'
 $data=call_user_func($registration['data_callback']);
 $assert(is_array($data) && $data['show_progress']===false
     && $data['state']==='hidden','hidden for legacy BYL49');
-$assert($data['reason']==='legacy_policy_migration_pending','explicit migration block');
+$assert($data['reason']==='v2_canary_not_authoritative','explicit migration block');
 $assert($data['gift_enabled']===false && $data['claim_free_shipping']===false,'gifts and free shipping not awarded');
 $schema=call_user_func($registration['schema_callback']);
 $assert(array_key_exists('reason',$schema) && $schema['show_progress']['type']==='boolean','schema matches API payload');
