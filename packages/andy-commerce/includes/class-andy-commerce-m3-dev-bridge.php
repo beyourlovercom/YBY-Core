@@ -57,9 +57,12 @@ final class Andy_Commerce_M3_Dev_Bridge {
         try {
             $result = $this->controller->handle($posted);
             $revision = isset($result['revision']) ? (int)$result['revision'] : 0;
+            $campaignId = isset($result['id']) && is_string($result['id']) ? $result['id'] : '';
+            $success = ($result['status'] ?? '') === 'archived' ? 'archived' : 'draft_saved';
             $url = add_query_arg(
                 ['page'=>'andy-commerce','tab'=>'marketing-promotions',
-                 'm3_result'=>'draft_saved','m3_revision'=>$revision],
+                 'm3_result'=>$success,'m3_revision'=>$revision,
+                 'm3_edit'=>$success==='archived' ? '' : $campaignId],
                 admin_url('admin.php')
             );
             wp_safe_redirect($url, 303);
