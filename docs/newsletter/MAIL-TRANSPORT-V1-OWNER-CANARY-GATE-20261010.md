@@ -17,7 +17,7 @@ The installed Dev Safety MU retains its terminal pre_wp_mail deny for non-author
 | YBY_MAIL_TRANSPORT_PROVIDER | WordPress code constant must be "tencent_exmail"; default OFF |
 | YBY_MAIL_APPROVED_FROM_EMAIL | Required site-local constant: `support@beyourlover.com` for BeYourLover only. Other Andy Core installations must set their own approved sender; never hard-code BYL sender globally |
 | YBY_MAIL_SMTP_HOST | Hosting-controlled SMTP hostname |
-| YBY_MAIL_SMTP_PORT | 587 for tls/STARTTLS or 465 for ssl/implicit TLS |
+| YBY_MAIL_SMTP_PORT | **465 only** for this Tencent Enterprise Mail V1 profile; other ports blocked |
 | YBY_MAIL_SMTP_SECURITY | Only "tls" or "ssl" |
 | YBY_MAIL_SMTP_USER | Confidential hosting environment variable |
 | YBY_MAIL_SMTP_PASSWORD | Confidential hosting environment variable |
@@ -26,7 +26,7 @@ The installed Dev Safety MU retains its terminal pre_wp_mail deny for non-author
 
 Configuration is OFF unless all values validate. No PHP mail fallback, no plaintext SMTP, no auto-retries, no TLS-peer-verification override, no WordPress option for SMTP credentials.
 
-The existing two independent Newsletter release flags still apply: API requires both YBY_NEWSLETTER_API_ENABLED and yby_newsletter_enabled; outbound requires YBY_NEWSLETTER_OUTBOUND_ENABLED and yby_newsletter_outbound_enabled. The REST subscribe handler calls the new read-only transport readiness check **before beginning pending subscription**; unconfigured transport returns 503 without inserting a pending subscriber. This checks readiness of configuration, NOT SMTP connectivity/delivery.
+The existing two independent Newsletter release flags still apply: API requires both YBY_NEWSLETTER_API_ENABLED and yby_newsletter_enabled; outbound requires YBY_NEWSLETTER_OUTBOUND_ENABLED and yby_newsletter_outbound_enabled. The shared `YBY_Newsletter_REST_Controller::subscribe_ready()` method checks API, outbound and read-only SMTP transport readiness for **REST, shortcode and global popup**. It refuses an unconfigured transport before beginning pending subscription (HTTP 503 with no pending row), while setting the public form data attribute to `0`. This checks readiness of configuration, NOT SMTP connectivity/delivery.
 
 
 ## Tencent Enterprise Mail profile — selected by Owner
