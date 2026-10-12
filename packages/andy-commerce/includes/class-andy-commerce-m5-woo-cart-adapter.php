@@ -25,7 +25,7 @@ final class Andy_Commerce_M5_Woo_Cart_Adapter {
             return $base;
         }
         $units = $cart['totals']['currency_minor_unit'] ?? null;
-        if (!is_int($units) || $units < 0 || $units > 4 || count($cart['items']) > 1000) {
+        if (!is_int($units) || $units < 0 || $units > 4 || count($cart['items']) === 0 || count($cart['items']) > 1000) {
             return $base;
         }
         $total = 0;
