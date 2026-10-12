@@ -36,17 +36,18 @@ final class Andy_Commerce_M3_Draft_Request_Controller {
             $this->adapter->archive($id, $revision, $nonce);
             return ['status'=>'archived','active'=>false];
         }
-        $json = $post['campaign_json'] ?? null;
-        if (!is_string($json) || strlen($json) > 65536) {
-            throw new DomainException('Invalid payload length');
-        }
-        try {
-            $raw = json_decode($json, true, 40, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
-            throw new DomainException('Invalid JSON', 0, $e);
-        }
-        if (!is_array($raw) || array_is_list($raw)) {
-            throw new DomainException('Expected campaign object');
+        if (isset($post['campaign_fields'])) {
+            // Operator-facing form is parsed on the server, never via mutable client JSON.
+            $raw = Andy_Commerce_M3_Human_Form::decode($post);
+        } else {
+            // Legacy JSON remains only for compatibility with existing gated tests.
+            $json = $post['campaign_json'] ?? null;
+            if (!is_string($json) || strlen($json) > 65536) {
+                throw new DomainException('Invalid payload length');
+            }
+            try { $raw = json_decode($json, true, 40, JSON_THROW_ON_ERROR); }
+            catch (JsonException $e) { throw new DomainException('Invalid JSON', 0, $e); }
+            if (!is_array($raw) || array_is_list($raw)) { throw new DomainException('Expected campaign object'); }
         }
         // Fail closed even if the caller attempts status or runtime escalation.
         if (($raw['status'] ?? null) !== 'draft' || ($raw['active'] ?? null) !== false) {
