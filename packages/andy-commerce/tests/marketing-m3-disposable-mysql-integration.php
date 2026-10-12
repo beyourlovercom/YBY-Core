@@ -35,17 +35,32 @@ define('ARRAY_A','ARRAY_A');
 function wp_json_encode($a):string|false { return json_encode($a,JSON_UNESCAPED_SLASHES); }
 require_once dirname(__DIR__).'/includes/class-andy-commerce-marketing-draft-sandbox.php';
 require_once dirname(__DIR__).'/includes/class-andy-commerce-marketing-draft-repository.php';
+require_once dirname(__DIR__).'/includes/class-andy-commerce-m3-human-form.php';
 /* Stub implements only wpdb API exercised by repository. */
 final class M3SqlWpdb {
     public string $prefix='m3test_';
     private mysqli $connection;
     public function __construct(mysqli $conn) { $this->connection=$conn; }
     public function prepare(string $sql,...$args):string {
-        foreach($args as $a) {
-            $pos=strpos($sql,'%s');
-            if ($pos!==false) $sql=substr_replace($sql, "'".$this->connection->real_escape_string((string)$a)."'", $pos,2);
-        }
-        return $sql;
+        $index=0;
+        return preg_replace_callback('/%[sd]/', function(array $match) use ($args,&$index):string {
+            if (!array_key_exists($index,$args)) { throw new RuntimeException('Missing SQL argument'); }
+            $v=$args[$index++];
+            return $match[0]==='%d' ? (string)(int)$v
+                : "'".$this->connection->real_escape_string((string)$v)."'";
+        },$sql);
+    }
+    public function esc_like(string $search):string {
+        return addcslashes($search,'_%\\\\');
+    }
+    public function get_var(string $sql) {
+        $result=$this->connection->query($sql);
+        if (!$result || !$result->num_rows) { return null; }
+        $row=$result->fetch_row();return $row[0];
+    }
+    public function get_results(string $sql,$mode):array {
+        $result=$this->connection->query($sql);
+        return $result instanceof mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
     public function query(string $sql):int|false {
         $r=$this->connection->query($sql);
@@ -82,13 +97,29 @@ try {
     if ($b['revision']!==2) throw new RuntimeException('Revise mismatch');
     try { $repo->save($payload,9,1); throw new RuntimeException('Stale edit accepted'); }
     catch (DomainException $e) { /* expected */ }
-    $repo->archive('m3-sql-test-001',2,9);
+    $copy=$repo->duplicate('m3-sql-test-001',2,9,'m3-sql-copy-001');
+    if ($copy['revision']!==1 || $copy['active']!==false) throw new RuntimeException('Copy not inactive');
+    if ($repo->countByStatus('draft')!==2) throw new RuntimeException('Wrong All count');
+    $listing=$repo->listCampaigns('draft','Isolation',1);
+    if ($listing['total']!==2 || count($listing['items'])!==2) throw new RuntimeException('Search/list count wrong');
+    if (!str_contains($listing['items'][0]['summary'],'立减')) throw new RuntimeException('Human-readable rules missing');
+    try { $repo->duplicate('m3-sql-test-001',1,9,'m3-sql-copy-old'); throw new RuntimeException('Stale copied'); }
+    catch (DomainException $e) { /* expected */ }
+    if ($repo->archiveBatch(['m3-sql-test-001'=>2,'m3-sql-copy-001'=>1],9)!==2)
+        throw new RuntimeException('Bulk archive count wrong');
     $row=$repo->find('m3-sql-test-001');
-    if (!$row || $row['status']!=='archived' || (int)$row['active']!==0 || (int)$row['revision']!==3) {
-        throw new RuntimeException('Archive mismatch');
-    }
+    $copyRow=$repo->find('m3-sql-copy-001');
+    if (!$row || $row['status']!=='archived' || (int)$row['active']!==0 || (int)$row['revision']!==3
+        || !$copyRow || $copyRow['status']!=='archived' || (int)$copyRow['revision']!==2)
+        throw new RuntimeException('Bulk archive state wrong');
+    if ($repo->countByStatus('archived')!==2 || $repo->countByStatus('draft')!==0)
+        throw new RuntimeException('Trash counts wrong');
+    $trash=$repo->listCampaigns('archived','',1);
+    if ($trash['total']!==2) throw new RuntimeException('Trash list unavailable');
+    try { $repo->archiveBatch(['m3-sql-copy-001'=>1],9); throw new RuntimeException('Stale archived twice'); }
+    catch (DomainException $e) { /* expected */ }
     $count=$db->query('SELECT COUNT(*) AS n FROM `'.$prefix.'andy_commerce_campaign_audit`')->fetch_assoc()['n'];
-    if ((int)$count!==3) throw new RuntimeException('Audit mismatch');
+    if ((int)$count!==5) throw new RuntimeException('Audit mismatch');
     echo "M3_DISPOSABLE_MYSQL_LIFECYCLE_PASS\n";
 } finally {
     // Only tables created by this exact harness in a strictly named disposable DB.
