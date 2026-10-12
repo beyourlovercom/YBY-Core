@@ -128,8 +128,12 @@ blocked(fn()=>Andy_Commerce_Marketing_Draft_Sandbox::validate(campaign('bogo',
 // Strictly offline, new class not registered in WP runtime.
 $entry=file_get_contents(dirname(__DIR__).'/andy-commerce.php');
 $bootstrap=file_get_contents(dirname(__DIR__).'/includes/class-andy-commerce.php');
-check(!str_contains($entry,'marketing-draft-sandbox')&&!str_contains($bootstrap,'marketing-draft-sandbox'),
- 'draft sandbox cannot load in WP runtime');
+check(!str_contains($entry,'marketing-draft-sandbox'),
+ 'entrypoint must never directly load sandbox');
+check(str_contains($bootstrap,'ANDY_COMMERCE_M3_DEV_DRAFTS_ENABLED')
+   && str_contains($bootstrap,'dev.beyourlover.com')
+   && str_contains($bootstrap,'is_admin()'),
+ 'M3 sandbox may load only through strict opt-in Dev admin guard');
 $code=file_get_contents(dirname(__DIR__).'/includes/class-andy-commerce-marketing-draft-sandbox.php');
 foreach(['add_action(', 'add_filter(', 'update_option(', '$wpdb', 'wp_insert_post(', 'setcookie(', 'woocommerce_cart_calculate_fees'] as $danger) {
     check(!str_contains($code,$danger),'no live hook or persistence: '.$danger);
