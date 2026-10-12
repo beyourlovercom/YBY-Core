@@ -24,10 +24,27 @@ final class Andy_Commerce_M3_Draft_Request_Controller {
             throw new DomainException('Invalid nonce');
         }
         $action = isset($post['draft_action']) && is_string($post['draft_action']) ? $post['draft_action'] : '';
-        if (!in_array($action, ['create','revise','archive','duplicate'], true)) {
+        if (!in_array($action, ['create','revise','archive','duplicate','bulk_archive'], true)) {
             throw new DomainException('Unsupported action');
         }
         $revision = filter_var($post['expected_revision'] ?? null, FILTER_VALIDATE_INT);
+        if ($action==='bulk_archive') {
+            $items=$post['campaign_versions']??null;
+            if (!is_array($items) || count($items)<1 || count($items)>25) {
+                throw new DomainException('Select 1–25 draft campaigns');
+            }
+            $versions=[];
+            foreach ($items as $id=>$value) {
+                if (!is_string($id) || !preg_match('/^[a-z0-9][a-z0-9_-]{2,59}$/D',$id)) {
+                    throw new DomainException('Invalid selected campaign');
+                }
+                $number=filter_var($value,FILTER_VALIDATE_INT);
+                if ($number===false || $number<1) { throw new DomainException('Invalid selected revision'); }
+                $versions[$id]=$number;
+            }
+            return ['status'=>'bulk_archived','active'=>false,
+                    'count'=>$this->adapter->archiveBatch($versions,$nonce)];
+        }
         if ($action === 'duplicate') {
             $id=$post['campaign_id']??null;
             if (!is_string($id) || $revision===false || $revision<1) {
