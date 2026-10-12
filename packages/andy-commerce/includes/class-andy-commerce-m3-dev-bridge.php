@@ -27,6 +27,18 @@ final class Andy_Commerce_M3_Dev_Bridge {
             && parse_url(home_url(), PHP_URL_HOST) === 'dev.beyourlover.com';
     }
 
+    /** Read-only admin list; no promotion hooks. */
+    public function drafts(): array {
+        return self::enabled() ? $this->repository->listDrafts() : [];
+    }
+
+    public function draft(string $id): ?array {
+        if (!self::enabled() || !preg_match('/^[a-z0-9][a-z0-9_-]{2,59}$/D', $id)) { return null; }
+        $row = $this->repository->find($id);
+        if (!$row || $row['status'] !== 'draft' || (int)$row['active'] !== 0) { return null; }
+        return $row;
+    }
+
     public function register(): void {
         if (!self::enabled()) { return; }
         add_action('admin_post_andy_commerce_m3_draft_request', [$this, 'post']);
