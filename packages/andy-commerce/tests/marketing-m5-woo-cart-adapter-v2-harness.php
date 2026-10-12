@@ -21,10 +21,11 @@ $case=[
   'totals'=>['currency_code'=>'USD','currency_minor_unit'=>2,'total_items'=>'11500'],
 ];
 $eligible=static fn(array $line):bool=>$line['is_server_eligible']===true;
-$eval=static fn(array $cart,string $basis=$new,bool $trusted=true,?callable $predicate=$eligible):array=>
-  Andy_Commerce_M5_Progress_Projection::project(
-    Andy_Commerce_M5_Woo_Cart_Adapter::source($cart,$basis,4900,$trusted,$predicate)
+$eval=static function(array $cart, ?string $basis=null, bool $trusted=true, ?callable $predicate=null) use ($new,$eligible):array {
+  return Andy_Commerce_M5_Progress_Projection::project(
+    Andy_Commerce_M5_Woo_Cart_Adapter::source($cart,$basis??$new,4900,$trusted,$predicate??$eligible)
   );
+};
 $x=$eval($case);
 $ok($x['show_progress']===true && $x['qualified_minor']===4500
     && $x['remaining_minor']===400,'gift line 7000 is excluded');
@@ -34,7 +35,7 @@ $x=$eval($case,$old);
 $ok(!$x['show_progress'] && $x['reason']==='legacy_policy_migration_pending','legacy shipping basis hides');
 $x=$eval($case,$new,false);
 $ok(!$x['show_progress'] && $x['reason']==='woo_authority_unconfirmed','untrusted snapshot hides');
-$x=$eval($case,$new,true,null);
+$x=Andy_Commerce_M5_Progress_Projection::project(Andy_Commerce_M5_Woo_Cart_Adapter::source($case,$new,4900,true,null));
 $ok(!$x['show_progress'],'missing server predicate hides');
 $mut=$case;$mut['items'][0]['prices']['currency_code']='EUR';
 $ok(!$eval($mut)['show_progress'],'item currency mismatch hidden');
