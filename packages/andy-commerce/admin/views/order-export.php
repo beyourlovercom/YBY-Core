@@ -39,4 +39,7 @@
 </form>
 <?php endif; ?>
 <?php endif; ?>
+<?php if ('settings' === $tab) : ?>
+<?php include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/cart-subtotal-notice-settings.php'; ?>
+<?php endif; ?>
 </div>
