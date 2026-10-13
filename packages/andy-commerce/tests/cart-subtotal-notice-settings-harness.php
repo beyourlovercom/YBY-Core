@@ -6,7 +6,7 @@ function get_option($key,$fallback=false){return $GLOBALS['options'][$key]??$fal
 function update_option($key,$value,$autoload=null){$GLOBALS['options'][$key]=$value;return true;}
 function delete_option($key){unset($GLOBALS['options'][$key]);return true;}
 function sanitize_text_field($text){return trim(strip_tags(preg_replace('/\\s+/u',' ',$text)));}
-function wp_html_excerpt($text,$len,$more=''){return mb_substr($text,0,$len).$more;}
+function wp_html_excerpt($text,$len,$more=''){return substr($text,0,$len).$more;}
 require_once __DIR__.'/../includes/class-andy-commerce-cart-notice-settings.php';
 $n=0;
 $ok=static function($value,$label)use(&$n){++$n;if(!$value)throw new RuntimeException('FAIL '.$label);};
@@ -21,7 +21,7 @@ Andy_Commerce_Cart_Notice_Settings::save(['text'=>'<b>Notice</b>']);
 $ok(Andy_Commerce_Cart_Notice_Settings::get()['enabled']===false,'disabled');
 $ok(Andy_Commerce_Cart_Notice_Settings::get()['text']==='Notice','strip markup');
 Andy_Commerce_Cart_Notice_Settings::save(['enabled'=>'1','text'=>str_repeat('A',400)]);
-$ok(mb_strlen(Andy_Commerce_Cart_Notice_Settings::get()['text'])===240,'max length');
+$ok(strlen(Andy_Commerce_Cart_Notice_Settings::get()['text'])===240,'max length');
 Andy_Commerce_Cart_Notice_Settings::save(['enabled'=>'1','text'=>'']);
 $ok(Andy_Commerce_Cart_Notice_Settings::get()['text']===$defaults['text'],'empty fallback');
 Andy_Commerce_Cart_Notice_Settings::reset();
