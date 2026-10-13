@@ -6,6 +6,7 @@
  */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-cart-notice-settings.php';
 
 class Andy_Commerce_Admin {
 	const PAGE_SLUG = 'andy-commerce';
@@ -113,6 +114,17 @@ class Andy_Commerce_Admin {
 		}
 
 		$notice = '';
+        if ('settings' === $tab && isset($_POST['andy_cart_notice_settings_submit'])) {
+            check_admin_referer('andy_commerce_cart_notice_save','andy_cart_notice_nonce');
+            if (isset($_POST['andy_cart_notice_restore_default'])) {
+                Andy_Commerce_Cart_Notice_Settings::reset();
+                $notice = 'Cart notice restored to default.';
+            } else {
+                $raw=wp_unslash($_POST['andy_cart_notice_settings']??[]);
+                Andy_Commerce_Cart_Notice_Settings::save($raw);
+                $notice = 'Cart reminder saved. Refresh Dev Cart to see it.';
+            }
+        }
 		if ( 'settings' === $tab && isset( $_POST['yby_woo_export_settings_submit'] ) ) {
 			check_admin_referer( 'yby_woo_export_settings_save', 'yby_woo_export_settings_nonce' );
 			$raw = wp_unslash( $_POST['yby_woo_export_settings'] ?? array() );
