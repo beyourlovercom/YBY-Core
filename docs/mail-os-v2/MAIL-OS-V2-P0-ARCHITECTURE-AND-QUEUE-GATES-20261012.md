@@ -122,3 +122,50 @@ Remaining gate items:
 5. Owner explicitly approves/rejects the **V1.1→V2 queue/transport ownership amendment** while Woo retains transactional rendering and billing triggers; separate authorization is required for any PR merge, Dev test, real-mail Canary or WWW cutover.
 
 **Safety closure for this read-only attempt:** no email sent/re-sent/deleted, no account/setting change, no data export, no action/job runs, no orders/payments or WWW/Dev/ERP code writes, and no READY device restart. Production WP Mail SMTP Pro remains the active mail transport.
+
+## 7. Read-only diagnostic evidence acquisition and Owner Architecture UAT pack (2026-10-13)
+
+**Official product documentation cross-check; it does not add any WWW observation:** [WP Mail SMTP Viewing Email Logs](https://wpmailsmtp.com/docs/how-to-view-email-logs/) documents `Source` as origin (WordPress core, plugin, theme) and places delivery errors in individual-entry `Technical Details`, which may also display sensitive headers. [Debugging Sending Issues](https://wpmailsmtp.com/docs/how-to-debug-email-sending-issues-in-wp-mail-smtp/) documents the preexisting `WP Mail SMTP → Tools → Debug Events` list with `Type / Content / Source / Date`, and says error recording is enabled by default. Do **not** enable extra debug traces, open private email payloads or change settings to generate evidence. [Troubleshooting Action Scheduler Issues](https://wpmailsmtp.com/docs/how-to-troubleshoot-action-scheduler-issues-wp-mail-smtp-2-1-1/) establishes the plugin's Action Scheduler dependency but does **not** prove the WWW worker is healthy.
+
+### 7.1 Safe evidence specification for a newly approved read-only UI/screenshot workflow
+
+The previous official OAuth MCP browser DOM request was explicitly blocked; **this spec is not permission to rerun it by scripting, an alternate connector, or another endpoint**. User-provided screenshots or a separately approved supported read-only diagnostic are required. If using a screenshot, crop/redact locally **before sharing**.
+
+| Existing WWW view (do not alter settings) | Collect ONLY | Must never collect |
+| --- | --- | --- |
+| Email Log → Failed list | Total/page count; dates to day/hour; source; mailer; status; optional anonymized page number | To/From addresses, subject, body, attachments, message link or ID, token |
+| Tools → Debug Events (existing errors) | Date/time to minute, `Error` type, source, **sanitized SMTP/transport failure code and broad cause category** | Raw SMTP transcript, account addresses, mail headers, paths, secrets, email message content |
+| Individual Log → Technical Details **only when safe** | Short normalized cause class and numeric code if visible and safely redactable | Full headers, MIME body, recipient, authentication material, raw unredacted debug blob |
+| Tools → Scheduled Actions / Woo Status (aggregate) | Per-group/hook name if non-sensitive, counts by pending/failed/complete, age p50/p95 if available | Arguments/payloads, order IDs, recipient identifiers, payments or customer records |
+
+**Correlation rule:** Do not assume that a Debug Event corresponds one-to-one to any of the 136 Email Log failed entries. If no non-sensitive join key is available, report separate counts and qualitative pattern only. Timestamps/site timezone and log retention differ by subsystem; normalize only after confirming them.
+
+### 7.2 Deterministic classification protocol (proposed, not observed)
+
+1. **Authorization/configuration:** explicit `535`-type authentication rejection, invalid credentials, sender policy denial → fail closed; no brute-force or automatic replay.
+2. **Provider rate/policy:** explicit `421` / `4xx` temporary limit or explicit per-account quota → bounded cooldown **only after confirming actual provider semantics**, never derive quotas from a sample without policy evidence.
+3. **Recipient permanent rejection:** explicit permanent `5xx` address/domain rejection → suppression/review; do not repeatedly send.
+4. **Connectivity / timeout:** distinguish confirmed pre-acceptance transport failure from possible post-acceptance response loss; ambiguous acceptance → `uncertain`, no blind retry.
+5. **Scheduler/runtime:** actual stalled or failed scoped scheduled action evidence and timestamps required; historical `Failed` email status alone is insufficient.
+6. **Unknown / mixed:** keep `UNKNOWN` when diagnostic text is missing or insufficient, and split by source/time without claiming a mechanism.
+
+Codes above are **examples of classification rules, not errors found at WWW**. A `4xx` SMTP code alone is not proof of quota, and a `5xx` alone is not proof of invalid recipient: interpret the complete sanitized provider error category.
+
+### 7.3 Owner architecture UAT card (decision-ready; not automatically PASS)
+
+| Question to decide | Current recommendation | Evidence gate |
+| --- | --- | --- |
+| May Andy Core own opt-in Mail OS V2 outbox/queue/transport? | **Yes as isolated architecture proposal**, default OFF; amend prior V1.1 non-ownership boundary expressly | Owner Architecture PASS in GitHub; no global `wp_mail` takeover |
+| Can current WWW SMTP Pro be retired now? | **No** | P0 historical diagnostics, actual worker health, provider quota, Dev synthetic noninterference, rollback and separate WWW migration approval |
+| Can Dev share the Woo Action Scheduler worker for campaigns? | **Not assumed safe** | Stable DB, measured capacity and isolation/fairness under synthetic load; Woo order/payment job latency preserved |
+| Can historical Failed entries be auto-retried? | **No** | Per-entry proven retryability, idempotency, consent/suppression, uncertain-state review, separate replay authorization |
+| Is Newsletter V1 SMTP Canary covered by this UAT? | **No** | Independent Website Issue #67 safety gate and explicit one-mailbox authorization |
+
+**Proposed UAT declaration, pending actual Owner decision:** `Mail OS V2 P0 documentation and architecture review ACCEPTED WITH OPEN EVIDENCE GATES; no permission granted for merge, runtime code, worker, real mail, or WWW change`. Until the Owner explicitly decides, status stays **OWNER ARCHITECTURE UAT PENDING**. Root-cause P0 remains **NOT CLOSED**.
+
+### 7.4 Single source of truth / status
+
+- P0 GitHub source/CI document gate: PASS on the *previous* HEAD `363e6366b1a52caf341b6183bdf4522301701f21` (4/4 GitHub checks). **This new documentation edit creates a new HEAD and must receive its own CI validation**.
+- WWW failed-log evidence: **50 of 136 sampled; 86 unsampled; exact causal codes not established**.
+- Blocked diagnostic: **explicit safety block respected**; no rerouted browser access.
+- Production safety: WWW WP Mail SMTP Pro active with asynchronous optimization ON; no send/config/queue/Dev/WWW/ERP or order/payment data writes authorized.
