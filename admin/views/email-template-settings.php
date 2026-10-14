@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $base_url = add_query_arg(
 	array(
-		'page' => 'yby-core-popups',
+		'page' => 'andy-core-email',
 		'tab'  => 'email_templates',
 	),
 	admin_url( 'admin.php' )
