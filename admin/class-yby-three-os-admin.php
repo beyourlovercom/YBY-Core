@@ -32,9 +32,15 @@ final class YBY_Three_OS_Admin {
         ) ) );
     }
     public static function email_visible_tabs() {
-        return array_intersect_key( self::email_tabs(), array_flip( array(
+        $tabs = array_intersect_key( self::email_tabs(), array_flip( array(
             'overview', 'email_templates', 'transport', 'health',
         ) ) );
+        if ( class_exists( 'YBY_Mail_V2_P6_Dev_Preview' ) &&
+             YBY_Mail_V2_P6_Dev_Preview::eligible_site() ) {
+            $tabs['preview_queue'] = '队列（Dev 预览）';
+            $tabs['preview_failures'] = '失败处理（Dev 预览）';
+        }
+        return $tabs;
     }
 
     public static function email_tabs() {
@@ -177,7 +183,8 @@ final class YBY_Three_OS_Admin {
         echo '<div class="wrap yby-three-os"><h1>' . esc_html( $heading ) . '</h1>';
         echo '<nav class="nav-tab-wrapper" style="display:flex;flex-wrap:wrap;gap:2px;margin:16px 0 20px" aria-label="' . esc_attr( $heading ) . '">';
         foreach ( $tabs as $key => $label ) {
-            $link = self::url( $page, $key );
+            $link = self::EMAIL === $page && in_array( $key, array( 'preview_queue', 'preview_failures' ), true )
+                ? YBY_Mail_V2_P6_Dev_Preview::url( $key ) : self::url( $page, $key );
             echo '<a class="nav-tab ' . ( $key === $active ? 'nav-tab-active' : '' ) . '" href="' . esc_url( $link ) . '">' . esc_html( $label ) . '</a>';
         }
         echo '</nav>';
@@ -233,10 +240,16 @@ final class YBY_Three_OS_Admin {
             wp_die( esc_html__( 'Permission denied.', 'yby-core' ) );
         }
         $tabs = self::email_tabs();
+        if ( YBY_Mail_V2_P6_Dev_Preview::eligible_site() ) {
+            $tabs['preview_queue'] = '队列（Dev 预览）';
+            $tabs['preview_failures'] = '失败处理（Dev 预览）';
+        }
         $tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
         if ( ! isset( $tabs[ $tab ] ) ) { $tab = 'overview'; }
         self::render_tabs( self::EMAIL, self::email_visible_tabs(), $tab, 'Email OS · 邮件基础设施' );
-        if ( 'email_templates' === $tab ) {
+        if ( in_array( $tab, array( 'preview_queue', 'preview_failures' ), true ) ) {
+            YBY_Mail_V2_P6_Dev_Preview::render( $tab );
+        } elseif ( 'email_templates' === $tab ) {
             if ( current_user_can( 'andy_core_settings_manage' ) ) {
                 ( new YBY_Email_Template_Admin() )->render();
             } else {
