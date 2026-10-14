@@ -14,16 +14,23 @@ class YBY_Business_OS_Admin {
 	 *
 	 * @return array<string,string>
 	 */
+
 	public static function pages() {
 		return array(
-			self::ROOT_SLUG                 => '业务总览',
-			'andy-business-applications'   => '合作申请',
-			'andy-business-programs'       => '合作项目',
-			'andy-business-partners'       => '合作客户',
-			'andy-business-catalog'        => '产品与报价',
-			'andy-business-fulfillment'    => '仓储与发货',
-			'andy-business-pages'          => '招商页面',
-			'andy-business-settings'       => '设置',
+			self::ROOT_SLUG                 => 'Business 招商页面',
+			'andy-business-programs'       => '合作项目展示',
+			'andy-business-applications'   => '申请表单与来源',
+			'andy-business-settings'       => 'ERP 连接状态',
+		);
+	}
+
+	/** Permission-gated legacy URLs, not visible menu entries. */
+	public static function legacy_pages() {
+		return array(
+			'andy-business-pages'          => '招商页面（原入口）',
+			'andy-business-partners'       => '合作客户（ERP 管理）',
+			'andy-business-catalog'        => '产品与报价（ERP 管理）',
+			'andy-business-fulfillment'    => '仓储与发货（ERP 管理）',
 		);
 	}
 
@@ -70,28 +77,24 @@ class YBY_Business_OS_Admin {
 			&& current_user_can( 'andy_core_settings_manage' );
 	}
 
-	/**
-	 * Register the WP-admin first-level Business menu and its eight routes.
-	 *
-	 * @param array $module Registry metadata, unused.
-	 * @return void
-	 */
+
+	/** Place website Business configuration under existing Andy Content. */
 	public static function register_admin_menu( $module = array() ) {
 		unset( $module );
 		if ( ! self::can_access() ) { return; }
-
-		add_menu_page(
-			__( '商业合作 Business', 'yby-core' ),
-			__( 'Business', 'yby-core' ),
-			'andy_core_settings_manage',
-			self::ROOT_SLUG,
-			array( __CLASS__, 'render_page' ),
-			'dashicons-store',
-			57
-		);
 		foreach ( self::pages() as $slug => $label ) {
 			add_submenu_page(
-				self::ROOT_SLUG,
+				YBY_Content_Admin::MENU_SLUG,
+				__( $label, 'yby-core' ),
+				__( $label, 'yby-core' ),
+				'andy_core_settings_manage',
+				$slug,
+				array( __CLASS__, 'render_page' )
+			);
+		}
+		foreach ( self::legacy_pages() as $slug => $label ) {
+			add_submenu_page(
+				null,
 				__( $label, 'yby-core' ),
 				__( $label, 'yby-core' ),
 				'andy_core_settings_manage',
@@ -112,7 +115,7 @@ class YBY_Business_OS_Admin {
 		unset( $hook_suffix, $module );
 		if ( ! self::can_access() ) { return false; }
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-		return isset( self::pages()[ $page ] );
+		return isset( self::pages()[ $page ] ) || isset( self::legacy_pages()[ $page ] );
 	}
 
 	/**
@@ -146,50 +149,47 @@ class YBY_Business_OS_Admin {
 		}
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : self::ROOT_SLUG;
 		$pages = self::pages();
-		if ( ! isset( $pages[ $page ] ) ) {
+		$legacy = self::legacy_pages();
+		if ( ! isset( $pages[ $page ] ) && ! isset( $legacy[ $page ] ) ) {
 			wp_die( esc_html__( '未找到该 Business OS 页面。', 'yby-core' ), '', array( 'response' => 404 ) );
 			return;
 		}
 		echo '<div class="wrap andy-business-os">';
 		echo '<p class="andy-business-os__eyebrow">BEYOURLOVER · 商业合作管理</p>';
-		echo '<h1>' . esc_html( $pages[ $page ] ) . '</h1>';
-		echo '<p class="description">' . esc_html__( 'B1 后台基础版本：尚未连接真实 B2B 数据或交易。', 'yby-core' ) . '</p>';
+		echo '<h1>' . esc_html( $pages[ $page ] ?? $legacy[ $page ] ) . '</h1>';
+		echo '<p class="description">' . esc_html__( 'Andy Content 仅管理招商页面和来源；B2B / B2C 询盘与客户由 ERP 统一管理。', 'yby-core' ) . '</p>';
 
-		if ( self::ROOT_SLUG === $page ) {
-			echo '<div class="andy-business-os__cards">';
-			foreach ( array( '新合作申请', '已审核合作客户', '待处理报价', '待处理履约' ) as $metric ) {
-				echo '<section class="andy-business-os__card"><h2>' . esc_html( $metric ) . '</h2><p class="andy-business-os__missing">—</p><p>' . esc_html__( 'ERP 尚未连接', 'yby-core' ) . '</p></section>';
-			}
-			echo '</div>';
-			self::render_status();
+
+		if ( isset( $legacy[ $page ] ) ) {
+			echo '<section class="andy-business-os__card"><h2>' . esc_html__( '原 Business 后台入口已调整', 'yby-core' ) . '</h2>';
+			echo '<p>' . esc_html__( '不再在 WordPress 管理真实客户、报价和履约；业务工作台将位于 ERP。', 'yby-core' ) . '</p>';
+			echo '<a class="button button-secondary" href="' . esc_url( admin_url( 'admin.php?page=' . self::ROOT_SLUG ) ) . '">' . esc_html__( '返回招商页面设置', 'yby-core' ) . '</a></section>';
+		} elseif ( self::ROOT_SLUG === $page ) {
+			echo '<section class="andy-business-os__card"><h2>' . esc_html__( 'Business Partnerships 英文招商前端', 'yby-core' ) . '</h2>';
+			echo '<p>' . esc_html__( 'B2 Dev 前端 Owner 视觉验收已通过；申请表单仍为模拟模式，不提交或保存真实客户信息。', 'yby-core' ) . '</p>';
+			echo '<a class="button button-secondary" href="' . esc_url( home_url( '/business/' ) ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( '查看招商页面', 'yby-core' ) . '</a></section>';
+
 		} elseif ( 'andy-business-programs' === $page ) {
 			echo '<div class="andy-business-os__cards">';
 			$program_labels = self::program_labels();
 			foreach ( self::programs() as $name => $description ) {
-				echo '<section class="andy-business-os__card"><h2>' . esc_html( $program_labels[ $name ] ?? $name ) . '</h2><p>' . esc_html( $description ) . '</p><span class="andy-business-os__pill">' . esc_html__( '规划中', 'yby-core' ) . '</span></section>';
+				echo '<section class="andy-business-os__card"><h2>' . esc_html( $program_labels[ $name ] ?? $name ) . '</h2><p>' . esc_html( $description ) . '</p><span class="andy-business-os__pill">' . esc_html__( '只读展示', 'yby-core' ) . '</span></section>';
 			}
 			echo '</div>';
 		} elseif ( 'andy-business-applications' === $page ) {
 			echo '<div class="andy-business-os__card">';
-			echo '<h2>' . esc_html__( '复用现有询盘系统 Inquiry OS', 'yby-core' ) . '</h2>';
-			echo '<p>' . esc_html__( 'B3 阶段将在现有 Inquiry OS 内增加 B2B 合作申请分类，不新建重复询盘数据库。', 'yby-core' ) . '</p>';
+			echo '<h2>' . esc_html__( '申请表单与来源配置', 'yby-core' ) . '</h2>';
+			echo '<p>' . esc_html__( 'B2 招商表单仅供 Dev 演示，不保存客户申请；正式接收需 ERP 来源验证、签名传输、去重和失败重试。现有 Inquiry OS 保持原 B2C 询盘能力。', 'yby-core' ) . '</p>';
 			if ( YBY_Module_Registry::is_enabled( 'inquiry_os' ) && YBY_Security::can_view_leads() ) {
-				echo '<a class="button button-secondary" href="' . esc_url( admin_url( 'admin.php?page=andy-core-leads' ) ) . '">' . esc_html__( '查看现有询盘', 'yby-core' ) . '</a>';
+				echo '<a class="button button-secondary" href="' . esc_url( admin_url( 'admin.php?page=andy-core-leads' ) ) . '">' . esc_html__( '查看原 Inquiry OS', 'yby-core' ) . '</a>';
 			} else {
 				echo '<p>' . esc_html__( '当前无权限访问询盘系统，或该模块未启用。', 'yby-core' ) . '</p>';
 			}
 			echo '</div>';
-		} else {
-			$explanations = array(
-				'andy-business-partners'    => '合作客户资料和权限摘要由 ERP 提供，只读展示。',
-				'andy-business-catalog'     => '产品可售范围及 B2B 专属报价以 ERP 为准。',
-				'andy-business-fulfillment' => '仓储库存、履约及一件代发均由 ERP 统一管理。',
-				'andy-business-pages'       => '招商页面须通过视觉验收后，由 BYL Theme OS 实现。',
-				'andy-business-settings'    => 'B1 阶段 ERP 接口和 Business OS 业务配置保持关闭。',
-			);
-			echo '<div class="andy-business-os__card"><h2>' . esc_html__( '后续阶段集成', 'yby-core' ) . '</h2>';
-			echo '<p>' . esc_html( $explanations[ $page ] ) . '</p>';
-			echo '<span class="andy-business-os__pill">' . esc_html__( '尚未连接', 'yby-core' ) . '</span></div>';
+
+		} elseif ( 'andy-business-settings' === $page ) {
+			self::render_status();
+
 		}
 		echo '</div>';
 	}
@@ -201,8 +201,8 @@ class YBY_Business_OS_Admin {
 	 */
 	private static function render_status() {
 		echo '<section class="andy-business-os__card andy-business-os__status">';
-		echo '<h2>' . esc_html__( 'Business 基础配置', 'yby-core' ) . '</h2>';
-		echo '<p>' . esc_html__( '已规划六类合作项目；ERP 接口关闭；公开申请入口关闭。', 'yby-core' ) . '</p>';
+		echo '<h2>' . esc_html__( 'ERP 连接状态：尚未连接', 'yby-core' ) . '</h2>';
+		echo '<p>' . esc_html__( '六类合作项目页面保留；ERP 连接与真实申请提交均未启用。', 'yby-core' ) . '</p>';
 		echo '</section>';
 	}
 }
