@@ -17,6 +17,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-settings-store.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-article-toc-module.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-module.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-business-os-module.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-security.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-database.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-config.php';
@@ -87,6 +88,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-docs-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-content-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-inquiry-admin.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-business-os-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-social-login-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-popup-admin.php';
@@ -132,6 +134,7 @@ class YBY_Core {
 
 		$this->loader->add_action( 'andy_core_register_modules', 'YBY_Article_TOC_Module', 'register_module', 10, 0 );
 		$this->loader->add_action( 'andy_core_register_modules', 'YBY_Analytics_Module', 'register_module', 11, 0 );
+		$this->loader->add_action( 'andy_core_register_modules', 'YBY_Business_OS_Module', 'register_module', 12, 0 );
 		$this->loader->add_action( 'plugins_loaded', 'YBY_Activator', 'sync_capabilities', 1, 0 );
 		$this->loader->add_action( 'plugins_loaded', $database, 'maybe_upgrade', 5, 0 );
 		$this->loader->add_action( 'plugins_loaded', 'YBY_Addon_Registry', 'discover', 15, 0 );
