@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Explicitly approved P6 Dev UAT fixture. NEVER connect to WordPress MySQL."""
-from __future__ import annotations
 import hashlib
 import os
 from pathlib import Path
@@ -59,7 +58,7 @@ def valid_private_stage() -> None:
         raise SystemExit("SYMLINK_GATE_FAILED")
 
 
-def generate() -> list[tuple]:
+def generate():
     rows = []
     for i in range(100):
         channel = "critical_system" if i % 25 == 0 else ("account" if i % 5 == 0 else "campaign")
@@ -80,7 +79,7 @@ def generate() -> list[tuple]:
     return rows
 
 
-def validate(db: sqlite3.Connection) -> tuple[int, int, int]:
+def validate(db):
     db.row_factory = sqlite3.Row
     columns = tuple(row["name"] for row in db.execute("PRAGMA table_info(outbox)"))
     if columns != COLUMNS:
