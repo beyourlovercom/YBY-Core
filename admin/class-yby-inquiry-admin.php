@@ -73,12 +73,15 @@ class YBY_Inquiry_Admin {
 				echo '<p>询盘统计尚未接入。现有询盘列表与数据不受影响。</p></div>';
 				return;
 			}
-			if ( 'notification' === $tab ) {
+			if ( in_array( $tab, array( 'settings', 'notification' ), true ) ) {
 				if ( ! current_user_can( 'andy_core_settings_manage' ) ) {
 					wp_die( esc_html__( 'Permission denied.', 'yby-core' ) );
 				}
 				YBY_Three_OS_Admin::render_tabs( self::page_slug(), YBY_Three_OS_Admin::inquiry_tabs(), $tab, 'Inquiry OS · 询盘中心' );
-				echo '<p><a class="button button-primary" href="' . esc_url( add_query_arg( array( 'page' => YBY_Helpers::admin_page_slug(), 'tab' => 'inquiry-notification' ), admin_url( 'admin.php' ) ) ) . '">打开现有询盘通知设置</a></p></div>';
+				( new YBY_Admin( 'yby-core', YBY_CORE_VERSION ) )->render_inquiry_os_settings(
+					'settings' === $tab ? 'inquiry' : 'inquiry-notification'
+				);
+				echo '</div>';
 				return;
 			}
 			YBY_Three_OS_Admin::render_inquiry_component( $tab );
