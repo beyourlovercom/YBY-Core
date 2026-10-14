@@ -70,7 +70,8 @@ class YBY_Inquiry_Admin {
 		if ( 'leads' !== $tab ) {
 			if ( 'stats' === $tab ) {
 				YBY_Three_OS_Admin::render_tabs( self::page_slug(), YBY_Three_OS_Admin::inquiry_tabs(), $tab, 'Inquiry OS · 询盘中心' );
-				echo '<p>询盘统计尚未接入。现有询盘列表与数据不受影响。</p></div>';
+				YBY_Three_OS_Readonly::render_inquiry_stats();
+				echo '</div>';
 				return;
 			}
 			if ( in_array( $tab, array( 'settings', 'notification' ), true ) ) {
