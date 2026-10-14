@@ -12,13 +12,15 @@ $dock_preview_settings = $inquiry_enabled ? $dock_settings : array();
 $dock_preview_settings['inquiry_background_color'] = $dock_inquiry_background;
 $dock_preview_settings['inquiry_text_color'] = $dock_inquiry_text;
 ?>
-<div class="wrap">
+<div class="<?php echo ! empty( $embedded ) ? 'yby-three-os-embedded' : 'wrap'; ?>">
+	<?php if ( empty( $embedded ) ) : ?>
 	<h1>Email OS</h1>
 	<nav class="nav-tab-wrapper" aria-label="Email OS">
 		<?php foreach ( $tabs as $key => $label ) : ?>
 			<a class="nav-tab <?php echo $tab === $key ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => 'yby-core-popups', 'tab' => $key ), admin_url( 'admin.php' ) ) ); ?>"><?php echo esc_html( $label ); ?></a>
 		<?php endforeach; ?>
 </nav>
+	<?php endif; ?>
 <?php if ( 'floating_inquiry' === $tab ) : ?>
 	<div class="yby-floating-section">
 		<h2>选择悬浮样式</h2>

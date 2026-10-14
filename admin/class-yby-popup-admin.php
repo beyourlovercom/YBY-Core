@@ -2,10 +2,18 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 class YBY_Popup_Admin {
 	protected $plugin; protected $version; protected $hook;
+	protected $embedded_tab = null;
 	public function __construct( $plugin, $version ) { $this->plugin = $plugin; $this->version = $version; }
 	public function add_admin_menu() { $this->hook = add_submenu_page( YBY_Project_Studio::menu_slug(), 'Email OS', 'Email OS', 'manage_options', 'yby-core-popups', array( $this, 'render' ) ); }
 	public function enqueue_assets( $hook ) { if ( $hook === $this->hook ) { wp_enqueue_media(); wp_enqueue_style( 'yby-global-inquiry-dock-preview', YBY_CORE_PLUGIN_URL . 'public/css/yby-global-inquiry-dock.css', array(), $this->version ); wp_enqueue_style( 'yby-email-shortcodes', YBY_CORE_PLUGIN_URL . 'public/css/yby-email-shortcodes.css', array(), $this->version ); wp_enqueue_script( 'yby-core-admin', YBY_CORE_PLUGIN_URL . 'assets/js/yby-core-admin.js', array( 'jquery' ), $this->version, true ); } }
+	/** Reuse the original form handler inside the approved OS navigation. */
+	public function render_embedded( $tab ) {
+		$this->embedded_tab = sanitize_key( $tab );
+		$this->render();
+		$this->embedded_tab = null;
+	}
 	public function render() {
+		$embedded = null !== $this->embedded_tab;
 		if ( ! current_user_can( 'manage_options' ) ) { wp_die( esc_html__( 'Permission denied.', 'yby-core' ) ); }
 		$inquiry_enabled = YBY_Module_Registry::is_enabled( 'inquiry_os' );
 		$email_enabled = YBY_Module_Registry::is_enabled( 'email_os' );
@@ -16,8 +24,8 @@ class YBY_Popup_Admin {
 		if ( $email_enabled ) { $tabs += array( 'bulk_marketing' => '营销群发', 'email_templates' => '邮件模板' ); }
 		if ( empty( $tabs ) ) { wp_die( esc_html__( 'No Email OS or Inquiry OS modules are enabled.', 'yby-core' ) ); }
 
-		$tab = sanitize_key( wp_unslash( $_GET['tab'] ?? 'floating_inquiry' ) );
-		if ( ! isset( $_GET['tab'] ) && ! $inquiry_enabled ) { $tab = 'email_templates'; }
+		$tab = $embedded ? $this->embedded_tab : sanitize_key( wp_unslash( $_GET['tab'] ?? 'floating_inquiry' ) );
+		if ( ! $embedded && ! isset( $_GET['tab'] ) && ! $inquiry_enabled ) { $tab = 'email_templates'; }
 		$tab = array( 'inquiry' => 'popup_inquiry', 'subscribe' => 'popup_subscribe' )[ $tab ] ?? $tab;
 		if ( ! isset( $tabs[ $tab ] ) ) { $tab = $inquiry_enabled ? 'floating_inquiry' : 'email_templates'; }
 

@@ -1,0 +1,19 @@
+/* Andy Core Canonical V1 — scoped admin UI, responsive and independent of WWW. */
+.yby-three-os{--yby-os-green:#006241;--yby-os-ink:#182c20;--yby-os-line:#e3ebe5;--yby-os-muted:#6e8073;max-width:1400px;color:var(--yby-os-ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;padding:6px 14px 32px 0}
+.yby-three-os>h1{font-size:25px;font-weight:740;letter-spacing:-.5px;margin:13px 0}
+.yby-three-os .nav-tab-wrapper{border-bottom:1px solid var(--yby-os-line);padding-top:0!important}
+.yby-three-os .nav-tab{background:transparent!important;border:0!important;border-bottom:2px solid transparent!important;border-radius:0;margin:0!important;padding:10px 13px!important;color:#617365;text-decoration:none;font-size:12px;white-space:nowrap}
+.yby-three-os .nav-tab:hover{background:#f1f7f3!important;color:var(--yby-os-green)}
+.yby-three-os .nav-tab.nav-tab-active{border-color:var(--yby-os-green)!important;color:var(--yby-os-green)!important;font-weight:750}
+.yby-three-os input[type=search],.yby-three-os select{min-height:36px;border-color:#cbdad0;border-radius:7px;max-width:100%}
+.yby-three-os button.button-primary,.yby-three-os a.button-primary{background:var(--yby-os-green);border-color:var(--yby-os-green);border-radius:7px}
+.yby-three-os button.button-primary:hover,.yby-three-os a.button-primary:hover{background:#004e34;border-color:#004e34}
+.yby-three-os .widefat{border:0;border-collapse:collapse;box-shadow:none}
+.yby-three-os .widefat th{color:#7c8d80;font-weight:650;background:#fafcfa;padding:12px}
+.yby-three-os .widefat td{color:var(--yby-os-ink);padding:13px 12px;vertical-align:middle}
+.yby-three-os .widefat tbody tr:hover{background:#f6faf7}
+.yby-three-os .yby-three-os-embedded{margin:0;padding:0}
+.yby-three-os .yby-three-os-embedded .yby-floating-section{background:white;border:1px solid var(--yby-os-line);padding:18px;border-radius:10px;margin:14px 0}
+.yby-three-os .yby-email-os{max-width:1400px}
+.yby-three-os .button:focus-visible,.yby-three-os .nav-tab:focus-visible{outline:2px solid var(--yby-os-green);outline-offset:2px}
+@media(max-width:782px){.yby-three-os{padding:4px 10px 20px 0}.yby-three-os>h1{font-size:20px}.yby-three-os .nav-tab-wrapper{gap:0!important;overflow-x:auto;flex-wrap:nowrap!important;scrollbar-width:thin;white-space:nowrap}.yby-three-os .nav-tab{font-size:11px;padding:10px!important}.yby-three-os form[method=get]{display:flex!important;flex-direction:column;align-items:stretch}.yby-three-os form[method=get] input[type=search]{width:100%;min-width:0!important}.yby-three-os form[method=get] select{width:100%}.yby-three-os .widefat td,.yby-three-os .widefat th{font-size:11px}.yby-three-os .yby-three-os-embedded .yby-floating-section{padding:12px}}

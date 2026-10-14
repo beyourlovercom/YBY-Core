@@ -1,4 +1,5 @@
 <?php if ( ! defined( 'ABSPATH' ) ) { exit; } ?>
+<?php if ( empty( $this->inquiry_os_embedded ) ) : ?>
 <div class="wrap">
 	<h1>Andy Core</h1>
 	<h2 class="nav-tab-wrapper">
@@ -6,6 +7,7 @@
 			<a class="nav-tab <?php echo 'inquiry-notification' === $key ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => YBY_Helpers::admin_page_slug(), 'tab' => $key ), admin_url( 'admin.php' ) ) ); ?>"><?php echo esc_html( $label ); ?></a>
 		<?php endforeach; ?>
 	</h2>
+<?php endif; ?>
 	<?php if ( $notice ) : ?><div class="notice notice-success"><p><?php echo esc_html( $notice ); ?></p></div><?php endif; ?>
 	<form method="post">
 		<?php wp_nonce_field( 'yby_inquiry_notification_save', 'yby_inquiry_notification_nonce' ); ?>
@@ -36,4 +38,4 @@
 		</tbody></table>
 		<p class="submit"><button type="submit" class="button button-primary">保存询盘通知设置</button></p>
 	</form>
-</div>
+<?php if ( empty( $this->inquiry_os_embedded ) ) : ?></div><?php endif; ?>

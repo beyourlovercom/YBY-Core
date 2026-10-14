@@ -34,12 +34,20 @@ class YBY_Module_Registry {
                 'status' => 'ready',
                 'settings' => array( 'page' => 'yby-core', 'tab' => 'inquiry' ),
             ),
+            'newsletter_os' => array(
+                'name' => 'Newsletter OS',
+                'description' => '订阅者、确认/退订、采集入口与营销活动。发送与审批默认不启用。',
+                'default_enabled' => true,
+                'status' => 'ready',
+                'capability' => 'andy_core_newsletter_view',
+                'settings' => array( 'page' => 'andy-core-newsletter', 'tab' => 'subscribers' ),
+            ),
             'email_os' => array(
                 'name' => 'Email OS',
                 'description' => '邮件模板治理、Native 发布、测试与健康中心。',
                 'default_enabled' => true,
                 'status' => 'ready',
-                'settings' => array( 'page' => 'yby-core-popups', 'tab' => 'email_templates' ),
+                'settings' => array( 'page' => 'andy-core-email', 'tab' => 'overview' ),
             ),
             'project_studio' => array(
                 'name' => 'Project Studio',
