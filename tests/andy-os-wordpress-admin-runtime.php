@@ -18,6 +18,12 @@ wp_set_current_user( (int) $admin[0] );
 andy_os_wp_assert( class_exists( 'YBY_Andy_OS_Navigation' ), 'adapter bootstrapped' );
 andy_os_wp_assert( is_admin(), 'admin context' );
 andy_os_wp_assert( current_user_can( 'manage_options' ), 'WP admin capability' );
+// WooCommerce is intentionally absent from this disposable WP baseline.
+// Simulate its existing capability for this process only; no role writes.
+add_filter( 'user_has_cap', static function ( $allcaps ) {
+	$allcaps['manage_woocommerce'] = true;
+	return $allcaps;
+}, 10, 1 );
 
 global $menu, $submenu, $admin_page_hooks, $_registered_pages, $_parent_pages, $plugin_page, $pagenow;
 $menu = array();
