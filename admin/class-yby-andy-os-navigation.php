@@ -117,14 +117,24 @@ final class YBY_Andy_OS_Navigation {
 		// Keep old handlers as invisible WordPress admin routes. A top-level
 		// alias can retain its original hook identity after relocation.
 		// Adding a wrapper to that same hook would recurse indefinitely.
-		$new_hook = add_submenu_page(
-			null,
-			wp_strip_all_tags( (string) $label ),
-			wp_strip_all_tags( (string) $label ),
-			$capability,
-			$slug,
-			null
-		);
+		// WordPress derives a hidden page hook from the current request.
+		// Make it deterministic on every admin.php?page=... request, not
+		// only when the owner opens the dashboard first.
+		global $plugin_page;
+		$saved_plugin_page = $plugin_page ?? null;
+		$plugin_page = null;
+		try {
+			$new_hook = add_submenu_page(
+				null,
+				wp_strip_all_tags( (string) $label ),
+				wp_strip_all_tags( (string) $label ),
+				$capability,
+				$slug,
+				null
+			);
+		} finally {
+			$plugin_page = $saved_plugin_page;
+		}
 		if ( false === $new_hook ) { return false; }
 		if ( $new_hook !== $old_hook ) {
 			add_action( $new_hook, static function () use ( $old_hook ) {
