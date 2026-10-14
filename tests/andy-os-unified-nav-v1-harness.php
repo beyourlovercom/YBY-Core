@@ -21,7 +21,7 @@ function wp_die($v,$title='',$args=array()) { throw new RuntimeException('DENIED
 function get_plugin_page_hookname($slug,$parent='') {
     // WP keeps previously registered top-level slugs on their original hooks.
     if (in_array($slug,array('yby-content','andy-commerce'),true)) return 'toplevel_page_'.$slug;
-    return $parent !== '' ? $parent.'_page_'.$slug : 'toplevel_page_'.$slug;
+    return $parent !== '' ? $parent.'_page_'.$slug : 'admin_page_'.$slug;
 }
 function has_action($hook) { return isset($GLOBALS['aus_hooks'][$hook]); }
 function do_action($hook) { if(isset($GLOBALS['aus_hooks'][$hook]))call_user_func($GLOBALS['aus_hooks'][$hook]); }
@@ -32,6 +32,12 @@ function add_submenu_page($parent,$title,$menu,$cap,$slug,$callback) {
     $hook=get_plugin_page_hookname($slug,(string)$parent);
     if (is_callable($callback)) $GLOBALS['aus_hooks'][$hook]=$callback;
     return $hook;
+}
+function remove_submenu_page($parent,$slug) {
+    foreach(($GLOBALS['submenu'][$parent]??array()) as $i=>$row) {
+        if(($row[2]??'')===$slug) { unset($GLOBALS['submenu'][$parent][$i]); return $row; }
+    }
+    return false;
 }
 function remove_menu_page($slug) {
     foreach($GLOBALS['menu'] as $i=>$item)if(($item[2]??'')===$slug) {
@@ -55,6 +61,9 @@ $install=static function($role)use($assert){
         array('Andy Commerce','manage_woocommerce','andy-commerce')
     );
     $GLOBALS['submenu']=array(
+        'yby-os'=>array(
+            array('Inquiry','andy_core_leads_view','andy-core-leads'),
+        ),
         'yby-content'=>array(
             array('Overview','andy_core_settings_manage','yby-content'),
             array('Business 招商页面','andy_core_settings_manage','andy-business'),
@@ -67,6 +76,7 @@ $install=static function($role)use($assert){
         'toplevel_page_andy-commerce'=>function(){++$GLOBALS['aus_legacy_count'];},
         'yby-content_page_andy-business'=>function(){++$GLOBALS['aus_legacy_count'];},
         'yby-content_page_andy-business-programs'=>function(){++$GLOBALS['aus_legacy_count'];},
+        'yby-os_page_andy-core-leads'=>function(){++$GLOBALS['aus_legacy_count'];},
     );
     $GLOBALS['aus_removed']=array();
     $GLOBALS['aus_legacy_count']=0;
@@ -78,12 +88,18 @@ $assert(in_array('yby-content',$GLOBALS['aus_removed'],true),'content top-level 
 $assert(in_array('andy-commerce',$GLOBALS['aus_removed'],true),'commerce top-level removed');
 $assert(count($GLOBALS['menu'])===1,'only one top-level');
 $slugs=array_column($GLOBALS['submenu']['yby-os'],2);
-foreach(array('andy-os-overview','andy-os-content','andy-os-inquiry','andy-os-marketing','andy-os-commerce','andy-os-settings','yby-content','andy-business','andy-business-programs','andy-commerce','edit-tags.php?taxonomy=doc_tag&post_type=docs') as $slug) {
-    $assert(in_array($slug,$slugs,true),'preserved or grouped: '.$slug);
+$assert(count($slugs)===6,'only six visible Andy OS section links');
+foreach(array('andy-os-overview','andy-os-content','andy-os-inquiry','andy-os-marketing','andy-os-commerce','andy-os-settings') as $slug) {
+    $assert(in_array($slug,$slugs,true),'visible section: '.$slug);
 }
-do_action('toplevel_page_andy-commerce'); // WP keeps original top-level hook identity
-do_action('yby-os_page_andy-business');
-$assert(2===$GLOBALS['aus_legacy_count'],'old page callbacks are delegated');
+$hidden=array_column($GLOBALS['submenu'][''],2);
+foreach(array('yby-content','andy-business','andy-business-programs','andy-commerce','andy-core-leads','edit-tags.php?taxonomy=doc_tag&post_type=docs') as $slug) {
+    $assert(in_array($slug,$hidden,true),'hidden original deep link registered: '.$slug);
+}
+do_action('toplevel_page_andy-commerce');
+do_action('admin_page_andy-business');
+do_action('admin_page_andy-core-leads');
+$assert(3===$GLOBALS['aus_legacy_count'],'hidden original page callbacks delegated');
 $_GET['page']='andy-os-content';
 ob_start();YBY_Andy_OS_Navigation::render_section();$html=ob_get_clean();
 $assert(str_contains($html,'Business 招商页面'),'Business card renders');
