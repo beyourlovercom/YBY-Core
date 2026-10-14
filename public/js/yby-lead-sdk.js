@@ -538,6 +538,9 @@
           if (responseData.data && responseData.data.case_id) {
             requestPayload.case_id = responseData.data.case_id;
             sdk.setCaseId(responseData.data.case_id);
+            // Browser-local proof of a server-accepted inquiry, never created
+            // by a direct Thank You navigation or by a failed submission.
+            setSessionItem("yby_confirmed_lead_case_id", sdk.getCaseId());
           }
 
           sdk.saveLeadDisplayData(requestPayload);

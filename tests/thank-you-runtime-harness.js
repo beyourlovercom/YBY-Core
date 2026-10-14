@@ -765,6 +765,65 @@ function testSessionStorageHydrationAndTracking() {
   assert(runtime.dataLayer[2].event === "thank_you_page_view", "Second init must add only thank_you_page_view.");
 }
 
+function testBottleThankYouVerifiedExactlyOnce() {
+  const caseId = "YBY-YBC-20261014-ABC234";
+  const sessionStorage = new SessionStorageMock();
+  sessionStorage.setItem("yby_confirmed_lead_case_id", caseId);
+  const runtime = createRuntime({
+    documentBundle: { document: new MockDocument(), nodes: {} },
+    pathname: "/lp/thank-you-glass-bottle-oem/",
+    search: "?case_id=" + caseId,
+    sessionStorage
+  });
+
+  assert(runtime.dataLayer.filter((x) => x.event === "generate_lead").length === 1,
+    "The marker-free bottle Thank You must track exactly one server-confirmed lead.");
+  assert(runtime.dataLayer[1].event_id === caseId, "Bottle event_id must be the confirmed Case ID.");
+  runtime.window.YBYThankYou.init();
+  assert(runtime.dataLayer.filter((x) => x.event === "generate_lead").length === 1,
+    "Reloading the same case in the same browser session must not fire a second conversion.");
+}
+
+function testBottleThankYouNoUnconfirmedConversions() {
+  const caseId = "YBY-YBC-20261014-ABC234";
+  for (const params of [
+    { search: "?case_id=" + caseId },
+    { search: "" },
+    { search: "?case_id=YBY-YBC-20261014-NNN234", confirmed: caseId }
+  ]) {
+    const sessionStorage = new SessionStorageMock();
+    if (params.confirmed) {
+      sessionStorage.setItem("yby_confirmed_lead_case_id", params.confirmed);
+    }
+    const runtime = createRuntime({
+      documentBundle: { document: new MockDocument(), nodes: {} },
+      pathname: "/lp/thank-you-glass-bottle-oem/",
+      search: params.search,
+      sessionStorage
+    });
+    assert(!runtime.dataLayer.some((entry) => entry.event === "generate_lead"),
+      "Direct, missing or mismatched Case ID must never trigger a Bottle conversion.");
+  }
+}
+
+function testBottleTrackingFailureNeverMarksDedupe() {
+  const caseId = "YBY-YBC-20261014-ABC234";
+  const sessionStorage = new SessionStorageMock();
+  sessionStorage.setItem("yby_confirmed_lead_case_id", caseId);
+  const runtime = createRuntime({
+    documentBundle: { document: new MockDocument(), nodes: {} },
+    pathname: "/lp/thank-you-glass-bottle-oem/",
+    search: "?case_id=" + caseId,
+    sessionStorage,
+    tracking: { enabled: false },
+    runtime: { enableTracking: false }
+  });
+  assert(!sessionStorage.getItem("yby_generate_lead_counted_" + caseId),
+    "A failed tracking push must never poison the deduplication key.");
+  assert(!runtime.dataLayer.some((entry) => entry.event === "generate_lead"),
+    "Tracking-disabled runtime must emit no lead event.");
+}
+
 function testTrackingPiiExclusion() {
   const runtime = createRuntime({
     search: "?case_id=YBY-IRR-20260721-ABC234"
@@ -920,6 +979,9 @@ const tests = [
   ["default_bottle", testBottleDefaultMessage],
   ["bottle_template_isolation", testBottleRejectsIrrigationRuntimeTemplate],
   ["session_tracking", testSessionStorageHydrationAndTracking],
+  ["bottle_verified_once", testBottleThankYouVerifiedExactlyOnce],
+  ["bottle_no_unconfirmed", testBottleThankYouNoUnconfirmedConversions],
+  ["bottle_no_failed_dedupe", testBottleTrackingFailureNeverMarksDedupe],
   ["tracking_pii", testTrackingPiiExclusion],
   ["bricks_lead_success", testBricksLeadSuccessTracking],
   ["bricks_nonlead_exclusion", testBricksNonLeadFormExclusion],
