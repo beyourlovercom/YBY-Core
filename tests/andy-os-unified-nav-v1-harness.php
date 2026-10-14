@@ -102,7 +102,7 @@ $install(array('andy_core_settings_manage'));
 $assert('andy_core_settings_manage'===YBY_Andy_OS_Navigation::root_capability(),'content root capability');
 YBY_Andy_OS_Navigation::consolidate();
 $assert(in_array('yby-content',$GLOBALS['aus_removed'],true),'content manager unified');
-$assert(!in_array('andy-commerce',$GLOBALS['aus_removed'],true),'commerce remains hidden by permissions');
+$assert(!in_array('andy-commerce',array_column($GLOBALS['submenu']['yby-os'],2),true),'commerce route not exposed to content-only role');
 $install(array('andy_core_leads_view'));
 $assert('andy_core_leads_view'===YBY_Andy_OS_Navigation::root_capability(),'inquiry-only root capability');
 $_GET['page']='andy-os-inquiry';
