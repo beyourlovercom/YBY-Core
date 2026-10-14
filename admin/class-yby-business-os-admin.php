@@ -16,14 +16,14 @@ class YBY_Business_OS_Admin {
 	 */
 	public static function pages() {
 		return array(
-			self::ROOT_SLUG                 => 'Overview',
-			'andy-business-applications'   => 'Applications',
-			'andy-business-programs'       => 'Partnership Programs',
-			'andy-business-partners'       => 'Business Partners',
-			'andy-business-catalog'        => 'Catalog & Pricing',
-			'andy-business-fulfillment'    => 'Fulfillment',
-			'andy-business-pages'          => 'Business Pages',
-			'andy-business-settings'       => 'Settings',
+			self::ROOT_SLUG                 => '业务总览',
+			'andy-business-applications'   => '合作申请',
+			'andy-business-programs'       => '合作项目',
+			'andy-business-partners'       => '合作客户',
+			'andy-business-catalog'        => '产品与报价',
+			'andy-business-fulfillment'    => '仓储与发货',
+			'andy-business-pages'          => '招商页面',
+			'andy-business-settings'       => '设置',
 		);
 	}
 
@@ -34,12 +34,12 @@ class YBY_Business_OS_Admin {
 	 */
 	public static function programs() {
 		return array(
-			'Wholesale'           => 'Bulk orders, samples and volume-based wholesale requests.',
-			'Dropshipping'        => 'Subject-to-approval single-order fulfillment.',
-			'Retail Partners'     => 'Store displays, sales materials and product education.',
-			'Distributors'        => 'Regional distribution applications and agreement review.',
-			'OEM / Private Label' => 'Custom product and packaging requests.',
-			'Corporate Orders'    => 'Project-based corporate and event procurement.',
+			'Wholesale'           => '批量采购、样品支持及阶梯批发报价。',
+			'Dropshipping'        => '按授权仓库及 SKU 提供一件代发服务。',
+			'Retail Partners'     => '线下零售展示、销售素材及产品培训支持。',
+			'Distributors'        => '区域分销申请、资质审核及合作协议。',
+			'OEM / Private Label' => '产品及包装定制合作申请。',
+			'Corporate Orders'    => '企业项目与活动采购合作。',
 		);
 	}
 
@@ -65,7 +65,7 @@ class YBY_Business_OS_Admin {
 		if ( ! self::can_access() ) { return; }
 
 		add_menu_page(
-			__( 'Business', 'yby-core' ),
+			__( '商业合作 Business', 'yby-core' ),
 			__( 'Business', 'yby-core' ),
 			'andy_core_settings_manage',
 			self::ROOT_SLUG,
@@ -125,54 +125,54 @@ class YBY_Business_OS_Admin {
 	 */
 	public static function render_page() {
 		if ( ! self::can_access() ) {
-			wp_die( esc_html__( 'You do not have permission to view Business OS.', 'yby-core' ), '', array( 'response' => 403 ) );
+			wp_die( esc_html__( '你没有权限查看 Business OS。', 'yby-core' ), '', array( 'response' => 403 ) );
 			return;
 		}
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : self::ROOT_SLUG;
 		$pages = self::pages();
 		if ( ! isset( $pages[ $page ] ) ) {
-			wp_die( esc_html__( 'Business OS page not found.', 'yby-core' ), '', array( 'response' => 404 ) );
+			wp_die( esc_html__( '未找到该 Business OS 页面。', 'yby-core' ), '', array( 'response' => 404 ) );
 			return;
 		}
 		echo '<div class="wrap andy-business-os">';
-		echo '<p class="andy-business-os__eyebrow">BEYOURLOVER BUSINESS</p>';
+		echo '<p class="andy-business-os__eyebrow">BEYOURLOVER · 商业合作管理</p>';
 		echo '<h1>' . esc_html( $pages[ $page ] ) . '</h1>';
-		echo '<p class="description">' . esc_html__( 'B1 admin shell · No real B2B data or transactions are connected.', 'yby-core' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'B1 后台基础版本：尚未连接真实 B2B 数据或交易。', 'yby-core' ) . '</p>';
 
 		if ( self::ROOT_SLUG === $page ) {
 			echo '<div class="andy-business-os__cards">';
-			foreach ( array( 'New Applications', 'Approved Partners', 'Pending Quotes', 'Fulfillment' ) as $metric ) {
-				echo '<section class="andy-business-os__card"><h2>' . esc_html( $metric ) . '</h2><p class="andy-business-os__missing">—</p><p>' . esc_html__( 'ERP not connected', 'yby-core' ) . '</p></section>';
+			foreach ( array( '新合作申请', '已审核合作客户', '待处理报价', '待处理履约' ) as $metric ) {
+				echo '<section class="andy-business-os__card"><h2>' . esc_html( $metric ) . '</h2><p class="andy-business-os__missing">—</p><p>' . esc_html__( 'ERP 尚未连接', 'yby-core' ) . '</p></section>';
 			}
 			echo '</div>';
 			self::render_status();
 		} elseif ( 'andy-business-programs' === $page ) {
 			echo '<div class="andy-business-os__cards">';
 			foreach ( self::programs() as $name => $description ) {
-				echo '<section class="andy-business-os__card"><h2>' . esc_html( $name ) . '</h2><p>' . esc_html( $description ) . '</p><span class="andy-business-os__pill">' . esc_html__( 'Planned', 'yby-core' ) . '</span></section>';
+				echo '<section class="andy-business-os__card"><h2>' . esc_html( $name ) . '</h2><p>' . esc_html( $description ) . '</p><span class="andy-business-os__pill">' . esc_html__( '规划中', 'yby-core' ) . '</span></section>';
 			}
 			echo '</div>';
 		} elseif ( 'andy-business-applications' === $page ) {
 			echo '<div class="andy-business-os__card">';
-			echo '<h2>' . esc_html__( 'Reuse Inquiry OS', 'yby-core' ) . '</h2>';
-			echo '<p>' . esc_html__( 'Business applications will be filtered through the existing Inquiry OS in B3. No duplicate lead database is created.', 'yby-core' ) . '</p>';
+			echo '<h2>' . esc_html__( '复用现有询盘系统 Inquiry OS', 'yby-core' ) . '</h2>';
+			echo '<p>' . esc_html__( 'B3 阶段将在现有 Inquiry OS 内增加 B2B 合作申请分类，不新建重复询盘数据库。', 'yby-core' ) . '</p>';
 			if ( YBY_Module_Registry::is_enabled( 'inquiry_os' ) && YBY_Security::can_view_leads() ) {
-				echo '<a class="button button-secondary" href="' . esc_url( admin_url( 'admin.php?page=andy-core-leads' ) ) . '">' . esc_html__( 'Open existing inquiries', 'yby-core' ) . '</a>';
+				echo '<a class="button button-secondary" href="' . esc_url( admin_url( 'admin.php?page=andy-core-leads' ) ) . '">' . esc_html__( '查看现有询盘', 'yby-core' ) . '</a>';
 			} else {
-				echo '<p>' . esc_html__( 'Inquiry OS access is unavailable.', 'yby-core' ) . '</p>';
+				echo '<p>' . esc_html__( '当前无权限访问询盘系统，或该模块未启用。', 'yby-core' ) . '</p>';
 			}
 			echo '</div>';
 		} else {
 			$explanations = array(
-				'andy-business-partners'    => 'Approved partner and permission summaries will be read from ERP.',
-				'andy-business-catalog'     => 'Product availability and partner-specific pricing remain authoritative in ERP.',
-				'andy-business-fulfillment' => 'Warehouse capacity, fulfillment and dropshipping remain governed by ERP.',
-				'andy-business-pages'       => 'Public Business pages will be implemented with BYL Theme OS after visual approval.',
-				'andy-business-settings'    => 'ERP connection and Business OS configuration remain disabled in B1.',
+				'andy-business-partners'    => '合作客户资料和权限摘要由 ERP 提供，只读展示。',
+				'andy-business-catalog'     => '产品可售范围及 B2B 专属报价以 ERP 为准。',
+				'andy-business-fulfillment' => '仓储库存、履约及一件代发均由 ERP 统一管理。',
+				'andy-business-pages'       => '招商页面须通过视觉验收后，由 BYL Theme OS 实现。',
+				'andy-business-settings'    => 'B1 阶段 ERP 接口和 Business OS 业务配置保持关闭。',
 			);
-			echo '<div class="andy-business-os__card"><h2>' . esc_html__( 'Planned integration', 'yby-core' ) . '</h2>';
+			echo '<div class="andy-business-os__card"><h2>' . esc_html__( '后续阶段集成', 'yby-core' ) . '</h2>';
 			echo '<p>' . esc_html( $explanations[ $page ] ) . '</p>';
-			echo '<span class="andy-business-os__pill">' . esc_html__( 'Not connected', 'yby-core' ) . '</span></div>';
+			echo '<span class="andy-business-os__pill">' . esc_html__( '尚未连接', 'yby-core' ) . '</span></div>';
 		}
 		echo '</div>';
 	}
@@ -184,8 +184,8 @@ class YBY_Business_OS_Admin {
 	 */
 	private static function render_status() {
 		echo '<section class="andy-business-os__card andy-business-os__status">';
-		echo '<h2>' . esc_html__( 'Business Setup', 'yby-core' ) . '</h2>';
-		echo '<p>' . esc_html__( 'Six partnership programs planned. ERP bridge disabled. Public applications disabled.', 'yby-core' ) . '</p>';
+		echo '<h2>' . esc_html__( 'Business 基础配置', 'yby-core' ) . '</h2>';
+		echo '<p>' . esc_html__( '已规划六类合作项目；ERP 接口关闭；公开申请入口关闭。', 'yby-core' ) . '</p>';
 		echo '</section>';
 	}
 }
