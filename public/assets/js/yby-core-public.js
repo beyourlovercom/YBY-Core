@@ -198,8 +198,13 @@
     return candidate.length >= 2 ? candidate : "CORE";
   }
 
+  function isBottleThankYouPage() {
+    // Bottle's dedicated Thank You template does not use the legacy DOM markers.
+    return /^\/lp\/thank-you-glass-bottle-oem\/?$/.test(String(window.location.pathname || "").toLowerCase());
+  }
+
   function isThankYouPage() {
-    return !!document.querySelector(
+    return isBottleThankYouPage() || !!document.querySelector(
       [
         "[data-yby-lead-name]",
         "[data-yby-case-id]",
@@ -991,18 +996,37 @@
 
   window.YBYThankYou.trackGenerateLeadOnce = function () {
     var caseId = window.YBYLead.getCaseId();
-    var key = caseId ? "yby_generate_lead_counted_" + caseId : "yby_generate_lead_counted";
+    var key;
 
-    if (getSessionItem(key)) {
-      return;
+    // Never count an arbitrary direct Thank You visit without a valid Case ID.
+    if (!isValidCaseId(caseId)) {
+      return false;
     }
 
-    window.YBYTracking.generateLead({
+    if (isBottleThankYouPage()) {
+      // The bottle-specific thank-you page must follow this tab's successful
+      // server response, not a bookmark or a Case ID left by another inquiry.
+      if (normalizeCaseId(getQueryParam("case_id")) !== caseId ||
+          normalizeCaseId(getSessionItem("yby_confirmed_lead_case_id")) !== caseId ||
+          getSessionItem("yby_confirmed_lead_preset") !== "bottle_oem_inquiry") {
+        return false;
+      }
+    }
+
+    key = "yby_generate_lead_counted_" + caseId;
+    if (getSessionItem(key)) {
+      return false;
+    }
+
+    if (window.YBYTracking.generateLead({
       page_type: "thank_you_page",
-      event_id: caseId || "YBY-LEAD-" + Date.now()
-    });
+      event_id: caseId
+    }) !== true) {
+      return false;
+    }
 
     setSessionItem(key, "1");
+    return true;
   };
 
   if (window.YBY_CORE_TEST_MODE === true) {

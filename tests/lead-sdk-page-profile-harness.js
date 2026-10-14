@@ -86,6 +86,7 @@ function createRuntime(options) {
   return {
     dataLayer,
     requests,
+    session,
     sdk: window.YBYLead
   };
 }
@@ -140,6 +141,10 @@ async function submit(runtime, overrides) {
     "page_profile must not enter fields."
   );
   assert(runtime.dataLayer.length === 0, "page_profile transport must not create tracking events.");
+  assert(runtime.session.get("yby_confirmed_lead_case_id") === "YBY-BCB-20260731-ABC123",
+    "Only a successful Lead REST response may create the confirmed Case ID marker.");
+  assert(runtime.session.get("yby_confirmed_lead_preset") === "bottle_oem_inquiry",
+    "Bottle conversion must be tied to the server-confirmed OEM source preset.");
 
   const sanitized = await submit(runtime, {
     page_profile: "<Bottle OEM profile!>"
