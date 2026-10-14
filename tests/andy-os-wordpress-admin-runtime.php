@@ -28,12 +28,15 @@ add_filter( 'user_has_cap', static function ( $allcaps ) use ( $test_admin_id ) 
 	return $allcaps;
 }, 10, 1 );
 
-global $menu, $submenu, $admin_page_hooks, $_registered_pages, $_parent_pages, $plugin_page, $pagenow;
+global $menu, $submenu, $admin_page_hooks, $_registered_pages, $_parent_pages, $_wp_submenu_nopriv, $_wp_menu_nopriv, $plugin_page, $pagenow, $parent_file;
 $menu = array();
 $submenu = array();
 $admin_page_hooks = array();
 $_registered_pages = array();
 $_parent_pages = array();
+$_wp_submenu_nopriv = array();
+$_wp_menu_nopriv = array();
+$parent_file = '';
 // Simulate an actual direct legacy URL during the admin_menu hook.
 // A page must work even without first visiting the Andy OS dashboard.
 $plugin_page = 'andy-business';
