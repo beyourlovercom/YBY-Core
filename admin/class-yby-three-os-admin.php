@@ -25,6 +25,18 @@ final class YBY_Three_OS_Admin {
         );
     }
 
+    /** M6: keep route metadata for old bookmarks, but show only usable pages. */
+    public static function newsletter_visible_tabs() {
+        return array_intersect_key( self::newsletter_tabs(), array_flip( array(
+            'subscribers', 'consent', 'popup_subscribe', 'shortcode_subscribe',
+        ) ) );
+    }
+    public static function email_visible_tabs() {
+        return array_intersect_key( self::email_tabs(), array_flip( array(
+            'overview', 'email_templates', 'transport', 'health',
+        ) ) );
+    }
+
     public static function email_tabs() {
         return array(
             'overview' => '总览', 'queue' => '邮件队列',
@@ -192,10 +204,12 @@ final class YBY_Three_OS_Admin {
         $tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'subscribers';
         if ( 'bulk_marketing' === $tab ) { $tab = 'campaigns'; }
         if ( ! isset( $tabs[ $tab ] ) ) { $tab = 'subscribers'; }
-        self::render_tabs( self::NEWSLETTER, $tabs, $tab, 'Newsletter OS · 订阅与营销' );
+        self::render_tabs( self::NEWSLETTER, self::newsletter_visible_tabs(), $tab, 'Newsletter OS · 订阅与营销' );
         if ( 'subscribers' === $tab ) {
             $this->subscribers();
-        } elseif ( in_array( $tab, array( 'popup_subscribe', 'shortcode_subscribe', 'popup_lottery' ), true ) ) {
+        } elseif ( 'consent' === $tab ) {
+            YBY_Three_OS_Readonly::render_newsletter_consent();
+        } elseif ( in_array( $tab, array( 'popup_subscribe', 'shortcode_subscribe' ), true ) ) {
             if ( current_user_can( 'manage_options' ) && YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) {
                 ( new YBY_Popup_Admin( 'yby-core', YBY_CORE_VERSION ) )->render_embedded( $tab );
             } else {
@@ -221,13 +235,15 @@ final class YBY_Three_OS_Admin {
         $tabs = self::email_tabs();
         $tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
         if ( ! isset( $tabs[ $tab ] ) ) { $tab = 'overview'; }
-        self::render_tabs( self::EMAIL, $tabs, $tab, 'Email OS · 邮件基础设施' );
+        self::render_tabs( self::EMAIL, self::email_visible_tabs(), $tab, 'Email OS · 邮件基础设施' );
         if ( 'email_templates' === $tab ) {
             if ( current_user_can( 'andy_core_settings_manage' ) ) {
                 ( new YBY_Email_Template_Admin() )->render();
             } else {
                 $this->notice( '邮件模板的编辑、发布和测试发送仍需单独的系统设置权限。' );
             }
+        } elseif ( in_array( $tab, array( 'overview', 'health', 'transport' ), true ) ) {
+            YBY_Three_OS_Readonly::render_email_summary( $tab );
         } else {
             $descriptions = array(
                 'overview' => '发送与队列总览。Mail OS V2 仍未启用真实队列、Worker 或自动重试。',
@@ -238,14 +254,7 @@ final class YBY_Three_OS_Admin {
                 'health' => 'Worker：关闭。Outbox：未安装。真实配额与系统并发仍未验收。',
             );
             $this->notice( $descriptions[ $tab ] );
-            if ( in_array( $tab, array( 'overview', 'health', 'transport' ), true ) ) {
-                echo '<div style="max-width:740px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px">';
-                foreach ( array( 'Queue' => '未启用', 'Worker' => '已关闭', 'Outbound' => '未授权', 'WP / Woo 通知' => '保持原有路径' ) as $label => $value ) {
-                    echo '<div style="background:white;border:1px solid #e3e9e5;border-radius:10px;padding:16px"><small>' . esc_html( $label ) .
-                         '</small><p style="font-weight:700;font-size:17px">' . esc_html( $value ) . '</p></div>';
-                }
-                echo '</div>';
-            }
+            // Legacy direct links remain informative; inactive operations stay hidden from navigation.
         }
         echo '</div>';
     }
