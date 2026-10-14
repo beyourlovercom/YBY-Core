@@ -113,7 +113,7 @@ class YBY_Project_Studio {
 	public function render_root_page() {
 		if ( YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) { $url = admin_url( 'admin.php?page=' . YBY_Inquiry_Admin::page_slug() ); }
 		elseif ( YBY_Module_Registry::is_enabled( 'project_studio' ) ) { $url = admin_url( 'admin.php?page=' . self::studio_page_slug() ); }
-		elseif ( YBY_Module_Registry::is_enabled( 'email_os' ) ) { $url = admin_url( 'admin.php?page=yby-core-popups&tab=email_templates' ); }
+		elseif ( YBY_Module_Registry::is_enabled( 'email_os' ) ) { $url = admin_url( 'admin.php?page=andy-core-email&tab=overview' ); }
 		elseif ( YBY_Module_Registry::is_enabled( 'social_login' ) ) { $url = admin_url( 'admin.php?page=' . YBY_Social_Login_Admin::page_slug() ); }
 		elseif ( YBY_Module_Registry::is_enabled( 'connector' ) ) { $url = admin_url( 'admin.php?page=' . YBY_Helpers::admin_page_slug() . '&tab=wp-api' ); }
 		else { $url = admin_url( 'admin.php?page=' . YBY_Helpers::admin_page_slug() . '&tab=modules' ); }
