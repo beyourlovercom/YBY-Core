@@ -1007,7 +1007,8 @@
       // The bottle-specific thank-you page must follow this tab's successful
       // server response, not a bookmark or a Case ID left by another inquiry.
       if (normalizeCaseId(getQueryParam("case_id")) !== caseId ||
-          normalizeCaseId(getSessionItem("yby_confirmed_lead_case_id")) !== caseId) {
+          normalizeCaseId(getSessionItem("yby_confirmed_lead_case_id")) !== caseId ||
+          getSessionItem("yby_confirmed_lead_preset") !== "bottle_oem_inquiry") {
         return false;
       }
     }

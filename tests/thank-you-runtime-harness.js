@@ -769,6 +769,7 @@ function testBottleThankYouVerifiedExactlyOnce() {
   const caseId = "YBY-YBC-20261014-ABC234";
   const sessionStorage = new SessionStorageMock();
   sessionStorage.setItem("yby_confirmed_lead_case_id", caseId);
+  sessionStorage.setItem("yby_confirmed_lead_preset", "bottle_oem_inquiry");
   const runtime = createRuntime({
     documentBundle: { document: new MockDocument(), nodes: {} },
     pathname: "/lp/thank-you-glass-bottle-oem/",
@@ -789,11 +790,13 @@ function testBottleThankYouNoUnconfirmedConversions() {
   for (const params of [
     { search: "?case_id=" + caseId },
     { search: "" },
-    { search: "?case_id=YBY-YBC-20261014-NNN234", confirmed: caseId }
+    { search: "?case_id=YBY-YBC-20261014-NNN234", confirmed: caseId },
+    { search: "?case_id=" + caseId, confirmed: caseId, preset: "irrigation_quick_inquiry" }
   ]) {
     const sessionStorage = new SessionStorageMock();
     if (params.confirmed) {
       sessionStorage.setItem("yby_confirmed_lead_case_id", params.confirmed);
+      sessionStorage.setItem("yby_confirmed_lead_preset", params.preset || "bottle_oem_inquiry");
     }
     const runtime = createRuntime({
       documentBundle: { document: new MockDocument(), nodes: {} },
@@ -810,6 +813,7 @@ function testBottleTrackingFailureNeverMarksDedupe() {
   const caseId = "YBY-YBC-20261014-ABC234";
   const sessionStorage = new SessionStorageMock();
   sessionStorage.setItem("yby_confirmed_lead_case_id", caseId);
+  sessionStorage.setItem("yby_confirmed_lead_preset", "bottle_oem_inquiry");
   const runtime = createRuntime({
     documentBundle: { document: new MockDocument(), nodes: {} },
     pathname: "/lp/thank-you-glass-bottle-oem/",

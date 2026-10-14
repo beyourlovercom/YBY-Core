@@ -541,6 +541,7 @@
             // Browser-local proof of a server-accepted inquiry, never created
             // by a direct Thank You navigation or by a failed submission.
             setSessionItem("yby_confirmed_lead_case_id", sdk.getCaseId());
+            setSessionItem("yby_confirmed_lead_preset", safeString(requestPayload.source_preset, 120));
           }
 
           sdk.saveLeadDisplayData(requestPayload);
