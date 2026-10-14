@@ -213,8 +213,10 @@ class YBY_Core {
 		$this->loader->add_action( 'admin_menu', $three_os, 'register_menus', 21 );
 		$this->loader->add_action( 'admin_menu', $project_studio, 'normalize_root_menu', 999 );
 		$this->loader->add_action( 'admin_menu', $three_os, 'hide_old_menu', 1000 );
+		$this->loader->add_action( 'admin_menu', $three_os, 'order_os_menus', 1001 );
 		$this->loader->add_action( 'admin_enqueue_scripts', $brand_os, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_assets' );
+		$this->loader->add_action( 'admin_enqueue_scripts', $three_os, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_init', $admin, 'redirect_legacy_inquiry_dock' );
 		$this->loader->add_action( 'admin_init', $three_os, 'redirect_legacy_get', 20 );
 		$updater->register_hooks( $this->loader );
