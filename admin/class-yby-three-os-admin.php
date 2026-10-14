@@ -66,6 +66,42 @@ final class YBY_Three_OS_Admin {
         }
     }
 
+    /** Place the three business modules together; keep every other Core menu. */
+    public function order_os_menus() {
+        global $submenu;
+        $parent = YBY_Project_Studio::menu_slug();
+        if ( empty( $submenu[ $parent ] ) || ! is_array( $submenu[ $parent ] ) ) { return; }
+        $ordered = array();
+        $rest = array();
+        $wanted = array( YBY_Inquiry_Admin::page_slug(), self::NEWSLETTER, self::EMAIL );
+        foreach ( $submenu[ $parent ] as $item ) {
+            $slug = isset( $item[2] ) ? (string) $item[2] : '';
+            if ( in_array( $slug, $wanted, true ) ) { $ordered[ $slug ] = $item; }
+            else { $rest[] = $item; }
+        }
+        $first = array();
+        foreach ( $wanted as $slug ) {
+            if ( isset( $ordered[ $slug ] ) ) { $first[] = $ordered[ $slug ]; }
+        }
+        $submenu[ $parent ] = array_merge( $first, $rest );
+    }
+
+    /** Existing CSS/JS needed by the reused popup and template renderers. */
+    public function enqueue_assets( $hook ) {
+        $page = isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
+            ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+        if ( ! in_array( $page, array( self::NEWSLETTER, self::EMAIL, YBY_Inquiry_Admin::page_slug() ), true ) ) {
+            return;
+        }
+        wp_enqueue_style( 'yby-three-os', YBY_CORE_PLUGIN_URL . 'assets/css/yby-three-os-admin.css', array(), YBY_CORE_VERSION );
+        if ( in_array( $page, array( self::NEWSLETTER, YBY_Inquiry_Admin::page_slug() ), true ) ) {
+            wp_enqueue_media();
+            wp_enqueue_style( 'yby-global-inquiry-dock-preview', YBY_CORE_PLUGIN_URL . 'public/css/yby-global-inquiry-dock.css', array(), YBY_CORE_VERSION );
+            wp_enqueue_style( 'yby-email-shortcodes', YBY_CORE_PLUGIN_URL . 'public/css/yby-email-shortcodes.css', array(), YBY_CORE_VERSION );
+            wp_enqueue_script( 'yby-core-admin', YBY_CORE_PLUGIN_URL . 'assets/js/yby-core-admin.js', array( 'jquery' ), YBY_CORE_VERSION, true );
+        }
+    }
+
     /** Old GET bookmarks redirect; POST forms retain their original processing. */
     public function redirect_legacy_get() {
         if ( ! is_admin() || 'GET' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) ||
