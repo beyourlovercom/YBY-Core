@@ -79,9 +79,9 @@ class YBY_Project_Studio {
 	 */
 	public function add_admin_menu() {
 		add_menu_page(
-			__( 'Andy Core', 'yby-core' ),
-			__( 'Andy Core', 'yby-core' ),
-			'manage_options',
+			__( 'Andy OS', 'yby-core' ),
+			__( 'Andy OS', 'yby-core' ),
+			YBY_Andy_OS_Navigation::root_capability(),
 			self::menu_slug(),
 			array( $this, 'render_root_page' ),
 			'dashicons-portfolio',
@@ -111,6 +111,8 @@ class YBY_Project_Studio {
 	}
 
 	public function render_root_page() {
+		YBY_Andy_OS_Navigation::render_overview();
+		return;
 		if ( YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) { $url = admin_url( 'admin.php?page=' . YBY_Inquiry_Admin::page_slug() ); }
 		elseif ( YBY_Module_Registry::is_enabled( 'project_studio' ) ) { $url = admin_url( 'admin.php?page=' . self::studio_page_slug() ); }
 		elseif ( YBY_Module_Registry::is_enabled( 'email_os' ) ) { $url = admin_url( 'admin.php?page=yby-core-popups&tab=email_templates' ); }
