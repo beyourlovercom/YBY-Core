@@ -87,6 +87,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-updater.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-docs-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-content-admin.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-andy-os-navigation.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-inquiry-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-business-os-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
@@ -211,6 +212,7 @@ class YBY_Core {
 			$this->loader->add_action( 'admin_enqueue_scripts', $inquiry_admin, 'enqueue_assets' );
 		}
 		$this->loader->add_action( 'admin_menu', $project_studio, 'normalize_root_menu', 999 );
+		$this->loader->add_action( 'admin_menu', new YBY_Andy_OS_Navigation(), 'consolidate', 1100 );
 		$this->loader->add_action( 'admin_enqueue_scripts', $brand_os, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_init', $admin, 'redirect_legacy_inquiry_dock' );

@@ -63,6 +63,10 @@ jobs:
           wp plugin activate yby-core --path="$RUNNER_TEMP/wordpress"
           YBY_VALIDATION_PHASE=validate YBY_VALIDATION_REPORT_DIR="$RUNNER_TEMP/reports" wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-mysql-validation.php" --path="$RUNNER_TEMP/wordpress"
           ls -la "$RUNNER_TEMP/reports"
+      - name: Andy OS genuine WordPress admin route validation
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/tests/andy-os-wordpress-admin-runtime.php" --path="$RUNNER_TEMP/wordpress"
       - name: Build Owner UAT RC
         run: |
           set -euo pipefail
