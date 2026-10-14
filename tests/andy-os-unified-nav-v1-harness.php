@@ -59,6 +59,7 @@ $install=static function($role)use($assert){
             array('Overview','andy_core_settings_manage','yby-content'),
             array('Business 招商页面','andy_core_settings_manage','andy-business'),
             array('合作项目','andy_core_settings_manage','andy-business-programs'),
+            array('Docs 标签','andy_core_settings_manage','edit-tags.php?taxonomy=doc_tag&post_type=docs'),
         )
     );
     $GLOBALS['aus_hooks']=array(
@@ -77,7 +78,7 @@ $assert(in_array('yby-content',$GLOBALS['aus_removed'],true),'content top-level 
 $assert(in_array('andy-commerce',$GLOBALS['aus_removed'],true),'commerce top-level removed');
 $assert(count($GLOBALS['menu'])===1,'only one top-level');
 $slugs=array_column($GLOBALS['submenu']['yby-os'],2);
-foreach(array('andy-os-overview','andy-os-content','andy-os-inquiry','andy-os-marketing','andy-os-commerce','andy-os-settings','yby-content','andy-business','andy-business-programs','andy-commerce') as $slug) {
+foreach(array('andy-os-overview','andy-os-content','andy-os-inquiry','andy-os-marketing','andy-os-commerce','andy-os-settings','yby-content','andy-business','andy-business-programs','andy-commerce','edit-tags.php?taxonomy=doc_tag&post_type=docs') as $slug) {
     $assert(in_array($slug,$slugs,true),'preserved or grouped: '.$slug);
 }
 do_action('toplevel_page_andy-commerce'); // WP keeps original top-level hook identity
