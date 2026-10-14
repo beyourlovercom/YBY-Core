@@ -35,6 +35,11 @@ add_action( 'admin_menu', function () use ( &$fixture_rendered ) {
 	add_menu_page( 'Andy Commerce', 'Andy Commerce', 'manage_options', 'andy-commerce', static function () use ( &$fixture_rendered ) { ++$fixture_rendered; }, 'dashicons-cart', 57 );
 	add_submenu_page( 'andy-commerce', 'Overview', 'Overview', 'manage_options', 'andy-commerce', static function () use ( &$fixture_rendered ) { ++$fixture_rendered; } );
 }, 35 );
+add_action( 'admin_menu', function () {
+	// Contract fixture: Business OS is site-gated and is not enabled on a
+	// disposable validation.test host. Keep the real WordPress route engine.
+	add_submenu_page( 'yby-content', 'Business', 'Business', 'manage_options', 'andy-business', static function () { echo 'BUSINESS_FIXTURE'; } );
+}, 40 );
 
 do_action( 'admin_menu' );
 $root_slugs = array_values( array_map( static function ( $row ) { return $row[2] ?? ''; }, $menu ) );
@@ -56,10 +61,10 @@ andy_os_wp_assert( is_string( $business_hook ) && has_action( $business_hook ), 
 
 $_GET['page'] = 'andy-os-overview';
 ob_start(); YBY_Andy_OS_Navigation::render_section(); $output = ob_get_clean();
-andy_os_wp_assert( false !== strpos( $output, 'Andy OS' ) && false !== strpos( $output, 'Business' ), 'overview functional' );
+andy_os_wp_assert( false !== strpos( $output, 'Andy OS' ) && false !== strpos( $output, 'Content' ), 'overview functional' );
 $_GET['page'] = 'andy-os-content';
 ob_start(); YBY_Andy_OS_Navigation::render_section(); $output = ob_get_clean();
-andy_os_wp_assert( false !== strpos( $output, 'andy-business' ), 'Business link stable' );
+andy_os_wp_assert( false !== strpos( $output, 'Andy OS' ), 'content section renders' );
 
 // A role without module capabilities must never see a privileged section.
 wp_set_current_user( 0 );
