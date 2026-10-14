@@ -1,7 +1,7 @@
 <?php
 /**
  * Mail OS V2 P5 isolated load rehearsal.
- * Produces 10,000 purely synthetic opaque rows; P2 plans 10 independent
+ * Produces 10,000 purely synthetic opaque rows; P2 plans 10 sequential
  * <=1,000-record windows. No WordPress runtime, Outbox, Action Scheduler
  * enqueue, SMTP or data writes. A "planned" claim is NEVER sent.
  */
@@ -52,6 +52,8 @@ final class YBY_Mail_V2_P5_Stress {
         }
         // Validate the full dataset before sorting/slicing. No partial success.
         $seen = array();
+        $seen_keys = array();
+        $senders_by_id = array();
         foreach ( $rows as $row ) {
             if ( ! is_array( $row ) || count( $row ) !== 10 ||
                  ! isset( $row['opaque_id'], $row['idempotency_key'] ) ||
@@ -59,12 +61,22 @@ final class YBY_Mail_V2_P5_Stress {
                  ! preg_match( '/\A[a-f0-9]{64}\z/D', $row['opaque_id'] ) ||
                  ! preg_match( '/\A[a-f0-9]{64}\z/D', $row['idempotency_key'] ) ||
                  isset( $seen[ $row['opaque_id'] ] ) ||
+                 isset( $seen_keys[ $row['idempotency_key'] ] ) ||
+                 ! isset( YBY_Mail_V2_Contract::CHANNEL_PRIORITY[ $row['channel'] ?? '' ] ) ||
+                 $row['priority'] !== YBY_Mail_V2_Contract::CHANNEL_PRIORITY[ $row['channel'] ] ||
+                 ! in_array( $row['sender_key'], array( 'system_tx', 'newsletter_bulk' ), true ) ||
+                 ( 'campaign' === $row['channel'] ? 'newsletter_bulk' : 'system_tx' ) !== $row['sender_key'] ||
+                 'queued' !== $row['state'] || 0 !== $row['state_version'] ||
+                 0 !== $row['attempt'] || 3 !== $row['max_attempts'] ||
+                 1 !== $row['next_attempt_at'] ||
                  array_diff( array_keys( $row ), array( 'opaque_id', 'idempotency_key',
                      'sender_key', 'channel', 'priority', 'state',
                      'state_version', 'attempt', 'max_attempts', 'next_attempt_at' ) ) ) {
                 return $fail( 'untrusted_fixture' );
             }
             $seen[ $row['opaque_id'] ] = true;
+            $seen_keys[ $row['idempotency_key'] ] = true;
+            $senders_by_id[ $row['opaque_id'] ] = $row['sender_key'];
         }
         // GLOBAL priority order prevents a late P0 item being skipped behind
         // large P2 backlog by a window boundary.
@@ -76,9 +88,13 @@ final class YBY_Mail_V2_P5_Stress {
         $priority_counts = array_fill_keys( array( 0, 1, 2, 3 ), 0 );
         $selected = array();
         $windows = 0;
+        // Same simulated instant across windows: do NOT mint new tokens or
+        // release in-flight capacity between chunks without refill evidence.
+        $remaining = $budgets;
+        $consumed = array_fill_keys( array_keys( $budgets ), 0 );
         foreach ( array_chunk( $rows, self::WINDOW_SIZE ) as $batch ) {
             ++$windows;
-            $plan = YBY_Mail_V2_P2_Planner::plan( $batch, $budgets, 100,
+            $plan = YBY_Mail_V2_P2_Planner::plan( $batch, $remaining, 100,
                 array( 'synthetic_only' => true, 'health_ok' => true,
                     'max_batch' => 50, 'critical_reserve' => 5 ) );
             if ( 'dry_run' !== ( $plan['status'] ?? '' ) ||
@@ -92,6 +108,15 @@ final class YBY_Mail_V2_P5_Stress {
                      ! isset( $priority_counts[ $claim['priority'] ] ) ) {
                     return $fail( 'claim_duplicate_or_unknown' );
                 }
+                $sender = $senders_by_id[ $claim['opaque_id'] ] ?? '';
+                if ( ! isset( $remaining[ $sender ] ) ||
+                     $remaining[ $sender ]['tokens'] <= 0 ||
+                     $remaining[ $sender ]['inflight'] >= $remaining[ $sender ]['max_inflight'] ) {
+                    return $fail( 'global_sender_budget_exhausted' );
+                }
+                --$remaining[ $sender ]['tokens'];
+                ++$remaining[ $sender ]['inflight'];
+                ++$consumed[ $sender ];
                 ++$priority_counts[ $claim['priority'] ];
                 $selected[ $claim['opaque_id'] ] = true;
             }
@@ -104,7 +129,12 @@ final class YBY_Mail_V2_P5_Stress {
         return array( 'status' => 'dry_run', 'fixture_total' => self::FIXTURE_SIZE,
             'windows' => $windows, 'max_window' => self::WINDOW_SIZE,
             'planned_claims' => count( $selected ),
-            'by_priority' => $priority_counts, 'real_mail_sent' => 0,
+            'by_priority' => $priority_counts,
+            'by_sender' => $consumed,
+            'remaining_tokens' => array_map( static function ( $budget ) {
+                return $budget['tokens'];
+            }, $remaining ),
+            'real_mail_sent' => 0,
             'worker_enabled' => false, 'db_mutations' => false,
             'action_group' => YBY_Mail_V2_P2_Scheduler::GROUP );
     }
