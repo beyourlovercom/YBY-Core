@@ -14,7 +14,7 @@ $dock_preview_settings['inquiry_text_color'] = $dock_inquiry_text;
 ?>
 <div class="<?php echo ! empty( $embedded ) ? 'yby-three-os-embedded' : 'wrap'; ?>">
 	<?php if ( empty( $embedded ) ) : ?>
-	<h1>Email OS · 旧版兼容入口</h1>
+	<h1>Email OS</h1>
 	<nav class="nav-tab-wrapper" aria-label="Email OS">
 		<?php foreach ( $tabs as $key => $label ) : ?>
 			<a class="nav-tab <?php echo $tab === $key ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => 'yby-core-popups', 'tab' => $key ), admin_url( 'admin.php' ) ) ); ?>"><?php echo esc_html( $label ); ?></a>
