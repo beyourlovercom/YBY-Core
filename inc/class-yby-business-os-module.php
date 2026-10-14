@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class YBY_Business_OS_Module {
 	const MODULE_ID = 'business_os';
-	const VERSION   = '1.0.0';
+	const VERSION   = '1.1.0';
 
 	/**
 	 * Register the optional extension through the existing Core module runtime.
@@ -20,12 +20,13 @@ class YBY_Business_OS_Module {
 			self::MODULE_ID,
 			array(
 				'name'                 => 'Business OS',
-				'description'          => 'B2B 网站管理基础模块；真实客户、报价、PI、订单与履约均以 ERP 为准。',
+				'description'          => 'Business 招商页面和表单来源设置；B2B / B2C 询盘统一由 ERP 管理。',
 				'version'              => self::VERSION,
 				'schema_version'       => '1',
 				'status'               => 'ready',
 				'default_enabled'      => false,
 				'capability'           => 'andy_core_settings_manage',
+				'admin_parent'        => 'yby-content',
 				'availability'         => array( __CLASS__, 'is_site_eligible' ),
 				'availability_message' => 'Business OS 当前仅适用于 BeYourLover 站点。',
 				'admin_menu'           => array( 'YBY_Business_OS_Admin', 'register_admin_menu' ),
