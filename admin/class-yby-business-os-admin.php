@@ -44,6 +44,22 @@ class YBY_Business_OS_Admin {
 	}
 
 	/**
+	 * Admin-facing B2B program names (Chinese-first; stable English IDs).
+	 *
+	 * @return array<string,string>
+	 */
+	public static function program_labels() {
+		return array(
+			'Wholesale'           => '批发采购（Wholesale）',
+			'Dropshipping'        => '一件代发（Dropshipping）',
+			'Retail Partners'     => '零售门店合作（Retail Partners）',
+			'Distributors'        => '区域经销合作（Distributors）',
+			'OEM / Private Label' => '品牌定制（OEM / Private Label）',
+			'Corporate Orders'    => '企业与活动采购（Corporate Orders）',
+		);
+	}
+
+	/**
 	 * Fail closed if the module, site or permission gate is absent.
 	 *
 	 * @return bool
@@ -148,8 +164,9 @@ class YBY_Business_OS_Admin {
 			self::render_status();
 		} elseif ( 'andy-business-programs' === $page ) {
 			echo '<div class="andy-business-os__cards">';
+			$program_labels = self::program_labels();
 			foreach ( self::programs() as $name => $description ) {
-				echo '<section class="andy-business-os__card"><h2>' . esc_html( $name ) . '</h2><p>' . esc_html( $description ) . '</p><span class="andy-business-os__pill">' . esc_html__( '规划中', 'yby-core' ) . '</span></section>';
+				echo '<section class="andy-business-os__card"><h2>' . esc_html( $program_labels[ $name ] ?? $name ) . '</h2><p>' . esc_html( $description ) . '</p><span class="andy-business-os__pill">' . esc_html__( '规划中', 'yby-core' ) . '</span></section>';
 			}
 			echo '</div>';
 		} elseif ( 'andy-business-applications' === $page ) {
