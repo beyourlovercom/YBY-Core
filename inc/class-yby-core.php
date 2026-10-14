@@ -219,6 +219,7 @@ class YBY_Core {
 		$this->loader->add_action( 'admin_enqueue_scripts', $three_os, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_init', $admin, 'redirect_legacy_inquiry_dock' );
 		$this->loader->add_action( 'admin_init', $three_os, 'redirect_legacy_get', 20 );
+		$this->loader->add_action( 'admin_init', $three_os, 'redirect_legacy_settings_get', 21 );
 		$updater->register_hooks( $this->loader );
 
 		if ( $project_enabled ) {
