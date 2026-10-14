@@ -149,12 +149,15 @@ final class YBY_Andy_OS_Navigation {
 			'andy-os-content' => array(
 				array( 'Business 招商页面', 'andy-business', 'andy_core_settings_manage', 'business_os' ),
 				array( '合作项目展示', 'andy-business-programs', 'andy_core_settings_manage', 'business_os' ),
+				array( '申请表单与来源', 'andy-business-applications', 'andy_core_settings_manage', 'business_os' ),
+				array( 'ERP 连接状态', 'andy-business-settings', 'andy_core_settings_manage', 'business_os' ),
 				array( '落地页与内容', 'yby-content', 'andy_core_settings_manage', '' ),
 			),
 			'andy-os-inquiry' => array(
 				array( 'Inquiry OS（过渡入口）', 'andy-core-leads', 'andy_core_leads_view', 'inquiry_os' ),
 			),
 			'andy-os-marketing' => array(
+				array( 'Email OS 与弹窗', 'yby-core-popups', 'manage_options', 'email_os' ),
 				array( '营销活动与折扣草稿', 'andy-commerce&tab=marketing-promotions', 'manage_woocommerce', '' ),
 			),
 			'andy-os-commerce' => array(
