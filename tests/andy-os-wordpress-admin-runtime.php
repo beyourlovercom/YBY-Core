@@ -60,6 +60,15 @@ foreach ( array( 'andy-os-overview','andy-os-content','andy-os-inquiry','andy-os
 	andy_os_wp_assert( in_array( $slug, $sub_slugs, true ), 'slug maintained: ' . $slug );
 }
 andy_os_wp_assert( user_can_access_admin_page() || isset( $submenu['yby-os'] ), 'root registered' );
+// Check the actual WordPress permission router, not only submenu arrays.
+foreach ( array( 'andy-os-overview', 'andy-os-content', 'yby-content', 'andy-commerce', 'andy-business' ) as $deep_link ) {
+	$plugin_page = $deep_link;
+	$_GET['page'] = $deep_link;
+	$parent_file = '';
+	andy_os_wp_assert( user_can_access_admin_page(), 'deep link accessible: ' . $deep_link );
+}
+$plugin_page = '';
+unset( $_GET['page'] );
 andy_os_wp_assert( has_action( 'toplevel_page_andy-commerce' ), 'original Commerce callback registered' );
 $before = $fixture_rendered;
 do_action( 'toplevel_page_andy-commerce' );
