@@ -87,9 +87,14 @@ final class YBY_Andy_OS_Navigation {
 	private static function transfer_alias( $slug, $label, $capability, $old_parent ) {
 		if ( ! current_user_can( $capability ) ) { return true; }
 		$old_hook = get_plugin_page_hookname( $slug, $old_parent );
-		if ( ! is_string( $old_hook ) || '' === $old_hook || ! has_action( $old_hook ) ) {
-			return false;
-		}
+		if ( ! is_string( $old_hook ) || '' === $old_hook ) { return false; }
+
+		// WordPress built-in editor/taxonomy links (e.g. edit-tags.php) are
+		// ordinary routes, not callback-driven plugin screens. Copy their
+		// menu link without requiring a hook. Never relax this for unknown
+		// plugin route slugs or actions.
+		$is_native_link = (bool) preg_match( '/^(?:edit|edit-tags|post-new)\\.php\\?/', $slug );
+		if ( ! has_action( $old_hook ) && ! $is_native_link ) { return false; }
 		// Register the new route without a callback first. WordPress may keep
 		// a top-level alias on its original hook name even after reparenting.
 		// Adding a wrapper to that same hook would recurse indefinitely.
