@@ -211,3 +211,38 @@ Codes above are **examples of classification rules, not errors found at WWW**. A
 5. Dev action-scheduler six failed jobs and DB stability remain **separate unresolved risks**. WWW Mail OS v2 outbox/worker/cutover remains **OFF and unauthorized** until its own gates.
 
 **P0 disposition revised:** **visible Debug Events failure class = IDENTIFIED**; **WWW failure population attribution = PARTIAL/UNVERIFIED**; **upstream culprit and comprehensive P0 root-cause closure = OPEN**. Architecture document ready for Owner review, but **no Owner PASS inferred**. No settings saved, event deletion, emails resent, exports, jobs started, code deployed, WWW DB change or READY device restart.
+
+## 9. GitHub static send-path audit — possible missing-recipient boundary and tests (2026-10-13)
+
+**Scope:** source-only, read from GitHub `main` (at Draft PR #85's baseline). **No WWW deployed-version parity has been proven.** This is a risk review and regression-test proposal, **not attribution of the Owner's Debug Events to Andy Core**. No live WP Admin/DB reads, file deployment, test-mail send, or queue/cron execution.
+
+### 9.1 Reviewed paths and line-level evidence
+
+| Source checked on GitHub main | Direct observation | Assessment |
+| --- | --- | --- |
+| `inc/class-yby-email-notification-provider.php`, lines 30–49 | `sendLeadNotification()` obtains `YBY_Config::get_lead_notification_primary_recipient_email()`, then invokes `wp_mail($recipient, ...)` without a local `is_email()`/nonempty guard | **Plausible code-level empty-To boundary** if config and fallback both fail; not proof that this path generated WWW log |
+| `inc/class-yby-config.php`, lines 280–283, 496–505, 644–647 | Primary-recipient getter sanitizes a configured option using `admin_email` fallback; `sanitize_email_value()` returns `''` if both configured and fallback addresses are invalid | Input combination can legitimately yield **empty string**, despite a fallback mechanism |
+| `inc/class-yby-mail-transport.php`, lines 116–146 | Newsletter confirmation validates recipient with `filter_var(FILTER_VALIDATE_EMAIL)` before scoped `wp_mail()` | No corresponding local empty-To flaw observed in this specific Newsletter path; downstream filters/deployed parity not verified |
+| `inc/class-yby-email-health-center.php`, lines 94–100, 125–137 | Test-email path checks `is_email` before sending | Local input check present, test UI does not explain WWW recurring production failure |
+| `inc/class-yby-email-template-runtime.php`, lines 50–98 | WordPress new-user/reset-email template filters assign subject/message/headers, but do **not** overwrite `email['to']` in the reviewed code | Not a direct explicit empty-To assignment here; cannot rule out upstream empty recipient or third-party filters |
+| `tests/notification-provider-harness.php`, lines 155–156 plus scenario assertions | Stubbed config always returns `sales@example.test`; existing tests check valid mail path, header behavior and nonfatal notification failure | **Missing test coverage** for invalid primary + invalid `admin_email` both yielding empty To |
+| `beyourlovercom/beyourlover-web-v3`, main | All **52 PHP files** under its `theme/beyourlover-v3` and historical `platform/byl-platform` source trees read for direct `wp_mail`, `pre_wp_mail`, `phpmailer_init`, `wp_mail_failed`, `wp_mail_from`, and two core notification-email filter registrations | **No matching direct call or listed mail hooks found in these 52 reviewed files**; does not cover all deployed WWW plugins or untracked production code |
+
+### 9.2 Confidence and origin discrimination
+
+- **Confirmed GitHub source gap:** the Andy Core lead notification provider does not prevent its own send call when the primary recipient getter resolves to `''`. The config method explicitly permits `''` when all fallbacks fail.
+- **NOT confirmed as actual WWW root cause:** the WWW owner screenshot displays `WP Core` (a non-specific source label), not an Andy Core stack trace. There is no evidence that WWW has both primary/fallback recipients invalid, that a lead submitted at the matching minute, that the same Core source version is deployed, or that the two logging subsystems refer to the same attempt.
+- **Other unexplored sources:** WordPress native cron/security/account notifications; installed third-party plugins such as WPForms/AffiliateWP/WooCommerce; filters `wp_mail`, `pre_wp_mail`, `phpmailer_init` registered by plugins absent from GitHub; missing/altered admin email settings; production-specific mu-plugins or snippets. The GitHub theme scan does not exclude these.
+- **Mailer state:** the screenshot error `You must provide at least one recipient email address` is PHPMailer local validation, so changing Tencent SMTP hostname/password or increasing rate limits is not a justified response to these specific samples.
+
+### 9.3 Proposal for an independently authorized, code-only P0 fix/test gate
+
+**Do not implement/merge/deploy under this audit-only authorization.** A future narrowly scoped PR, after Owner approval, could:
+1. Validate the resolved **primary To** address inside `sendLeadNotification()` *before constructing/sending mail*, and return a nonfatal `mail_sent=false` with an opaque `invalid_primary_recipient` code if missing. Do not invent an address, redirect to support or promote CC/BCC silently. Preserve lead storage and existing user-facing successful submission semantics.
+2. Add isolated offline tests for: (a) invalid primary AND invalid site admin → **zero `wp_mail` calls**, fail-closed result; (b) valid configured primary → exactly one call; (c) invalid primary and valid admin fallback → one call only if existing configuration policy explicitly permits fallback; (d) no sensitive recipient in logs/response; (e) no changes to Woo/WordPress account mail or Newsletter V1 gate.
+3. In later specifically authorized runtime read-only investigation, correlate non-sensitive source/time/purpose markers to the WWW failure without reading email headers or recipient data. A code-only fix for a plausible gap **does not close WWW root cause** absent correlation and deployed parity.
+4. **No historical replay**; do not trigger synthetic mail on WWW/Dev; if real-mail validation is proposed, it needs separate existing safety gates and Owner authorization.
+
+### 9.4 P0 Closure / Owner UAT disposition
+
+**Static source-risk review = COMPLETE WITH CANDIDATE GAP. WWW upstream attribution = UNVERIFIED. P0 comprehensive root-cause closure = OPEN. Owner Architecture UAT = PENDING.** Draft PR #85 remains document-only / unmerged; Woo remains transactional email owner; WWW SMTP Pro remains in place; no newly permitted code changes, scheduled actions, provider settings or emails.
