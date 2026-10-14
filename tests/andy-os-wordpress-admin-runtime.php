@@ -34,7 +34,10 @@ $submenu = array();
 $admin_page_hooks = array();
 $_registered_pages = array();
 $_parent_pages = array();
-$plugin_page = '';
+// Simulate an actual direct legacy URL during the admin_menu hook.
+// A page must work even without first visiting the Andy OS dashboard.
+$plugin_page = 'andy-business';
+$_GET['page'] = 'andy-business';
 $pagenow = 'admin.php';
 
 // Simulate separately shipped Commerce menu on a genuine WordPress menu
