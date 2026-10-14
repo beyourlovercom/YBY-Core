@@ -38,7 +38,7 @@ final class YBY_Three_OS_Admin {
         return array(
             'leads' => '询盘列表', 'stats' => '询盘统计',
             'floating_inquiry' => '悬浮询盘', 'popup_inquiry' => '询盘弹窗',
-            'shortcode_inquiry' => '询盘短代码', 'notification' => '询盘通知',
+            'shortcode_inquiry' => '询盘短代码', 'settings' => '询盘设置', 'notification' => '询盘通知',
         );
     }
 
@@ -55,6 +55,25 @@ final class YBY_Three_OS_Admin {
                 YBY_Project_Studio::menu_slug(), 'Email OS', 'Email OS',
                 self::MAIL_VIEW, self::EMAIL, array( $this, 'render_email' )
             );
+        }
+    }
+
+    /** Settings business tabs migrate to Inquiry OS while legacy POST remains local. */
+    public function redirect_legacy_settings_get() {
+        if ( ! is_admin() || 'GET' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) ||
+             ! isset( $_GET['page'], $_GET['tab'] ) ||
+             ! is_scalar( $_GET['page'] ) || ! is_scalar( $_GET['tab'] ) ||
+             YBY_Helpers::admin_page_slug() !== sanitize_key( wp_unslash( $_GET['page'] ) ) ||
+             ! YBY_Module_Registry::is_enabled( 'inquiry_os' ) ||
+             ! current_user_can( 'andy_core_settings_manage' ) ||
+             ! current_user_can( 'andy_core_leads_view' ) ) {
+            return;
+        }
+        $old = sanitize_key( wp_unslash( $_GET['tab'] ) );
+        $map = array( 'inquiry' => 'settings', 'inquiry-notification' => 'notification' );
+        if ( isset( $map[ $old ] ) ) {
+            wp_safe_redirect( self::url( YBY_Inquiry_Admin::page_slug(), $map[ $old ] ) );
+            exit;
         }
     }
 
@@ -146,9 +165,7 @@ final class YBY_Three_OS_Admin {
         echo '<div class="wrap yby-three-os"><h1>' . esc_html( $heading ) . '</h1>';
         echo '<nav class="nav-tab-wrapper" style="display:flex;flex-wrap:wrap;gap:2px;margin:16px 0 20px" aria-label="' . esc_attr( $heading ) . '">';
         foreach ( $tabs as $key => $label ) {
-            $link = ( 'notification' === $key && YBY_Inquiry_Admin::page_slug() === $page )
-                ? add_query_arg( array( 'page' => YBY_Helpers::admin_page_slug(), 'tab' => 'inquiry-notification' ), admin_url( 'admin.php' ) )
-                : self::url( $page, $key );
+            $link = self::url( $page, $key );
             echo '<a class="nav-tab ' . ( $key === $active ? 'nav-tab-active' : '' ) . '" href="' . esc_url( $link ) . '">' . esc_html( $label ) . '</a>';
         }
         echo '</nav>';
