@@ -53,6 +53,10 @@ final class YBY_Andy_OS_Navigation {
 		global $menu, $submenu;
 		if ( ! is_array( $menu ) || ! is_array( $submenu ) ) { return; }
 
+		// Capture existing Core routes before adding the six visible sections.
+		// Preserve their handlers with hidden registered routes below.
+		$core_existing = isset( $submenu[ self::ROOT ] ) && is_array( $submenu[ self::ROOT ] )
+			? $submenu[ self::ROOT ] : array();
 		foreach ( self::sections() as $slug => $title ) {
 			$cap = self::section_capability( $slug );
 			add_submenu_page( self::ROOT, $title, $title, $cap, $slug, array( __CLASS__, 'render_section' ) );
@@ -80,7 +84,22 @@ final class YBY_Andy_OS_Navigation {
 			}
 			if ( $all_safe ) {
 				remove_menu_page( $legacy_parent );
+				// Invisible routes remain registered under WordPress' empty
+				// parent; discard old menu inventory to prevent duplicate
+				// parent resolution for legacy admin.php?page=... links.
+				unset( $submenu[ $legacy_parent ] );
 			} // Fail open to an extra menu if a legacy route cannot be preserved.
+		}
+
+		// Keep the WordPress sidebar compact: only the six section pages
+		// are visible. Existing Core child-page links remain callable,
+		// capability-gated and accessible from the section landing pages.
+		foreach ( $core_existing as $item ) {
+			$slug = isset( $item[2] ) ? $item[2] : '';
+			if ( '' === $slug || self::ROOT === $slug || isset( self::sections()[ $slug ] ) ) { continue; }
+			if ( self::transfer_alias( $slug, $item[0], $item[1], self::ROOT ) ) {
+				remove_submenu_page( self::ROOT, $slug );
+			}
 		}
 	}
 
@@ -95,11 +114,11 @@ final class YBY_Andy_OS_Navigation {
 		// plugin route slugs or actions.
 		$is_native_link = (bool) preg_match( '/^(?:edit|edit-tags|post-new)\\.php\\?/', $slug );
 		if ( ! has_action( $old_hook ) && ! $is_native_link ) { return false; }
-		// Register the new route without a callback first. WordPress may keep
-		// a top-level alias on its original hook name even after reparenting.
+		// Keep old handlers as invisible WordPress admin routes. A top-level
+		// alias can retain its original hook identity after relocation.
 		// Adding a wrapper to that same hook would recurse indefinitely.
 		$new_hook = add_submenu_page(
-			self::ROOT,
+			null,
 			wp_strip_all_tags( (string) $label ),
 			wp_strip_all_tags( (string) $label ),
 			$capability,
