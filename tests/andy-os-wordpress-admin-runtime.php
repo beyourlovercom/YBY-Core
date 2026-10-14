@@ -56,8 +56,13 @@ andy_os_wp_assert( in_array( 'yby-os', $root_slugs, true ), 'Andy OS root presen
 andy_os_wp_assert( ! in_array( 'yby-content', $root_slugs, true ), 'Andy Content top-level removed' );
 andy_os_wp_assert( ! in_array( 'andy-commerce', $root_slugs, true ), 'Andy Commerce top-level removed' );
 $sub_slugs = array_column( $submenu['yby-os'] ?? array(), 2 );
-foreach ( array( 'andy-os-overview','andy-os-content','andy-os-inquiry','andy-os-marketing','andy-os-commerce','andy-os-settings','yby-content','andy-business','andy-commerce' ) as $slug ) {
-	andy_os_wp_assert( in_array( $slug, $sub_slugs, true ), 'slug maintained: ' . $slug );
+foreach ( array( 'andy-os-overview','andy-os-content','andy-os-inquiry','andy-os-marketing','andy-os-commerce','andy-os-settings' ) as $slug ) {
+	andy_os_wp_assert( in_array( $slug, $sub_slugs, true ), 'visible section: ' . $slug );
+}
+andy_os_wp_assert( 6 === count( $sub_slugs ), 'sidebar contains only six sections' );
+$hidden_slugs = array_column( $submenu[''] ?? array(), 2 );
+foreach ( array( 'yby-content','andy-business','andy-commerce' ) as $slug ) {
+	andy_os_wp_assert( in_array( $slug, $hidden_slugs, true ), 'legacy deep link hidden: ' . $slug );
 }
 andy_os_wp_assert( user_can_access_admin_page() || isset( $submenu['yby-os'] ), 'root registered' );
 // Check the actual WordPress permission router, not only submenu arrays.
@@ -74,7 +79,7 @@ $before = $fixture_rendered;
 do_action( 'toplevel_page_andy-commerce' );
 andy_os_wp_assert( $fixture_rendered > $before, 'Commerce original callback callable' );
 $business_slug = 'andy-business';
-$business_hook = get_plugin_page_hookname( $business_slug, 'yby-os' );
+$business_hook = get_plugin_page_hookname( $business_slug, '' );
 andy_os_wp_assert( is_string( $business_hook ) && has_action( $business_hook ), 'Business page callable under new parent' );
 
 $_GET['page'] = 'andy-os-overview';
