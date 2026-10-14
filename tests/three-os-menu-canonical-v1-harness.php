@@ -28,6 +28,7 @@ function add_query_arg( $args, $url = '' ) {
 }
 function current_user_can( $cap ) { return ! empty( $GLOBALS['caps'][ $cap ] ); }
 function esc_html( $str ) { return htmlspecialchars( (string) $str, ENT_QUOTES, 'UTF-8' ); }
+function esc_html__( $str, $domain = '' ) { return esc_html( $str ); }
 function esc_attr( $str ) { return esc_html( $str ); }
 function esc_url( $str ) { return esc_html( $str ); }
 function wp_die( $s ) { throw new RuntimeException( 'DENIED' ); }
