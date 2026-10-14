@@ -81,6 +81,7 @@ ob_start();
 YBY_Business_OS_Admin::render_page();
 $html = ob_get_clean();
 $assert( str_contains( $html, 'Dropshipping' ) && str_contains( $html, 'Wholesale' ), 'programs render' );
+$assert( str_contains( $html, '批发采购' ) && str_contains( $html, '一件代发' ), 'Chinese-first program labels render' );
 $assert( ! str_contains( strtolower( $html ), 'svakom' ), 'BYL-only public branding' );
 $assert( ! str_contains( $html, 'Example Retailer' ), 'no fabricated data' );
 $assert( 0 === $GLOBALS['business_test_writes'], 'read-only render' );
