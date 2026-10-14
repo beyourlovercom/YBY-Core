@@ -246,3 +246,37 @@ Codes above are **examples of classification rules, not errors found at WWW**. A
 ### 9.4 P0 Closure / Owner UAT disposition
 
 **Static source-risk review = COMPLETE WITH CANDIDATE GAP. WWW upstream attribution = UNVERIFIED. P0 comprehensive root-cause closure = OPEN. Owner Architecture UAT = PENDING.** Draft PR #85 remains document-only / unmerged; Woo remains transactional email owner; WWW SMTP Pro remains in place; no newly permitted code changes, scheduled actions, provider settings or emails.
+
+## 10. Earliest retained Debug Events screenshot: heterogeneous failure types (2026-10-13 Owner evidence)
+
+**Provenance:** second Owner-supplied WWW WP Mail SMTP Pro → Tools → Debug Events screenshot from signed-in Chrome at `admin.php?page=wp-mail-smtp-tools&tab=debug-events&paged=58`, **page 58 of 58**, `All (579) / Error (579)`, retention selector still `Forever`, `Debug Email Sending` still OFF. This was supplied by the Owner, not extracted through an alternate remote tool or previously blocked DOM workflow. **Do not preserve/reproduce the literal test recipient email visible inside a truncated diagnostic string.** Record only redacted categorical content below.
+
+### 10.1 Smallest/oldest nine events: screenshot row classification
+
+| Event IDs | Count | Source | Visible date span | Screenshot-supported diagnostic category |
+| --- | ---: | --- | --- | --- |
+| #9 | 1 | WPForms | Aug 3 2025 | `PHPMailer was able to connect to SMTP server but failed while trying to send an ...` (right-hand details truncated): **SMTP connected, subsequent sending error**, precise command/response unknown |
+| #8, #6, #4, #2 | 4 | AffiliateWP | May 8–Jun 24 2025 | `SMTP Error: The following recipients failed: [REDACTED]. Mailbox not f...` — **recipient rejected, apparently mailbox not found**; full provider reply and numeric code not visible |
+| #7, #5, #3, #1 | 4 | AffiliateWP | May 8–Jun 24 2025 | `PHPMailer was able to connect to SMTP server but failed while trying to send an ...` — **SMTP connected, subsequent sending error**, precise command/response unknown |
+| **Totals** | **9** | **8 AffiliateWP, 1 WPForms** | **May–Aug 2025** | **Two distinct older error families in the visible nine rows** |
+
+**Separate, newer screenshot:** Debug Events page 1 of 58 showed nine legible events (#579–#571), `WP Core` source and `You must provide at least one recipient email address`, dates October 12–13 **2026**. Combined screenshot-confirmed **distinct** event samples: 9 oldest + 9 newest = **18 out of 579** debug events with three distinguishable error families. Remaining 561 debug events have **not** been categorized. **This is NOT classification of the separate Email Log `136 Failed` population.** The previously sampled 50 Email Log failures show `WP Core` source only; causal joins remain unproven.
+
+### 10.2 Confidence and concrete consequences
+
+- **Confirmed heterogeneous history:** an unqualified statement that "all failure events result from empty recipient" is **disproven for the visible 2025 samples**. A single fail-closed empty-To guard may address one **candidate risk**, but it cannot explain the 2025 AffiliateWP/WPForms failures.
+- **Recipient rejection category:** likely hard-fail mailbox not found for four observed AffiliateWP rows; do not blindly resend to the same rejected address, do not publish the address, and do not infer the exact SMTP 5xx code from truncated text. A later suppression/verification rule needs actual provider policy and a controlled review.
+- **Connected-but-send-failed category:** SMTP connection was apparently established according to the visible diagnostic; do not label as connection outage or wrong SMTP credentials, and do not assume that retries are safe. Because the rest of each log line is truncated, acceptance certainty, command stage and server code remain **UNKNOWN**; the Mail OS V2 `uncertain` state and no-blind-retry requirement remains essential.
+- **Recent local recipient error:** nine visible 2026 `WP Core` error events are local PHPMailer validation failures; distinct from the older SMTP/server-stage failures. Upstream hooks/recipient preparation still unverified.
+- **Retention** set to Forever means 579 events may span materially different product/software eras, so those totals are **not** a current-day outage/incident rate and cannot demonstrate any present production failure rate.
+- **Source attribution:** `AffiliateWP`, `WPForms` and `WP Core` are plugin-reported source labels, not a verified stack trace, queue origin, exact plugin version or causal proof. Historic errors do not establish that those plugins currently malfunction.
+- **Historical versus current scope:** WWW production SMTP Pro version and sender settings were observed in 2026, not necessarily the settings used for 2025 debug records. No retroactive inference that today's Tencent account/relay caused the earlier failures.
+
+### 10.3 P0 evidence completion gate remains open
+
+1. Screenshot-verified Debug Events coverage increased from **9/579** to **18/579** (newest nine + oldest nine), with at least **three visibly different error families**. The **middle 561** events remain unclassified. Next most informative privacy-safe evidence would be **one or two intermediate-page screenshots** sampled across different time periods (e.g. around pages 20 and 40), not a full sensitive dump.
+2. **No complete root cause yet:** the 136 separate Email Log Failed records are not uniquely joined to the 579 Debug Events. Their actual error-class distribution and the upstream senders still require proven correlation; even if a screenshot uses the same minute, it is not a guaranteed one-to-one match.
+3. Proposed next staged remediation remains strictly **unimplemented**: validate recipient before enqueue/sending; permanent/suppression failures fail closed; transient errors retry only with proven pre-acceptance conditions; accepted/ambiguous cases go to `uncertain`; keep Woo/checkout workers isolated.
+4. Existing Dev database intermittency and six unknown Action Scheduler failures remain independent P0 capacity gates. **No change to WWW SMTP settings or credentials, no sending/retry/delete, no global wp_mail interception, no worker activation, no merge/deploy, no READY device restart**.
+
+**Status after second screenshot:** **P0 diagnostic taxonomy substantiated by two historical endpoints**; **complete failure population and production upstream root cause UNVERIFIED**; **P0 Root Cause Closure NOT PASSED**; **Owner Architecture UAT PENDING**. This section is documentation-only under Draft PR #85.
