@@ -166,6 +166,48 @@ Codes above are **examples of classification rules, not errors found at WWW**. A
 ### 7.4 Single source of truth / status
 
 - P0 GitHub source/CI document gate: verify **the current GitHub PR HEAD** and its exact CI checks after each documentation commit. Historical 4/4 PASS applies only to the SHA tested; source/CI success never validates WWW runtime mail delivery.
-- WWW failed-log evidence: **50 of 136 sampled; 86 unsampled; exact causal codes not established**.
+- WWW Email Log Failed evidence: **50 of 136 sampled; 86 unsampled; no proof of complete causal classification**. New Owner screenshot independently shows **nine visible Debug Events with the specific local missing-recipient error** (Section 8). The two systems have different counters and a 1:1 relationship is not proven.
 - Blocked diagnostic: **explicit safety block respected**; no rerouted browser access.
 - Production safety: WWW WP Mail SMTP Pro active with asynchronous optimization ON; no send/config/queue/Dev/WWW/ERP or order/payment data writes authorized.
+
+## 8. Owner screenshot: live WWW Debug Events evidence (2026-10-13, evidence update)
+
+**Provenance:** Owner-supplied desktop screenshot of the existing, signed-in WWW WordPress WP Mail SMTP → Tools → Debug Events page, URL shown as `admin.php?page=wp-mail-smtp-tools&tab=debug-events`. **This is screenshot evidence, not a newly executed remote DOM read or access through an alternate connector.** No recipient data, email bodies, SMTP passwords, message headers or tokens are needed to interpret the displayed error.
+
+### 8.1 Exact screenshot observations
+
+| Visible field | Observed screenshot value | Limit on interpretation |
+| --- | --- | --- |
+| Debug Events filters | **All (579), Error (579)** | 579 retained **debug events**; do not label these as 579 distinct emails or equate them with Email Log Failed 136 |
+| Pagination | **579 items; page 1 of 58**, approximately 10 per page | Only the first visible page is in evidence; other 57 pages **not** sampled |
+| Email Sending Errors | **ON**, permanently enabled according to adjacent UI note | The current basic error collection is available without enabling extra verbose tracing |
+| Debug Email Sending | **OFF** | No need to enable, no settings changed |
+| Events Retention Period | **Forever** | Current UI selection only, not confirmation of all historical events being present; potentially indefinite retention merits later privacy/capacity review; **do not change now** |
+| Visible events | IDs **#579 down to #571** readable, event type **Error**, source **WP Core**, mailer **Other SMTP**; screenshot dates October 12–13, 2026 | Nine **visible** matching examples, not an audited census of 579 |
+| Visible `Content` repeated in these rows | `Mailer: Other SMTP You must provide at least one recipient email address.` | Specific PHPMailer/WordPress **missing-recipient** validation error, not a 4xx/5xx response from Tencent |
+
+**Reference on error semantics:** WordPress' `WP_PHPMailer` class includes the `provide_address` error string `You must provide at least one recipient email address.` in its local translation/error handling: https://developer.wordpress.org/reference/classes/wp_phpmailer/ . Therefore, these visible events document an **application-side outgoing mail request without a usable recipient** at send validation; for this error mechanism, SMTP authentication, provider daily quota, TLS rejection and rate-limiting are **not established causes**. `Other SMTP` describes selected mailer, not a provider rejection code.
+
+**Timestamp correlation hypothesis, not confirmed join:** prior official OAuth Email Log failed-list sampling recorded a newest WP Core failure at **2026-10-13 21:42** (site timezone unverified). Screenshot Debug Event **#579** is at **2026-10-13 9:42 pm**, the same displayed minute and same `WP Core` source. This is a strong *candidate* correspondence. No stable, privacy-safe shared message identifier or unique join was observed, so **do not assert the two entries are proven identical** or extrapolate to all 136 Failed rows.
+
+### 8.2 Updated cause analysis
+
+| Question | Status | Evidence-bound answer |
+| --- | --- | --- |
+| What is the observed error category for the screenshot sample? | **CONFIRMED for nine visible Debug Events** | Local outgoing-mail recipient validation: `provide_address` / missing valid recipient |
+| Is Tencent SMTP down or rejecting credentials? | **NOT ESTABLISHED** | No SMTP server response code or attempted session evidence in these rows |
+| Do all 579 Debug Events share this exact error? | **UNKNOWN** | Only the first visible nine rows were examined |
+| Do all 136 Email Log Failed records share this error? | **UNKNOWN** | Distinct tables/logging scopes, 50 prior sample rows had `WP Core` source but not error details; 86 not sampled; temporal correlation is not a unique match |
+| Which exact hook/plugin/cron generated the empty destination? | **UNKNOWN / UPSTREAM ROOT CAUSE NOT CLOSED** | `WP Core` is generic source attribution and cannot identify the specific caller or the place where recipient was lost |
+| Should SMTP settings, mailbox credentials, quota or sender be changed? | **NO, NOT ON THIS EVIDENCE** | Validate caller/address lifecycle and safe suppression instead of guessing a Tencent issue |
+| May failed events be resent? | **NO** | Without an authorized valid recipient, retries cannot fix an absent destination and risk duplicates/incorrect recipients |
+
+### 8.3 Minimal next verification, no production writes
+
+1. Through **Owner-provided safely redacted screenshot** or separately approved supported UI access (never a workaround for previously safety-blocked calls), check whether other **Debug Events pages/time ranges** contain different error categories. Page 1 alone cannot establish that all 579 errors are identical.
+2. Without opening real email details or copying addresses, compare a **small timestamp-matched sample** from Email Log Failed to Debug Events for error/source/time to determine whether the two counters likely represent different lifecycle stages. Keep links probabilistic unless a safe unique join can be demonstrated.
+3. Localize the upstream caller: on an **authorized, isolated code-only copy** of exact deployed WordPress/Andy Core/plugin sources, review `wp_mail` invocation, `wp_mail`/PHPMailer pre-send hooks and any filters capable of removing To/Cc/Bcc. Check WordPress core-triggered notifications/cron **without firing jobs or inspecting live message payloads**. If WWW source parity is unknown, explicitly flag it.
+4. Proposed fail-closed fix only after proof: do not enqueue/send when recipient list is empty/invalid; log a redacted cause and source context; do not invent a recipient or silently redirect to support/admin; never replay historical failures by default. Any production fix requires separate code PR, test evidence and release approval.
+5. Dev action-scheduler six failed jobs and DB stability remain **separate unresolved risks**. WWW Mail OS v2 outbox/worker/cutover remains **OFF and unauthorized** until its own gates.
+
+**P0 disposition revised:** **visible Debug Events failure class = IDENTIFIED**; **WWW failure population attribution = PARTIAL/UNVERIFIED**; **upstream culprit and comprehensive P0 root-cause closure = OPEN**. Architecture document ready for Owner review, but **no Owner PASS inferred**. No settings saved, event deletion, emails resent, exports, jobs started, code deployed, WWW DB change or READY device restart.
