@@ -92,6 +92,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-social-login-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-popup-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-three-os-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-three-os-readonly.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-mail-v2-p6-dev-preview.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-connector-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-email-template-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-docs-os-admin.php';
