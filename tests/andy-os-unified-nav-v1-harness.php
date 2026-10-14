@@ -80,7 +80,7 @@ $slugs=array_column($GLOBALS['submenu']['yby-os'],2);
 foreach(array('andy-os-overview','andy-os-content','andy-os-inquiry','andy-os-marketing','andy-os-commerce','andy-os-settings','yby-content','andy-business','andy-business-programs','andy-commerce') as $slug) {
     $assert(in_array($slug,$slugs,true),'preserved or grouped: '.$slug);
 }
-do_action('yby-os_page_andy-commerce');
+do_action('toplevel_page_andy-commerce'); // WP keeps original top-level hook identity
 do_action('yby-os_page_andy-business');
 $assert(2===$GLOBALS['aus_legacy_count'],'old page callbacks are delegated');
 $_GET['page']='andy-os-content';
