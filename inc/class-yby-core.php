@@ -115,6 +115,7 @@ class YBY_Core {
 		$this->loader = new YBY_Loader();
 
 		YBY_Module_Registry::adopt_default_modules_once( 'v170_landing_pages', array( 'landing_pages' ) );
+		YBY_Module_Registry::adopt_default_modules_once( 'v1_three_os_newsletter_menu', array( 'newsletter_os' ) );
 
 		$this->define_system_hooks();
 		$this->set_locale();
