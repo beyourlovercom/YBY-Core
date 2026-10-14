@@ -8,7 +8,7 @@
 - P2 Draft PR #92 — priority, sender tokens, cooldown, critical reserve, synthetic Action Scheduler previews, code PASS.
 - P3 Draft PR #95 — capability/nonce attestation and strict data minimization for paginated synthetic queue/failure/log views. A real source connector and WordPress admin controller are NOT yet built.
 - P4 Draft PR #96 — sender identity policy and provider-outcome classifier **only in synthetic mode**. Existing `YBY_Mail_Transport` owns the Tencent enterprise mailbox adapter and remains unchanged. No SMTP credentials are read.
-- P5 Draft PR (this branch) — 10,000 opaque synthetic items across ten independently planned windows, 1,000 items maximum to P2 at a time; global priority ordering means P0 is processed before low-priority backlog. Uses P2 `plan()` and inert `preview_actions()`; never calls Action Scheduler to schedule actions.
+- P5 Draft PR (this branch) — 10,000 opaque synthetic items across ten independently planned windows, 1,000 items maximum to P2 at a time; global priority ordering means P0 is processed before low-priority backlog. Uses P2 `plan()` and inert `preview_actions()`; never calls Action Scheduler to schedule actions. **P5 repeated windows share a single sender-token and in-flight budget at the same synthetic instant**; there is no invented refill. The corrected baseline permits 50 `system_tx` + 45 `newsletter_bulk` claims total from 10,000 candidates, not 455. Additional records remain queued in this rehearsal; a future real dispatcher needs persisted refill and next-batch scheduling before these would be eligible.
 
 ## Explicit caveats
 
