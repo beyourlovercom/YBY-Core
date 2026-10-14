@@ -90,18 +90,24 @@ final class YBY_Andy_OS_Navigation {
 		if ( ! is_string( $old_hook ) || '' === $old_hook || ! has_action( $old_hook ) ) {
 			return false;
 		}
-		$callback = static function () use ( $old_hook ) {
-			do_action( $old_hook );
-		};
+		// Register the new route without a callback first. WordPress may keep
+		// a top-level alias on its original hook name even after reparenting.
+		// Adding a wrapper to that same hook would recurse indefinitely.
 		$new_hook = add_submenu_page(
 			self::ROOT,
 			wp_strip_all_tags( (string) $label ),
 			wp_strip_all_tags( (string) $label ),
 			$capability,
 			$slug,
-			$callback
+			null
 		);
-		return false !== $new_hook;
+		if ( false === $new_hook ) { return false; }
+		if ( $new_hook !== $old_hook ) {
+			add_action( $new_hook, static function () use ( $old_hook ) {
+				do_action( $old_hook );
+			} );
+		}
+		return true;
 	}
 
 	private static function cards_for( $section ) {
