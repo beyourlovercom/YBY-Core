@@ -15,9 +15,26 @@ final class YBY_Mail_V2_P6_Dev_Preview {
         'deferred', 'permanent_failed', 'uncertain', 'cancelled',
     );
     const COLUMNS = array(
-        'opaque_id', 'idempotency_key', 'state', 'channel', 'sender_key',
-        'priority', 'attempt', 'max_attempts', 'next_attempt_at',
-        'diagnostic_code', 'state_version',
+        'opaque_id',
+        'idempotency_key',
+        'event_hash',
+        'payload_ref',
+        'channel',
+        'sender_key',
+        'template_key',
+        'template_version',
+        'consent_snapshot_hash',
+        'priority',
+        'state',
+        'state_version',
+        'attempt',
+        'max_attempts',
+        'next_attempt_at',
+        'lease_token_hash',
+        'lease_expires_at',
+        'diagnostic_code',
+        'created_at',
+        'updated_at',
     );
 
     public static function eligible_site() {
