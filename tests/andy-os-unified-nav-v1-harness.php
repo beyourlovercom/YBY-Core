@@ -2,8 +2,8 @@
 /** Isolated V1 navigation contract. No WordPress bootstrap, network or writes. */
 if ( ! defined( 'ABSPATH' ) ) { define( 'ABSPATH', __DIR__ ); }
 $GLOBALS['aus_caps'] = array();
-$GLOBALS['aus_menu'] = array();
-$GLOBALS['aus_submenu'] = array();
+$GLOBALS['menu'] = array();
+$GLOBALS['submenu'] = array();
 $GLOBALS['aus_hooks'] = array();
 $GLOBALS['aus_removed'] = array();
 $GLOBALS['aus_legacy_count'] = 0;
@@ -23,15 +23,15 @@ function has_action($hook) { return isset($GLOBALS['aus_hooks'][$hook]); }
 function do_action($hook) { if(isset($GLOBALS['aus_hooks'][$hook]))call_user_func($GLOBALS['aus_hooks'][$hook]); }
 function add_submenu_page($parent,$title,$menu,$cap,$slug,$callback) {
     if (!current_user_can($cap)) return false;
-    $GLOBALS['aus_submenu'][$parent][] = array($menu,$cap,$slug);
+    $GLOBALS['submenu'][$parent][] = array($menu,$cap,$slug);
     $hook=get_plugin_page_hookname($slug,(string)$parent);
     $GLOBALS['aus_hooks'][$hook]=$callback;
     return $hook;
 }
 function remove_menu_page($slug) {
-    foreach($GLOBALS['aus_menu'] as $i=>$item)if(($item[2]??'')===$slug) {
+    foreach($GLOBALS['menu'] as $i=>$item)if(($item[2]??'')===$slug) {
         $GLOBALS['aus_removed'][]=$slug;
-        unset($GLOBALS['aus_menu'][$i]);
+        unset($GLOBALS['menu'][$i]);
         return $item;
     }
     return false;
@@ -44,12 +44,12 @@ require_once dirname(__DIR__).'/admin/class-yby-andy-os-navigation.php';
 $assert=static function($cond,$name){if(!$cond){fwrite(STDERR,"FAIL ".$name."\n");exit(1);}};
 $install=static function($role)use($assert){
     $GLOBALS['aus_caps']=$role;
-    $GLOBALS['aus_menu']=array(
+    $GLOBALS['menu']=array(
         array('Andy Core','manage_options','yby-os'),
         array('Andy Content','andy_core_settings_manage','yby-content'),
         array('Andy Commerce','manage_woocommerce','andy-commerce')
     );
-    $GLOBALS['aus_submenu']=array(
+    $GLOBALS['submenu']=array(
         'yby-content'=>array(
             array('Overview','andy_core_settings_manage','yby-content'),
             array('Business 招商页面','andy_core_settings_manage','andy-business'),
@@ -70,8 +70,8 @@ $assert('manage_options'===YBY_Andy_OS_Navigation::root_capability(),'admin root
 YBY_Andy_OS_Navigation::consolidate();
 $assert(in_array('yby-content',$GLOBALS['aus_removed'],true),'content top-level removed');
 $assert(in_array('andy-commerce',$GLOBALS['aus_removed'],true),'commerce top-level removed');
-$assert(count($GLOBALS['aus_menu'])===1,'only one top-level');
-$slugs=array_column($GLOBALS['aus_submenu']['yby-os'],2);
+$assert(count($GLOBALS['menu'])===1,'only one top-level');
+$slugs=array_column($GLOBALS['submenu']['yby-os'],2);
 foreach(array('andy-os-overview','andy-os-content','andy-os-inquiry','andy-os-marketing','andy-os-commerce','andy-os-settings','yby-content','andy-business','andy-business-programs','andy-commerce') as $slug) {
     $assert(in_array($slug,$slugs,true),'preserved or grouped: '.$slug);
 }
