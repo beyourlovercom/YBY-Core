@@ -79,3 +79,46 @@ References: Core Issue #84; Website Newsletter Issue #67; Email OS v1.5.8 canoni
 | Uninstall WP Mail SMTP | OFF | Uninstall-time deletion toggle not activated |
 
 **Acceptance impact:** V2 must preserve async dispatch parity before any production migration. Do not invent currently active SMTP Pro rate limits: none have been configured via the visible plugin toggle. V2 rate-limiting remains an opt-in enhancement, default OFF until provider/account quotas and business needs are documented. Verify queue/failure metrics and actual delivery timing before proposing SMTP Pro retirement. The screenshot contains no visible SMTP password or authorization code and no settings were changed.
+
+## 6. WWW failed-log P0 evidence closure with explicit residual gates (2026-10-13)
+
+This section records **verified read-only sampling**, not a diagnosis of mail failure or an approval to replace production SMTP Pro. Source: official OAuth MCP on `us-macmini` READY with the Owner's signed-in WWW WP Mail SMTP Pro Email Log → Failed view, plus Owner-supplied non-secret plugin screenshots and [Issue #84's previously recorded pagination evidence](https://github.com/beyourlovercom/YBY-Core/issues/84). No recipient addresses, email bodies, subjects, tokens or SMTP credentials were collected.
+
+### 6.1 Evidence ledger
+
+- Owner's later retained-log snapshot: **All 3,759 / Sent 3,623 / Failed 136**; preceding screenshot had All 3,758 / Sent 3,622 / Failed 136. These are distinct moments, **not** a period-specific failure rate, inbox-delivery proof, active backlog measurement or a count of still-unresolved incidents.
+- Failed view: **136 records across 14 pages**, approximately 10 per page; five previously audited **distinct** pages cover **50 failure rows**, all 50 labeled `Source=WP Core`; observed mailer `Other SMTP`. These rows alone do **not** characterize the remaining 86.
+- Previously verified pages/date ranges as shown in site UI (timezone not established):
+  - **Page 1:** 10 WP Core rows, recent entries spanning October 12–13, 2026 (latest previously reported UI value October 13 21:42).
+  - **Page 2:** 10 WP Core rows, October 11 20:43 → October 8 18:16.
+  - **Page 3:** 10 WP Core rows, October 8 13:29 → October 6 02:43.
+  - **Page 4:** 10 WP Core rows, October 5 05:34 → October 4 00:06.
+  - **Page 8:** 10 WP Core rows, September 25 16:49 → September 23 01:55.
+- **Pages 5–7 and 9–14: 86 rows not yet individually classified.** No per-message SMTP reply code, provider-side rejection, retry metadata, actual queue wait time or duplicate-delivery evidence has been verified.
+- **Current-session reproducibility check:** official OAuth MCP reported `us-macmini=READY`. The signed-in Chrome tab titled `Email Log ‹ BeYourLover® — WordPress` was present at the Failed-filter URL with `status=0&paged=4`. This confirms the tab URL only; it is **not** a fresh page-4 DOM/record validation. A further DOM/table-read request was blocked by OpenAI execution safety; it was **not retried by alternate command, tool or endpoint**. No WWW modifications were made.
+
+### 6.2 Root-cause classification and architecture consequence
+
+| Hypothesized failure class | Evidence status | Mail OS V2 decision (not a claim of WWW cause) |
+| --- | --- | --- |
+| SMTP AUTH / credentials / sender authorization | **UNVERIFIED** | Fail closed; no automatic retry on permanent authentication failures; keep WWW production identity unchanged |
+| Provider quota / rate limit | **UNVERIFIED** | Obtain actual Tencent account-level caps before setting sender token buckets; current WP Mail SMTP plugin rate limiting is OFF |
+| Temporary connection / TLS / DNS / timeout | **UNVERIFIED** | Only retry when relay acceptance is definitely absent; bounded backoff with jitter |
+| Recipient rejection / suppression / consent | **UNVERIFIED** | Permanent/safety failures are not auto-replayed |
+| Application / Action Scheduler / async worker backlog | **UNVERIFIED** | Preserve WWW async parity, measure queue health and isolate Woo/payment tasks before proposing migration |
+| Accepted-but-response-uncertain / duplicate risk | **UNVERIFIED** | Distinct `uncertain` state, no blind retry; durable idempotency key and manual review |
+
+The 50 observed `WP Core` rows identify **plugin-reported source**, not the precise initiating WordPress hook, message purpose or SMTP failure reason. No historical failed item is approved for resend, deletion, or bulk export.
+
+### 6.3 P0 disposition / Owner Architecture UAT gate
+
+**P0 evidence package: PREPARED WITH BLOCKERS. P0 ROOT-CAUSE CLOSURE: NOT PASSED. Owner Architecture UAT: PENDING (not a production migration UAT).** Do not close Issue #84 as fully resolved or merge Draft PR #85 based on a document-only CI result.
+
+Remaining gate items:
+1. Obtain **sanitized representative failed-log diagnostic codes/categories** through an approved read-only UI/screenshot workflow; no recipient, subject/body, token, password or raw PII. Classify sample vs full population explicitly; no inferred SMTP root cause.
+2. Obtain a safe aggregate breakdown of the remaining **86 failures** by source/date or mark residual uncertainty as an accepted investigation limitation; no workaround to a safety-blocked browser command.
+3. Verify Dev Action Scheduler **six failed-job types**, database stability/queue table capacity and Woo/payment job contention before any worker/schema authorization. Intermittent DB-connection errors remain unresolved.
+4. Verify Tencent sending quota for each production identity, actual async queue age/health, retention, replay and deliverability semantics without initiating real sends.
+5. Owner explicitly approves/rejects the **V1.1→V2 queue/transport ownership amendment** while Woo retains transactional rendering and billing triggers; separate authorization is required for any PR merge, Dev test, real-mail Canary or WWW cutover.
+
+**Safety closure for this read-only attempt:** no email sent/re-sent/deleted, no account/setting change, no data export, no action/job runs, no orders/payments or WWW/Dev/ERP code writes, and no READY device restart. Production WP Mail SMTP Pro remains the active mail transport.
