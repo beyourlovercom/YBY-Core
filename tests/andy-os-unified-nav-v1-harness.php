@@ -18,14 +18,19 @@ function admin_url($v='') { return 'https://dev.example.invalid/wp-admin/'.$v; }
 function sanitize_key($v) { return preg_replace('/[^a-z0-9_-]/','',strtolower((string)$v)); }
 function wp_unslash($v) { return stripslashes($v); }
 function wp_die($v,$title='',$args=array()) { throw new RuntimeException('DENIED_'.($args['response']??403)); }
-function get_plugin_page_hookname($slug,$parent='') { return $parent !== '' ? $parent.'_page_'.$slug : 'toplevel_page_'.$slug; }
+function get_plugin_page_hookname($slug,$parent='') {
+    // WP keeps previously registered top-level slugs on their original hooks.
+    if (in_array($slug,array('yby-content','andy-commerce'),true)) return 'toplevel_page_'.$slug;
+    return $parent !== '' ? $parent.'_page_'.$slug : 'toplevel_page_'.$slug;
+}
 function has_action($hook) { return isset($GLOBALS['aus_hooks'][$hook]); }
 function do_action($hook) { if(isset($GLOBALS['aus_hooks'][$hook]))call_user_func($GLOBALS['aus_hooks'][$hook]); }
+function add_action($hook,$callback) { $GLOBALS['aus_hooks'][$hook]=$callback; }
 function add_submenu_page($parent,$title,$menu,$cap,$slug,$callback) {
     if (!current_user_can($cap)) return false;
     $GLOBALS['submenu'][$parent][] = array($menu,$cap,$slug);
     $hook=get_plugin_page_hookname($slug,(string)$parent);
-    $GLOBALS['aus_hooks'][$hook]=$callback;
+    if (is_callable($callback)) $GLOBALS['aus_hooks'][$hook]=$callback;
     return $hook;
 }
 function remove_menu_page($slug) {
@@ -88,7 +93,7 @@ $assert(str_contains($html,'andy-commerce'),'Commerce deep link stable');
 $install(array('manage_woocommerce'));
 $assert('manage_woocommerce'===YBY_Andy_OS_Navigation::root_capability(),'commerce-only root capability');
 YBY_Andy_OS_Navigation::consolidate();
-$assert(!in_array('yby-content',$GLOBALS['aus_removed'],true),'content-only routes not transferred without permission');
+$assert(!in_array('andy-business',array_column($GLOBALS['submenu']['yby-os'],2),true),'no content-only route exposed to commerce');
 $assert(in_array('andy-commerce',$GLOBALS['aus_removed'],true),'commerce manager has unified Commerce');
 $_GET['page']='andy-os-settings';
 try{YBY_Andy_OS_Navigation::render_section();$assert(false,'commerce cannot access settings');}
