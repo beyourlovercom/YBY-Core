@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "project": "Andy Core V2.2",
+  "source_pr": 111,
+  "source_head": "669576d457371ad102c4be50073a7f331013af40",
+  "source_baseline_comparison": "92ce92eb21cce0a65a1a26ec0ff1373b52224bd5",
+  "status": "BLOCKED_PENDING_LIVE_DEV_HASHES_COMMERCE_DRIFT_AND_ROLLBACK",
+  "dev_origin": "https://dev.beyourlover.com",
+  "dev_paths": {
+    "core": "/home/u247343654/domains/dev.beyourlover.com/public_html/wp-content/plugins/yby-core/",
+    "commerce": "UNVERIFIED_ACTUAL_DEV_PLUGIN_ROOT"
+  },
+  "release_type": "per-file-allowlist-no-whole-plugin-zip",
+  "prerequisites": [
+    "read-only verify actual Dev Core and Commerce installed roots",
+    "collect current Dev Git blob hashes for every existing file",
+    "prove absent candidates are actually absent",
+    "validate independent Dev source drift",
+    "verify separately stored backups and rollback",
+    "approve only Dev allowlisted changes",
+    "do not update WWW",
+    "no real inquiries/orders/payments/SMTP/Worker"
+  ],
+  "files": [
+    {
+      "source_path": "admin/class-yby-admin.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/class-yby-admin.php",
+      "source_git_blob_sha1": "0cd987be10d46b2aa00976d6a4127e9027841c0a",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/class-yby-andy-admin-shell-v22.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/class-yby-andy-admin-shell-v22.php",
+      "source_git_blob_sha1": "f836ebd9ffa800772460e6cd9b22152a47bff196",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/class-yby-business-os-admin.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/class-yby-business-os-admin.php",
+      "source_git_blob_sha1": "a112cdff97083a62ece8a7e030171ccdc13839da",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/class-yby-inquiry-admin.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/class-yby-inquiry-admin.php",
+      "source_git_blob_sha1": "7ee144cee4c60004d2bd5861d3cf7df65ea8a945",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/class-yby-mail-v2-p6-dev-preview.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/class-yby-mail-v2-p6-dev-preview.php",
+      "source_git_blob_sha1": "9bc658ca0ac2bfc24fa36ff0fc10cd69e99df796",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/class-yby-popup-admin.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/class-yby-popup-admin.php",
+      "source_git_blob_sha1": "7d53c5c0d635b1fb8950f64c32045b16b24065d4",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/class-yby-social-login-admin.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/class-yby-social-login-admin.php",
+      "source_git_blob_sha1": "43d918c8344d113444691ff28e5e30774774d6fa",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/class-yby-three-os-admin.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/class-yby-three-os-admin.php",
+      "source_git_blob_sha1": "51f628a36fdc71acd7d06c088dd5311025c19afd",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/class-yby-three-os-readonly.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/class-yby-three-os-readonly.php",
+      "source_git_blob_sha1": "ef59cddafde25142c39937e63b1817297e53aa29",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/views/addons-page.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/views/addons-page.php",
+      "source_git_blob_sha1": "8a29b27f049d4ad16cbae4159e1e1b3d0453f826",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/views/article-toc-settings.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/views/article-toc-settings.php",
+      "source_git_blob_sha1": "b90525c66c17cb95b87728cd5434e9da181f3c48",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/views/brand-settings.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/views/brand-settings.php",
+      "source_git_blob_sha1": "61888b0932cc6cd57089115f3f710b678fe3c531",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/views/connector-page.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/views/connector-page.php",
+      "source_git_blob_sha1": "0ace9147411f03b57a3d6598f4d087faa49fe4b6",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/views/modules-page.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/views/modules-page.php",
+      "source_git_blob_sha1": "c4a2e1377c86cec60c8f6d2672a94ba836739517",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/views/popup-settings.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/views/popup-settings.php",
+      "source_git_blob_sha1": "3fc596bcc9e3c69d745666237e02f3a15f1a6c5a",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/views/settings-page.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/views/settings-page.php",
+      "source_git_blob_sha1": "bfdd64889ff5a89d2294de9a0eea1646380421e1",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/views/social-login-page.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/views/social-login-page.php",
+      "source_git_blob_sha1": "5bc7774dbd7cf59b6eae80bdb5f8dff2e53f90fb",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "admin/views/system-status.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "admin/views/system-status.php",
+      "source_git_blob_sha1": "052c46b440cd1420463f11b3aa1c043e623f4480",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "assets/css/andy-core-admin-shell-v22.css",
+      "plugin": "yby-core",
+      "destination_relative_path": "assets/css/andy-core-admin-shell-v22.css",
+      "source_git_blob_sha1": "866bbf587b7ada4539506f99c0db17162c1e8f4d",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "inc/class-yby-brand-os.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "inc/class-yby-brand-os.php",
+      "source_git_blob_sha1": "31e7e00dde149f1ec7bc800507d73a83c57b7505",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "inc/class-yby-core.php",
+      "plugin": "yby-core",
+      "destination_relative_path": "inc/class-yby-core.php",
+      "source_git_blob_sha1": "b54ff6134297213378d0ac95d8009e890ce2ce6e",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "packages/andy-commerce/admin/class-andy-commerce-admin.php",
+      "plugin": "andy-commerce",
+      "destination_relative_path": "admin/class-andy-commerce-admin.php",
+      "source_git_blob_sha1": "974c5b6c558e45f92b13a19cde17981290eee786",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "packages/andy-commerce/admin/views/checkout-shipping.php",
+      "plugin": "andy-commerce",
+      "destination_relative_path": "admin/views/checkout-shipping.php",
+      "source_git_blob_sha1": "f4dcf47828b9c5860725dc14d50f587c38f1e3fe",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "packages/andy-commerce/admin/views/marketing-promotions.php",
+      "plugin": "andy-commerce",
+      "destination_relative_path": "admin/views/marketing-promotions.php",
+      "source_git_blob_sha1": "233c9bb6d7973f247c3c651c3bb60d5dba5c9c7c",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "packages/andy-commerce/admin/views/order-export.php",
+      "plugin": "andy-commerce",
+      "destination_relative_path": "admin/views/order-export.php",
+      "source_git_blob_sha1": "8aa0c04e7fd1363de49ea3510166e9c610e99903",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    },
+    {
+      "source_path": "packages/andy-commerce/admin/views/overview.php",
+      "plugin": "andy-commerce",
+      "destination_relative_path": "admin/views/overview.php",
+      "source_git_blob_sha1": "4c19aede7fa99edb3a97261525576e932e21fe9d",
+      "dev_current_blob_sha1": null,
+      "backup_verified": false
+    }
+  ]
+}

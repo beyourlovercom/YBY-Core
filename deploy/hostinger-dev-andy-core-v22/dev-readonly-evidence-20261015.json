@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-15",
+  "evidence_scope": "Hostinger File Browser Chrome UI only, official OAuth MCP china-mac, read-only",
+  "dev_origin": "https://dev.beyourlover.com",
+  "verified_hostinger_account": "u247343654",
+  "observed_file_browser_host": "srv1293-files.hstgr.io",
+  "plugin_roots": [
+    "wp-content/plugins/yby-core/",
+    "wp-content/plugins/andy-commerce/"
+  ],
+  "deployment_status": "NOT_DEPLOYED",
+  "reference_source_pr": 111,
+  "reference_source_head": "669576d457371ad102c4be50073a7f331013af40",
+  "confirmed_samples": [
+    {
+      "plugin": "yby-core",
+      "path": "inc/class-yby-core.php",
+      "dev_git_blob_sha1": "271126e86165cfb9f5038f37f3a4aeade0a12285",
+      "bytes": 17846,
+      "evidence": "WordPress File Browser Ace editor native UI copy, matches separately recorded historical V2 post-upload SHA",
+      "read_only": true
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-admin.php",
+      "dev_git_blob_sha1": "b35c15354715603aff76bb32b9d96c584b87b299",
+      "bytes": 14412,
+      "evidence": "Targeted admin editor UI double-copy stable; must compare with new source before release",
+      "read_only": true
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-popup-admin.php",
+      "dev_git_blob_sha1": "e7d4576408656530fbf6a2bfd1845b5fe703c401",
+      "bytes": 3695,
+      "evidence": "Two separated Chrome code editor Copy operations yield identical blob; Dev has render_embedded and original popup/dock nonces but not PR #111 render_screen",
+      "read_only": true
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-three-os-admin.php",
+      "dev_git_blob_sha1": "284269dc1fcabe44fcade6e40999204ee0f9b9b2",
+      "bytes": 21357,
+      "evidence": "Two separated Chrome code editor Copy operations yield identical blob; existing Dev file does not mention YBY_Andy_Admin_Shell_V22",
+      "read_only": true
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-business-os-admin.php",
+      "dev_git_blob_sha1": "793dd03d89c7bbaa7b4bd0ff7a2fd3193bf39d93",
+      "bytes": 8399,
+      "source_pr111_blob_sha1": "a112cdff97083a62ece8a7e030171ccdc13839da",
+      "evidence": "Two separate native Chrome editor Cmd-A/C clipboard copies stable; File Browser directory online before and after; JS DOM editor title confirmed",
+      "read_only": true
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-inquiry-admin.php",
+      "dev_git_blob_sha1": "cc241abd3bffecf24d93dd83512995a48c31e5cf",
+      "bytes": 7247,
+      "source_pr111_blob_sha1": "7ee144cee4c60004d2bd5861d3cf7df65ea8a945",
+      "evidence": "Two separate native Chrome editor Cmd-A/C clipboard copies stable; File Browser directory online before and after; JS DOM editor title confirmed",
+      "read_only": true
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-social-login-admin.php",
+      "dev_git_blob_sha1": "41f3b79da3f52098d03ac53f522bacc8b39e2122",
+      "bytes": 4461,
+      "source_pr111_blob_sha1": "43d918c8344d113444691ff28e5e30774774d6fa",
+      "evidence": "Two separate native Chrome editor Cmd-A/C clipboard copies stable; File Browser directory online before and after; JS DOM editor title confirmed",
+      "read_only": true
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-mail-v2-p6-dev-preview.php",
+      "dev_git_blob_sha1": "df2e6335ffa329bd27941611e2884df97103edc9",
+      "bytes": 15238,
+      "source_pr111_blob_sha1": "9bc658ca0ac2bfc24fa36ff0fc10cd69e99df796",
+      "evidence": "Two separate native Chrome editor Cmd-A/C clipboard copies stable; File Browser directory online before and after; JS DOM editor title confirmed",
+      "read_only": true
+    }
+  ],
+  "observed_directory_differences": [
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-andy-admin-shell-v22.php",
+      "status": "NOT_LISTED_IN_ONLINE_ADMIN_DIRECTORY",
+      "note": "No V2.2 shell file in the loaded online file list; do not misclassify other files from intermittent empty directory state."
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-mail-v2-p8-setup.php",
+      "status": "EXISTS_ON_DEV_NOT_IN_PARENT_PR_CANDIDATE"
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-mail-v2-p8-readonly.php",
+      "status": "EXISTS_ON_DEV_NOT_IN_PARENT_PR_CANDIDATE"
+    },
+    {
+      "plugin": "andy-commerce",
+      "path": "admin/views/marketing-m3-draft-editor.php",
+      "status": "EXISTS_ON_DEV_REQUIRES_PRESERVATION"
+    },
+    {
+      "plugin": "andy-commerce",
+      "path": "admin/views/marketing-m3-draft-preview.php",
+      "status": "EXISTS_ON_DEV_REQUIRES_PRESERVATION"
+    },
+    {
+      "plugin": "andy-commerce",
+      "path": "admin/views/marketing-m45-shadow-lab.php",
+      "status": "EXISTS_ON_DEV_REQUIRES_PRESERVATION"
+    }
+  ],
+  "invalidated_evidence": "An early 26-file clipboard automation pass suffered one-file clipboard lag and a temporary Hostinger 'The server can't be reached' blank directory. Its unverified bulk hashes and missing-file conclusions are NOT valid release evidence.",
+  "recovered_ui": "One normal Chrome File Browser tab reload restored online admin listing; no Chrome/device restart.",
+  "verified_backup": false,
+  "dev_deploy_approved": false,
+  "source_reconciliation_required": true,
+  "stop_reason": "Eight individually verified Dev Core blobs contain real source drift vs parent #111, and absent V2.2 PHP shell; complete drift reconciliation plus validated rollback mandatory.",
+  "prohibitions": [
+    "No wholesale Core or Commerce ZIP overwrite",
+    "No main merge",
+    "No WWW writes",
+    "No real inquiries, orders, payments, CRM/ERP, Google Ads conversions or mail Worker",
+    "No READY machine restarts"
+  ]
+}
