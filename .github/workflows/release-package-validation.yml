@@ -39,6 +39,26 @@ jobs:
           git diff --check
           for file in tests/*-harness.js; do node --check "$file"; done
 
+      - name: Validate exact six-file Andy Core V2 Dev-only Hostinger candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          staging="deploy/hostinger-dev-andy-core-nav-v2"
+          for file in admin/class-yby-andy-os-navigation.php admin/class-yby-project-studio.php inc/class-yby-core.php inc/class-yby-landing-page-cpt.php; do
+            test -s "$staging/$file"
+            php -l "$staging/$file"
+          done
+          test -s "$staging/assets/css/andy-core-native-l3-v2.css"
+          node --check "$staging/assets/js/andy-core-native-l3-v2.js"
+          cmp "$staging/admin/class-yby-andy-os-navigation.php" admin/class-yby-andy-os-navigation.php
+          cmp "$staging/assets/css/andy-core-native-l3-v2.css" assets/css/andy-core-native-l3-v2.css
+          cmp "$staging/assets/js/andy-core-native-l3-v2.js" assets/js/andy-core-native-l3-v2.js
+          grep -F "YBY_Andy_OS_Navigation::root_capability()" "$staging/admin/class-yby-project-studio.php"
+          grep -F "__( 'Andy Core', 'yby-core' )" "$staging/admin/class-yby-project-studio.php"
+          grep -F "YBY_Andy_OS_Navigation(), 'enqueue_tertiary'" "$staging/inc/class-yby-core.php"
+          grep -F "'show_in_menu' => 'yby-os'" "$staging/inc/class-yby-landing-page-cpt.php"
+          echo "ANDY_CORE_V2_DEV_RC_SIX_FILES_LINT_AND_SOURCE_MATCH_PASS"
+
       - name: Build release candidate package
         shell: bash
         env:
