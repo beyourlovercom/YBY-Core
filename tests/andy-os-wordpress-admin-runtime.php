@@ -58,21 +58,28 @@ add_action( 'admin_menu', function () {
 
 do_action( 'admin_menu' );
 $root_slugs = array_values( array_map( static function ( $row ) { return $row[2] ?? ''; }, $menu ) );
-andy_os_wp_assert( in_array( 'yby-os', $root_slugs, true ), 'Andy OS root present' );
+andy_os_wp_assert( in_array( 'yby-os', $root_slugs, true ), 'Andy Core root present' );
 andy_os_wp_assert( ! in_array( 'yby-content', $root_slugs, true ), 'Andy Content top-level removed' );
 andy_os_wp_assert( ! in_array( 'andy-commerce', $root_slugs, true ), 'Andy Commerce top-level removed' );
 $sub_slugs = array_column( $submenu['yby-os'] ?? array(), 2 );
-foreach ( array( 'andy-os-overview','andy-os-content','andy-os-inquiry','andy-os-marketing','andy-os-commerce','andy-os-settings' ) as $slug ) {
-	andy_os_wp_assert( in_array( $slug, $sub_slugs, true ), 'visible section: ' . $slug );
+$groups = YBY_Andy_OS_Navigation::sections();
+$expected = array();
+foreach ( $groups as $slug => $info ) {
+	if ( ! current_user_can( $info[1] ) ) { continue; }
+	if ( 'native' === $info[2] && ! in_array( $slug, $sub_slugs, true ) ) { continue; }
+	$expected[] = $slug;
 }
-andy_os_wp_assert( 6 === count( $sub_slugs ), 'sidebar contains only six sections' );
+andy_os_wp_assert( $sub_slugs === $expected, 'native WordPress L2 exact order and visibility' );
+andy_os_wp_assert( ! in_array( 'andy-os-overview', $sub_slugs, true ), 'no forced overview' );
+andy_os_wp_assert( YBY_Andy_OS_Navigation::destination( 'andy-core-content' ) !== '', 'one-click content entry' );
+andy_os_wp_assert( str_contains( YBY_Andy_OS_Navigation::destination( 'andy-core-marketing' ), 'marketing-promotions' ), 'marketing enters current Commerce tab' );
 $hidden_slugs = array_column( $submenu[''] ?? array(), 2 );
 foreach ( array( 'yby-content','andy-business','andy-commerce' ) as $slug ) {
 	andy_os_wp_assert( in_array( $slug, $hidden_slugs, true ), 'legacy deep link hidden: ' . $slug );
 }
 andy_os_wp_assert( user_can_access_admin_page() || isset( $submenu['yby-os'] ), 'root registered' );
 // Check the actual WordPress permission router, not only submenu arrays.
-foreach ( array( 'andy-os-overview', 'andy-os-content', 'yby-content', 'andy-commerce', 'andy-business' ) as $deep_link ) {
+foreach ( array( 'andy-core-content', 'andy-core-commerce', 'yby-content', 'andy-commerce', 'andy-business' ) as $deep_link ) {
 	$plugin_page = $deep_link;
 	$_GET['page'] = $deep_link;
 	$parent_file = '';
@@ -88,12 +95,12 @@ $business_slug = 'andy-business';
 $business_hook = get_plugin_page_hookname( $business_slug, '' );
 andy_os_wp_assert( is_string( $business_hook ) && has_action( $business_hook ), 'Business page callable under new parent' );
 
-$_GET['page'] = 'andy-os-overview';
-ob_start(); YBY_Andy_OS_Navigation::render_section(); $output = ob_get_clean();
-andy_os_wp_assert( false !== strpos( $output, 'Andy OS' ) && false !== strpos( $output, 'Content' ), 'overview functional' );
-$_GET['page'] = 'andy-os-content';
-ob_start(); YBY_Andy_OS_Navigation::render_section(); $output = ob_get_clean();
-andy_os_wp_assert( false !== strpos( $output, 'Andy OS' ), 'content section renders' );
+// V2 never calls a synthetic business dashboard for L2. Original plugin
+// renderers continue owning all detail screens and server-side POST checks.
+ob_start();
+YBY_Andy_OS_Navigation::render_overview();
+$output = ob_get_clean();
+andy_os_wp_assert( false !== strpos( $output, 'Andy Core' ), 'fallback is non-transactional' );
 
 // A role without module capabilities must never see a privileged section.
 wp_set_current_user( 0 );
