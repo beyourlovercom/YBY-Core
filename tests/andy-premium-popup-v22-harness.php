@@ -102,4 +102,21 @@ $assert( strpos( $stylesheet, '.yby-global-popup--inquiry.andy-popup-template--p
 $assert( strpos( $stylesheet, '@media (max-width: 859px)' ) !== false, 'mobile CSS regression scope' );
 $public = file_get_contents( dirname( __DIR__ ) . '/public/class-yby-public.php' );
 $assert( strpos( $public, "'premium_v22' === \$popup_settings['inquiry_template']" ) !== false, 'stylesheet opt-in only' );
+$manifest = json_decode( file_get_contents( dirname( __DIR__ ) . '/docs/andy-os/andy-core-premium-popup-v22-dev-allowlist.json' ), true );
+$assert( is_array( $manifest ) && ( $manifest['schema_version'] ?? null ) === 1, 'Dev-only allowlist is valid JSON' );
+$assert( ( $manifest['status'] ?? '' ) === 'BLOCKED_PENDING_CURRENT_DEV_HASHES_AND_ROLLBACK', 'Dev deployment must fail closed until live hashes and rollback are verified' );
+$listed = $manifest['files'] ?? array();
+$expected_paths = array(
+    'inc/class-yby-global-popup.php',
+    'public/class-yby-public.php',
+    'public/css/andy-core-popup-premium-v22.css',
+    'admin/views/popup-settings.php'
+);
+$assert( count( $listed ) === 4 && array_column( $listed, 'path' ) === $expected_paths, 'Only four allowlisted Dev files, no ZIP' );
+foreach ( $listed as $file ) {
+    $data = file_get_contents( dirname( __DIR__ ) . '/' . $file['path'] );
+    $sha = sha1( 'blob ' . strlen( $data ) . "\\0" . $data );
+    $assert( hash_equals( $file['source_git_blob_sha1'], $sha ), 'Exact source blob hash for ' . $file['path'] );
+    $assert( ( $file['current_dev_blob_sha1'] ?? null ) === null && $file['verified_backup'] === false, 'No fabricated Dev hash or backup proof' );
+}
 echo "PASS andy-premium-popup-v22-harness\n";
