@@ -138,7 +138,8 @@ final class YBY_Mail_V2_P9_Lab_Writer {
         try {
             $sql="UPDATE ".self::TABLE." SET state='leased',state_version=state_version+1,
                 lease_token_hash=?,lease_expires_at=?,updated_at=UTC_TIMESTAMP(6)
-                WHERE opaque_id=? AND state='queued' AND state_version=? AND next_attempt_at<=?";
+                WHERE opaque_id=? AND state IN ('queued','deferred') AND attempt<max_attempts
+                    AND state_version=? AND next_attempt_at<=?";
             $q=$this->db->prepare($sql);
             $q->execute(array($token_hash,$until,$opaque_id,$state_version,$now));
             return array('status'=>$q->rowCount()===1?'claimed':'not_claimed');
@@ -173,6 +174,115 @@ final class YBY_Mail_V2_P9_Lab_Writer {
         }catch(Throwable $ignored){
             return array('status'=>'blocked','reason'=>'sql','retry_authorized'=>false);
         }
+    }
+
+    /**
+     * P9 synthetic-only proven pre-acceptance failure. Strictly no SMTP / no
+     * transmission; a timeout or ambiguous provider result CANNOT use this path.
+     * CAS with exact lease and version. Exhausted retries remain 'deferred'
+     * with attempt=max_attempts and diagnostic=retry_exhausted; P2 and claim()
+     * both refuse them, making a non-dispatchable failure queue without DDL.
+     *
+     * This is NOT a send worker. The proof string is deliberately lab-specific
+     * and must not be accepted by a real provider adapter.
+     */
+    public function record_mock_nontransmission($opaque_id,$expected_version,$lease_hash,$now,$proof) {
+        if (!is_string($opaque_id)||!preg_match('/\\A[a-f0-9]{64}\\z/D',$opaque_id)||
+            !is_string($lease_hash)||!preg_match('/\\A[a-f0-9]{64}\\z/D',$lease_hash)||
+            !is_int($expected_version)||$expected_version<1||
+            !is_int($now)||$now<0||$now>PHP_INT_MAX-3600||
+            $proof!=='verified_synthetic_preacceptance_only') {
+            return array('status'=>'blocked','reason'=>'evidence_gate','retry_authorized'=>false);
+        }
+        try {
+            $get=$this->db->prepare(
+                'SELECT attempt,max_attempts,idempotency_key FROM '.self::TABLE.
+                " WHERE opaque_id=? AND state='leased' AND state_version=?".
+                ' AND lease_token_hash=? AND lease_expires_at>? AND template_key=?'
+            );
+            $get->execute(array($opaque_id,$expected_version,$lease_hash,$now,'synthetic_only'));
+            $row=$get->fetch(PDO::FETCH_ASSOC);
+            if(!is_array($row)){return array('status'=>'not_recorded','retry_authorized'=>false);}
+            $attempt=(int)$row['attempt'];$max=(int)$row['max_attempts'];
+            if($attempt<0||$attempt>=$max||$max<1||$max>5||
+                !is_string($row['idempotency_key'])||
+                !preg_match('/\\A[a-f0-9]{64}\\z/D',$row['idempotency_key'])){
+                return array('status'=>'blocked','reason'=>'attempt_contract','retry_authorized'=>false);
+            }
+            $next=$attempt+1;
+            $delay=YBY_Mail_V2_Contract::retry_delay_seconds(
+                $row['idempotency_key'],$next,$max,true
+            );
+            $exhausted=($next >= $max);
+            if(!$exhausted && $delay===null){
+                return array('status'=>'blocked','reason'=>'backoff_contract','retry_authorized'=>false);
+            }
+            // A spent item is permanently non-dispatchable under P2 and claim.
+            $next_at=$exhausted?$now:$now+$delay;
+            $diag=$exhausted?'retry_exhausted':'preacceptance_reject';
+            $q=$this->db->prepare(
+                "UPDATE ".self::TABLE." SET state='deferred',state_version=state_version+1,
+                 attempt=attempt+1,next_attempt_at=?,diagnostic_code=?,
+                 lease_token_hash=NULL,lease_expires_at=NULL,updated_at=UTC_TIMESTAMP(6)
+                 WHERE opaque_id=? AND state='leased' AND state_version=?
+                 AND lease_token_hash=? AND lease_expires_at>?
+                 AND template_key='synthetic_only'
+                 AND attempt=? AND max_attempts=? AND attempt<max_attempts"
+            );
+            $q->execute(array($next_at,$diag,$opaque_id,$expected_version,$lease_hash,$now,$attempt,$max));
+            if($q->rowCount()!==1){
+                return array('status'=>'not_recorded','retry_authorized'=>false);
+            }
+            return array('status'=>$exhausted?'retry_exhausted':'deferred',
+                'retry_authorized'=>false,'next_attempt_at'=>$next_at,
+                'attempt'=>$next,'mail_sent'=>false);
+        }catch(Throwable $ignored){
+            return array('status'=>'blocked','reason'=>'sql','retry_authorized'=>false);
+        }
+    }
+
+    /** P9 privacy-minimal aggregate only; NOT an append-only audit history. */
+    public function synthetic_health() {
+        try {
+            $q=$this->db->query(
+                'SELECT state,diagnostic_code,COUNT(*) AS n FROM '.self::TABLE.
+                ' GROUP BY state,diagnostic_code'
+            );
+            $rows=$q->fetchAll(PDO::FETCH_ASSOC);
+            $totals=array('queued'=>0,'leased'=>0,'sending'=>0,
+                'deferred'=>0,'uncertain'=>0,'accepted_by_provider'=>0,
+                'permanent_failed'=>0,'cancelled'=>0,'retry_exhausted'=>0);
+            $count=0;
+            foreach($rows as $row) {
+                if(!isset($totals[$row['state']]) ||
+                    !in_array($row['diagnostic_code'],array('none',
+                      'preacceptance_reject','retry_exhausted',
+                      'acceptance_unknown','provider_accepted','permanent_reject'),true) ||
+                    !ctype_digit((string)$row['n'])) {
+                    return array('status'=>'blocked','reason'=>'health_contract');
+                }
+                $n=(int)$row['n'];$count+=$n;
+                $totals[$row['state']]+=$n;
+                if($row['state']==='deferred' && $row['diagnostic_code']==='retry_exhausted'){
+                    $totals['retry_exhausted']+=$n;
+                }
+            }
+            if($count>10000){return array('status'=>'blocked','reason'=>'limit');}
+            return array('status'=>'synthetic_snapshot','total'=>$count,
+                'states'=>$totals,'contains_pii'=>false,'event_log_verified'=>false,
+                'mail_sent'=>false);
+        }catch(Throwable $ignored){return array('status'=>'blocked','reason'=>'sql');}
+    }
+
+    /**
+     * Owner review is intentionally inert. No replay of uncertain or exhausted
+     * jobs without future independent evidence, new approval and a new design.
+     */
+    public static function manual_replay_gate($state,$diagnostic,$review) {
+        $valid=($state==='uncertain' && $diagnostic==='acceptance_unknown') ||
+            ($state==='deferred' && $diagnostic==='retry_exhausted');
+        return array('status'=>$valid && $review===true?'owner_review_required':'blocked',
+            'can_execute'=>false,'requeue'=>false,'smtp'=>false,'requires_new_authorization'=>true);
     }
 
 }
