@@ -115,7 +115,7 @@ $expected_paths = array(
 $assert( count( $listed ) === 4 && array_column( $listed, 'path' ) === $expected_paths, 'Only four allowlisted Dev files, no ZIP' );
 foreach ( $listed as $file ) {
     $data = file_get_contents( dirname( __DIR__ ) . '/' . $file['path'] );
-    $sha = sha1( 'blob ' . strlen( $data ) . "\\0" . $data );
+    $sha = sha1( 'blob ' . strlen( $data ) . "\0" . $data );
     $assert( hash_equals( $file['source_git_blob_sha1'], $sha ), 'Exact source blob hash for ' . $file['path'] );
     $assert( ( $file['current_dev_blob_sha1'] ?? null ) === null && $file['verified_backup'] === false, 'No fabricated Dev hash or backup proof' );
 }
