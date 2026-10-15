@@ -1,3 +1,9 @@
+## v2.2.0 - 2026-10-15
+
+- Integrated admin navigation shell, Inquiry OEM original styling, read-only Three OS and Commerce UI.
+- Mail OS P9 source-only contracts, zero operational worker/SMTP/queue hooks.
+- Public stable distribution held pending excluded-site update isolation and Dev UAT.
+
 # CHANGELOG
 
 ## v1.9.0 - 2026-09-24
