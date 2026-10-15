@@ -63,6 +63,16 @@ class YBY_Inquiry_Admin {
 	}
 
 	public function render_page() {
+		if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
+			YBY_Andy_Admin_Shell_V22::render( self::page_slug(), 'Inquiry OS · 询盘中心',
+				function () { $this->render_legacy_page(); } );
+			return;
+		}
+		$this->render_legacy_page();
+	}
+
+	/** Original list, lead details and POST handlers are unchanged. */
+	protected function render_legacy_page() {
 		if ( ! YBY_Security::can_view_leads() ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'yby-core' ) );
 		}
