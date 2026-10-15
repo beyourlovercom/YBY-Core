@@ -121,16 +121,19 @@ class YBY_Country_Clone_Draft_Service {
 
 		$clone_key = hash( 'sha256', 'country-clone-v1|DE|' . $source_project_id . '|' . $source_page_id );
 		$existing = get_posts( array(
-			'post_type' => 'yby_project', 'post_status' => 'draft',
+			'post_type' => 'yby_project', 'post_status' => array( 'draft', 'publish', 'pending', 'private' ),
 			'posts_per_page' => 2, 'meta_key' => 'yby_clone_v1_key', 'meta_value' => $clone_key,
 		) );
 		if ( ! empty( $existing ) ) {
 			$id = (int) $existing[0]->ID;
 			$page_id = absint( get_post_meta( $id, 'yby_clone_v1_page_id', true ) );
 			$page = $page_id ? get_post( $page_id ) : null;
-			if ( $page && 'landing_page' === $page->post_type && 'draft' === $page->post_status &&
-				$id === absint( get_post_meta( $page_id, 'yby_clone_v1_project_id', true ) ) ) {
-				return array( 'project_id' => $id, 'page_id' => $page_id, 'reused' => true, 'status' => 'draft' );
+			if ( 1 === count( $existing ) && 'yby_project' === $existing[0]->post_type &&
+				$page && 'landing_page' === $page->post_type && 'draft' === $page->post_status &&
+				$id === absint( get_post_meta( $page_id, 'yby_clone_v1_project_id', true ) ) &&
+				in_array( $existing[0]->post_status, array( 'draft', 'publish', 'pending', 'private' ), true ) ) {
+				return array( 'project_id' => $id, 'page_id' => $page_id, 'reused' => true,
+					'status' => $page->post_status, 'project_status' => $existing[0]->post_status );
 			}
 			return new WP_Error( 'clone_partial_existing', 'An incomplete draft exists; manual review required. Do not duplicate.' );
 		}
