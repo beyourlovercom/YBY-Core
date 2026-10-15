@@ -79,8 +79,8 @@ class YBY_Project_Studio {
 	 */
 	public function add_admin_menu() {
 		add_menu_page(
-			__( 'Andy OS', 'yby-core' ),
-			__( 'Andy OS', 'yby-core' ),
+			__( 'Andy Core', 'yby-core' ),
+			__( 'Andy Core', 'yby-core' ),
 			YBY_Andy_OS_Navigation::root_capability(),
 			self::menu_slug(),
 			array( $this, 'render_root_page' ),
