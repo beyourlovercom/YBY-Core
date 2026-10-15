@@ -75,3 +75,18 @@ GitHub CI harnesses exercise mocked WordPress objects, not production or a real 
 - Explicit native Bricks Code signing using a legally authorized editor in the isolated environment, and proof that destination Code is not running with copied stale signatures.
 - Only then allow Draft Service to be wired to a Dev-only UI action; verify source immutability/idempotency/rollback, case ID and tracking in TEST; proceed Local → Dev → iPhone 14 Owner UAT.
 - GitHub Draft PR #113 stays unmerged. Production and Google Ads require separate Owner authorization.
+
+## M1 Bricks native duplication + signing audit (Windows LocalWP, read-only)
+
+Inspected installed Local Irrigation Bricks implementation; **do not assume installed Local Bricks version proves identical Production version**.
+
+- `Bricks\\Admin::duplicate_content( $post_id )` (Local `includes/admin.php`) creates a draft and uses `Bricks\\Helpers::generate_new_element_ids()` for unique Bricks element IDs. However, it also copies most non-Bricks postmeta wholesale and may copy post password and business-specific configuration. It is **NOT** an acceptable unrestricted country clone for Inquiry/CRM/Ads projects; use explicit safelisted metadata instead.
+- Local `Bricks\\Ajax::generate_code_signature()` checks a Builder nonce, Code execution feature, signature lock and `Capabilities::current_user_can_execute_code()`. `Bricks\\Admin::process_elements_for_signature()` additionally requires `manage_options` and execute-code authorization. The native signer updates signature/user_id/time for executable Code. **Do not generate signatures by calling `wp_hash` directly or disable permission checks.**
+- Local source 292 includes 13 Code elements and page-level `customScriptsBodyFooter`. Until reviewed target-specific code is signed via native, authorized Bricks editor UI, the actual Tanzania-to-Germany clone remains blocked.
+- In the guarded draft service, the supported non-Code/no-script path now demands the installed native Bricks element-ID generator and refuses unremapped `#brxe-...` / `.brxe-...` selectors in custom CSS. It `wp_slash`-protects structured Bricks content before WordPress meta writes.
+- Never copy Tanzania's case-study outcome and label it Germany. Country selector should add Germany without erasing Tanzania; `PROJECT_SCENARIOS` and fallback logic need reviewed target-specific data with clearly marked Example scenario.
+
+### Source-integrity regression
+Preflight source fingerprint now includes page-level Bricks settings/scripts/CSS, Landing meta and content, and Project metadata. Harness checks that standalone changes to JS, Project tracking metadata or Thank You URL invalidate the fingerprint even if post_modified_gmt is unchanged.
+
+**Closure condition:** latest exact-head CI + Local actual Bricks plugin compatibility + explicit native signing permissions. No actual Germany draft, merge, Dev or Production deploy is authorized by this evidence alone.
