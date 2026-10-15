@@ -47,7 +47,7 @@ foreach(array('SHOW GRANTS','TRANSACTION READ ONLY','information_schema.COLUMNS'
     check8(strpos($source,$term)!==false,'security source present '.$term);
 }
 check8(!preg_match('/\b(?:wp_mail|add_action|add_filter|as_enqueue_async_action|as_schedule_single_action|dbDelta|update_option|delete_option|wp_schedule_event)\s*\(/i',$source),'no WordPress writes/mails/hooks');
-check8(!preg_match('/\b(?:INSERT INTO|UPDATE p8_yby|DELETE FROM|CREATE TABLE|DROP TABLE)\b/i',$source),'no queue DML or schema mutations');
+check8(!preg_match('/\b(?:INSERT INTO|UPDATE p8_yby|DELETE FROM|(?<!SHOW )CREATE TABLE|DROP TABLE)\b/i',$source),'no queue DML or schema mutations');
 check8(str_contains($source,'hash')===false || !str_contains($source,'smtp_password'),'no secrets in renderer');
 $view=file_get_contents(dirname(__DIR__).'/admin/class-yby-three-os-admin.php');
 check8(str_contains($view,"'live_readonly'"),'canonical menu integration');
