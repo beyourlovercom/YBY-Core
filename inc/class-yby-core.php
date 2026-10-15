@@ -30,6 +30,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project-template.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project-cpt.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-country-transform-registry.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-country-clone-preflight.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-country-clone-draft-service.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-landing-page-cpt.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-brand-os.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-social-login.php';
