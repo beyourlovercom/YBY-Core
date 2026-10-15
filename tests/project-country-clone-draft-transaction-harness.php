@@ -50,7 +50,7 @@ function get_post_meta( $id, $key = '', $single = false ) { return $GLOBALS['tes
 function get_posts( $args ) {
 	$out = array();
 	foreach ( $GLOBALS['test_posts'] as $post ) {
-		if ( $post->post_type !== $args['post_type'] || $post->post_status !== $args['post_status'] ) { continue; }
+		if ( $post->post_type !== $args['post_type'] || ! in_array( $post->post_status, (array) $args['post_status'], true ) ) { continue; }
 		if ( ( $GLOBALS['test_meta'][ $post->ID ][ $args['meta_key'] ] ?? '' ) === $args['meta_value'] ) { $out[] = $post; }
 	}
 	return $out;
@@ -199,6 +199,16 @@ must( empty( $GLOBALS['test_options'] ), 'transaction lock released after succes
 $again = create_test();
 must( is_array( $again ) && $again['reused'] && $again['page_id'] === $r['page_id'],
 	'idempotent repeated request returns same draft IDs' );
+
+$GLOBALS['test_posts'][ $r['project_id'] ]->post_status = 'publish';
+$reuse_published = create_test();
+must( is_array( $reuse_published ) && true === $reuse_published['reused'] &&
+	'publish' === $reuse_published['project_status'] &&
+	$reuse_published['page_id'] === $r['page_id'],
+	'published Project still reuses linked draft without duplicate writes' );
+must( 2 === count( array_filter( $GLOBALS['test_posts'], static function ( $p ) {
+	return $p->ID > 798;
+} ) ), 'published Project created no duplicate objects' );
 
 reset_test_state();
 echo "PASS project-country-clone-draft-transaction-harness (no real WP writes)\n";
