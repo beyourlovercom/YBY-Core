@@ -35,7 +35,7 @@ foreach($target as $id=>$country) {
     $post=get_post($id);
     setup_postdata($post);
     ob_start();
-    $result=\Bricks\Frontend::render_content($id);
+    $result=\Bricks\Frontend::render_content($nodes);
     $buffer=ob_get_clean();
     wp_reset_postdata();
     $html=(string)$result.$buffer;
