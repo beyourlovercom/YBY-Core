@@ -86,7 +86,7 @@ final class YBY_Mail_V2_P8_Readonly {
             // MariaDB 11.x reports legacy integer display widths (e.g.
             // bigint(20) unsigned); MySQL 8.x omits them. Width does not
             // change the stored integer type. Normalize only int families.
-            $type=preg_replace('/\\A(tinyint|int|bigint)\\([0-9]+\\)( unsigned)?\\z/D',
+            $type=preg_replace('/\A(tinyint|int|bigint)\([0-9]+\)( unsigned)?\z/D',
                 '$1$2',$type);
             $observed=$type.($r['IS_NULLABLE']==='YES'?' null':' not null');
             if ($r['COLUMN_NAME']!==$names[$i] || $observed!==$defs[$i]) {return false;}
