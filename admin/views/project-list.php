@@ -42,7 +42,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<div class="row-actions">
 								<span><a href="<?php echo esc_url( YBY_Project_Studio::studio_url( 'overview', $project_post->ID ) ); ?>"><?php esc_html_e( 'Overview', 'yby-core' ); ?></a> | </span>
 								<span><a href="<?php echo esc_url( YBY_Project_Studio::studio_url( 'runtime', $project_post->ID ) ); ?>"><?php esc_html_e( 'Runtime Viewer', 'yby-core' ); ?></a> | </span>
-								<span><a href="<?php echo esc_url( admin_url( 'post.php?post=' . absint( $project_post->ID ) . '&action=edit' ) ); ?>"><?php esc_html_e( 'Edit Post', 'yby-core' ); ?></a></span>
+								<span><a href="<?php echo esc_url( admin_url( 'post.php?post=' . absint( $project_post->ID ) . '&action=edit' ) ); ?>"><?php esc_html_e( 'Edit Post', 'yby-core' ); ?></a> | </span>
+								<span><a href="<?php echo esc_url( YBY_Project_Studio::studio_url( 'clone', $project_post->ID ) ); ?>"><?php esc_html_e( '复制到新国家（只读预检）', 'yby-core' ); ?></a></span>
 							</div>
 						</td>
 						<td><?php echo esc_html( $overview['country'] ? $overview['country'] : '-' ); ?></td>
