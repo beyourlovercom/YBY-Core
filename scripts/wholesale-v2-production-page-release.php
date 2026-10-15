@@ -18,6 +18,27 @@ const YBY_WV2_KEY = 'wholesale-ads-first-de-v1:215';
 function yby_wv2_fail($code, $message) {
     WP_CLI::error($code . ': ' . $message);
 }
+function yby_wv2_heading_count($html, $expected) {
+    $pattern='~<h1\b[^>]*class="yby-wholesale-hero-v3__title"[^>]*>.*?</h1>~si';
+    preg_match_all($pattern,$html,$matches);
+    $count=0;
+    foreach($matches[0] as $h1) {
+        $text=trim(preg_replace('/\s+/u',' ',html_entity_decode(strip_tags($h1),ENT_QUOTES|ENT_HTML5,'UTF-8')));
+        if ($text===$expected) $count++;
+    }
+    return $count;
+}
+function yby_wv2_localize_h1($html, &$modified_count) {
+    $pattern='~<h1\b[^>]*class="yby-wholesale-hero-v3__title"[^>]*>.*?</h1>~si';
+    $result=preg_replace_callback($pattern,function($m) use (&$modified_count) {
+        if (yby_wv2_heading_count($m[0],YBY_WV2_H1)!==1) return $m[0];
+        $count=0;
+        $localized=str_replace('and Project Buyers','and Project Buyers in Germany',$m[0],$count);
+        if($count===1) $modified_count++;
+        return $localized;
+    },$html);
+    return $result;
+}
 function yby_wv2_source() {
     if (strtolower((string) wp_parse_url(home_url('/'),PHP_URL_HOST)) !== 'ybyirrigation.com'
         || wp_get_environment_type() !== 'production') {
@@ -51,7 +72,7 @@ function yby_wv2_source() {
             return new WP_Error('CODE','Source Code or legacy signature missing.');
         }
         $code_count++;
-        $h1_count += substr_count($c,YBY_WV2_H1);
+        $h1_count += yby_wv2_heading_count($c,YBY_WV2_H1);
         $triggers += substr_count($c,'data-yby-inquiry-trigger');
         if (!\Bricks\Helpers::verify_code_signature($settings['signature'],$c)) { $stale++; }
     }
@@ -115,8 +136,8 @@ function yby_wv2_verify($id, $source) {
             return new WP_Error('SIGNED','Unsigned or invalid Germany Code.');
         }
         $code++;
-        $target_heading += substr_count($c,YBY_WV2_H1.' in Germany');
-        $source_heading += substr_count($c,YBY_WV2_H1.'</h1>');
+        $target_heading += yby_wv2_heading_count($c,YBY_WV2_H1.' in Germany');
+        $source_heading += yby_wv2_heading_count($c,YBY_WV2_H1);
         $triggers += substr_count($c,'data-yby-inquiry-trigger');
     }
     if($code!==4 || $target_heading!==1 || $source_heading!==0 || $triggers!==17) {
@@ -157,14 +178,15 @@ if ($verb==='create' && $existing) {
     return;
 }
 if ($verb==='create') {
-    $nodes=$src['nodes'];
+    $nodes=$src['nodes']; $localized_headings=0;
     foreach($nodes as &$n) {
         if (($n['name']??'')!=='code') continue;
         $text=(string)$n['settings']['code'];
-        $n['settings']['code']=str_replace(YBY_WV2_H1,YBY_WV2_H1.' in Germany',$text);
+        $n['settings']['code']=yby_wv2_localize_h1($text,$localized_headings);
         unset($n['settings']['signature'],$n['settings']['user_id'],$n['settings']['time']);
     }
     unset($n);
+    if($localized_headings!==1) yby_wv2_fail('H1_TRANSFORM','Exactly one original Wholesale H1 must be localized.');
     $fresh=\Bricks\Helpers::generate_new_element_ids($nodes);
     if(!is_array($fresh) || count($fresh)!==count($nodes)) yby_wv2_fail('NEW_IDS','Bricks ID regeneration failed.');
     $signed=\Bricks\Admin::process_elements_for_signature($fresh,false,false);
