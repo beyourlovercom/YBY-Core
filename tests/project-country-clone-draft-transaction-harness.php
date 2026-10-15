@@ -11,6 +11,14 @@ class WP_Error {
 	public function get_error_code() { return $this->error_code; }
 }
 function is_wp_error( $value ) { return $value instanceof WP_Error; }
+class Fake_Bricks_Helpers {
+ public static function generate_new_element_ids( $items ) {
+  foreach ( $items as &$item ) { if ( isset( $item['id'] ) ) { $item['id'] = 'cloned-' . $item['id']; } }
+  return $items;
+ }
+}
+class_alias( 'Fake_Bricks_Helpers', 'Bricks\\Helpers' );
+function wp_slash( $value ) { return $value; }
 $GLOBALS['test_env'] = 'local';
 $GLOBALS['test_host'] = 'localdev.ybyirrigation.com';
 $GLOBALS['test_access'] = true;
