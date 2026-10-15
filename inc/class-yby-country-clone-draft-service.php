@@ -49,10 +49,10 @@ class YBY_Country_Clone_Draft_Service {
 		$source_project = get_post( $source_project_id );
 		$source_page = get_post( $source_page_id );
 		$source_country = $audit['page_country'] ?? '';
-		// The LOCAL legacy Project #518 has no Country meta. Its known
+		// The verified Local/isolated Dev legacy Project #518 has no Country meta. Its known
 		// Tanzania post/title and landing #292 are explicitly verified in
-		// the isolated LocalWP database. No Production or Dev exception.
-		$local_legacy_anchor = 'localdev.ybyirrigation.com' === $hostname &&
+		// the isolated LocalWP and Dev databases. No Production exception.
+		$local_legacy_anchor = in_array( $hostname, array( 'localdev.ybyirrigation.com', 'dev.ybyirrigation.com' ), true ) &&
 			518 === $source_project_id && 292 === $source_page_id &&
 			$source_project && 'tanzania' === strtolower( trim( (string) $source_project->post_title ) ) &&
 			$source_page && 'landing_page' === $source_page->post_type &&
