@@ -3,6 +3,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 $settings = Andy_Commerce_Shipping_Promotion_Policy::get_settings();
 $preset = Andy_Commerce_Shipping_Promotion_Policy::preset();
+$legacy_owned = 'byl-platform-legacy' === Andy_Commerce_Shipping_Promotion_Policy::settings_source();
 ?>
 <div class="wrap">
 <h1>Andy Commerce</h1>
@@ -13,7 +14,11 @@ $preset = Andy_Commerce_Shipping_Promotion_Policy::preset();
 <a class="nav-tab" href="<?php echo esc_url( add_query_arg( array( 'page' => Andy_Commerce_Admin::PAGE_SLUG, 'tab' => 'settings' ), admin_url( 'admin.php' ) ) ); ?>">Settings</a>
 </nav>
 <p><strong>Preset:</strong> <?php echo esc_html( strtoupper( (string) $preset['id'] ) ); ?>. Policy settings only; existing WooCommerce free-shipping method settings are never written by this page.</p>
+<?php if ( $legacy_owned ) : ?>
+<div class="notice notice-warning inline"><p><strong>Read-only migration mode:</strong> this BYL site still uses its validated historical BYL49 settings as the effective shipping policy. Andy Commerce does not change these values until a separately authorized configuration handoff. No promotion settings are written by this page.</p></div>
+<?php endif; ?>
 <form method="post" action="options.php">
+<?php if ( $legacy_owned ) : ?><fieldset disabled><?php endif; ?>
 <?php settings_fields( Andy_Commerce_Shipping_Promotion_Policy::SETTINGS_GROUP ); ?>
 <h2>Free Shipping Promotion</h2>
 <table class="form-table" role="presentation">
@@ -31,7 +36,7 @@ $prefix = Andy_Commerce_Shipping_Promotion_Policy::OPTION_NAME . '[zone_override
 <tr><td><?php echo esc_html( $zone['name'] ); ?> <code><?php echo esc_html( (string) $zone_id ); ?></code></td><td><select name="<?php echo esc_attr( $prefix ); ?>[mode]"><option value="global" <?php selected( $config['mode'], 'global' ); ?>>Use global threshold</option><option value="override" <?php selected( $config['mode'], 'override' ); ?>>Override</option></select></td><td><input type="number" min="0" step="0.01" name="<?php echo esc_attr( $prefix ); ?>[threshold]" value="<?php echo esc_attr( number_format( (float) $config['threshold'], 2, '.', '' ) ); ?>"></td><td><?php echo esc_html( number_format( 'override' === $config['mode'] ? (float) $config['threshold'] : (float) $settings['global_threshold'], 2 ) ); ?></td></tr>
 <?php endforeach; ?>
 </tbody></table>
-<?php submit_button(); ?>
+<?php if ( $legacy_owned ) : ?></fieldset><?php else : submit_button(); endif; ?>
 </form>
 <script>(function(){var mode=document.getElementById('andy-commerce-mode'),code=document.getElementById('andy-commerce-code'),warning=document.getElementById('andy-commerce-code-warning');if(!mode||!code)return;function sync(){var required=mode.value==='require_code';code.disabled=!required;if(warning)warning.hidden=!required;}mode.addEventListener('change',sync);sync();}());</script>
 </div>

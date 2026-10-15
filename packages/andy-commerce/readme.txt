@@ -1,7 +1,7 @@
 === Andy Commerce ===
 Contributors: ybyglobal
 Requires PHP: 8.0
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 
 Reusable B2C / WooCommerce Addon for Andy Core.
 
