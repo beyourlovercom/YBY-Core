@@ -12,7 +12,7 @@
   "files": [
     {
       "path": "inc/class-yby-global-popup.php",
-      "source_git_blob_sha1": "3a5add78ab1d0920daf007f9bf9ca58a0d15c566",
+      "source_git_blob_sha1": "585bbee7d2d6943bd8814c7ee7feef6dd4223d07",
       "current_dev_blob_sha1": null,
       "verified_backup": false
     },
@@ -30,7 +30,7 @@
     },
     {
       "path": "admin/views/popup-settings.php",
-      "source_git_blob_sha1": "88a0d4a03da5ee032c31a3078fe7a3c749453600",
+      "source_git_blob_sha1": "04f5f43e047dfb23f145de7eb59a5beb94d03d76",
       "current_dev_blob_sha1": null,
       "verified_backup": false
     }

@@ -27,7 +27,7 @@ class YBY_Global_Popup {
 		foreach ( array( 'inquiry_image','subscribe_image' ) as $key ) { $out[ $key ] = esc_url_raw( $raw[ $key ] ?? '' ); }
 		$template_raw = $raw['inquiry_template'] ?? 'classic';
 		$template = is_scalar( $template_raw ) ? sanitize_key( (string) $template_raw ) : 'classic';
-		$out['inquiry_template'] = in_array( $template, array( 'classic', 'premium_v22' ), true ) ? $template : 'classic';
+		$out['inquiry_template'] = in_array( $template, array( 'classic', 'premium_v22', 'oem_original' ), true ) ? $template : 'classic';
 		$preset_raw = $raw['inquiry_preset'] ?? 'irrigation_quick_inquiry';
 		$preset_id = is_scalar( $preset_raw ) ? sanitize_key( (string) $preset_raw ) : 'irrigation_quick_inquiry';
 		$out['inquiry_preset'] = in_array( $preset_id, array( 'irrigation_quick_inquiry', 'bottle_oem_inquiry', 'bottle_wholesale_inquiry' ), true ) ? $preset_id : 'irrigation_quick_inquiry';
@@ -58,25 +58,56 @@ class YBY_Global_Popup {
 		return '' !== $id && in_array( $id, $profiles, true );
 	}
 
-	public function render() {
-		$settings = self::sanitize( self::settings() );
+	public static function is_oem_exact_preview() {
+        return isset( $_GET['andy_oem_exact_preview'] )
+            && '1' === sanitize_text_field( wp_unslash( $_GET['andy_oem_exact_preview'] ) )
+            && is_user_logged_in() && current_user_can( 'manage_options' )
+            && isset( $_SERVER['HTTP_HOST'] )
+            && 'dev.beyourlover.com' === strtolower( (string) wp_unslash( $_SERVER['HTTP_HOST'] ) );
+    }
+
+    public function render() {
+        $settings = self::sanitize( self::settings() );
+        $oem_preview = self::is_oem_exact_preview();
+        if ( $oem_preview ) {
+            // Deliberate visual-only preview, never persist options or change ads.
+            $settings['inquiry_template'] = 'oem_original';
+            $settings['inquiry_preset'] = 'bottle_oem_inquiry';
+        }
 		$preset = $this->manager->get_preset_manager()->get_preset( $settings['inquiry_preset'] );
-		if ( ! is_array( $preset ) || empty( $preset['enabled'] ) ) { return; }
+        if ( $oem_preview && ( ! is_array( $preset ) || empty( $preset['enabled'] ) ) ) {
+            $defaults = $this->manager->get_preset_manager()->defaults();
+            $preset = isset( $defaults['bottle_oem_inquiry'] ) ? $defaults['bottle_oem_inquiry'] : null;
+        }
+        if ( ! is_array( $preset ) || empty( $preset['enabled'] ) ) { return; }
+        if ( $oem_preview ) { $preset['page_profiles'] = array(); }
 		$inquiry = '';
 		if ( self::preset_allowed_on_page( $preset ) ) {
 		$fields = $this->manager->get_field_manager()->get_fields(); $ordered = array();
 		foreach ( $preset['fields'] as $id ) { if ( isset( $fields[ $id ] ) && ! empty( $fields[ $id ]['enabled'] ) ) { $ordered[] = $fields[ $id ]; } }
-		$premium = 'premium_v22' === $settings['inquiry_template'];
+        $exact_oem = 'oem_original' === $settings['inquiry_template'] && 'bottle_oem_inquiry' === $settings['inquiry_preset'];
+        $premium = 'premium_v22' === $settings['inquiry_template'];
+        if ( $exact_oem ) {
+            // Production bottle OEM component attributes; canonical renderer owns the HTML.
+            $settings['inquiry_title'] = 'glass-bottle-oem';
+            $settings['inquiry_subtitle'] = '';
+            $settings['inquiry_image'] = 'https://ybybottle.com/wp-content/uploads/2026/07/hero-custom-spirits-bottle.webp';
+        }
 		$attributes = array( 'id' => 'yby-global-inquiry-popup', 'title' => $settings['inquiry_title'], 'subtitle' => $settings['inquiry_subtitle'], 'image' => $settings['inquiry_image'], 'class' => array( 'yby-global-popup__legacy-form' ) );
-		if ( $premium ) {
-			// Rendering only: no alternate submit endpoint, tracking protocol or field schema.
+        if ( $exact_oem ) {
+            $attributes['submit_label'] = 'Submit Bottle Project';
+            $attributes['mobile_submit_label'] = 'Submit Bottle Project';
+            $attributes['class'] = array( 'andy-popup-template--oem-original' );
+        }
+        if ( $premium ) {
+            // Rendering only: no alternate submit endpoint, tracking protocol or field schema.
 			$attributes['class'][] = 'andy-popup-template--premium-v22';
 			$attributes['layout'] = 'premium_split';
 			$attributes['mobile_layout'] = 'premium_stack';
 		}
 		$mobile_fields = array();
-		if ( $premium ) {
-			// The existing renderer owns mobile field validation; keep the original field registry and JS.
+        if ( $premium || $exact_oem ) {
+            // The existing renderer owns mobile field validation; keep the original field registry and JS.
 			foreach ( $preset['mobile_fields'] ?? array() as $id ) {
 				if ( isset( $fields[ $id ] ) && ! empty( $fields[ $id ]['enabled'] ) ) { $mobile_fields[] = $fields[ $id ]; }
 			}
@@ -84,6 +115,10 @@ class YBY_Global_Popup {
 		$inquiry = $this->renderer->render_modal( $preset, $ordered, $attributes, $mobile_fields );
 		$inquiry = preg_replace( '/class="yby-inquiry-modal/', 'class="yby-global-popup yby-global-popup--inquiry yby-inquiry-modal', $inquiry, 1 );
 		$inquiry = str_replace( 'data-yby-inquiry-modal ', 'data-yby-inquiry-modal data-yby-global-popup="inquiry" ', $inquiry );
+        if ( $oem_preview ) {
+            // Visual UAT only. Prevent POST through the browser without changing real form runtime.
+            $inquiry = str_replace( 'class="yby-inquiry-form"', 'class="yby-inquiry-form" inert data-andy-preview-only="1"', $inquiry );
+        }
 		}
 		// Newsletter rendering stays available even when a page-scoped inquiry
 		// is intentionally suppressed on another campaign landing page.

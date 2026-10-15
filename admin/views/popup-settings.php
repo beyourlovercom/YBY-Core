@@ -125,6 +125,7 @@ $dock_preview_settings['inquiry_text_color'] = $dock_inquiry_text;
 				<select id="andy-popup-template" name="yby_popup_settings[inquiry_template]">
 					<option value="classic" <?php selected( $settings['inquiry_template'], 'classic' ); ?>>Classic · 原有默认外观</option>
 					<option value="premium_v22" <?php selected( $settings['inquiry_template'], 'premium_v22' ); ?>>Premium V2.2 · 高级 OEM 可复用模板</option>
+					<option value="oem_original" <?php selected( $settings['inquiry_template'], 'oem_original' ); ?>>Bottle OEM Original · 正式站原版组件</option>
 				</select>
 				<p class="description">视觉只影响 Global Popup；不改 Landing Page、短代码、表单引擎或 CRM/ERP。默认 Classic 保持兼容。</p>
 			</td></tr>
@@ -144,5 +145,8 @@ $dock_preview_settings['inquiry_text_color'] = $dock_inquiry_text;
 		</tbody></table><p><button class="button button-primary" name="yby_popup_submit" value="1">保存</button></p>
 	</form>
 	<p><a class="button" href="<?php echo esc_url( add_query_arg( array( 'yby_popup_preview' => $popup_prefix ), home_url( '/' ) ) ); ?>" target="_blank" rel="noopener">Preview/Test</a></p>
+    <?php if ( 'inquiry' === $popup_prefix && current_user_can( 'manage_options' ) ) : ?>
+    <p><a class="button" href="<?php echo esc_url( add_query_arg( array( 'yby_popup_preview' => 'inquiry', 'andy_oem_exact_preview' => '1' ), home_url( '/' ) ) ); ?>" target="_blank" rel="noopener">Preview Bottle OEM Original (Dev only · no submissions)</a></p>
+    <?php endif; ?>
 <?php endif; ?>
 </div>
