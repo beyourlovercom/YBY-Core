@@ -25,9 +25,11 @@ class YBY_Global_Popup {
 		$raw = is_array( $raw ) ? $raw : array(); $out = array();
 		foreach ( array( 'inquiry_title','inquiry_subtitle','subscribe_title','subscribe_subtitle' ) as $key ) { $out[ $key ] = sanitize_text_field( $raw[ $key ] ?? '' ); }
 		foreach ( array( 'inquiry_image','subscribe_image' ) as $key ) { $out[ $key ] = esc_url_raw( $raw[ $key ] ?? '' ); }
-		$template = sanitize_key( $raw['inquiry_template'] ?? 'classic' );
+		$template_raw = $raw['inquiry_template'] ?? 'classic';
+		$template = is_scalar( $template_raw ) ? sanitize_key( (string) $template_raw ) : 'classic';
 		$out['inquiry_template'] = in_array( $template, array( 'classic', 'premium_v22' ), true ) ? $template : 'classic';
-		$preset_id = sanitize_key( $raw['inquiry_preset'] ?? 'irrigation_quick_inquiry' );
+		$preset_raw = $raw['inquiry_preset'] ?? 'irrigation_quick_inquiry';
+		$preset_id = is_scalar( $preset_raw ) ? sanitize_key( (string) $preset_raw ) : 'irrigation_quick_inquiry';
 		$out['inquiry_preset'] = in_array( $preset_id, array( 'irrigation_quick_inquiry', 'bottle_oem_inquiry', 'bottle_wholesale_inquiry' ), true ) ? $preset_id : 'irrigation_quick_inquiry';
 		foreach ( array( 'subscribe_shortcode_show_title', 'subscribe_shortcode_show_subtitle', 'subscribe_shortcode_show_image' ) as $key ) { $out[ $key ] = empty( $raw[ $key ] ) ? 0 : 1; }
 		foreach ( array( 'inquiry_custom_css', 'subscribe_custom_css', 'inquiry_shortcode_custom_css', 'subscribe_shortcode_custom_css' ) as $key ) { $out[ $key ] = self::sanitize_custom_css( $raw[ $key ] ?? '' ); }
