@@ -102,6 +102,9 @@ class YBY_Country_Clone_Preflight {
 }
 class YBY_Germany_Clone_Transform {
 	public static function build( $elements, $settings ) {
+		if ( 'alert(1);' === ( $settings['customScriptsBodyFooter'] ?? '' ) ) {
+			return new WP_Error( 'clone_script_contract' );
+		}
 		$settings['customScriptsBodyFooter'] = 'const country = "Germany";';
 		return array( 'elements' => $elements, 'settings' => $settings, 'counts' => array() );
 	}
@@ -153,7 +156,7 @@ must( is_wp_error( $r ) && 'clone_bricks_signer_denied' === $r->get_error_code()
 reset_test_state();
 $GLOBALS['test_meta'][292]['_bricks_page_settings']['customScriptsBodyFooter'] = 'alert(1);';
 $r = create_test();
-must( is_wp_error( $r ) && 'clone_bricks_unreviewed' === $r->get_error_code(), 'unverified JS blocked' );
+must( is_wp_error( $r ) && 'clone_script_contract' === $r->get_error_code(), 'unreviewed page-level JS blocked by strict transformer' );
 unset( $GLOBALS['test_meta'][292]['_bricks_page_settings']['customScriptsBodyFooter'] );
 
 reset_test_state();
