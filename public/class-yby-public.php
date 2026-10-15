@@ -75,7 +75,10 @@ class YBY_Public {
 				$popup_settings = YBY_Global_Popup::sanitize( YBY_Global_Popup::settings() );
 				// Only opt-in Premium sites receive the V2.2 popup skin; all
 				// classic and shortcode CSS remains byte-for-byte unchanged.
-				if ( 'premium_v22' === $popup_settings['inquiry_template'] ) {
+				if ( ( 'oem_original' === $popup_settings['inquiry_template'] && 'bottle_oem_inquiry' === $popup_settings['inquiry_preset'] ) || YBY_Global_Popup::is_oem_exact_preview() ) {
+                    wp_enqueue_style( 'andy-core-oem-original', YBY_CORE_PLUGIN_URL . 'public/css/andy-core-oem-original.css', array( 'yby-global-popup' ), $this->asset_version( 'public/css/andy-core-oem-original.css' ) );
+                }
+                if ( 'premium_v22' === $popup_settings['inquiry_template'] && ! YBY_Global_Popup::is_oem_exact_preview() ) {
 					wp_enqueue_style(
 						'andy-core-popup-premium-v22',
 						YBY_CORE_PLUGIN_URL . 'public/css/andy-core-popup-premium-v22.css',

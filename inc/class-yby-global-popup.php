@@ -115,9 +115,16 @@ class YBY_Global_Popup {
 		$inquiry = $this->renderer->render_modal( $preset, $ordered, $attributes, $mobile_fields );
 		$inquiry = preg_replace( '/class="yby-inquiry-modal/', 'class="yby-global-popup yby-global-popup--inquiry yby-inquiry-modal', $inquiry, 1 );
 		$inquiry = str_replace( 'data-yby-inquiry-modal ', 'data-yby-inquiry-modal data-yby-global-popup="inquiry" ', $inquiry );
+        if ( $exact_oem ) {
+            $decor = '<div class="andy-oem-brand" aria-hidden="true"><div class="andy-oem-brand__identity"><b class="andy-oem-brand__mark">Y</b> YBY Bottle</div><div class="andy-oem-brand__story"><small>GLASS BOTTLE OEM &amp; CUSTOM DEVELOPMENT</small><h3>Premium Glass Bottles for Global Brands</h3><ul><li>Custom design &amp; mold development</li><li>Distinctive decoration &amp; finishing</li><li>Solutions for global brands</li></ul></div></div>';
+            $inquiry = str_replace( '<div class="yby-inquiry-modal__media">', '<div class="yby-inquiry-modal__media">' . $decor, $inquiry );
+            $inquiry = str_replace( 'glass-bottle-oem</span>', 'Start Your Bottle Project</span>', $inquiry );
+            $inquiry = str_replace( '<form class="yby-inquiry-form"', '<p class="andy-oem-subtitle">Tell us about your bottle requirements and our team will follow up with you.</p><form class="yby-inquiry-form"', $inquiry );
+        }
         if ( $oem_preview ) {
             // Visual UAT only. Prevent POST through the browser without changing real form runtime.
-            $inquiry = str_replace( 'class="yby-inquiry-form"', 'class="yby-inquiry-form" inert data-andy-preview-only="1"', $inquiry );
+            $inquiry = str_replace( 'class="yby-inquiry-form"', 'class="yby-inquiry-form" data-andy-preview-only="1" onsubmit="return false"', $inquiry );
+            $inquiry = str_replace( 'type="submit" class="yby-inquiry-form__submit"', 'type="button" class="yby-inquiry-form__submit" disabled', $inquiry );
         }
 		}
 		// Newsletter rendering stays available even when a page-scoped inquiry
