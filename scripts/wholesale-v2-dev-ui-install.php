@@ -24,15 +24,18 @@ if (strpos($existing,'render_wholesale_country_v2')!==false ||
     WP_CLI::error('V2 already partially installed: refusing to overwrite');
 }
 $route_needle="\t\tif ( 'runtime' === \$view && \$post_id ) {";
-$method_needle="\t/**\n\t * Render Project List.";
+$method_needle="\tprotected function render_project_list() {";
 $route_start="\t\tif ( 'wholesale' === \$view ) {";
-$method_start="\t/**\n\t * Dev-only B2B Wholesale country-clone UI.";
+$method_start="\tprotected function render_wholesale_country_v2() {";
 if(substr_count($candidate,$route_start)!==1 || substr_count($candidate,$method_start)!==1 ||
    substr_count($existing,$route_needle)!==1 || substr_count($existing,$method_needle)!==1) {
     WP_CLI::error('Controller markers changed. Refuse unsafe patch. Counts: '.implode(',',array(substr_count($candidate,$route_start),substr_count($candidate,$method_start),substr_count($existing,$route_needle),substr_count($existing,$method_needle))));
 }
 $route=substr($candidate,strpos($candidate,$route_start),strpos($candidate,$route_needle)-strpos($candidate,$route_start));
-$method=substr($candidate,strpos($candidate,$method_start),strpos($candidate,$method_needle)-strpos($candidate,$method_start));
+$method_region=substr($candidate,strpos($candidate,$method_start),strpos($candidate,$method_needle)-strpos($candidate,$method_start));
+$last_brace=strrpos($method_region,"\n\t}\n");
+if ($last_brace===false) { WP_CLI::error('Method end marker unavailable'); }
+$method=substr($method_region,0,$last_brace+strlen("\n\t}\n"));
 $patched=str_replace($route_needle,$route.$route_needle,$existing);
 $patched=str_replace($method_needle,$method.$method_needle,$patched);
 $original_line='\t<a class="page-title-action"';
