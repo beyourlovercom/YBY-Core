@@ -71,6 +71,9 @@ $validation_administrator = get_user_by( 'login', 'admin' );
 yby_validation_assert( $validation_administrator instanceof WP_User, 'Validation administrator is unavailable.' );
 wp_set_current_user( $validation_administrator->ID );
 
+// WP-CLI runs outside WP-Admin by default. Recreate the actual admin
+// context before dispatching native admin_menu hooks in the disposable CI.
+if ( ! defined( 'WP_ADMIN' ) ) { define( 'WP_ADMIN', true ); }
 $GLOBALS['submenu'] = array();
 do_action( 'admin_menu' );
 $registered_submenus = array_values( array_map(
