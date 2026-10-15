@@ -73,10 +73,23 @@ wp_set_current_user( $validation_administrator->ID );
 
 $GLOBALS['submenu'] = array();
 do_action( 'admin_menu' );
-$expected_submenus = array( 'andy-core-leads', 'yby-project-studio', 'edit.php?post_type=yby_project', 'yby-brand-os', 'yby-social-login', YBY_Helpers::admin_page_slug(), 'yby-core-popups' );
-$registered_submenus = array_map( static function ( $item ) { return $item[2]; }, $GLOBALS['submenu'][ YBY_Project_Studio::menu_slug() ] ?? array() );
-yby_validation_assert( $expected_submenus === $registered_submenus, 'Andy Core submenu structure is not exact.' );
+$registered_submenus = array_values( array_map(
+	static function ( $item ) { return $item[2]; },
+	$GLOBALS['submenu'][ YBY_Project_Studio::menu_slug() ] ?? array()
+) );
+$expected_submenus = array();
+foreach ( YBY_Andy_OS_Navigation::sections() as $slug => $meta ) {
+	if ( ! current_user_can( $meta[1] ) ) { continue; }
+	if ( 'native' === $meta[2] && ! in_array( $slug, $registered_submenus, true ) ) { continue; }
+	$expected_submenus[] = $slug;
+}
+yby_validation_assert( $expected_submenus === $registered_submenus, 'Andy Core native L2 module order and capabilities are not exact.' );
 yby_validation_assert( ! in_array( YBY_Project_Studio::menu_slug(), $registered_submenus, true ), 'Duplicate Andy Core submenu must be removed.' );
+yby_validation_assert( ! in_array( 'andy-os-overview', $registered_submenus, true ), 'Mandatory overview card page must be removed.' );
+$original_submenus = array_column( $GLOBALS['submenu'][''] ?? array(), 2 );
+foreach ( array( 'yby-project-studio', 'yby-brand-os', YBY_Helpers::admin_page_slug() ) as $legacy_slug ) {
+	yby_validation_assert( in_array( $legacy_slug, $original_submenus, true ), 'Existing Core admin route not preserved: '.$legacy_slug );
+}
 
 yby_validation_assert( false !== strpos( YBY_Project_Studio::studio_url( 'overview', 123 ), 'page=yby-project-studio' ), 'Project Studio URLs must use the dedicated submenu slug.' );
 yby_validation_assert( 'yby-os' === YBY_Project_Studio::menu_slug(), 'The Andy Core parent slug must remain yby-os.' );
