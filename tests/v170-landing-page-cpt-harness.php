@@ -42,7 +42,7 @@ $assert( 'landing_page' === YBY_Landing_Page_CPT::POST_TYPE, 'Andy Core must ado
 $assert( 'lp' === YBY_Landing_Page_CPT::REWRITE_SLUG, 'Landing Page public rewrite slug must remain /lp/' );
 $assert( true === $args['public'] && true === $args['publicly_queryable'], 'Landing Pages must be public and queryable' );
 $assert( true === $args['show_ui'], 'Landing Pages must have WordPress admin UI' );
-$assert( true === $args['show_in_menu'], 'Canonical Landing Page fallback must remain a first-class top-level menu' );
+$assert( 'yby-os' === $args['show_in_menu'], 'Landing Pages must retain native WP editor under the Andy Core root, not a duplicate top-level' );
 $assert( 5 === $args['menu_position'] && 'dashicons-megaphone' === $args['menu_icon'], 'Canonical Landing Page fallback menu contract mismatch' );
 $assert( true === $args['show_in_rest'], 'Landing Pages must support the block editor / REST' );
 $assert( false === $args['has_archive'], 'Landing Pages must not create an archive route' );

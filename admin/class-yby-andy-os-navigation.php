@@ -1,6 +1,6 @@
 <?php
 /**
- * Andy OS Unified Admin Navigation V1.
+ * Andy Core Native WordPress L1/L2 Navigation V2.
  *
  * Read-only navigation composition. Existing handlers, capabilities and
  * independent plugin lifecycles remain authoritative.
@@ -15,92 +15,182 @@ final class YBY_Andy_OS_Navigation {
 	 * current user already has; each child checks its original capability.
 	 */
 	public static function root_capability() {
-		foreach ( array( 'manage_options', 'andy_core_settings_manage', 'manage_woocommerce', 'andy_core_leads_view' ) as $cap ) {
+		foreach ( array( 'manage_options', 'andy_core_settings_manage', 'andy_core_leads_view',
+			'andy_core_newsletter_view', 'andy_core_mail_view', 'manage_woocommerce' ) as $cap ) {
 			if ( current_user_can( $cap ) ) { return $cap; }
 		}
-		return 'manage_options';
-	}
-
-	private static function section_capability( $slug ) {
-		switch ( $slug ) {
-			case 'andy-os-content': return 'andy_core_settings_manage';
-			case 'andy-os-inquiry': return 'andy_core_leads_view';
-			case 'andy-os-commerce': return 'manage_woocommerce';
-			case 'andy-os-settings': return 'manage_options';
-			case 'andy-os-marketing':
-				return current_user_can( 'andy_core_settings_manage' ) ? 'andy_core_settings_manage' : 'manage_woocommerce';
-			default: return self::root_capability();
+		if ( YBY_Module_Registry::is_enabled( 'landing_pages' ) && current_user_can( 'edit_pages' ) ) {
+			return 'edit_pages';
 		}
-	}
-
-	public static function sections() {
-		return array(
-			'andy-os-overview' => '总览',
-			'andy-os-content' => 'Content 内容管理',
-			'andy-os-inquiry' => 'Forms & Inquiry',
-			'andy-os-marketing' => 'Marketing 营销管理',
-			'andy-os-commerce' => 'Commerce 交易配置',
-			'andy-os-settings' => '系统与连接',
-		);
+		if ( YBY_Module_Registry::is_enabled( 'docs_os' ) && current_user_can( 'edit_posts' ) ) {
+			return 'edit_posts';
+		}
+		return 'manage_options'; // No capability is granted by returning a string.
 	}
 
 	/**
-	 * Migrate *registrations*, not just CSS visibility. WordPress must keep
-	 * its legacy page hooks callable when a first-level menu is removed.
+	 * The ONLY visible native WordPress second-level items.
+	 * Conditional groups are excluded if the module or plugin is missing.
+	 */
+	public static function sections() {
+		$items = array();
+		if ( YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) {
+			$items['andy-core-leads'] = array( 'Inquiry OS', 'andy_core_leads_view', 'native' );
+		}
+		if ( YBY_Module_Registry::is_enabled( 'newsletter_os' ) ) {
+			$items['andy-core-newsletter'] = array( 'Newsletter OS', 'andy_core_newsletter_view', 'native' );
+		}
+		if ( YBY_Module_Registry::is_enabled( 'email_os' ) ) {
+			$items['andy-core-email'] = array( 'Email OS', 'andy_core_mail_view', 'native' );
+		}
+		$content_cap = '';
+		foreach ( array( 'andy_core_settings_manage', 'edit_pages', 'edit_posts' ) as $cap ) {
+			if ( ! current_user_can( $cap ) ) { continue; }
+			if ( 'andy_core_settings_manage' === $cap ||
+			     ( 'edit_pages' === $cap && YBY_Module_Registry::is_enabled( 'landing_pages' ) ) ||
+			     ( 'edit_posts' === $cap && YBY_Module_Registry::is_enabled( 'docs_os' ) ) ) {
+				$content_cap = $cap;
+				break;
+			}
+		}
+		if ( $content_cap ) {
+			$items['andy-core-content'] = array( 'Content OS', $content_cap, 'content' );
+		}
+		if ( class_exists( 'Andy_Commerce_Admin' ) ) {
+			$items['andy-core-marketing'] = array( 'Marketing OS', 'manage_woocommerce', 'marketing' );
+			$items['andy-core-commerce'] = array( 'Commerce OS', 'manage_woocommerce', 'commerce' );
+		}
+		if ( current_user_can( 'andy_core_settings_manage' ) ) {
+			$items['andy-core-system'] = array( 'System & Connectors', 'andy_core_settings_manage', 'system' );
+		}
+		return $items;
+	}
+
+	/** Real, existing backend paths; never infer a route from a label. */
+	public static function destination( $slug ) {
+		switch ( $slug ) {
+			case 'andy-core-content':
+				if ( current_user_can( 'andy_core_settings_manage' ) ) {
+					return YBY_Module_Registry::is_enabled( 'business_os' )
+						? 'admin.php?page=andy-business' : 'admin.php?page=yby-content';
+				}
+				if ( YBY_Module_Registry::is_enabled( 'landing_pages' ) && current_user_can( 'edit_pages' ) ) {
+					return 'edit.php?post_type=landing_page';
+				}
+				if ( YBY_Module_Registry::is_enabled( 'docs_os' ) && current_user_can( 'edit_posts' ) ) {
+					return 'admin.php?page=yby-docs-all';
+				}
+				return '';
+			case 'andy-core-marketing': return 'admin.php?page=andy-commerce&tab=marketing-promotions';
+			case 'andy-core-commerce': return 'admin.php?page=andy-commerce';
+			case 'andy-core-system': return 'admin.php?page=yby-core&tab=modules';
+			case 'andy-core-leads': return 'admin.php?page=andy-core-leads';
+			case 'andy-core-newsletter': return 'admin.php?page=andy-core-newsletter';
+			case 'andy-core-email': return 'admin.php?page=andy-core-email';
+		}
+		return '';
+	}
+
+	/**
+	 * Only GET navigation may redirect. Original POST handlers and old
+	 * direct links remain untouched, including their nonces and capabilities.
+	 */
+	public static function redirect_entry() {
+		if ( ! is_admin() || 'GET' !== ( $_SERVER['REQUEST_METHOD'] ?? 'GET' ) ) { return; }
+		$page = isset( $_GET['page'] ) && is_scalar( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( self::ROOT === $page ) {
+			foreach ( self::sections() as $slug => $group ) {
+				if ( ! current_user_can( $group[1] ) ) { continue; }
+				$destination = self::destination( $slug );
+				if ( $destination ) { wp_safe_redirect( admin_url( $destination ) ); exit; }
+			}
+			return;
+		}
+		$groups = self::sections();
+		if ( ! isset( $groups[ $page ] ) || 'native' === $groups[ $page ][2] ||
+		     ! current_user_can( $groups[ $page ][1] ) ) { return; }
+		$destination = self::destination( $page );
+		if ( $destination ) { wp_safe_redirect( admin_url( $destination ) ); exit; }
+	}
+
+	/**
+	 * Keep ONE Andy Core parent. Existing Inquiry/Newsletter/Email handlers
+	 * stay registered at their original WordPress hooks; no surrogate pages.
 	 */
 	public static function consolidate() {
 		if ( ! is_admin() ) { return; }
 		global $menu, $submenu;
 		if ( ! is_array( $menu ) || ! is_array( $submenu ) ) { return; }
-
-		// Capture existing Core routes before adding the six visible sections.
-		// Preserve their handlers with hidden registered routes below.
-		$core_existing = isset( $submenu[ self::ROOT ] ) && is_array( $submenu[ self::ROOT ] )
-			? $submenu[ self::ROOT ] : array();
-		foreach ( self::sections() as $slug => $title ) {
-			$cap = self::section_capability( $slug );
-			add_submenu_page( self::ROOT, $title, $title, $cap, $slug, array( __CLASS__, 'render_section' ) );
+		$existing = $submenu[ self::ROOT ] ?? array();
+		$groups = self::sections();
+		$native = array();
+		foreach ( $existing as $item ) {
+			if ( isset( $item[2], $groups[ $item[2] ] ) && 'native' === $groups[ $item[2] ][2] ) {
+				$item[0] = $groups[ $item[2] ][0];
+				$native[ $item[2] ] = $item;
+			}
 		}
 
-		// A missing plugin leaves no matching top-level row and is untouched.
+		// Original Content / Commerce page callbacks are NOT replaced.
+		// Fail open (keep old first-level) if any authorized route cannot
+		// be safely registered as a hidden legacy page.
 		foreach ( array( 'yby-content', 'andy-commerce' ) as $legacy_parent ) {
 			$root = null;
 			foreach ( $menu as $row ) {
 				if ( isset( $row[2] ) && $legacy_parent === $row[2] ) { $root = $row; break; }
 			}
-			if ( null === $root ) { continue; }
-			if ( ! self::transfer_alias( $legacy_parent, $root[0], $root[1], '' ) ) { continue; }
-
-			// Preserve all registered child routes under their original slugs.
-			$children = isset( $submenu[ $legacy_parent ] ) && is_array( $submenu[ $legacy_parent ] )
-				? $submenu[ $legacy_parent ] : array();
-			$all_safe = true;
+			if ( null === $root || ! self::transfer_alias( $legacy_parent, $root[0], $root[1], '' ) ) { continue; }
+			$children = $submenu[ $legacy_parent ] ?? array();
+			$safe = true;
 			foreach ( $children as $item ) {
 				if ( empty( $item[2] ) || $legacy_parent === $item[2] ) { continue; }
 				if ( ! self::transfer_alias( $item[2], $item[0], $item[1], $legacy_parent ) ) {
-					$all_safe = false;
+					$safe = false;
 					break;
 				}
 			}
-			if ( $all_safe ) {
+			if ( $safe ) {
 				remove_menu_page( $legacy_parent );
-				// Invisible routes remain registered under WordPress' empty
-				// parent; discard old menu inventory to prevent duplicate
-				// parent resolution for legacy admin.php?page=... links.
 				unset( $submenu[ $legacy_parent ] );
-			} // Fail open to an extra menu if a legacy route cannot be preserved.
+			}
 		}
 
-		// Keep the WordPress sidebar compact: only the six section pages
-		// are visible. Existing Core child-page links remain callable,
-		// capability-gated and accessible from the section landing pages.
-		foreach ( $core_existing as $item ) {
-			$slug = isset( $item[2] ) ? $item[2] : '';
-			if ( '' === $slug || self::ROOT === $slug || isset( self::sections()[ $slug ] ) ) { continue; }
+		foreach ( $existing as $item ) {
+			$slug = $item[2] ?? '';
+			if ( ! $slug || self::ROOT === $slug || isset( $native[ $slug ] ) ) { continue; }
 			if ( self::transfer_alias( $slug, $item[0], $item[1], self::ROOT ) ) {
 				remove_submenu_page( self::ROOT, $slug );
 			}
 		}
+
+		// Exactly seven possible native L2 module entries, ordered by Owner.
+		$ordered = array();
+		foreach ( $groups as $slug => $group ) {
+			if ( ! current_user_can( $group[1] ) ) { continue; }
+			if ( 'native' === $group[2] ) {
+				if ( isset( $native[ $slug ] ) ) { $ordered[] = $native[ $slug ]; }
+			} else {
+				$hook = add_submenu_page( self::ROOT, $group[0], $group[0],
+					$group[1], $slug, array( __CLASS__, 'render_fallback' ) );
+				if ( false !== $hook ) {
+					$ordered[] = array( $group[0], $group[1], $slug );
+				}
+			}
+		}
+		$submenu[ self::ROOT ] = $ordered;
+	}
+
+	/** If admin_init redirect is unavailable, show only a safe direct link. */
+	public static function render_fallback() {
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$groups = self::sections();
+		if ( ! isset( $groups[ $page ] ) || ! current_user_can( $groups[ $page ][1] ) ) {
+			wp_die( esc_html__( 'You do not have permission to use this section.', 'yby-core' ) );
+		}
+		$target = self::destination( $page );
+		echo '<div class="wrap"><h1>' . esc_html( $groups[ $page ][0] ) . '</h1>';
+		echo '<p><a class="button button-primary" href="' . esc_url( admin_url( $target ) ) . '">'
+			. esc_html__( '打开现有功能', 'yby-core' ) . '</a></p></div>';
 	}
 
 	private static function transfer_alias( $slug, $label, $capability, $old_parent ) {
@@ -144,74 +234,151 @@ final class YBY_Andy_OS_Navigation {
 		return true;
 	}
 
-	private static function cards_for( $section ) {
-		$cards = array(
-			'andy-os-content' => array(
-				array( 'Business 招商页面', 'andy-business', 'andy_core_settings_manage', 'business_os' ),
-				array( '合作项目展示', 'andy-business-programs', 'andy_core_settings_manage', 'business_os' ),
-				array( '申请表单与来源', 'andy-business-applications', 'andy_core_settings_manage', 'business_os' ),
-				array( 'ERP 连接状态', 'andy-business-settings', 'andy_core_settings_manage', 'business_os' ),
-				array( '落地页与内容', 'yby-content', 'andy_core_settings_manage', '' ),
-			),
-			'andy-os-inquiry' => array(
-				array( 'Inquiry OS（过渡入口）', 'andy-core-leads', 'andy_core_leads_view', 'inquiry_os' ),
-			),
-			'andy-os-marketing' => array(
-				array( 'Email OS 与弹窗', 'yby-core-popups', 'manage_options', 'email_os' ),
-				array( '营销活动与折扣草稿', 'andy-commerce&tab=marketing-promotions', 'manage_woocommerce', '' ),
-			),
-			'andy-os-commerce' => array(
-				array( 'Commerce 总览', 'andy-commerce', 'manage_woocommerce', '' ),
-				array( 'Checkout / Shipping', 'andy-commerce&tab=checkout-shipping', 'manage_woocommerce', '' ),
-				array( 'Order Export', 'andy-commerce&tab=order-export', 'manage_woocommerce', '' ),
-				array( 'Marketing / Promotions', 'andy-commerce&tab=marketing-promotions', 'manage_woocommerce', '' ),
-			),
-			'andy-os-settings' => array(
-				array( 'Andy Core 配置', 'yby-core&tab=modules', 'manage_options', '' ),
-			),
-		);
-		return isset( $cards[ $section ] ) ? $cards[ $section ] : array();
-	}
-
-	public static function render_overview() {
-		self::render_ui( 'andy-os-overview' );
-	}
-
-	public static function render_section() {
-		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : 'andy-os-overview';
-		self::render_ui( $page );
-	}
-
-	private static function render_ui( $section ) {
-		$sections = self::sections();
-		if ( ! isset( $sections[ $section ] ) || ! current_user_can( self::section_capability( $section ) ) ) {
-			wp_die( esc_html__( 'You do not have permission to access this Andy OS section.', 'yby-core' ), '', array( 'response' => 403 ) );
-			return;
-		}
-		$title = $sections[ $section ];
-		echo '<div class="wrap andy-os-unified"><h1>Andy OS · ' . esc_html( $title ) . '</h1>';
-		echo '<p>' . esc_html__( '一个后台入口，两个独立插件。以下链接继续使用各功能既有权限与页面地址。', 'yby-core' ) . '</p>';
-		echo '<nav class="nav-tab-wrapper" aria-label="Andy OS sections">';
-		foreach ( $sections as $slug => $label ) {
-			if ( ! current_user_can( self::section_capability( $slug ) ) ) { continue; }
-			$url = admin_url( 'admin.php?page=' . $slug );
-			echo '<a class="nav-tab' . ( $slug === $section ? ' nav-tab-active' : '' ) . '" href="' . esc_url( $url ) . '">' . esc_html( $label ) . '</a>';
-		}
-		echo '</nav><div class="andy-os-unified__cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:1050px;margin:20px 0">';
-		$groups = 'andy-os-overview' === $section ? array_keys( $sections ) : array( $section );
-		foreach ( $groups as $group ) {
-			if ( ! current_user_can( self::section_capability( $group ) ) ) { continue; }
-			foreach ( self::cards_for( $group ) as $card ) {
-				list( $name, $path, $cap, $module ) = $card;
-				if ( ! current_user_can( $cap ) ) { continue; }
-				if ( '' !== $module && ! YBY_Module_Registry::is_enabled( $module ) ) { continue; }
-				if ( 0 === strpos( $path, 'andy-commerce' ) && ! class_exists( 'Andy_Commerce_Admin' ) ) { continue; }
-				// All destinations are fixed, predefined administrator routes.
-				$url = admin_url( 'admin.php?page=' . $path );
-				echo '<a href="' . esc_url( $url ) . '" style="display:block;background:white;color:#222;border:1px solid #e6e8e6;border-radius:10px;padding:18px;text-decoration:none">';
-				echo '<strong>' . esc_html( $name ) . '</strong><p style="color:#68736e;margin:9px 0 0">' . esc_html( $sections[ $group ] ) . ' · ' . esc_html__( '打开现有模块', 'yby-core' ) . '</p></a>';
+	/** Only allow existing, verified WordPress routes in right-side L3. */
+	public static function tertiary_items( $page ) {
+		$items = array();
+		$add = static function ( $title, $url, $cap, $module = '' ) use ( &$items ) {
+			if ( ! current_user_can( $cap ) ) { return; }
+			if ( $module && ! YBY_Module_Registry::is_enabled( $module ) ) { return; }
+			$items[] = array( 'title' => $title, 'url' => admin_url( $url ) );
+		};
+		if ( 'andy-core-leads' === $page ) {
+			foreach ( array( 'leads'=>'询盘列表', 'stats'=>'询盘统计' ) as $tab=>$label ) {
+				$add( $label, 'admin.php?page=andy-core-leads&tab='.$tab, 'andy_core_leads_view', 'inquiry_os' );
 			}
+			foreach ( array( 'floating_inquiry'=>'悬浮询盘', 'popup_inquiry'=>'询盘弹窗',
+				'shortcode_inquiry'=>'询盘短代码', 'settings'=>'询盘设置', 'notification'=>'询盘通知' ) as $tab=>$label ) {
+				if ( current_user_can( 'andy_core_leads_view' ) ) {
+					$add( $label, 'admin.php?page=andy-core-leads&tab='.$tab, 'andy_core_settings_manage', 'inquiry_os' );
+				}
+			}
+		} elseif ( 'andy-core-newsletter' === $page ) {
+			foreach ( array( 'subscribers'=>'订阅者列表', 'consent'=>'双重确认与退订',
+				'popup_subscribe'=>'订阅弹窗', 'shortcode_subscribe'=>'订阅短代码' ) as $tab=>$label ) {
+				if ( in_array( $tab, array( 'popup_subscribe','shortcode_subscribe' ), true ) &&
+				     ( ! current_user_can( 'manage_options' ) || ! YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) ) { continue; }
+				$add( $label, 'admin.php?page=andy-core-newsletter&tab='.$tab,
+					'andy_core_newsletter_view', 'newsletter_os' );
+			}
+		} elseif ( 'andy-core-email' === $page ) {
+			$tabs = array( 'overview'=>'邮件总览', 'email_templates'=>'邮件模板中心',
+				'transport'=>'发送通道', 'health'=>'系统健康' );
+			if ( class_exists( 'YBY_Mail_V2_P6_Dev_Preview' ) &&
+			     YBY_Mail_V2_P6_Dev_Preview::eligible_site() && current_user_can( 'manage_options' ) ) {
+				$tabs['preview_queue'] = '队列（Dev 预览）';
+				$tabs['preview_failures'] = '失败处理（Dev 预览）';
+			}
+			foreach ( $tabs as $tab=>$label ) {
+				if ( 'email_templates' === $tab && ! current_user_can( 'andy_core_settings_manage' ) ) { continue; }
+				$add( $label, 'admin.php?page=andy-core-email&tab='.$tab, 'andy_core_mail_view', 'email_os' );
+			}
+		} elseif ( in_array( $page, array( 'andy-business', 'andy-business-programs',
+			'andy-business-applications', 'andy-business-settings', 'yby-content',
+			'yby-project-studio', 'yby-docs-os', 'yby-docs-all', 'yby-docs-directory',
+			'yby-docs-faq', 'yby-docs-tutorial', 'yby-docs-settings' ), true ) ) {
+			foreach ( array( 'andy-business'=>'Business 招商页面', 'andy-business-programs'=>'合作项目展示',
+				'andy-business-applications'=>'申请表单与来源', 'andy-business-settings'=>'ERP 连接状态' ) as $slug=>$label ) {
+				$add( $label, 'admin.php?page='.$slug, 'andy_core_settings_manage', 'business_os' );
+			}
+			$add( 'Landing Pages', 'edit.php?post_type=landing_page', 'edit_pages', 'landing_pages' );
+			$add( 'Project Studio', 'admin.php?page=yby-project-studio', 'manage_options', 'project_studio' );
+			if ( YBY_Module_Registry::is_enabled( 'docs_os' ) ) {
+				foreach ( array( 'yby-docs-os'=>'Docs', 'yby-docs-all'=>'全部文档',
+					'yby-docs-directory'=>'文档分类', 'yby-docs-faq'=>'FAQ',
+					'yby-docs-tutorial'=>'Tutorial', 'yby-docs-settings'=>'Docs 设置' ) as $slug=>$label ) {
+					$add( $label, 'admin.php?page='.$slug, 'andy_core_settings_manage', 'docs_os' );
+				}
+			}
+		} elseif ( 'andy-commerce' === $page ) {
+			foreach ( array( 'overview'=>'Commerce 总览', 'order-export'=>'Order Export',
+				'checkout-shipping'=>'Checkout / Shipping', 'marketing-promotions'=>'Marketing / Promotions',
+				'settings'=>'Commerce 设置' ) as $tab=>$label ) {
+				$add( $label, 'admin.php?page=andy-commerce&tab='.$tab, 'manage_woocommerce' );
+			}
+		} elseif ( in_array( $page, array( 'yby-core', 'yby-brand-os', 'yby-social-login' ), true ) ) {
+			foreach ( array( 'general'=>'常规设置', 'modules'=>'模块管理', 'addons'=>'Addons',
+				'wp-api'=>'连接器', 'system-status'=>'系统状态', 'updates'=>'插件更新' ) as $tab=>$label ) {
+				if ( 'wp-api' === $tab && ! YBY_Module_Registry::is_enabled( 'connector' ) ) { continue; }
+				$add( $label, 'admin.php?page=yby-core&tab='.$tab, 'andy_core_settings_manage' );
+			}
+			$add( 'Brand', 'admin.php?page=yby-brand-os', 'manage_options' );
+			$add( 'Social Login', 'admin.php?page=yby-social-login', 'manage_options', 'social_login' );
 		}
-		echo '</div><p class="description">' . esc_html__( '仅统一导航，不执行询盘、订单、付款或邮件操作。', 'yby-core' ) . '</p></div>';
+		return $items;
+	}
+
+	/** Scoped presentation only. Controllers remain independent. */
+	public static function enqueue_tertiary( $hook = '' ) {
+		unset( $hook );
+		if ( ! is_admin() ) { return; }
+		$page = isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
+			? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$items = self::tertiary_items( $page );
+		if ( ! $items ) { return; }
+		wp_enqueue_style( 'andy-core-native-l3-v2',
+			YBY_CORE_PLUGIN_URL . 'assets/css/andy-core-native-l3-v2.css',
+			array(), YBY_CORE_VERSION );
+		wp_enqueue_script( 'andy-core-native-l3-v2',
+			YBY_CORE_PLUGIN_URL . 'assets/js/andy-core-native-l3-v2.js',
+			array(), YBY_CORE_VERSION, true );
+		wp_localize_script( 'andy-core-native-l3-v2', 'AndyCoreNativeL3V2',
+			array( 'items' => $items, 'page' => $page ) );
+	}
+
+	/** Keep the native WordPress L2 group open for old L3 deep links. */
+	public static function active_second_level() {
+		$page = isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
+			? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( 'andy-core-leads' === $page ) { return 'andy-core-leads'; }
+		if ( 'andy-core-newsletter' === $page ) { return 'andy-core-newsletter'; }
+		if ( 'andy-core-email' === $page ) { return 'andy-core-email'; }
+		if ( 'andy-commerce' === $page ) {
+			$tab = isset( $_GET['tab'] ) && is_scalar( $_GET['tab'] )
+				? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
+			return 'marketing-promotions' === $tab ? 'andy-core-marketing' : 'andy-core-commerce';
+		}
+		if ( in_array( $page, array( 'andy-business','andy-business-programs',
+			'andy-business-applications','andy-business-settings','andy-business-pages',
+			'andy-business-partners','andy-business-catalog','andy-business-fulfillment',
+			'yby-content','yby-project-studio','yby-docs-os','yby-docs-all',
+			'yby-docs-directory','yby-docs-editor','yby-docs-faq',
+			'yby-docs-tutorial','yby-docs-settings' ), true ) ) {
+			return 'andy-core-content';
+		}
+		if ( in_array( $page, array( 'yby-core','yby-brand-os','yby-social-login' ), true ) ) {
+			return 'andy-core-system';
+		}
+		$post_type = isset( $_GET['post_type'] ) && is_scalar( $_GET['post_type'] )
+			? sanitize_key( wp_unslash( $_GET['post_type'] ) ) : '';
+		if ( ! $post_type && isset( $_GET['post'] ) ) {
+			$post_type = get_post_type( absint( $_GET['post'] ) );
+		}
+		if ( 'landing_page' === $post_type || 'yby_project' === $post_type ||
+		     'docs' === $post_type ) { return 'andy-core-content'; }
+		return '';
+	}
+
+	public static function filter_parent_file( $parent_file ) {
+		$group = self::active_second_level();
+		$sections = self::sections();
+		return $group && isset( $sections[ $group ] ) && current_user_can( $sections[ $group ][1] )
+			? self::ROOT : $parent_file;
+	}
+
+	public static function filter_submenu_file( $submenu_file ) {
+		$group = self::active_second_level();
+		$sections = self::sections();
+		return $group && isset( $sections[ $group ] ) && current_user_can( $sections[ $group ][1] )
+			? $group : $submenu_file;
+	}
+
+	/**
+	 * Existing controllers own every business screen. No fake dashboards.
+	 * Root is resolved by admin_init before the browser page is rendered.
+	 */
+	public static function render_overview() {
+		echo '<div class="wrap"><h1>Andy Core</h1><p>'
+			. esc_html__( '请在 WordPress 左侧选择有权限的二级模块。', 'yby-core' )
+			. '</p></div>';
 	}
 }
