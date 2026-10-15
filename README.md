@@ -4,7 +4,7 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `1.9.0`
+- Product version: `2.2.0`
 - Development version: None
 - Database version: `1.5.0`
 - Updater compatibility database version: `1.4.0`
