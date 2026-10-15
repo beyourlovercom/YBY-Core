@@ -36,6 +36,7 @@ class YBY_Country_Clone_Preflight {
 			'source_country' => '',
 			'page_country' => '',
 			'source_fingerprint' => '',
+			'transform_plan' => array(),
 			'write_enabled' => false,
 		);
 
@@ -88,10 +89,13 @@ class YBY_Country_Clone_Preflight {
 		$source_data = is_array( $source_data ) ? $source_data : array();
 		$result['bricks_elements'] = count( $source_data );
 		$result['bricks_code_elements'] = self::count_code_elements( $source_data );
+		$result['transform_plan'] = YBY_Country_Transform_Registry::preview(
+			$source_data, '' !== $result['source_country'] ? $result['source_country'] : $result['page_country'] );
 		$result['country_mentions'] = self::count_country_mentions( $source_data,
 			'' !== $result['source_country'] ? $result['source_country'] : $result['page_country'] );
 		self::check( $result, ! empty( $source_data ), 'bricks_structure', 'No supported Bricks content meta structure verified. Stop instead of guessing keys.' );
 		self::check( $result, 0 === $result['bricks_code_elements'], 'bricks_signatures', 'Bricks Code elements require authorized human review and native valid signing. No copied/stale signatures.' );
+		self::check( $result, 0 === ( $result['transform_plan']['unclassified_code_refs'] ?? 0 ), 'unclassified_code_refs', 'Unrecognized Country references require manual classification before transform.' );
 		self::check( $result, 0 === $result['country_mentions'], 'country_nodes', 'Country-specific Bricks content requires reviewed node-by-node transform; no global string replacement.' );
 		self::check( $result, false, 'write_gate', 'Germany draft creation is disabled in M1 preflight until M0 private schema and authorized Bricks signing are verified.' );
 
