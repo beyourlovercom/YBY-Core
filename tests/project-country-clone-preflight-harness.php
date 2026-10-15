@@ -65,6 +65,24 @@ verify( code_exists( $r, 'write_gate', false ), 'write gate remains closed' );
 verify( 2 === $r['bricks_elements'] && 0 === $r['bricks_code_elements'], 'element counts' );
 verify( 64 === strlen( $r['source_fingerprint'] ), 'source fingerprint exists' );
 
+// Verify the second Bricks storage layer and absent Germany selector are blocked.
+$GLOBALS['clone_meta'][292]['_bricks_page_settings'] = array(
+	'customScriptsBodyFooter' => 'const PROJECT_SCENARIOS={Tanzania:{}}; const c=PROJECT_SCENARIOS.Tanzania;',
+);
+$GLOBALS['clone_meta'][292]['_bricks_page_content_2'][] = array(
+	'name' => 'code',
+	'settings' => array( 'code' => '<button class="yby-country-pill" data-yby-country="Tanzania">Tanzania</button>' ),
+);
+$r = YBY_Country_Clone_Preflight::evaluate( 11, 292, 'DE' );
+verify( 2 === $r['page_script_country_mentions'], 'detect source Country in Bricks page settings JS' );
+verify( 2 === $r['page_script_scenario_mentions'], 'detect JS PROJECT_SCENARIOS in page settings' );
+verify( 1 === $r['country_selector_groups'] && 0 === $r['target_country_buttons'], 'Germany not present in source selector' );
+verify( code_exists( $r, 'page_script_country', false ), 'page settings JS must be inspected before clone' );
+verify( code_exists( $r, 'page_script_scenarios', false ), 'scenario JS must be reviewed' );
+verify( code_exists( $r, 'target_country_buttons', false ), 'missing Germany button blocks automated clone' );
+unset( $GLOBALS['clone_meta'][292]['_bricks_page_settings'] );
+array_pop( $GLOBALS['clone_meta'][292]['_bricks_page_content_2'] );
+
 $GLOBALS['clone_meta'][11]['yby_country'] = '';
 $r = YBY_Country_Clone_Preflight::evaluate( 11, 292, 'DE' );
 verify( code_exists( $r, 'source_country', false ), 'empty Project country cannot use title/fallback' );
