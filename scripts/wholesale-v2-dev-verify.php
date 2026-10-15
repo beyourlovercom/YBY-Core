@@ -5,8 +5,8 @@ $site=strtolower((string)wp_parse_url(home_url('/'),PHP_URL_HOST));
 if ($site!=='dev.ybyirrigation.com' || wp_get_environment_type()!=='development') {
     WP_CLI::error('V2 verify limited to isolated Dev');
 }
-if (!class_exists('\\Bricks\\Frontend') ||
-    !method_exists('\\Bricks\\Frontend','render_content')) {
+if (!class_exists('\Bricks\Frontend') ||
+    !method_exists('\Bricks\Frontend','render_content')) {
     WP_CLI::error('Bricks frontend render method unavailable');
 }
 $out=['site'=>$site,'screens'=>[],'source_unchanged'=>false,'global_contract'=>[]];
@@ -25,7 +25,7 @@ foreach($target as $id=>$country) {
         if(($n['name']??'')!=='code')continue;
         $code=(string)($n['settings']['code']??'');
         if(!empty($n['settings']['signature']) &&
-          \\Bricks\\Helpers::verify_code_signature($n['settings']['signature'],$code)) $good++;
+          \Bricks\Helpers::verify_code_signature($n['settings']['signature'],$code)) $good++;
         $country_h1+=substr_count($code,'Wholesale Irrigation Systems and Components for Distributors and Projects in '.$country);
         $triggers_in_code+=substr_count($code,'data-yby-inquiry-trigger');
         $source_profile+=substr_count($code,'data-yby-page-profile="irrigation_wholesale"');
@@ -35,7 +35,7 @@ foreach($target as $id=>$country) {
     $post=get_post($id);
     setup_postdata($post);
     ob_start();
-    $result=\\Bricks\\Frontend::render_content($id);
+    $result=\Bricks\Frontend::render_content($id);
     $buffer=ob_get_clean();
     wp_reset_postdata();
     $html=(string)$result.$buffer;
