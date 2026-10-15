@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "architecture": "Andy Core Admin V2.2",
+  "status": "draft-required-for-future-releases",
+  "root": {
+    "slug": "yby-os",
+    "label": "Andy Core",
+    "scope": "native-wordpress-left"
+  },
+  "l3": {
+    "location": "right-page-inner-left",
+    "rendering": "server-side-PHP-shell",
+    "fallback": "original-page-if-adapter-unavailable",
+    "no_dom_mover": true
+  },
+  "categories": [
+    {
+      "slug": "andy-core-leads",
+      "label": "Inquiry OS",
+      "owner": "andy-core",
+      "capability": "andy_core_leads_view",
+      "landing": "admin.php?page=andy-core-leads&tab=leads",
+      "module": "inquiry_os"
+    },
+    {
+      "slug": "andy-core-newsletter",
+      "label": "Newsletter OS",
+      "owner": "andy-core",
+      "capability": "andy_core_newsletter_view",
+      "landing": "admin.php?page=andy-core-newsletter&tab=subscribers",
+      "module": "newsletter_os"
+    },
+    {
+      "slug": "andy-core-email",
+      "label": "Email OS",
+      "owner": "andy-core",
+      "capability": "andy_core_mail_view",
+      "landing": "admin.php?page=andy-core-email&tab=overview",
+      "module": "email_os"
+    },
+    {
+      "slug": "andy-core-content",
+      "label": "Content OS",
+      "owner": "andy-core",
+      "capability": "andy_core_settings_manage",
+      "landing": "admin.php?page=andy-business",
+      "module": "business_os"
+    },
+    {
+      "slug": "andy-core-marketing",
+      "label": "Marketing OS",
+      "owner": "andy-commerce",
+      "capability": "manage_woocommerce",
+      "landing": "admin.php?page=andy-commerce&tab=marketing-promotions",
+      "module": "andy-commerce"
+    },
+    {
+      "slug": "andy-core-commerce",
+      "label": "Commerce OS",
+      "owner": "andy-commerce",
+      "capability": "manage_woocommerce",
+      "landing": "admin.php?page=andy-commerce&tab=overview",
+      "module": "andy-commerce"
+    },
+    {
+      "slug": "andy-core-system",
+      "label": "System & Connectors",
+      "owner": "andy-core",
+      "capability": "andy_core_settings_manage",
+      "landing": "admin.php?page=yby-core&tab=modules",
+      "module": "core"
+    }
+  ],
+  "exceptions": {
+    "third_party": [
+      "WooCommerce",
+      "Rank Math SEO",
+      "AffiliateWP"
+    ],
+    "native_editors": [
+      "WordPress pages/posts",
+      "landing_page CPT",
+      "docs taxonomy"
+    ],
+    "requires_explicit_owner_approval": true
+  },
+  "release_gates": [
+    "manifest-current",
+    "wp-native-l1-l2",
+    "server-l3",
+    "no-duplicate-tabs",
+    "existing-business-handler",
+    "capability-negative-tests",
+    "desktop",
+    "iphone14",
+    "backup-rollback",
+    "owner-uat"
+  ]
+}

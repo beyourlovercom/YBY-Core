@@ -2,12 +2,14 @@
 /** Module manager view. @package YBY_Core */
 ?>
 <div class="wrap yby-modules-page">
+<?php if ( ! class_exists( 'YBY_Andy_Admin_Shell_V22' ) || ! YBY_Andy_Admin_Shell_V22::suppress_legacy_tabs( 'yby-core' ) ) : ?>
 <h1><?php esc_html_e( 'Andy Core', 'yby-core' ); ?></h1>
 <h2 class="nav-tab-wrapper">
 <?php foreach ( YBY_Admin::settings_tabs() as $key => $label ) : ?>
 <a class="nav-tab <?php echo 'modules' === $key ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => YBY_Helpers::admin_page_slug(), 'tab' => $key ), admin_url( 'admin.php' ) ) ); ?>"><?php echo esc_html( $label ); ?></a>
 <?php endforeach; ?>
 </h2>
+<?php endif; ?>
 <div class="yby-modules-hero"><div><span class="yby-modules-kicker">Andy Core Modular Runtime V1</span><h2>模块管理</h2><p>集中管理当前网站启用的 Andy Core 能力。关闭模块不会删除已有内容、配置或数据库数据。</p></div><span class="yby-status-badge yby-status-ready">Registry v<?php echo esc_html( YBY_Module_Registry::VERSION ); ?></span></div>
 <?php if ( $notice ) : ?><div class="notice notice-success is-dismissible"><p><?php echo esc_html( $notice ); ?></p></div><?php endif; ?>
 <form method="post">

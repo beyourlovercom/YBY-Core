@@ -10,12 +10,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 <div class="wrap">
-	<h1><?php echo esc_html__( 'Andy Core', 'yby-core' ); ?></h1>
+	<?php if ( ! class_exists( 'YBY_Andy_Admin_Shell_V22' ) || ! YBY_Andy_Admin_Shell_V22::suppress_legacy_tabs( 'yby-core' ) ) : ?>
+<h1><?php echo esc_html__( 'Andy Core', 'yby-core' ); ?></h1>
 	<h2 class="nav-tab-wrapper">
 		<?php foreach ( YBY_Admin::settings_tabs() as $tab_key => $tab_label ) : ?>
 			<a class="nav-tab <?php echo ( $tab ?? 'general' ) === $tab_key ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => YBY_Helpers::admin_page_slug(), 'tab' => $tab_key ), admin_url( 'admin.php' ) ) ); ?>"><?php echo esc_html( $tab_label ); ?></a>
 		<?php endforeach; ?>
 	</h2>
+<?php endif; ?>
 
 	<?php if ( ! empty( $notice ) ) : ?>
 		<div class="notice notice-<?php echo esc_attr( $notice_type ); ?> is-dismissible">

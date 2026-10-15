@@ -143,6 +143,19 @@ class YBY_Business_OS_Admin {
 	 * @return void
 	 */
 	public static function render_page() {
+		// Only Andy-owned admin screens use the shell. Original controller
+		// remains authoritative for capabilities, legacy aliases and 403s.
+		if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
+			$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : self::ROOT_SLUG;
+			$pages = self::pages();
+			YBY_Andy_Admin_Shell_V22::render( $page, $pages[ $page ] ?? 'Business OS',
+				static function () { self::render_page_original(); } );
+			return;
+		}
+		self::render_page_original();
+	}
+
+	private static function render_page_original() {
 		if ( ! self::can_access() ) {
 			wp_die( esc_html__( '你没有权限查看 Business OS。', 'yby-core' ), '', array( 'response' => 403 ) );
 			return;
@@ -156,7 +169,10 @@ class YBY_Business_OS_Admin {
 		}
 		echo '<div class="wrap andy-business-os">';
 		echo '<p class="andy-business-os__eyebrow">BEYOURLOVER · 商业合作管理</p>';
-		echo '<h1>' . esc_html( $pages[ $page ] ?? $legacy[ $page ] ) . '</h1>';
+		if ( ! class_exists( 'YBY_Andy_Admin_Shell_V22' ) ||
+		     ! YBY_Andy_Admin_Shell_V22::suppress_legacy_tabs( $page ) ) {
+			echo '<h1>' . esc_html( $pages[ $page ] ?? $legacy[ $page ] ) . '</h1>';
+		}
 		echo '<p class="description">' . esc_html__( 'Andy Content 仅管理招商页面和来源；B2B / B2C 询盘与客户由 ERP 统一管理。', 'yby-core' ) . '</p>';
 
 

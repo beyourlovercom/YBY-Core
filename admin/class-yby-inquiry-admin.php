@@ -17,7 +17,7 @@ class YBY_Inquiry_Admin {
 	}
 
 	public function add_admin_menu() {
-		$this->page_hook = add_submenu_page( YBY_Project_Studio::menu_slug(), __( 'Inquiry', 'yby-core' ), __( 'Inquiry', 'yby-core' ), 'andy_core_leads_view', self::page_slug(), array( $this, 'render_page' ) );
+		$this->page_hook = add_submenu_page( YBY_Project_Studio::menu_slug(), __( 'Inquiry OS', 'yby-core' ), __( 'Inquiry OS', 'yby-core' ), 'andy_core_leads_view', self::page_slug(), array( $this, 'render_page' ) );
 		self::$registered_page_hook = $this->page_hook;
 		global $submenu;
 		$parent_slug = YBY_Project_Studio::menu_slug();
@@ -63,9 +63,43 @@ class YBY_Inquiry_Admin {
 	}
 
 	public function render_page() {
+		if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
+			YBY_Andy_Admin_Shell_V22::render( self::page_slug(), 'Inquiry OS · 询盘中心',
+				function () { $this->render_legacy_page(); } );
+			return;
+		}
+		$this->render_legacy_page();
+	}
+
+	/** Original list, lead details and POST handlers are unchanged. */
+	protected function render_legacy_page() {
 		if ( ! YBY_Security::can_view_leads() ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'yby-core' ) );
 		}
+		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'leads';
+		if ( 'leads' !== $tab ) {
+			if ( 'stats' === $tab ) {
+				YBY_Three_OS_Admin::render_tabs( self::page_slug(), YBY_Three_OS_Admin::inquiry_tabs(), $tab, 'Inquiry OS · 询盘中心' );
+				YBY_Three_OS_Readonly::render_inquiry_stats();
+				echo '</div>';
+				return;
+			}
+			if ( in_array( $tab, array( 'settings', 'notification' ), true ) ) {
+				if ( ! current_user_can( 'andy_core_settings_manage' ) ) {
+					wp_die( esc_html__( 'Permission denied.', 'yby-core' ) );
+				}
+				YBY_Three_OS_Admin::render_tabs( self::page_slug(), YBY_Three_OS_Admin::inquiry_tabs(), $tab, 'Inquiry OS · 询盘中心' );
+				( new YBY_Admin( 'yby-core', YBY_CORE_VERSION ) )->render_inquiry_os_settings(
+					'settings' === $tab ? 'inquiry' : 'inquiry-notification'
+				);
+				echo '</div>';
+				return;
+			}
+			YBY_Three_OS_Admin::render_inquiry_component( $tab );
+			return;
+		}
+		YBY_Three_OS_Admin::render_tabs( self::page_slug(), YBY_Three_OS_Admin::inquiry_tabs(), 'leads', 'Inquiry OS · 询盘中心' );
+		echo '</div>';
 		$lead_id = absint( $_GET['lead_id'] ?? 0 );
 		if ( $lead_id ) {
 			if ( ! YBY_Security::can_view_lead( $lead_id ) ) { wp_die( esc_html__( 'You do not have permission to access this inquiry.', 'yby-core' ) ); }
