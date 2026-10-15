@@ -33,9 +33,10 @@ if(substr_count($candidate,$route_start)!==1 || substr_count($candidate,$method_
 }
 $route=substr($candidate,strpos($candidate,$route_start),strpos($candidate,$route_needle)-strpos($candidate,$route_start));
 $method_region=substr($candidate,strpos($candidate,$method_start),strpos($candidate,$method_needle)-strpos($candidate,$method_start));
-$last_brace=strrpos($method_region,"\n\t}\n");
-if ($last_brace===false) { WP_CLI::error('Method end marker unavailable'); }
-$method=substr($method_region,0,$last_brace+strlen("\n\t}\n"));
+if (!preg_match('~\\tprotected function render_wholesale_country_v2\\(\\) \\{.*?\\R\\t\\}\\R~s',$candidate,$method_match)) {
+    WP_CLI::error('Method boundary unavailable; refusal to modify Dev controller');
+}
+$method=$method_match[0];
 $patched=str_replace($route_needle,$route.$route_needle,$existing);
 $patched=str_replace($method_needle,$method.$method_needle,$patched);
 $original_line='\t<a class="page-title-action"';
