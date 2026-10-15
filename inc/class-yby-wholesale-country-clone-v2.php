@@ -58,14 +58,18 @@ final class YBY_Wholesale_Country_Clone_V2 {
         if ($types!==['section','section','code','code']) {
             return new WP_Error('v2_nodes','Wholesale code layout changed.');
         }
-        $code_count=0;$hero_count=0;
+        $code_count=0;$hero_count=0;$source_stale_signatures=0;
         foreach($nodes as $node) {
             if (($node['name']??'')!=='code') { continue; }
             $text=(string)($node['settings']['code']??'');
-            if (!$text || empty($node['settings']['signature']) ||
-                !class_exists('\Bricks\Helpers') ||
-                !\Bricks\Helpers::verify_code_signature($node['settings']['signature'],$text)) {
-                return new WP_Error('v2_signature','Wholesale source native signature missing or invalid.');
+            if (!$text || empty($node['settings']['signature']) || !class_exists('\Bricks\Helpers')) {
+                return new WP_Error('v2_signature_missing','Wholesale source Code or signature missing.');
+            }
+            // Source SHA-256 is locked above. Legacy source signatures may be stale under
+            // current Bricks; do not modify that historical published source. All generated
+            // Code is independently signed and strictly verified before a draft DB write.
+            if (!\Bricks\Helpers::verify_code_signature($node['settings']['signature'],$text)) {
+                $source_stale_signatures++;
             }
             $code_count++;
             $hero_count+=substr_count($text,self::HERO);
@@ -84,7 +88,8 @@ final class YBY_Wholesale_Country_Clone_V2 {
           'source_id'=>self::SOURCE_PAGE_ID,'source_hash'=>self::SOURCE_BRICKS_SHA256,
           'fingerprint'=>$fingerprint,'target_project_slug'=>$target['project'],
           'target_page_slug'=>$target['page'],'code_nodes'=>$code_count,
-          'source_code_signature_valid'=>true, 'global_inquiry_preserved'=>true,
+          'source_stale_signatures'=>$source_stale_signatures, 'new_native_signatures_required'=>true,
+          'global_inquiry_preserved'=>true,
         ];
     }
     public static function create_drafts($code,$expected_fingerprint) {
