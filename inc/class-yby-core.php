@@ -215,6 +215,8 @@ class YBY_Core {
 		$this->loader->add_action( 'admin_menu', new YBY_Andy_OS_Navigation(), 'consolidate', 1100 );
 		$this->loader->add_action( 'admin_init', new YBY_Andy_OS_Navigation(), 'redirect_entry', 9 );
 		$this->loader->add_action( 'admin_enqueue_scripts', new YBY_Andy_OS_Navigation(), 'enqueue_tertiary' );
+		$this->loader->add_filter( 'parent_file', new YBY_Andy_OS_Navigation(), 'filter_parent_file', 1100 );
+		$this->loader->add_filter( 'submenu_file', new YBY_Andy_OS_Navigation(), 'filter_submenu_file', 1100 );
 		$this->loader->add_action( 'admin_enqueue_scripts', $brand_os, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_init', $admin, 'redirect_legacy_inquiry_dock' );
