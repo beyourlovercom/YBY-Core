@@ -19,6 +19,12 @@ final class YBY_Andy_OS_Navigation {
 			'andy_core_newsletter_view', 'andy_core_mail_view', 'manage_woocommerce' ) as $cap ) {
 			if ( current_user_can( $cap ) ) { return $cap; }
 		}
+		if ( YBY_Module_Registry::is_enabled( 'landing_pages' ) && current_user_can( 'edit_pages' ) ) {
+			return 'edit_pages';
+		}
+		if ( YBY_Module_Registry::is_enabled( 'docs_os' ) && current_user_can( 'edit_posts' ) ) {
+			return 'edit_posts';
+		}
 		return 'manage_options'; // No capability is granted by returning a string.
 	}
 
@@ -37,8 +43,18 @@ final class YBY_Andy_OS_Navigation {
 		if ( YBY_Module_Registry::is_enabled( 'email_os' ) ) {
 			$items['andy-core-email'] = array( 'Email OS', 'andy_core_mail_view', 'native' );
 		}
-		if ( current_user_can( 'andy_core_settings_manage' ) ) {
-			$items['andy-core-content'] = array( 'Content OS', 'andy_core_settings_manage', 'content' );
+		$content_cap = '';
+		foreach ( array( 'andy_core_settings_manage', 'edit_pages', 'edit_posts' ) as $cap ) {
+			if ( ! current_user_can( $cap ) ) { continue; }
+			if ( 'andy_core_settings_manage' === $cap ||
+			     ( 'edit_pages' === $cap && YBY_Module_Registry::is_enabled( 'landing_pages' ) ) ||
+			     ( 'edit_posts' === $cap && YBY_Module_Registry::is_enabled( 'docs_os' ) ) ) {
+				$content_cap = $cap;
+				break;
+			}
+		}
+		if ( $content_cap ) {
+			$items['andy-core-content'] = array( 'Content OS', $content_cap, 'content' );
 		}
 		if ( class_exists( 'Andy_Commerce_Admin' ) ) {
 			$items['andy-core-marketing'] = array( 'Marketing OS', 'manage_woocommerce', 'marketing' );
@@ -54,8 +70,17 @@ final class YBY_Andy_OS_Navigation {
 	public static function destination( $slug ) {
 		switch ( $slug ) {
 			case 'andy-core-content':
-				return YBY_Module_Registry::is_enabled( 'business_os' )
-					? 'admin.php?page=andy-business' : 'admin.php?page=yby-content';
+				if ( current_user_can( 'andy_core_settings_manage' ) ) {
+					return YBY_Module_Registry::is_enabled( 'business_os' )
+						? 'admin.php?page=andy-business' : 'admin.php?page=yby-content';
+				}
+				if ( YBY_Module_Registry::is_enabled( 'landing_pages' ) && current_user_can( 'edit_pages' ) ) {
+					return 'edit.php?post_type=landing_page';
+				}
+				if ( YBY_Module_Registry::is_enabled( 'docs_os' ) && current_user_can( 'edit_posts' ) ) {
+					return 'admin.php?page=yby-docs-all';
+				}
+				return '';
 			case 'andy-core-marketing': return 'admin.php?page=andy-commerce&tab=marketing-promotions';
 			case 'andy-core-commerce': return 'admin.php?page=andy-commerce';
 			case 'andy-core-system': return 'admin.php?page=yby-core&tab=modules';
