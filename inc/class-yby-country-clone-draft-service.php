@@ -67,11 +67,23 @@ class YBY_Country_Clone_Draft_Service {
 			! empty( $page_settings['customScriptsBodyFooter'] ) ) {
 			return new WP_Error( 'clone_bricks_unreviewed', 'Bricks executable scripts or unsupported content require approved transformation and native signing.' );
 		}
+		if ( ! class_exists( '\\Bricks\\Helpers' ) ||
+			! method_exists( '\\Bricks\\Helpers', 'generate_new_element_ids' ) ) {
+			return new WP_Error( 'clone_bricks_helper_unavailable', 'Bricks native element-ID generator is required.' );
+		}
+		$new_elements = \\Bricks\\Helpers::generate_new_element_ids( $elements );
+		if ( ! is_array( $new_elements ) || count( $new_elements ) !== count( $elements ) ||
+			serialize( $elements ) === serialize( $new_elements ) ) {
+			return new WP_Error( 'clone_bricks_ids_unmodified', 'Bricks elements must receive independent new IDs.' );
+		}
 		$css = array();
 		foreach ( array( 'customCss', 'customCss:mobile_portrait' ) as $key ) {
 			if ( isset( $page_settings[ $key ] ) && is_string( $page_settings[ $key ] ) ) {
 				if ( false !== stripos( $page_settings[ $key ], (string) $audit['source_country'] ) ) {
 					return new WP_Error( 'clone_css_country', 'Source Country still appears in Bricks CSS.' );
+				}
+				if ( preg_match( '~[.#]brxe-[a-z0-9_-]+~i', $page_settings[ $key ] ) ) {
+					return new WP_Error( 'clone_bricks_css_ids', 'Custom Bricks CSS uses element IDs that require verified remapping.' );
 				}
 				$css[ $key ] = $page_settings[ $key ];
 			}
@@ -127,7 +139,7 @@ class YBY_Country_Clone_Draft_Service {
 				return new WP_Error( 'clone_page_create_failed', 'Unable to create independent Germany Landing draft.' );
 			}
 			$new_page_id = absint( $new_page_id );
-			if ( ! update_post_meta( $new_page_id, '_bricks_page_content_2', $elements ) ||
+			if ( ! update_post_meta( $new_page_id, '_bricks_page_content_2', wp_slash( $new_elements ) ) ||
 				( ! empty( $css ) && ! update_post_meta( $new_page_id, '_bricks_page_settings', $css ) ) ) {
 				return new WP_Error( 'clone_bricks_copy_failed', 'Bricks draft structure could not be copied.' );
 			}
