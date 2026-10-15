@@ -12,7 +12,10 @@ if (strtolower((string)wp_parse_url(home_url('/'),PHP_URL_HOST)) !== 'dev.ybyirr
     wp_get_environment_type() !== 'development') {
     WP_CLI::error('Wholesale Dev driver refused outside isolated Dev');
 }
-require_once dirname(__DIR__).'/inc/class-yby-wholesale-country-clone-v2.php';
+$service = dirname(__DIR__).'/inc/class-yby-wholesale-country-clone-v2.php';
+if (!is_file($service)) { $service = __DIR__.'/wholesale-v2-class.php'; }
+if (!is_file($service)) { WP_CLI::error('V2 service not found'); }
+require_once $service;
 $plan=YBY_Wholesale_Country_Clone_V2::preflight($code);
 if (is_wp_error($plan)) { WP_CLI::error('PREFLIGHT '.$plan->get_error_code().' '.$plan->get_error_message()); }
 if ($operation==='plan') {
