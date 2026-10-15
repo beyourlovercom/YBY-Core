@@ -13,6 +13,33 @@ class YBY_Updater {
 	const ROLLBACK_NONCE = 'yby_core_rollback';
 	const PENDING_KEY    = 'yby_core_updater_pending';
 
+
+	/* Fail-closed rollout policy: sites opt in individually; no upgrade by hostname inference. */
+	const CHANNEL_OPTION = 'yby_core_update_channel';
+	const AUTO_OPTION = 'yby_core_automatic_updates';
+	const CHANNEL_NONCE = 'yby_core_update_channel_save';
+
+	public function update_channel() {
+		$channel = get_option( self::CHANNEL_OPTION, 'disabled' );
+		return in_array( $channel, array( 'canary', 'stable', 'disabled' ), true ) ? $channel : 'disabled';
+	}
+
+	private function allowed_release() {
+		$channel = $this->update_channel();
+		if ( 'disabled' === $channel ) { return false; }
+		/* Distribution is currently stable only; canary never falls through to stable. */
+		if ( 'canary' === $channel ) { return false; }
+		/* Host allowlist is mandatory even when an admin selected Stable. */
+		$site = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+		return in_array( $site, array( 'ybybottle.com', 'ybyirrigation.com' ), true );
+	}
+
+	public function automatic_updates( $update, $item ) {
+		if ( ! is_object( $item ) || ( $item->plugin ?? '' ) !== plugin_basename( $this->plugin_file ) ) {
+			return $update;
+		}
+		return $this->allowed_release() && (bool) get_option( self::AUTO_OPTION, false );
+	}
 	private $plugin_file;
 	private $version;
 	private $client;
@@ -25,6 +52,7 @@ class YBY_Updater {
 
 	public function register_hooks( $loader ) {
 		$loader->add_filter( 'pre_set_site_transient_update_plugins', $this, 'filter_updates', 10, 1 );
+		$loader->add_filter( 'auto_update_plugin', $this, 'automatic_updates', 10, 2 );
 		$loader->add_filter( 'plugins_api', $this, 'filter_plugin_information', 10, 3 );
 		$loader->add_filter( 'upgrader_pre_download', $this, 'secure_download', 10, 4 );
 		$loader->add_filter( 'upgrader_pre_install', $this, 'prepare_backup', 10, 2 );
@@ -45,6 +73,7 @@ class YBY_Updater {
 		if ( ! is_object( $transient ) ) {
 			return $transient;
 		}
+		if ( ! $this->allowed_release() ) { return $transient; }
 		$release = $this->validated_release( false );
 		if ( is_wp_error( $release ) || ! YBY_Update_Verifier::is_newer( $release['version'], $this->version ) ) {
 			return $transient;
@@ -69,6 +98,7 @@ class YBY_Updater {
 		if ( 'plugin_information' !== $action || ! is_object( $args ) || 'yby-core' !== (string) ( $args->slug ?? '' ) ) {
 			return $result;
 		}
+		if ( ! $this->allowed_release() ) { return $result; }
 		$release = $this->validated_release( false );
 		if ( is_wp_error( $release ) ) {
 			return $result;
@@ -92,6 +122,7 @@ class YBY_Updater {
 			return $reply;
 		}
 
+		if ( ! $this->allowed_release() ) { return new WP_Error( 'yby_update_site_denied', 'This site is excluded from Andy Core stable updates.' ); }
 		$release = $this->validated_release( true );
 		if ( is_wp_error( $release ) ) {
 			return $release;
