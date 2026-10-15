@@ -145,6 +145,13 @@ must( is_wp_error( $r ) && 'clone_bricks_unreviewed' === $r->get_error_code(), '
 unset( $GLOBALS['test_meta'][292]['_bricks_page_settings']['customScriptsBodyFooter'] );
 
 reset_test_state();
+$GLOBALS['test_meta'][292]['_bricks_page_settings']['customCss'] = '#brxe-1 { color: red; }';
+$r = create_test();
+must( is_wp_error( $r ) && 'clone_bricks_css_ids' === $r->get_error_code(), 'element-ID CSS blocked' );
+must( empty( $GLOBALS['test_writes'] ), 'CSS guard before any insert' );
+$GLOBALS['test_meta'][292]['_bricks_page_settings']['customCss'] = '.hero {display:block}';
+
+reset_test_state();
 $GLOBALS['fail_on_insert'] = 2;
 $r = create_test();
 must( is_wp_error( $r ) && 'clone_page_create_failed' === $r->get_error_code(), 'page creation injected failure' );
