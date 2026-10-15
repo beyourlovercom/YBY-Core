@@ -281,3 +281,4 @@ final class YBY_Mail_V2_P6_Dev_Preview {
 }
 
 require_once __DIR__ . '/class-yby-mail-v2-p8-readonly.php';
+require_once __DIR__ . '/class-yby-mail-v2-p8-setup.php';
