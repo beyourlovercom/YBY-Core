@@ -63,8 +63,8 @@ final class YBY_Wholesale_Country_Clone_V2 {
             if (($node['name']??'')!=='code') { continue; }
             $text=(string)($node['settings']['code']??'');
             if (!$text || empty($node['settings']['signature']) ||
-                !class_exists('\\Bricks\\Helpers') ||
-                !\\Bricks\\Helpers::verify_code_signature($node['settings']['signature'],$text)) {
+                !class_exists('\Bricks\Helpers') ||
+                !\Bricks\Helpers::verify_code_signature($node['settings']['signature'],$text)) {
                 return new WP_Error('v2_signature','Wholesale source native signature missing or invalid.');
             }
             $code_count++;
@@ -146,21 +146,21 @@ final class YBY_Wholesale_Country_Clone_V2 {
             }
         }
         unset($node);
-        if (!class_exists('\\Bricks\\Helpers') ||
-            !method_exists('\\Bricks\\Helpers','generate_new_element_ids') ||
-            !class_exists('\\Bricks\\Admin') ||
-            !method_exists('\\Bricks\\Admin','process_elements_for_signature') ||
-            !class_exists('\\Bricks\\Capabilities') ||
+        if (!class_exists('\Bricks\Helpers') ||
+            !method_exists('\Bricks\Helpers','generate_new_element_ids') ||
+            !class_exists('\Bricks\Admin') ||
+            !method_exists('\Bricks\Admin','process_elements_for_signature') ||
+            !class_exists('\Bricks\Capabilities') ||
             (defined('BRICKS_LOCK_CODE_SIGNATURES') && BRICKS_LOCK_CODE_SIGNATURES) ||
-            !\\Bricks\\Helpers::code_execution_enabled() ||
-            !\\Bricks\\Capabilities::current_user_can_execute_code()) {
+            !\Bricks\Helpers::code_execution_enabled() ||
+            !\Bricks\Capabilities::current_user_can_execute_code()) {
             return new WP_Error('v2_signer_unavailable','Native Bricks signer unavailable or user denied.');
         }
-        $fresh=\\Bricks\\Helpers::generate_new_element_ids($nodes);
+        $fresh=\Bricks\Helpers::generate_new_element_ids($nodes);
         if (!is_array($fresh) || count($fresh)!==count($nodes)) {
             return new WP_Error('v2_ids','Independent Bricks element IDs not generated.');
         }
-        $signed=\\Bricks\\Admin::process_elements_for_signature($fresh,false,false);
+        $signed=\Bricks\Admin::process_elements_for_signature($fresh,false,false);
         if (!is_array($signed) || count($signed)!==count($fresh)) {
             return new WP_Error('v2_sign_failed','Native signature creation failed.');
         }
@@ -169,7 +169,7 @@ final class YBY_Wholesale_Country_Clone_V2 {
             if (($n['name']??'')!=='code') { continue; }
             $s=$n['settings']??[];
             if (empty($s['signature']) ||
-                !\\Bricks\\Helpers::verify_code_signature($s['signature'],(string)($s['code']??'')) ||
+                !\Bricks\Helpers::verify_code_signature($s['signature'],(string)($s['code']??'')) ||
                 (int)($s['user_id']??0)!==get_current_user_id()) {
                 return new WP_Error('v2_sign_invalid','New Code signature verification failed.');
             }
