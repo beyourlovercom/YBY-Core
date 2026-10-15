@@ -144,4 +144,35 @@ final class YBY_Mail_V2_P9_Lab_Writer {
             return array('status'=>$q->rowCount()===1?'claimed':'not_claimed');
         } catch(Throwable $ignored){return array('status'=>'blocked','reason'=>'sql');}
     }
+    /**
+     * Persist a lost/expired synthetic lease as uncertain/HOLD, never retry.
+     * Requires the exact lease hash, expected CAS version and elapsed expiry.
+     * No transition out of uncertain is provided by this class.
+     */
+    public function quarantine_expired($opaque_id,$expected_version,$lease_hash,$now) {
+        if(!is_string($opaque_id) || !preg_match('/\A[a-f0-9]{64}\z/D',$opaque_id) ||
+            !is_string($lease_hash)||!preg_match('/\A[a-f0-9]{64}\z/D',$lease_hash) ||
+            !is_int($expected_version)||$expected_version<1 ||
+            !is_int($now)||$now<0){
+            return array('status'=>'blocked','reason'=>'recovery_contract');
+        }
+        try {
+            $q=$this->db->prepare(
+                "UPDATE ".self::TABLE."
+                SET state='uncertain',state_version=state_version+1,
+                    diagnostic_code='acceptance_unknown',
+                    lease_token_hash=NULL,lease_expires_at=NULL,
+                    updated_at=UTC_TIMESTAMP(6)
+                WHERE opaque_id=? AND state_version=? AND lease_token_hash=?
+                    AND lease_expires_at<=? AND state IN ('leased','sending')
+                    AND template_key='synthetic_only'"
+            );
+            $q->execute(array($opaque_id,$expected_version,$lease_hash,$now));
+            return array('status'=>$q->rowCount()===1?'quarantined':'not_quarantined',
+                'retry_authorized'=>false,'mail_sent'=>false);
+        }catch(Throwable $ignored){
+            return array('status'=>'blocked','reason'=>'sql','retry_authorized'=>false);
+        }
+    }
+
 }
