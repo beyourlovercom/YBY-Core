@@ -77,6 +77,11 @@ class YBY_Country_Clone_Draft_Service {
 			}
 		}
 
+		$source_thank_you = get_post_meta( $source_page_id, 'yby_thank_you_url', true );
+		if ( ! is_string( $source_thank_you ) || ! preg_match( '#^/lp/[a-z0-9/-]+/$#i', $source_thank_you ) ) {
+			return new WP_Error( 'clone_thank_you_unverified', 'Thank You path must be verified and stay relative on Local/Dev.' );
+		}
+
 		$clone_key = hash( 'sha256', 'country-clone-v1|DE|' . $source_project_id . '|' . $source_page_id );
 		$existing = get_posts( array(
 			'post_type' => 'yby_project', 'post_status' => 'draft',
@@ -86,7 +91,8 @@ class YBY_Country_Clone_Draft_Service {
 			$id = (int) $existing[0]->ID;
 			$page_id = absint( get_post_meta( $id, 'yby_clone_v1_page_id', true ) );
 			$page = $page_id ? get_post( $page_id ) : null;
-			if ( $page && 'landing_page' === $page->post_type && 'draft' === $page->post_status ) {
+			if ( $page && 'landing_page' === $page->post_type && 'draft' === $page->post_status &&
+				$id === absint( get_post_meta( $page_id, 'yby_clone_v1_project_id', true ) ) ) {
 				return array( 'project_id' => $id, 'page_id' => $page_id, 'reused' => true, 'status' => 'draft' );
 			}
 			return new WP_Error( 'clone_partial_existing', 'An incomplete draft exists; manual review required. Do not duplicate.' );
@@ -142,11 +148,8 @@ class YBY_Country_Clone_Draft_Service {
 				'yby_return_page_url' => '/lp/' . self::PAGE_SLUG . '/',
 				'yby_clone_v1_project_id' => $new_project_id,
 			);
-			$source_thank_you = get_post_meta( $source_page_id, 'yby_thank_you_url', true );
-			if ( is_string( $source_thank_you ) ) {
-				$page_meta['yby_thank_you_url'] = $source_thank_you;
-				$project_meta['yby_thank_you_url'] = $source_thank_you;
-			}
+			$page_meta['yby_thank_you_url'] = $source_thank_you;
+			$project_meta['yby_thank_you_url'] = $source_thank_you;
 			foreach ( $project_meta as $key => $value ) {
 				if ( ! update_post_meta( $new_project_id, $key, $value ) ) {
 					return new WP_Error( 'clone_project_meta_failed', 'Project draft metadata failed.' );
@@ -160,6 +163,8 @@ class YBY_Country_Clone_Draft_Service {
 			$success = true;
 			return array( 'project_id' => $new_project_id, 'page_id' => $new_page_id,
 				'reused' => false, 'status' => 'draft' );
+		} catch ( Throwable $error ) {
+			return new WP_Error( 'clone_transaction_exception', 'Draft transaction failed and compensation was attempted. Check logs before retry.' );
 		} finally {
 			// Compensation only removes IDs created by THIS invocation; source stays intact.
 			if ( ! $success ) {
