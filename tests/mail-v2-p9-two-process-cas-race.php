@@ -23,8 +23,7 @@ $id=hash('sha256','p9-lab-opaque-1');
 $child=($argv[1]??'')==='--claim-child';
 if($child){
     $slot=$argv[2]??'';
-    if(!in_array($slot,array('1','2'),true)||!is_dir($dir)||!is_file($dir.'/go')&&
-       !is_file($dir.'/ready-1')){exit(84);}
+    if(!in_array($slot,array('1','2'),true)||!is_dir($dir)){exit(84);}
     $ready=$dir.'/ready-'.$slot;
     if(file_exists($ready)||file_exists($dir.'/result-'.$slot)){exit(85);}
     file_put_contents($ready,'ready',LOCK_EX);
