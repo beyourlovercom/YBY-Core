@@ -20,6 +20,8 @@ foreach (array(
   array('www.beyourlover.com','canary',true,false),
   array('www.beyourlover.com','disabled',true,false),
   array('dev.ybybottle.com','stable',true,false),
+  array('dev.ybybottle.com','canary',true,true),
+  array('dev.beyourlover.com','canary',false,true),
   array('dev.beyourlover.com','canary',true,false),
   array('ybybottle.com','disabled',true,false),
   array('ybybottle.com','canary',true,false),
