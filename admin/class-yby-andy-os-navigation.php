@@ -300,6 +300,53 @@ final class YBY_Andy_OS_Navigation {
 			array( 'items' => $items, 'page' => $page ) );
 	}
 
+	/** Keep the native WordPress L2 group open for old L3 deep links. */
+	public static function active_second_level() {
+		$page = isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
+			? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( 'andy-core-leads' === $page ) { return 'andy-core-leads'; }
+		if ( 'andy-core-newsletter' === $page ) { return 'andy-core-newsletter'; }
+		if ( 'andy-core-email' === $page ) { return 'andy-core-email'; }
+		if ( 'andy-commerce' === $page ) {
+			$tab = isset( $_GET['tab'] ) && is_scalar( $_GET['tab'] )
+				? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
+			return 'marketing-promotions' === $tab ? 'andy-core-marketing' : 'andy-core-commerce';
+		}
+		if ( in_array( $page, array( 'andy-business','andy-business-programs',
+			'andy-business-applications','andy-business-settings','andy-business-pages',
+			'andy-business-partners','andy-business-catalog','andy-business-fulfillment',
+			'yby-content','yby-project-studio','yby-docs-os','yby-docs-all',
+			'yby-docs-directory','yby-docs-editor','yby-docs-faq',
+			'yby-docs-tutorial','yby-docs-settings' ), true ) ) {
+			return 'andy-core-content';
+		}
+		if ( in_array( $page, array( 'yby-core','yby-brand-os','yby-social-login' ), true ) ) {
+			return 'andy-core-system';
+		}
+		$post_type = isset( $_GET['post_type'] ) && is_scalar( $_GET['post_type'] )
+			? sanitize_key( wp_unslash( $_GET['post_type'] ) ) : '';
+		if ( ! $post_type && isset( $_GET['post'] ) ) {
+			$post_type = get_post_type( absint( $_GET['post'] ) );
+		}
+		if ( 'landing_page' === $post_type || 'yby_project' === $post_type ||
+		     'docs' === $post_type ) { return 'andy-core-content'; }
+		return '';
+	}
+
+	public static function filter_parent_file( $parent_file ) {
+		$group = self::active_second_level();
+		$sections = self::sections();
+		return $group && isset( $sections[ $group ] ) && current_user_can( $sections[ $group ][1] )
+			? self::ROOT : $parent_file;
+	}
+
+	public static function filter_submenu_file( $submenu_file ) {
+		$group = self::active_second_level();
+		$sections = self::sections();
+		return $group && isset( $sections[ $group ] ) && current_user_can( $sections[ $group ][1] )
+			? $group : $submenu_file;
+	}
+
 	/**
 	 * Existing controllers own every business screen. No fake dashboards.
 	 * Root is resolved by admin_init before the browser page is rendered.
