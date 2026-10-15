@@ -14,7 +14,7 @@ $docs_admin = str_replace( "\r\n", "\n", file_get_contents( $root . '/admin/clas
 $core_menu = str_replace( "\r\n", "\n", file_get_contents( $root . '/admin/class-yby-project-studio.php' ) );
 $registry = str_replace( "\r\n", "\n", file_get_contents( $root . '/inc/class-yby-module-registry.php' ) );
 
-$assert( false !== strpos( $core_menu, "__( 'Andy OS', 'yby-core' )" ), 'Andy OS unified top-level display label missing' );
+$assert( false !== strpos( $core_menu, "__( 'Andy Core', 'yby-core' )" ), 'Andy Core native unified top-level display label missing' );
 $assert( false !== strpos( $core_menu, "return 'yby-os';" ), 'Andy Core stable slug changed' );
 $assert( false !== strpos( $content_admin, "const MENU_SLUG = 'yby-content';" ), 'Andy Content stable slug missing' );
 $assert( false !== strpos( $content_admin, "__( 'Andy Content', 'yby-core' )" ), 'Andy Content top-level display label missing' );
