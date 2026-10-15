@@ -68,18 +68,22 @@ class P8FakeStmt {
  public function fetchAll($m=0){
   if($this->kind==='cols')return $this->parent->columns;
   if($this->kind==='indexes')return $this->parent->indexes;
+  if($this->kind==='table_names')return $this->parent->table_names;
   return array();
  }
 }
 class P8FakeDB {
  public $grants=array();public $table_count=0;
  public $columns=array();public $indexes=array();public $dbname='p8_test';
+ public $table_names=array('p8_yby_mail_v2_outbox');public $versioned=false;
  public function query($sql){
   if($sql==='SHOW GRANTS')return new P8FakeResult(array_map(static function($x){return array($x);},$this->grants));
   if($sql==='SELECT DATABASE()')return new P8FakeResult(array(array($this->dbname)));
+  if($sql==='SHOW CREATE TABLE p8_yby_mail_v2_outbox')return new P8FakeResult(array(array('p8_yby_mail_v2_outbox','CREATE TABLE p8_yby_mail_v2_outbox ENGINE=InnoDB'.($this->versioned?' WITH SYSTEM VERSIONING':''))));
   return new P8FakeResult(array());
  }
  public function prepare($sql){
+  if(strpos($sql,'SELECT TABLE_NAME FROM information_schema.TABLES')!==false)return new P8FakeStmt('table_names',$this);
   if(strpos($sql,'information_schema.TABLES')!==false)return new P8FakeStmt('table',$this);
   if(strpos($sql,'information_schema.COLUMNS')!==false)return new P8FakeStmt('cols',$this);
   if(strpos($sql,'information_schema.STATISTICS')!==false)return new P8FakeStmt('indexes',$this);
@@ -104,6 +108,16 @@ $d->grants=array("GRANT USAGE ON *.* TO 'p8user'@'localhost'",
 ck(invokePrivate('YBY_Mail_V2_P8_Readonly','safe_grants',array($d,'p8_test'))===true,'SELECT-only grant');
 $d->grants[]="GRANT UPDATE ON p8_test.* TO 'p8user'@'localhost'";
 ck(invokePrivate('YBY_Mail_V2_P8_Readonly','safe_grants',array($d,'p8_test'))===false,'extra UPDATE denied');
+$d->grants=array("GRANT USAGE ON *.* TO 'p8user'@'localhost'",
+  "GRANT SELECT, DELETE HISTORY, SHOW CREATE ROUTINE ON `p8_test`.* TO 'p8user'@'localhost'");
+ck(invokePrivate('YBY_Mail_V2_P8_Readonly','safe_grants',array($d,'p8_test'))===true,'Hostinger select-only UI exact bundle accepted only in isolated nonversioned DB');
+$d->table_names=array('p8_yby_mail_v2_outbox','another_table');
+ck(invokePrivate('YBY_Mail_V2_P8_Readonly','safe_grants',array($d,'p8_test'))===false,'bundle denied if another table exists');
+$d->table_names=array('p8_yby_mail_v2_outbox');$d->versioned=true;
+ck(invokePrivate('YBY_Mail_V2_P8_Readonly','safe_grants',array($d,'p8_test'))===false,'bundle denied for versioned table');
+$d->versioned=false;
+$d->grants[]="GRANT INSERT ON p8_test.* TO 'p8user'@'localhost'";
+ck(invokePrivate('YBY_Mail_V2_P8_Readonly','safe_grants',array($d,'p8_test'))===false,'bundle plus insert denied');
 $d->columns=array();
 foreach(YBY_Mail_V2_P8_Readonly::COLUMNS as $name=>$def){
  $nullable=strpos($def,' not null')===false;
