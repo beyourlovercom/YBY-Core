@@ -63,15 +63,39 @@ final class YBY_Mail_V2_P8_Readonly {
     private static function safe_grants($pdo,$schema) {
         $grants=$pdo->query('SHOW GRANTS')->fetchAll(PDO::FETCH_COLUMN);
         $has_select=false;
+        $hostinger_bundle=false;
+        $scope='[\x60]?'.preg_quote($schema,'/').'[\x60]?[.][*]';
         foreach ($grants as $grant) {
             $grant=(string)$grant;
-            // No secrets / grants logged; deny extra privileges and broad SELECT.
-            if (preg_match('/\b(?:INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|EXECUTE|TRIGGER|EVENT|FILE|SUPER|PROCESS|REFERENCES|RELOAD|GRANT OPTION|ALL PRIVILEGES)\b/i',$grant)) {return false;}
-            $prefix='/\bGRANT SELECT ON [\x60]?'.preg_quote($schema,'/').'[\x60]?[.][*] TO\b/i';
-            if (preg_match($prefix,$grant)) {$has_select=true;}
-            elseif (!preg_match('/\bGRANT USAGE ON [*][.][*] TO\b/i',$grant)) {return false;}
+            // Hostinger MariaDB 11 shared hosting can retain the *exact*
+            // bundled "DELETE HISTORY, SHOW CREATE ROUTINE" extras when its
+            // hPanel permission UI has ONLY "Select" checked. The former
+            // could mutate versioned tables, so this is an exceptional
+            // single-table, non-versioned **Dev laboratory only** gate.
+            if (preg_match('/\bGRANT SELECT, DELETE HISTORY, SHOW CREATE ROUTINE ON '.$scope.' TO\b/i',$grant)) {
+                $hostinger_bundle=true;
+                $has_select=true;
+            } elseif (preg_match('/\bGRANT SELECT ON '.$scope.' TO\b/i',$grant)) {
+                $has_select=true;
+            } elseif (!preg_match('/\bGRANT USAGE ON [*][.][*] TO\b/i',$grant)) {
+                return false; // no broad, DML, DDL, role or unexpected grant
+            }
         }
-        return $has_select;
+        if (!$has_select) {return false;}
+        if ($hostinger_bundle) {
+            if (!self::eligible_site()) {return false;}
+            // No other table can exist in this isolated synthetic UAT DB:
+            // DELETE HISTORY could affect historical data on a future
+            // system-versioned table even without normal DELETE privileges.
+            $q=$pdo->prepare('SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=? ORDER BY TABLE_NAME');
+            $q->execute(array($schema));
+            if ($q->fetchAll(PDO::FETCH_COLUMN)!==array(self::TABLE)) {return false;}
+            $create=$pdo->query('SHOW CREATE TABLE '.self::TABLE)->fetch(PDO::FETCH_NUM);
+            if (!is_array($create) || $create[0]!==self::TABLE ||
+                !is_string($create[1]) ||
+                stripos($create[1],'SYSTEM VERSIONING')!==false) {return false;}
+        }
+        return true;
     }
     private static function verify_schema($pdo,$schema) {
         $stmt=$pdo->prepare('SELECT ENGINE,TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA=? AND TABLE_NAME=?');
