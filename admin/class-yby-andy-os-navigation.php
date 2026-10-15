@@ -209,6 +209,97 @@ final class YBY_Andy_OS_Navigation {
 		return true;
 	}
 
+	/** Only allow existing, verified WordPress routes in right-side L3. */
+	public static function tertiary_items( $page ) {
+		$items = array();
+		$add = static function ( $title, $url, $cap, $module = '' ) use ( &$items ) {
+			if ( ! current_user_can( $cap ) ) { return; }
+			if ( $module && ! YBY_Module_Registry::is_enabled( $module ) ) { return; }
+			$items[] = array( 'title' => $title, 'url' => admin_url( $url ) );
+		};
+		if ( 'andy-core-leads' === $page ) {
+			foreach ( array( 'leads'=>'询盘列表', 'stats'=>'询盘统计' ) as $tab=>$label ) {
+				$add( $label, 'admin.php?page=andy-core-leads&tab='.$tab, 'andy_core_leads_view', 'inquiry_os' );
+			}
+			foreach ( array( 'floating_inquiry'=>'悬浮询盘', 'popup_inquiry'=>'询盘弹窗',
+				'shortcode_inquiry'=>'询盘短代码', 'settings'=>'询盘设置', 'notification'=>'询盘通知' ) as $tab=>$label ) {
+				if ( current_user_can( 'andy_core_leads_view' ) ) {
+					$add( $label, 'admin.php?page=andy-core-leads&tab='.$tab, 'andy_core_settings_manage', 'inquiry_os' );
+				}
+			}
+		} elseif ( 'andy-core-newsletter' === $page ) {
+			foreach ( array( 'subscribers'=>'订阅者列表', 'consent'=>'双重确认与退订',
+				'popup_subscribe'=>'订阅弹窗', 'shortcode_subscribe'=>'订阅短代码' ) as $tab=>$label ) {
+				if ( in_array( $tab, array( 'popup_subscribe','shortcode_subscribe' ), true ) &&
+				     ( ! current_user_can( 'manage_options' ) || ! YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) ) { continue; }
+				$add( $label, 'admin.php?page=andy-core-newsletter&tab='.$tab,
+					'andy_core_newsletter_view', 'newsletter_os' );
+			}
+		} elseif ( 'andy-core-email' === $page ) {
+			$tabs = array( 'overview'=>'邮件总览', 'email_templates'=>'邮件模板中心',
+				'transport'=>'发送通道', 'health'=>'系统健康' );
+			if ( class_exists( 'YBY_Mail_V2_P6_Dev_Preview' ) &&
+			     YBY_Mail_V2_P6_Dev_Preview::eligible_site() && current_user_can( 'manage_options' ) ) {
+				$tabs['preview_queue'] = '队列（Dev 预览）';
+				$tabs['preview_failures'] = '失败处理（Dev 预览）';
+			}
+			foreach ( $tabs as $tab=>$label ) {
+				if ( 'email_templates' === $tab && ! current_user_can( 'andy_core_settings_manage' ) ) { continue; }
+				$add( $label, 'admin.php?page=andy-core-email&tab='.$tab, 'andy_core_mail_view', 'email_os' );
+			}
+		} elseif ( in_array( $page, array( 'andy-business', 'andy-business-programs',
+			'andy-business-applications', 'andy-business-settings', 'yby-content',
+			'yby-project-studio', 'yby-docs-os', 'yby-docs-all', 'yby-docs-directory',
+			'yby-docs-faq', 'yby-docs-tutorial', 'yby-docs-settings' ), true ) ) {
+			foreach ( array( 'andy-business'=>'Business 招商页面', 'andy-business-programs'=>'合作项目展示',
+				'andy-business-applications'=>'申请表单与来源', 'andy-business-settings'=>'ERP 连接状态' ) as $slug=>$label ) {
+				$add( $label, 'admin.php?page='.$slug, 'andy_core_settings_manage', 'business_os' );
+			}
+			$add( 'Landing Pages', 'edit.php?post_type=landing_page', 'edit_pages', 'landing_pages' );
+			$add( 'Project Studio', 'admin.php?page=yby-project-studio', 'manage_options', 'project_studio' );
+			if ( YBY_Module_Registry::is_enabled( 'docs_os' ) ) {
+				foreach ( array( 'yby-docs-os'=>'Docs', 'yby-docs-all'=>'全部文档',
+					'yby-docs-directory'=>'文档分类', 'yby-docs-faq'=>'FAQ',
+					'yby-docs-tutorial'=>'Tutorial', 'yby-docs-settings'=>'Docs 设置' ) as $slug=>$label ) {
+					$add( $label, 'admin.php?page='.$slug, 'andy_core_settings_manage', 'docs_os' );
+				}
+			}
+		} elseif ( 'andy-commerce' === $page ) {
+			foreach ( array( 'overview'=>'Commerce 总览', 'order-export'=>'Order Export',
+				'checkout-shipping'=>'Checkout / Shipping', 'marketing-promotions'=>'Marketing / Promotions',
+				'settings'=>'Commerce 设置' ) as $tab=>$label ) {
+				$add( $label, 'admin.php?page=andy-commerce&tab='.$tab, 'manage_woocommerce' );
+			}
+		} elseif ( in_array( $page, array( 'yby-core', 'yby-brand-os', 'yby-social-login' ), true ) ) {
+			foreach ( array( 'general'=>'常规设置', 'modules'=>'模块管理', 'addons'=>'Addons',
+				'wp-api'=>'连接器', 'system-status'=>'系统状态', 'updates'=>'插件更新' ) as $tab=>$label ) {
+				if ( 'wp-api' === $tab && ! YBY_Module_Registry::is_enabled( 'connector' ) ) { continue; }
+				$add( $label, 'admin.php?page=yby-core&tab='.$tab, 'andy_core_settings_manage' );
+			}
+			$add( 'Brand', 'admin.php?page=yby-brand-os', 'manage_options' );
+			$add( 'Social Login', 'admin.php?page=yby-social-login', 'manage_options', 'social_login' );
+		}
+		return $items;
+	}
+
+	/** Scoped presentation only. Controllers remain independent. */
+	public static function enqueue_tertiary( $hook = '' ) {
+		unset( $hook );
+		if ( ! is_admin() ) { return; }
+		$page = isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
+			? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$items = self::tertiary_items( $page );
+		if ( ! $items ) { return; }
+		wp_enqueue_style( 'andy-core-native-l3-v2',
+			YBY_CORE_PLUGIN_URL . 'assets/css/andy-core-native-l3-v2.css',
+			array(), YBY_CORE_VERSION );
+		wp_enqueue_script( 'andy-core-native-l3-v2',
+			YBY_CORE_PLUGIN_URL . 'assets/js/andy-core-native-l3-v2.js',
+			array(), YBY_CORE_VERSION, true );
+		wp_localize_script( 'andy-core-native-l3-v2', 'AndyCoreNativeL3V2',
+			array( 'items' => $items, 'page' => $page ) );
+	}
+
 	/**
 	 * Existing controllers own every business screen. No fake dashboards.
 	 * Root is resolved by admin_init before the browser page is rendered.
