@@ -223,6 +223,19 @@ class YBY_Updater {
 			return;
 		}
 
+
+		if ( isset( $_POST['yby_core_save_update_policy'] ) ) {
+			check_admin_referer( self::CHANNEL_NONCE, 'yby_core_update_channel_nonce' );
+			$requested = isset( $_POST['yby_core_update_channel'] ) ? sanitize_text_field( wp_unslash( $_POST['yby_core_update_channel'] ) ) : 'disabled';
+			if ( ! in_array( $requested, array( 'disabled', 'canary', 'stable' ), true ) ) {
+				$requested = 'disabled';
+			}
+			update_option( self::CHANNEL_OPTION, $requested );
+			update_option( self::AUTO_OPTION, ! empty( $_POST['yby_core_auto_updates'] ) );
+			delete_site_transient( 'update_plugins' );
+			$this->notice( 'success', __( 'Update policy saved. Rollout restrictions remain enforced.', 'yby-core' ) );
+			$this->redirect();
+		}
 		if ( isset( $_POST['yby_core_check_updates'] ) ) {
 			check_admin_referer( self::CHECK_NONCE, 'yby_core_check_updates_nonce' );
 			$release = $this->validated_release( true );
@@ -275,6 +288,17 @@ class YBY_Updater {
 		echo '</h2><h2>' . esc_html__( 'Secure Updates', 'yby-core' ) . '</h2>';
 		echo '<p>' . esc_html__( 'Andy Core checks the public signed GitHub stable release channel. No GitHub token or server-side credential is required on this WordPress site.', 'yby-core' ) . '</p>';
 		echo '<p>' . esc_html( sprintf( __( 'Current version: %s', 'yby-core' ), $this->version ) ) . '</p>';
+		echo '<h3>' . esc_html__( 'Update Channel', 'yby-core' ) . '</h3>';
+		echo '<p>' . esc_html__( 'Disabled is the safe default. Canary releases are not yet enabled. Stable requires an explicitly allowed production hostname.', 'yby-core' ) . '</p>';
+		echo '<form method="post">';
+		wp_nonce_field( self::CHANNEL_NONCE, 'yby_core_update_channel_nonce' );
+		echo '<select name="yby_core_update_channel">';
+		foreach ( array( 'disabled' => 'Disabled', 'canary' => 'Canary (pending)', 'stable' => 'Stable' ) as $value => $label ) {
+			echo '<option value="' . esc_attr( $value ) . '" ' . selected( $this->update_channel(), $value, false ) . '>' . esc_html( $label ) . '</option>';
+		}
+		echo '</select> <label><input type="checkbox" name="yby_core_auto_updates" value="1" ' . checked( (bool) get_option( self::AUTO_OPTION, false ), true, false ) . '> ' . esc_html__( 'Automatic updates (only when allowed)', 'yby-core' ) . '</label>';
+		echo '<p><button class="button button-primary" type="submit" name="yby_core_save_update_policy" value="1">' . esc_html__( 'Save Update Policy', 'yby-core' ) . '</button></p></form>';
+
 		if ( is_wp_error( $release ) ) {
 			echo '<p><strong>' . esc_html( $release->get_error_message() ) . '</strong></p>';
 		} elseif ( YBY_Update_Verifier::is_newer( $release['version'], $this->version ) ) {
