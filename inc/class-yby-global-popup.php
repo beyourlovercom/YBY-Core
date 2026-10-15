@@ -53,7 +53,14 @@ class YBY_Global_Popup {
 			$attributes['layout'] = 'premium_split';
 			$attributes['mobile_layout'] = 'premium_stack';
 		}
-		$inquiry = $this->renderer->render_modal( $preset, $ordered, $attributes );
+		$mobile_fields = array();
+		if ( $premium ) {
+			// The existing renderer owns mobile field validation; keep the original field registry and JS.
+			foreach ( $preset['mobile_fields'] ?? array() as $id ) {
+				if ( isset( $fields[ $id ] ) && ! empty( $fields[ $id ]['enabled'] ) ) { $mobile_fields[] = $fields[ $id ]; }
+			}
+		}
+		$inquiry = $this->renderer->render_modal( $preset, $ordered, $attributes, $mobile_fields );
 		$inquiry = preg_replace( '/class="yby-inquiry-modal/', 'class="yby-global-popup yby-global-popup--inquiry yby-inquiry-modal', $inquiry, 1 );
 		$inquiry = str_replace( 'data-yby-inquiry-modal ', 'data-yby-inquiry-modal data-yby-global-popup="inquiry" ', $inquiry );
 		$theme = class_exists( 'YBY_Brand_Profile' ) ? YBY_Brand_Profile::get_theme_config() : array();
