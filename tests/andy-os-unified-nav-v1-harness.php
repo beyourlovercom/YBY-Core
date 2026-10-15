@@ -135,4 +135,20 @@ $_SERVER['REQUEST_METHOD']='POST';
 $_GET['page']='andy-core-marketing';
 YBY_Andy_OS_Navigation::redirect_entry(); // POST must never be redirected.
 $assert(true,'POST original nonce processing not intercepted');
+// Preserve the correct native L2 highlight on old L3 URLs.
+$setup(array('manage_options','andy_core_settings_manage','manage_woocommerce','andy_core_leads_view'));
+$_GET=array('page'=>'andy-commerce','tab'=>'marketing-promotions');
+$assert('andy-core-marketing'===YBY_Andy_OS_Navigation::active_second_level(),'marketing original tab highlights Marketing L2');
+$_GET=array('page'=>'andy-commerce','tab'=>'order-export');
+$assert('andy-core-commerce'===YBY_Andy_OS_Navigation::filter_submenu_file('legacy'),'order export highlights Commerce L2');
+$_GET=array('page'=>'andy-business');
+$assert('yby-os'===YBY_Andy_OS_Navigation::filter_parent_file('yby-content'),'Business stays inside Andy Core');
+$assert('andy-core-content'===YBY_Andy_OS_Navigation::filter_submenu_file('legacy'),'Business highlights Content L2');
+$_GET=array('post_type'=>'landing_page');
+$assert('andy-core-content'===YBY_Andy_OS_Navigation::active_second_level(),'WP native Landing Pages stays in Content L2');
+$_GET=array('page'=>'yby-core','tab'=>'modules');
+$assert('andy-core-system'===YBY_Andy_OS_Navigation::active_second_level(),'system modules highlight System L2');
+$setup(array('andy_core_leads_view'));
+$_GET=array('page'=>'andy-commerce');
+$assert('legacy'===YBY_Andy_OS_Navigation::filter_submenu_file('legacy'),'unauthorized user cannot activate Commerce L2');
 echo "PASS andy-core-native-l123-v2-harness\n";
