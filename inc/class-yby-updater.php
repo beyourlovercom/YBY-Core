@@ -73,7 +73,13 @@ class YBY_Updater {
 		if ( ! is_object( $transient ) ) {
 			return $transient;
 		}
-		if ( ! $this->allowed_release() ) { return $transient; }
+		if ( ! $this->allowed_release() ) {
+			$plugin = plugin_basename( $this->plugin_file );
+			if ( isset( $transient->response ) && is_array( $transient->response ) ) {
+				unset( $transient->response[ $plugin ] );
+			}
+			return $transient;
+		}
 		$release = $this->validated_release( false );
 		if ( is_wp_error( $release ) || ! YBY_Update_Verifier::is_newer( $release['version'], $this->version ) ) {
 			return $transient;
