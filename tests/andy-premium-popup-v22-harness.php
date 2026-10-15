@@ -82,6 +82,8 @@ $assert( strpos( $wholesale, 'data-yby-preset="bottle_wholesale_inquiry"' ) !== 
 $GLOBALS['popup_options']['inquiry_preset'] = 'unknown';
 $render();
 $assert( $renderer->captures[3]['preset']['id'] === 'irrigation_quick_inquiry', 'unknown selection returns safe classic preset' );
+$bad = YBY_Global_Popup::sanitize( array( 'inquiry_template' => array( 'premium_v22' ), 'inquiry_preset' => array( 'bottle_oem_inquiry' ) ) );
+$assert( $bad['inquiry_template'] === 'classic' && $bad['inquiry_preset'] === 'irrigation_quick_inquiry', 'non-scalar option injection cannot activate premium or alter source' );
 $manager->presets->enabled = false;
 $assert( strpos( $render(), 'data-yby-global-popup="inquiry"' ) === false, 'disabled preset fails closed' );
 $stylesheet = file_get_contents( dirname( __DIR__ ) . '/public/css/andy-core-popup-premium-v22.css' );
