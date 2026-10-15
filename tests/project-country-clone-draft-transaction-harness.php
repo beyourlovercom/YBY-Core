@@ -107,7 +107,10 @@ class YBY_Germany_Clone_Transform {
 	}
 }
 class YBY_Germany_Clone_Bricks_Signer {
-	public static function sign( $elements ) { return array( 'elements' => $elements, 'signatures_verified' => 1 ); }
+	public static function sign( $elements ) {
+		if ( 'bricks_signatures' === YBY_Country_Clone_Preflight::$blocked ) { return new WP_Error( 'clone_bricks_signer_denied' ); }
+		return array( 'elements' => $elements, 'signatures_verified' => 1 );
+	}
 }
 require_once dirname( __DIR__ ) . '/inc/class-yby-country-clone-draft-service.php';
 function must( $ok, $msg ) {
@@ -145,7 +148,7 @@ must( is_wp_error( $r ) && 'clone_source_changed' === $r->get_error_code(), 'fin
 reset_test_state();
 YBY_Country_Clone_Preflight::$blocked = 'bricks_signatures';
 $r = create_test();
-must( is_wp_error( $r ) && 'clone_preflight_blocked' === $r->get_error_code(), 'unsigned Code blocked' );
+must( is_wp_error( $r ) && 'clone_bricks_signer_denied' === $r->get_error_code(), 'unsigned Code blocked by native signer' );
 
 reset_test_state();
 $GLOBALS['test_meta'][292]['_bricks_page_settings']['customScriptsBodyFooter'] = 'alert(1);';
