@@ -6,7 +6,8 @@ $assert = static function ($ok, $msg) { if (!$ok) { throw new RuntimeException($
 $assert(strpos($src, "CHANNEL_OPTION = 'yby_core_update_channel'") !== false, 'channel option');
 $assert(strpos($src, "AUTO_OPTION = 'yby_core_automatic_updates'") !== false, 'auto option');
 $assert(strpos($src, "get_option( self::CHANNEL_OPTION, 'disabled' )") !== false, 'default disabled');
-$assert(strpos($src, "if ( 'canary' === " . '$channel' . " ) { return false; }") !== false, 'no canary fallback');
+$assert(strpos($src, "'dev.ybybottle.com', 'dev.beyourlover.com'") !== false, 'canary Dev host allowlist');
+$assert(strpos($src, 'latest_canary_release( $force )') !== false, 'canary does not use stable latest');
 $assert(strpos($src, "'www.beyourlover.com'") === false, 'www must never be allowlisted');
 $assert(strpos($src, "'ybybottle.com', 'ybyirrigation.com'") !== false, 'known target allowlist');
 $assert(strpos($src, "add_filter( 'auto_update_plugin'") !== false, 'WordPress auto-update hook');
