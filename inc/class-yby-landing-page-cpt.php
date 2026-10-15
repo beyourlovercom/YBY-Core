@@ -42,7 +42,7 @@ class YBY_Landing_Page_CPT {
 				'publicly_queryable' => true,
 				'exclude_from_search' => true,
 				'show_ui' => true,
-				'show_in_menu' => YBY_Project_Studio::menu_slug(),
+				'show_in_menu' => 'yby-os', // Existing stable Andy Core parent; no bootstrap class dependency.
 				'show_in_admin_bar' => true,
 				'show_in_nav_menus' => false,
 				'show_in_rest' => true,
