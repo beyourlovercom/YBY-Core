@@ -222,6 +222,11 @@ class YBY_Project_Studio {
 			exit;
 		}
 
+		if ( 'clone' === $view && $post_id ) {
+			$this->render_country_clone( $post_id );
+			return;
+		}
+
 		if ( 'runtime' === $view && $post_id ) {
 			$this->render_runtime_viewer( $post_id );
 			return;
@@ -252,6 +257,39 @@ class YBY_Project_Studio {
 		);
 
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/project-list.php';
+	}
+
+	/**
+	 * Render Germany clone read-only preflight.
+	 * No Project, Landing Page or settings writes take place here.
+	 *
+	 * @param int $post_id Source Project post ID.
+	 * @return void
+	 */
+	protected function render_country_clone( $post_id ) {
+		$post_id = absint( $post_id );
+		$post = get_post( $post_id );
+		if ( ! $post || YBY_Project_CPT::post_type() !== $post->post_type ||
+			! current_user_can( 'edit_post', $post_id ) ) {
+			wp_die( esc_html__( 'Source Project not accessible.', 'yby-core' ) );
+		}
+
+		$preflight = null;
+		$submitted_landing_id = 0;
+		if ( isset( $_POST['yby_country_clone_preflight'] ) ) {
+			check_admin_referer( 'yby_country_clone_preflight_' . $post_id );
+			$submitted_project = isset( $_POST['source_project_id'] )
+				? absint( wp_unslash( $_POST['source_project_id'] ) ) : 0;
+			if ( $submitted_project !== $post_id ) {
+				wp_die( esc_html__( 'Source Project mismatch.', 'yby-core' ) );
+			}
+			$submitted_landing_id = isset( $_POST['source_landing_id'] )
+				? absint( wp_unslash( $_POST['source_landing_id'] ) ) : 0;
+			$preflight = YBY_Country_Clone_Preflight::evaluate(
+				$post_id, $submitted_landing_id, 'DE'
+			);
+		}
+		include YBY_CORE_PLUGIN_DIR . 'admin/views/project-country-clone.php';
 	}
 
 	/**
