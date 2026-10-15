@@ -20,7 +20,8 @@ final class YBY_Mail_V2_P8_Setup {
             current_user_can('andy_core_mail_view');
     }
     public static function register() {
-        if (class_exists('YBY_Mail_V2_P8_Readonly') &&
+        if (function_exists('add_action') &&
+            class_exists('YBY_Mail_V2_P8_Readonly') &&
             YBY_Mail_V2_P8_Readonly::eligible_site()) {
             add_action('admin_post_'.self::ACTION,array(__CLASS__,'save'));
         }
