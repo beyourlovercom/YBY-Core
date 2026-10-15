@@ -35,8 +35,9 @@ function remove_submenu_page($parent,$slug) {
 function remove_menu_page($slug) {
     foreach($GLOBALS['menu'] as $i=>$row)if(($row[2]??'')===$slug){unset($GLOBALS['menu'][$i]);$GLOBALS['removed'][]=$slug;return $row;}return false;
 }
+$GLOBALS['enabled_modules'] = array('business_os','inquiry_os','newsletter_os','email_os');
 class YBY_Module_Registry {
-    public static function is_enabled($id) { return in_array($id,array('business_os','inquiry_os','newsletter_os','email_os'),true); }
+    public static function is_enabled($id) { return in_array($id,$GLOBALS['enabled_modules'],true); }
 }
 class Andy_Commerce_Admin {}
 require_once dirname(__DIR__).'/admin/class-yby-andy-os-navigation.php';
@@ -151,4 +152,14 @@ $assert('andy-core-system'===YBY_Andy_OS_Navigation::active_second_level(),'syst
 $setup(array('andy_core_leads_view'));
 $_GET=array('page'=>'andy-commerce');
 $assert('legacy'===YBY_Andy_OS_Navigation::filter_submenu_file('legacy'),'unauthorized user cannot activate Commerce L2');
+// WordPress native content-editor permissions must not be promoted to
+// Business settings, but must retain their existing CPT/editor access.
+$setup(array('edit_pages'));
+$GLOBALS['enabled_modules'][]='landing_pages';
+$assert('edit_pages'===YBY_Andy_OS_Navigation::root_capability(),'landing-only editor can see parent');
+$groups=YBY_Andy_OS_Navigation::sections();
+$assert('edit_pages'===$groups['andy-core-content'][1],'landing content route uses edit_pages, not manage_options');
+$assert('edit.php?post_type=landing_page'===YBY_Andy_OS_Navigation::destination('andy-core-content'),'landing editor defaults to actual CPT');
+$assert(0===count(YBY_Andy_OS_Navigation::tertiary_items('andy-business')),'landing editor cannot access Business config');
+$GLOBALS['enabled_modules']=array('business_os','inquiry_os','newsletter_os','email_os');
 echo "PASS andy-core-native-l123-v2-harness\n";
