@@ -49,4 +49,57 @@ foreach(array('settings-page.php','modules-page.php','addons-page.php','article-
 }
 $css=file_get_contents($root.'/assets/css/andy-core-admin-shell-v22.css');
 $assert(strpos($css,'max-width: 782px')!==false,'M390 mobile CSS layout exists');
+// M4: Brand and Social Login retain the original handlers and both POST/nonce forms.
+$brand=file_get_contents($root.'/inc/class-yby-brand-os.php');
+$social=file_get_contents($root.'/admin/class-yby-social-login-admin.php');
+foreach(array('Brand'=>$brand,'Social Login'=>$social) as $label=>$code){
+    $assert(strpos($code,"YBY_Andy_Admin_Shell_V22::render(")!==false,'M4 original controller opts into server shell '.$label);
+    $assert(strpos($code,'_original()')!==false,'M4 original handler preserved '.$label);
+    $assert(strpos($code,'check_admin_referer(')!==false,'M4 original nonce preserved '.$label);
+}
+foreach(array('brand-settings.php'=>'YBY_Brand_OS','social-login-page.php'=>'YBY_Social_Login_Admin') as $view=>$owner){
+    $markup=file_get_contents($root.'/admin/views/'.$view);
+    $assert(strpos($markup,"suppress_legacy_tabs( ".$owner."::page_slug() )")!==false,'M4 heading condition tied to original page '.$view);
+    $assert(strpos($markup,'<form')!==false,'M4 original form preserved '.$view);
+}
+// M5: exercise actual navigation registry under mutually exclusive role capabilities.
+// Simulate only access control and module switches, never WordPress or production data.
+if(!defined('ABSPATH')) define('ABSPATH',__DIR__);
+$GLOBALS['v22_role_caps']=array();
+$GLOBALS['v22_modules']=array();
+function current_user_can($cap){return in_array($cap,$GLOBALS['v22_role_caps'],true);}
+function admin_url($path=''){return 'https://example.invalid/wp-admin/'.$path;}
+function sanitize_key($v){return preg_replace('/[^a-z0-9_-]/','',strtolower((string)$v));}
+function wp_unslash($v){return stripslashes((string)$v);}
+class YBY_Module_Registry {
+    public static function is_enabled($module){return !empty($GLOBALS['v22_modules'][$module]);}
+}
+class Andy_Commerce_Admin {}
+require $root.'/admin/class-yby-andy-os-navigation.php';
+$role_check=static function($caps,$modules,$page,$expected_tabs) use($assert){
+    $GLOBALS['v22_role_caps']=$caps;
+    $GLOBALS['v22_modules']=array_fill_keys($modules,true);
+    $items=YBY_Andy_OS_Navigation::tertiary_items($page);
+    $titles=array_column($items,'title');
+    $assert($titles===$expected_tabs,'M5 role/route L3 scope: '.$page.' ('.implode(',',$caps).')');
+};
+$role_check(array('andy_core_leads_view'),array('inquiry_os'),'andy-core-leads',array('询盘列表','询盘统计'));
+$role_check(array('andy_core_newsletter_view'),array('newsletter_os'),'andy-core-newsletter',array('订阅者列表','双重确认与退订'));
+$role_check(array('andy_core_mail_view'),array('email_os'),'andy-core-email',array('邮件总览','发送通道','系统健康'));
+$role_check(array('manage_woocommerce'),array(),'andy-commerce',array('Commerce 总览','Order Export','Checkout / Shipping','Marketing / Promotions','Commerce 设置'));
+$role_check(array(),array('inquiry_os','newsletter_os','email_os'),'andy-core-leads',array());
+$role_check(array('andy_core_leads_view'),array(),'andy-core-leads',array());
+$role_check(array('manage_options','andy_core_settings_manage'),array('social_login'),'yby-brand-os',array('常规设置','模块管理','Addons','系统状态','插件更新','Brand','Social Login'));
+$GLOBALS['v22_role_caps']=array('edit_pages');
+$GLOBALS['v22_modules']=array('landing_pages'=>true);
+$groups=YBY_Andy_OS_Navigation::sections();
+$assert(array_keys($groups)===array('andy-core-content'),'M5 content-only lacks Commerce, Inquiry, System L2');
+$assert(YBY_Andy_OS_Navigation::destination('andy-core-content')==='edit.php?post_type=landing_page','M5 native editor not replaced');
+$GLOBALS['v22_role_caps']=array('manage_woocommerce');
+$GLOBALS['v22_modules']=array();
+$assert(array_keys(YBY_Andy_OS_Navigation::sections())===array('andy-core-marketing','andy-core-commerce'),'M5 Woo manager only owns Commerce+Marketing L2');
+$_GET=array('page'=>'andy-commerce','tab'=>'marketing-promotions');
+$assert(YBY_Andy_OS_Navigation::active_second_level()==='andy-core-marketing','M5 old Commerce deep link keeps Marketing L2 selected');
+$_GET=array('page'=>'yby-brand-os');
+$assert(YBY_Andy_OS_Navigation::active_second_level()==='andy-core-system','M5 Brand deep link keeps System L2 selected');
 echo "PASS andy-admin-architecture-v22-governance-harness\n";
