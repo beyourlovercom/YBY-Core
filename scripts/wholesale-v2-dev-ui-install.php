@@ -29,7 +29,7 @@ $route_start="\t\tif ( 'wholesale' === \$view ) {";
 $method_start="\t/**\n\t * Dev-only B2B Wholesale country-clone UI.";
 if(substr_count($candidate,$route_start)!==1 || substr_count($candidate,$method_start)!==1 ||
    substr_count($existing,$route_needle)!==1 || substr_count($existing,$method_needle)!==1) {
-    WP_CLI::error('Controller markers changed. Refuse unsafe patch.');
+    WP_CLI::error('Controller markers changed. Refuse unsafe patch. Counts: '.implode(',',array(substr_count($candidate,$route_start),substr_count($candidate,$method_start),substr_count($existing,$route_needle),substr_count($existing,$method_needle))));
 }
 $route=substr($candidate,strpos($candidate,$route_start),strpos($candidate,$route_needle)-strpos($candidate,$route_start));
 $method=substr($candidate,strpos($candidate,$method_start),strpos($candidate,$method_needle)-strpos($candidate,$method_start));
