@@ -1,60 +1,48 @@
 <?php
-/** Isolated V1 navigation contract. No WordPress bootstrap, network or writes. */
+/** Andy Core V2 native WordPress two-level menu; L3 remains inside original pages. */
 if ( ! defined( 'ABSPATH' ) ) { define( 'ABSPATH', __DIR__ ); }
-$GLOBALS['aus_caps'] = array();
-$GLOBALS['menu'] = array();
-$GLOBALS['submenu'] = array();
-$GLOBALS['aus_hooks'] = array();
-$GLOBALS['aus_removed'] = array();
-$GLOBALS['aus_legacy_count'] = 0;
-function current_user_can( $cap ) { return in_array( $cap, $GLOBALS['aus_caps'], true ); }
+$GLOBALS['caps'] = array(); $GLOBALS['menu'] = array(); $GLOBALS['submenu'] = array();
+$GLOBALS['hooks'] = array(); $GLOBALS['removed'] = array(); $GLOBALS['called'] = 0;
+function current_user_can( $cap ) { return in_array( $cap, $GLOBALS['caps'], true ); }
 function is_admin() { return true; }
-function __($v,$d='') { return $v; }
-function esc_html__($v,$d='') { return $v; }
-function esc_html($v) { return htmlspecialchars((string)$v,ENT_QUOTES,'UTF-8'); }
-function esc_url($v) { return htmlspecialchars((string)$v,ENT_QUOTES,'UTF-8'); }
-function wp_strip_all_tags($v) { return strip_tags($v); }
-function admin_url($v='') { return 'https://dev.example.invalid/wp-admin/'.$v; }
-function sanitize_key($v) { return preg_replace('/[^a-z0-9_-]/','',strtolower((string)$v)); }
-function wp_unslash($v) { return stripslashes($v); }
-function wp_die($v,$title='',$args=array()) { throw new RuntimeException('DENIED_'.($args['response']??403)); }
+function __($s,$d='') { return $s; }
+function esc_html__($s,$d='') { return $s; }
+function esc_html($s) { return htmlspecialchars((string)$s,ENT_QUOTES,'UTF-8'); }
+function esc_url($s) { return $s; }
+function wp_strip_all_tags($s) { return strip_tags($s); }
+function admin_url($s='') { return 'https://example.test/wp-admin/'.$s; }
+function sanitize_key($s) { return preg_replace('/[^a-z0-9_-]/','',strtolower($s)); }
+function wp_unslash($s) { return stripslashes($s); }
+function wp_die($s,$title='',$args=array()) { throw new RuntimeException('403'); }
 function get_plugin_page_hookname($slug,$parent='') {
-    // WP keeps previously registered top-level slugs on their original hooks.
-    if (in_array($slug,array('yby-content','andy-commerce'),true)) return 'toplevel_page_'.$slug;
-    return $parent !== '' ? $parent.'_page_'.$slug : 'admin_page_'.$slug;
+    if(in_array($slug,array('yby-content','andy-commerce'),true)) return 'toplevel_page_'.$slug;
+    return $parent!==''?$parent.'_page_'.$slug:'admin_page_'.$slug;
 }
-function has_action($hook) { return isset($GLOBALS['aus_hooks'][$hook]); }
-function do_action($hook) { if(isset($GLOBALS['aus_hooks'][$hook]))call_user_func($GLOBALS['aus_hooks'][$hook]); }
-function add_action($hook,$callback) { $GLOBALS['aus_hooks'][$hook]=$callback; }
-function add_submenu_page($parent,$title,$menu,$cap,$slug,$callback) {
-    if (!current_user_can($cap)) return false;
-    $GLOBALS['submenu'][$parent][] = array($menu,$cap,$slug);
+function has_action($hook) { return isset($GLOBALS['hooks'][$hook]); }
+function do_action($hook) { if(isset($GLOBALS['hooks'][$hook]))call_user_func($GLOBALS['hooks'][$hook]); }
+function add_action($hook,$callback) { $GLOBALS['hooks'][$hook]=$callback; }
+function add_submenu_page($parent,$title,$label,$cap,$slug,$callback) {
+    if(!current_user_can($cap))return false;
+    $GLOBALS['submenu'][$parent][] = array($label,$cap,$slug);
     $hook=get_plugin_page_hookname($slug,(string)$parent);
-    if (is_callable($callback)) $GLOBALS['aus_hooks'][$hook]=$callback;
+    if(is_callable($callback))$GLOBALS['hooks'][$hook]=$callback;
     return $hook;
 }
 function remove_submenu_page($parent,$slug) {
-    foreach(($GLOBALS['submenu'][$parent]??array()) as $i=>$row) {
-        if(($row[2]??'')===$slug) { unset($GLOBALS['submenu'][$parent][$i]); return $row; }
-    }
+    foreach(($GLOBALS['submenu'][$parent]??array()) as $i=>$row)if(($row[2]??'')===$slug){unset($GLOBALS['submenu'][$parent][$i]);return $row;}
     return false;
 }
 function remove_menu_page($slug) {
-    foreach($GLOBALS['menu'] as $i=>$item)if(($item[2]??'')===$slug) {
-        $GLOBALS['aus_removed'][]=$slug;
-        unset($GLOBALS['menu'][$i]);
-        return $item;
-    }
-    return false;
+    foreach($GLOBALS['menu'] as $i=>$row)if(($row[2]??'')===$slug){unset($GLOBALS['menu'][$i]);$GLOBALS['removed'][]=$slug;return $row;}return false;
 }
 class YBY_Module_Registry {
-    public static function is_enabled($id){return in_array($id,array('business_os','inquiry_os'),true);}
+    public static function is_enabled($id) { return in_array($id,array('business_os','inquiry_os','newsletter_os','email_os'),true); }
 }
 class Andy_Commerce_Admin {}
 require_once dirname(__DIR__).'/admin/class-yby-andy-os-navigation.php';
-$assert=static function($cond,$name){if(!$cond){fwrite(STDERR,"FAIL ".$name."\n");exit(1);}};
-$install=static function($role)use($assert){
-    $GLOBALS['aus_caps']=$role;
+$assert=static function($v,$msg){if(!$v){fwrite(STDERR,'FAIL: '.$msg."\n");exit(1);}};
+$setup=static function($caps){
+    $GLOBALS['caps']=$caps;$GLOBALS['called']=0;$GLOBALS['removed']=array();
     $GLOBALS['menu']=array(
         array('Andy Core','manage_options','yby-os'),
         array('Andy Content','andy_core_settings_manage','yby-content'),
@@ -62,70 +50,66 @@ $install=static function($role)use($assert){
     );
     $GLOBALS['submenu']=array(
         'yby-os'=>array(
-            array('Inquiry','andy_core_leads_view','andy-core-leads'),
+            array('Inquiry OS','andy_core_leads_view','andy-core-leads'),
+            array('Newsletter OS','andy_core_newsletter_view','andy-core-newsletter'),
+            array('Email OS','andy_core_mail_view','andy-core-email'),
+            array('Social Login','manage_options','yby-social-login')
         ),
         'yby-content'=>array(
-            array('Overview','andy_core_settings_manage','yby-content'),
-            array('Business 招商页面','andy_core_settings_manage','andy-business'),
-            array('合作项目','andy_core_settings_manage','andy-business-programs'),
-            array('Docs 标签','andy_core_settings_manage','edit-tags.php?taxonomy=doc_tag&post_type=docs'),
+            array('Andy Content','andy_core_settings_manage','yby-content'),
+            array('Business','andy_core_settings_manage','andy-business'),
+            array('Docs Tags','andy_core_settings_manage','edit-tags.php?taxonomy=doc_tag&post_type=docs')
         )
     );
-    $GLOBALS['aus_hooks']=array(
-        'toplevel_page_yby-content'=>function(){++$GLOBALS['aus_legacy_count'];},
-        'toplevel_page_andy-commerce'=>function(){++$GLOBALS['aus_legacy_count'];},
-        'yby-content_page_andy-business'=>function(){++$GLOBALS['aus_legacy_count'];},
-        'yby-content_page_andy-business-programs'=>function(){++$GLOBALS['aus_legacy_count'];},
-        'yby-os_page_andy-core-leads'=>function(){++$GLOBALS['aus_legacy_count'];},
+    $inc=static function(){++$GLOBALS['called'];};
+    $GLOBALS['hooks']=array(
+        'toplevel_page_yby-content'=>$inc,
+        'toplevel_page_andy-commerce'=>$inc,
+        'yby-content_page_andy-business'=>$inc,
+        'yby-os_page_andy-core-leads'=>$inc,
+        'yby-os_page_andy-core-newsletter'=>$inc,
+        'yby-os_page_andy-core-email'=>$inc,
+        'yby-os_page_yby-social-login'=>$inc
     );
-    $GLOBALS['aus_removed']=array();
-    $GLOBALS['aus_legacy_count']=0;
 };
-$install(array('manage_options','andy_core_settings_manage','manage_woocommerce','andy_core_leads_view'));
-$assert('manage_options'===YBY_Andy_OS_Navigation::root_capability(),'admin root authority');
+$setup(array('manage_options','andy_core_settings_manage','manage_woocommerce','andy_core_leads_view','andy_core_newsletter_view','andy_core_mail_view'));
+$assert('manage_options'===YBY_Andy_OS_Navigation::root_capability(),'admin root');
 YBY_Andy_OS_Navigation::consolidate();
-$assert(in_array('yby-content',$GLOBALS['aus_removed'],true),'content top-level removed');
-$assert(in_array('andy-commerce',$GLOBALS['aus_removed'],true),'commerce top-level removed');
-$assert(count($GLOBALS['menu'])===1,'only one top-level');
-$slugs=array_column($GLOBALS['submenu']['yby-os'],2);
-$assert(count($slugs)===6,'only six visible Andy OS section links');
-foreach(array('andy-os-overview','andy-os-content','andy-os-inquiry','andy-os-marketing','andy-os-commerce','andy-os-settings') as $slug) {
-    $assert(in_array($slug,$slugs,true),'visible section: '.$slug);
+$names=array_column($GLOBALS['submenu']['yby-os'],2);
+$assert(7===count($names),'seven native second-level modules');
+$expected=array('andy-core-leads','andy-core-newsletter','andy-core-email','andy-core-content','andy-core-marketing','andy-core-commerce','andy-core-system');
+$assert($names===$expected,'correct native WordPress L2 sequence');
+$assert(!in_array('andy-os-overview',$names,true),'no forced overview');
+$assert(!in_array('yby-social-login',$names,true),'no orphan tertiary in WP sidebar');
+$assert(in_array('yby-content',$GLOBALS['removed'],true),'content top-level removed');
+$assert(in_array('andy-commerce',$GLOBALS['removed'],true),'commerce top-level removed');
+$hidden=array_column($GLOBALS['submenu']['']??array(),2);
+foreach(array('andy-business','yby-content','andy-commerce','yby-social-login','edit-tags.php?taxonomy=doc_tag&post_type=docs') as $slug) {
+    $assert(in_array($slug,$hidden,true),'legacy alias: '.$slug);
 }
-$hidden=array_column($GLOBALS['submenu'][''],2);
-foreach(array('yby-content','andy-business','andy-business-programs','andy-commerce','andy-core-leads','edit-tags.php?taxonomy=doc_tag&post_type=docs') as $slug) {
-    $assert(in_array($slug,$hidden,true),'hidden original deep link registered: '.$slug);
-}
-do_action('toplevel_page_andy-commerce');
+do_action('yby-os_page_andy-core-leads');
 do_action('admin_page_andy-business');
-do_action('admin_page_andy-core-leads');
-$assert(3===$GLOBALS['aus_legacy_count'],'hidden original page callbacks delegated');
-$_GET['page']='andy-os-content';
-ob_start();YBY_Andy_OS_Navigation::render_section();$html=ob_get_clean();
-$assert(str_contains($html,'Business 招商页面'),'Business card renders');
-$assert(str_contains($html,'andy-business'),'Business deep link stable');
-$_GET['page']='andy-os-commerce';
-ob_start();YBY_Andy_OS_Navigation::render_section();$html=ob_get_clean();
-$assert(str_contains($html,'andy-commerce'),'Commerce deep link stable');
-$install(array('manage_woocommerce'));
-$assert('manage_woocommerce'===YBY_Andy_OS_Navigation::root_capability(),'commerce-only root capability');
+do_action('toplevel_page_andy-commerce');
+$assert(3===$GLOBALS['called'],'old handlers intact');
+$assert('admin.php?page=andy-business'===YBY_Andy_OS_Navigation::destination('andy-core-content'),'Content opens Business');
+$assert(str_contains(YBY_Andy_OS_Navigation::destination('andy-core-marketing'),'marketing-promotions'),'Marketing opens original Commerce tab');
+$assert(''===YBY_Andy_OS_Navigation::destination('unknown-page'),'unknown route not generated');
+foreach(array(
+    array(array('andy_core_newsletter_view'),'andy-core-newsletter','andy_core_newsletter_view'),
+    array(array('andy_core_mail_view'),'andy-core-email','andy_core_mail_view'),
+    array(array('andy_core_leads_view'),'andy-core-leads','andy_core_leads_view'),
+    array(array('manage_woocommerce'),'andy-core-commerce','manage_woocommerce'),
+    array(array('andy_core_settings_manage'),'andy-core-content','andy_core_settings_manage')
+) as $test){
+    $setup($test[0]);
+    $assert($test[2]===YBY_Andy_OS_Navigation::root_capability(),'isolated root role '.$test[2]);
+    YBY_Andy_OS_Navigation::consolidate();
+    $names=array_column($GLOBALS['submenu']['yby-os'],2);
+    $assert(in_array($test[1],$names,true),'role sees own module '.$test[1]);
+    $assert(!in_array('andy-core-system',$names,true)||current_user_can('andy_core_settings_manage'),'no system escalation');
+}
+$setup(array());
+$assert('manage_options'===YBY_Andy_OS_Navigation::root_capability(),'unprivileged fail-closed');
 YBY_Andy_OS_Navigation::consolidate();
-$assert(!in_array('andy-business',array_column($GLOBALS['submenu']['yby-os'],2),true),'no content-only route exposed to commerce');
-$assert(in_array('andy-commerce',$GLOBALS['aus_removed'],true),'commerce manager has unified Commerce');
-$_GET['page']='andy-os-settings';
-try{YBY_Andy_OS_Navigation::render_section();$assert(false,'commerce cannot access settings');}
-catch(RuntimeException $e){$assert('DENIED_403'===$e->getMessage(),'system settings denied');}
-$install(array('andy_core_settings_manage'));
-$assert('andy_core_settings_manage'===YBY_Andy_OS_Navigation::root_capability(),'content root capability');
-YBY_Andy_OS_Navigation::consolidate();
-$assert(in_array('yby-content',$GLOBALS['aus_removed'],true),'content manager unified');
-$assert(!in_array('andy-commerce',array_column($GLOBALS['submenu']['yby-os'],2),true),'commerce route not exposed to content-only role');
-$install(array('andy_core_leads_view'));
-$assert('andy_core_leads_view'===YBY_Andy_OS_Navigation::root_capability(),'inquiry-only root capability');
-$_GET['page']='andy-os-inquiry';
-ob_start();YBY_Andy_OS_Navigation::render_section();$html=ob_get_clean();
-$assert(str_contains($html,'Inquiry OS'),'inquiry-only group works');
-$install(array());
-$assert('manage_options'===YBY_Andy_OS_Navigation::root_capability(),'fail closed for unrelated user');
-$assert(count(YBY_Andy_OS_Navigation::sections())===6,'six canonical sections');
-echo "PASS andy-os-unified-nav-v1-harness\n";
+$assert(0===count($GLOBALS['submenu']['yby-os']),'no unauthorized submenu');
+echo "PASS andy-core-native-l123-v2-harness\n";
