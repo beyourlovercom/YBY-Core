@@ -83,6 +83,15 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 				</tbody>
 			</table>
 		<?php endif; ?>
+		<h3><?php esc_html_e( 'Bricks 页面级脚本与国家选择器 / Page-level Scripts & Country Selectors', 'yby-core' ); ?></h3>
+		<table class="widefat striped">
+			<tbody>
+				<tr><th><?php esc_html_e( '页面脚本源国家引用', 'yby-core' ); ?></th><td><?php echo esc_html( (string) (int) $preflight['page_script_country_mentions'] ); ?></td></tr>
+				<tr><th><?php esc_html_e( '页面脚本 PROJECT_SCENARIOS 引用', 'yby-core' ); ?></th><td><?php echo esc_html( (string) (int) $preflight['page_script_scenario_mentions'] ); ?></td></tr>
+				<tr><th><?php esc_html_e( '国家选择器组数', 'yby-core' ); ?></th><td><?php echo esc_html( (string) (int) $preflight['country_selector_groups'] ); ?></td></tr>
+				<tr><th><?php esc_html_e( 'Germany 国家按钮数', 'yby-core' ); ?></th><td><?php echo esc_html( (string) (int) $preflight['target_country_buttons'] ); ?></td></tr>
+			</tbody>
+		</table>
 		<p><strong><?php esc_html_e( 'Bricks 元数据键（不显示敏感值）：', 'yby-core' ); ?></strong>
 			<?php echo esc_html( implode( ', ', $preflight['bricks_keys'] ) ); ?>
 		</p>
