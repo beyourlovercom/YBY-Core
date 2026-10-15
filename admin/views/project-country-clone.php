@@ -69,15 +69,20 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 			in_array( strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) ), array( 'localdev.ybyirrigation.com', 'dev.ybyirrigation.com' ), true ) &&
 			518 === $post_id && 292 === $submitted_landing_id &&
 			! empty( $preflight['source_fingerprint'] );
+			$can_production_create = defined( 'YBY_COUNTRY_CLONE_V1_PRODUCTION_DRAFT_ENABLED' ) &&
+				true === constant( 'YBY_COUNTRY_CLONE_V1_PRODUCTION_DRAFT_ENABLED' ) &&
+				'production' === wp_get_environment_type() &&
+				'ybyirrigation.com' === strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) ) &&
+				! empty( $preflight['source_fingerprint'] );
 		?>
-		<?php if ( $can_dev_create ) : ?>
+		<?php if ( $can_dev_create || $can_production_create ) : ?>
 			<form method="post" action="<?php echo esc_url( YBY_Project_Studio::studio_url( 'clone', $post_id ) ); ?>">
 				<?php wp_nonce_field( 'yby_country_clone_create_' . $post_id ); ?>
 				<input type="hidden" name="source_project_id" value="<?php echo esc_attr( (string) $post_id ); ?>">
 				<input type="hidden" name="source_landing_id" value="<?php echo esc_attr( (string) $submitted_landing_id ); ?>">
 				<input type="hidden" name="source_fingerprint" value="<?php echo esc_attr( $preflight['source_fingerprint'] ); ?>">
-				<p class="description"><?php esc_html_e( '本按钮仅在受控 Local/Dev 中生成或打开同一个 Germany Draft；真实执行由 Code 原生签名、权限与回滚门禁保护。', 'yby-core' ); ?></p>
-				<?php submit_button( __( '生成 / 打开 Germany 草稿（仅 Dev）', 'yby-core' ), 'primary', 'yby_country_clone_create', false ); ?>
+				<p class="description"><?php esc_html_e( '本按钮仅在环境专属开关明确授权时生成或打开 Germany Draft；不会发布页面或启动广告。源数据、签名、权限和回滚检查仍须通过。', 'yby-core' ); ?></p>
+				<?php submit_button( __( '生成 / 打开 Germany 草稿（受控）', 'yby-core' ), 'primary', 'yby_country_clone_create', false ); ?>
 			</form>
 		<?php endif; ?>
 		<h2><?php esc_html_e( '预检报告 / Preflight Evidence', 'yby-core' ); ?></h2>
