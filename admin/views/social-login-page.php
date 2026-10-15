@@ -106,7 +106,9 @@ $page_url = admin_url( 'admin.php?page=' . YBY_Social_Login_Admin::page_slug() )
 			</div>
 		<?php endforeach; ?>
 	<?php else : ?>
+		<?php if ( ! class_exists( 'YBY_Andy_Admin_Shell_V22' ) || ! YBY_Andy_Admin_Shell_V22::suppress_legacy_tabs( YBY_Social_Login_Admin::page_slug() ) ) : ?>
 		<h1><?php esc_html_e( 'Google Login', 'yby-core' ); ?></h1>
+		<?php endif; ?>
 		<p><a href="<?php echo esc_url( $page_url ); ?>">&larr; <?php esc_html_e( 'Back to Social Login', 'yby-core' ); ?></a></p>
 
 		<form method="post" action="<?php echo esc_url( add_query_arg( 'provider', 'google', $page_url ) ); ?>">
