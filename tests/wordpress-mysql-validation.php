@@ -83,7 +83,7 @@ foreach ( YBY_Andy_OS_Navigation::sections() as $slug => $meta ) {
 	if ( 'native' === $meta[2] && ! in_array( $slug, $registered_submenus, true ) ) { continue; }
 	$expected_submenus[] = $slug;
 }
-yby_validation_assert( $expected_submenus === $registered_submenus, 'Andy Core native L2 module order and capabilities are not exact.' );
+yby_validation_assert( $expected_submenus === $registered_submenus, 'Andy Core native L2 mismatch expected=' . wp_json_encode( $expected_submenus ) . ' actual=' . wp_json_encode( $registered_submenus ) );
 yby_validation_assert( ! in_array( YBY_Project_Studio::menu_slug(), $registered_submenus, true ), 'Duplicate Andy Core submenu must be removed.' );
 yby_validation_assert( ! in_array( 'andy-os-overview', $registered_submenus, true ), 'Mandatory overview card page must be removed.' );
 $original_submenus = array_column( $GLOBALS['submenu'][''] ?? array(), 2 );
