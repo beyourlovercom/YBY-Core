@@ -1,5 +1,7 @@
 # Andy Core 原生 WordPress 三级导航 V2 — Canonical IA / Route Migration (2026-10-14)
 
+> **永久升级规则（Owner 2026-10-15 确认）：** 以后所有 Andy 自研插件新版本及新增后台需求，必须遵循 [Andy Core Admin Architecture Governance Canonical V1](./ANDY-CORE-ADMIN-ARCHITECTURE-GOVERNANCE-CANONICAL-V1.md) 的 L1/L2/L3 架构与兼容性门禁；第三方插件、WordPress 原生页面保留独立性。此规范在 Draft PR 中，CI 硬门禁与 V2.2 运行时修复尚待实现和验收。
+
 > **状态：结构 Owner PASS；页面迁移表已完成静态代码审计，尚未进行 Dev 实际三级导航 UAT。**
 > 设计依据：Owner 2026-10-14 明确要求 Rank Math 模式：**一级和二级均在 WordPress 左侧后台菜单，只有三级功能目录在右侧功能页面内部。** 取消二级重复导航、总览中转和卡片中转。
 > 此文档是 **设计和安全迁移契约**，不是已发布清单、功能承诺或 Dev 部署授权。
