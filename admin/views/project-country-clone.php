@@ -48,7 +48,38 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 		<?php submit_button( __( '只读预检 / Run Read-Only Preflight', 'yby-core' ), 'primary', 'yby_country_clone_preflight' ); ?>
 	</form>
 
+	<?php if ( is_array( $clone_result ) ) : ?>
+		<div class="notice notice-success inline">
+			<p><strong><?php esc_html_e( 'Germany 独立草稿已就绪 / Drafts Ready', 'yby-core' ); ?></strong>
+				<?php echo esc_html( ! empty( $clone_result['reused'] ) ? '（已复用原草稿，未重复创建）' : '（已生成两个独立新草稿）' ); ?>
+			</p>
+			<p><a href="<?php echo esc_url( admin_url( 'post.php?post=' . absint( $clone_result['project_id'] ) . '&action=edit' ) ); ?>"><?php echo esc_html( 'Project #' . absint( $clone_result['project_id'] ) ); ?></a>
+				 | <a href="<?php echo esc_url( admin_url( 'post.php?post=' . absint( $clone_result['page_id'] ) . '&action=edit' ) ); ?>"><?php echo esc_html( 'Landing Page #' . absint( $clone_result['page_id'] ) ); ?></a></p>
+			<p><?php esc_html_e( '仅生成 Draft，不发布、不发送邮件、不启动 Google Ads。', 'yby-core' ); ?></p>
+		</div>
+	<?php elseif ( ! empty( $clone_error ) ) : ?>
+		<div class="notice notice-error inline"><p><?php echo esc_html( $clone_error ); ?></p></div>
+	<?php endif; ?>
+
 	<?php if ( null !== $preflight ) : ?>
+		<?php
+		$can_dev_create = defined( 'YBY_COUNTRY_CLONE_V1_DEV_DRAFT_ENABLED' ) &&
+			true === constant( 'YBY_COUNTRY_CLONE_V1_DEV_DRAFT_ENABLED' ) &&
+			in_array( wp_get_environment_type(), array( 'local', 'development' ), true ) &&
+			in_array( strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) ), array( 'localdev.ybyirrigation.com', 'dev.ybyirrigation.com' ), true ) &&
+			518 === $post_id && 292 === $submitted_landing_id &&
+			! empty( $preflight['source_fingerprint'] );
+		?>
+		<?php if ( $can_dev_create ) : ?>
+			<form method="post" action="<?php echo esc_url( YBY_Project_Studio::studio_url( 'clone', $post_id ) ); ?>">
+				<?php wp_nonce_field( 'yby_country_clone_create_' . $post_id ); ?>
+				<input type="hidden" name="source_project_id" value="<?php echo esc_attr( (string) $post_id ); ?>">
+				<input type="hidden" name="source_landing_id" value="<?php echo esc_attr( (string) $submitted_landing_id ); ?>">
+				<input type="hidden" name="source_fingerprint" value="<?php echo esc_attr( $preflight['source_fingerprint'] ); ?>">
+				<p class="description"><?php esc_html_e( '本按钮仅在受控 Local/Dev 中生成或打开同一个 Germany Draft；真实执行由 Code 原生签名、权限与回滚门禁保护。', 'yby-core' ); ?></p>
+				<?php submit_button( __( '生成 / 打开 Germany 草稿（仅 Dev）', 'yby-core' ), 'primary', 'yby_country_clone_create', false ); ?>
+			</form>
+		<?php endif; ?>
 		<h2><?php esc_html_e( '预检报告 / Preflight Evidence', 'yby-core' ); ?></h2>
 		<p><strong><?php esc_html_e( '结果：BLOCKED（正式克隆写入未开放）', 'yby-core' ); ?></strong></p>
 		<table class="widefat striped">
