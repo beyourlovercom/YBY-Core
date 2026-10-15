@@ -8,7 +8,7 @@ Date: 2026-10-15. Parent issue: #102. Depends on Draft PR #110 (PHP shell) and D
 - The exact production popup visual/DOM and browser screenshots have **not yet been fully verified**; do not claim pixel parity or visual Owner PASS.
 - Inquiry OS already contains `bottle_oem_inquiry`, `bottle_wholesale_inquiry`, and `irrigation_quick_inquiry` presets. The previous Global Popup only requested `irrigation_quick_inquiry`.
 - Existing global popup source, trigger and submission contracts are owned by `YBY_Inquiry_Renderer`, `yby-inquiry-components.js`, Lead SDK and REST route. They must not be duplicated.
-- Latest verified PR #111 baseline for this branch: `b70f4b287ac194f503ad06d39d7ff1fd08025226`, 25 changed files, four successful CI checks. M6 real Dev install and Owner desktop/iPhone14 UAT not yet completed.
+- PR #111 current inspected parent baseline: `669576d457371ad102c4be50073a7f331013af40` (M4/M5 embedded popup controller + legacy nonce regression fixed), CI 4/4 SUCCESS at inspection. The Premium child PR #114 is stacked and remains Draft. M6 real Dev install and Owner desktop/iPhone14 UAT not yet completed.
 
 ## Milestone integration (without restarting M0–M3)
 
@@ -32,6 +32,19 @@ Date: 2026-10-15. Parent issue: #102. Depends on Draft PR #110 (PHP shell) and D
 6. **Site/preset protection:** admins must verify target preset is installed/enabled on Dev and its page-profile eligibility. Do not automatically apply Bottle OEM globally to other business pages.
 7. **Release gate:** GitHub code review + same-HEAD CI, initial/final Dev file hashes and exact allowlist, verified backup/rollback, WordPress role/nonce checks, JS-disabled and 390px/desktop screenshots, visual comparison against authorized production screenshot, protected campaign baseline, explicit Owner PASS.
 8. **Independent PR:** compare against #111 head, not `main`. This extension is not permission to merge #110/#111, ship a ZIP to Dev, or change WWW.
+
+
+## M6 live Dev read-only preflight (continued 2026-10-15)
+
+- Confirmed by authorized China Mac Chrome read-only DOM query on the existing logged-in WordPress admin tab: Dev URL `https://dev.beyourlover.com/wp-admin/admin.php?page=andy-core-email`.
+- **Current Dev is still the earlier V2 runtime:** `document.querySelectorAll('.andy-core-l3-v2').length===1`, `document.querySelectorAll('.andy-core-shell-v22').length===0`, `document.querySelectorAll('nav.nav-tab-wrapper').length===1`.
+- Loaded old JS: `/wp-content/plugins/yby-core/assets/js/andy-core-native-l3-v2.js`; old L3 CSS: `/wp-content/plugins/yby-core/assets/css/andy-core-native-l3-v2.css`.
+- Historical GitHub issue #102 records the earlier six-file Dev V2 upload and exact blob hashes, but those prior read-only hashes are **not substitutes for immediately pre-release server filesystem hashes and a verified rollback backup**.
+- **Hard block**: do not upload these new Premium child files first or replace Dev with a historic v1.9.0 ZIP. Parent V2.2 new PHP shell + Three OS/current Dev Commerce reconciliation must release on a specifically verified allowlist, pass Desktop/M390 UAT, then this independent popup four-file candidate is eligible for a separate Dev-only canary.
+- The OEM visual reference uses `ybybottle.com` whereas this Dev UAT site uses the separate BeYourLover brand context. Dev can verify functional/CSS integration, not claim pixel-perfect live YBY Bottle matching without an authorized production screenshot and final site-specific Owner UAT.
+- Audit found preexisting source-level **fatal route risk**: Three OS `render_inquiry_component()` and Newsletter `render_newsletter_original()` invoked `YBY_Popup_Admin::render_embedded()` which was absent. Restored original nonce-protected shared controller on parent PR #111, and integrated its single-shell view into child PR #114; regression gate added.
+- Premium popup `bottle_oem_inquiry` has original `page_profiles=['bottle_oem']` and now fails closed when selected on a different page profile. Newsletter popup remains present in that case; no silent CRM routing change.
+- Both parent/child GH same-head CI check and release diff **must be re-read immediately before any Dev action**. No main merge, WWW write, real inquiry, analytics change, Worker or READY machine restart.
 
 ## Dev-only proposed file allowlist (must be revalidated against actual Dev baseline)
 
