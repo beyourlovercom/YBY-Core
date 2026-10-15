@@ -22,3 +22,27 @@
         flex-wrap: nowrap;
     }
 }
+
+
+/* M6 Inquiry filters: independently scrollable horizontal toolbar. */
+.yby-inquiry-admin .yby-inquiry-filters {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 8px;
+    padding-bottom: 8px;
+    box-sizing: border-box;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    overscroll-behavior-x: contain;
+}
+.yby-inquiry-admin .yby-inquiry-filters > :not([type="hidden"]) {
+    flex: 0 0 auto;
+}
+@media (max-width: 800px) {
+    .yby-inquiry-admin .yby-inquiry-filters { flex-wrap: nowrap; }
+}
