@@ -46,36 +46,58 @@ class YBY_Country_Clone_Draft_Service {
 			! hash_equals( (string) $audit['source_fingerprint'], (string) $expected_fingerprint ) ) {
 			return new WP_Error( 'clone_source_changed', 'Source fingerprint missing or changed. Repeat read-only preflight.' );
 		}
+		$source_project = get_post( $source_project_id );
+		$source_page = get_post( $source_page_id );
+		$source_country = $audit['page_country'] ?? '';
+		// The LOCAL legacy Project #518 has no Country meta. Its known
+		// Tanzania post/title and landing #292 are explicitly verified in
+		// the isolated LocalWP database. No Production or Dev exception.
+		$local_legacy_anchor = 'localdev.ybyirrigation.com' === $hostname &&
+			518 === $source_project_id && 292 === $source_page_id &&
+			$source_project && 'tanzania' === strtolower( trim( (string) $source_project->post_title ) ) &&
+			$source_page && 'landing_page' === $source_page->post_type &&
+			'Tanzania' === $source_country;
+		$remediable = array(
+			'bricks_signatures', 'country_nodes', 'unclassified_code_refs',
+			'page_script_country', 'page_script_scenarios', 'target_country_buttons',
+		);
 		foreach ( $audit['checks'] as $check ) {
 			if ( 'write_gate' === $check['code'] ) { continue; }
-			if ( ! $check['passed'] ) {
+			if ( 'source_country' === $check['code'] && $local_legacy_anchor ) { continue; }
+			if ( ! $check['passed'] && ! in_array( $check['code'], $remediable, true ) ) {
 				return new WP_Error( 'clone_preflight_blocked', 'Country Clone blocked at: ' . $check['code'] );
 			}
 		}
 
-		$source_page = get_post( $source_page_id );
 		if ( ! $source_page || 'landing_page' !== $source_page->post_type ||
-			false !== stripos( (string) $source_page->post_content, (string) $audit['source_country'] ) ) {
+			'' === $source_country ||
+			false !== stripos( (string) $source_page->post_content, $source_country ) ) {
 			return new WP_Error( 'clone_post_content_unreviewed', 'Country references in post content require manual review.' );
 		}
-		// Only no-Code, no-country-reference Bricks content can currently pass.
-		// Never transfer a Code signature, arbitrary postmeta or executable JS.
+		// Explicitly transform reviewed Germany Bricks nodes and page-level
+		// scripts before any database write. Old Code signatures are stripped
+		// and only the native Bricks signer can authorize the resulting code.
 		$elements = get_post_meta( $source_page_id, '_bricks_page_content_2', true );
 		$page_settings = get_post_meta( $source_page_id, '_bricks_page_settings', true );
 		$page_settings = is_array( $page_settings ) ? $page_settings : array();
-		if ( ! is_array( $elements ) || empty( $elements ) ||
-			! empty( $page_settings['customScriptsBodyFooter'] ) ) {
-			return new WP_Error( 'clone_bricks_unreviewed', 'Bricks executable scripts or unsupported content require approved transformation and native signing.' );
+		if ( ! is_array( $elements ) || empty( $elements ) ) {
+			return new WP_Error( 'clone_bricks_unreviewed', 'Bricks content structure is unsupported.' );
 		}
+		$transformed = YBY_Germany_Clone_Transform::build( $elements, $page_settings );
+		if ( is_wp_error( $transformed ) ) { return $transformed; }
+		$page_settings = $transformed['settings'];
 		if ( ! class_exists( '\\Bricks\\Helpers' ) ||
 			! method_exists( '\\Bricks\\Helpers', 'generate_new_element_ids' ) ) {
 			return new WP_Error( 'clone_bricks_helper_unavailable', 'Bricks native element-ID generator is required.' );
 		}
-		$new_elements = \Bricks\Helpers::generate_new_element_ids( $elements );
+		$new_elements = \Bricks\Helpers::generate_new_element_ids( $transformed['elements'] );
 		if ( ! is_array( $new_elements ) || count( $new_elements ) !== count( $elements ) ||
 			serialize( $elements ) === serialize( $new_elements ) ) {
 			return new WP_Error( 'clone_bricks_ids_unmodified', 'Bricks elements must receive independent new IDs.' );
 		}
+		$signed = YBY_Germany_Clone_Bricks_Signer::sign( $new_elements );
+		if ( is_wp_error( $signed ) ) { return $signed; }
+		$new_elements = $signed['elements'];
 		$css = array();
 		foreach ( array( 'customCss', 'customCss:mobile_portrait' ) as $key ) {
 			if ( isset( $page_settings[ $key ] ) && is_string( $page_settings[ $key ] ) ) {
@@ -89,6 +111,9 @@ class YBY_Country_Clone_Draft_Service {
 			}
 		}
 
+		// The page-level scenario script is reviewed and scoped to this
+		// Germany draft. Only explicit known page settings are replicated.
+		$css['customScriptsBodyFooter'] = $page_settings['customScriptsBodyFooter'];
 		$source_thank_you = get_post_meta( $source_page_id, 'yby_thank_you_url', true );
 		if ( ! is_string( $source_thank_you ) || ! preg_match( '#^/lp/[a-z0-9/-]+/$#i', $source_thank_you ) ) {
 			return new WP_Error( 'clone_thank_you_unverified', 'Thank You path must be verified and stay relative on Local/Dev.' );
