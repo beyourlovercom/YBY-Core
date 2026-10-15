@@ -44,8 +44,6 @@ final class YBY_Three_OS_Admin {
         if ( class_exists( 'YBY_Mail_V2_P8_Readonly' ) && YBY_Mail_V2_P8_Readonly::configured() ) {
             $tabs['live_readonly'] = '独立 MySQL 实时只读';
         }
-        if ( false ) {
-        }
         return $tabs;
     }
 
@@ -255,8 +253,6 @@ final class YBY_Three_OS_Admin {
         }
         if ( class_exists( 'YBY_Mail_V2_P8_Readonly' ) && YBY_Mail_V2_P8_Readonly::configured() ) {
             $tabs['live_readonly'] = '独立 MySQL 实时只读';
-        }
-        if ( false ) {
         }
         $tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
         if ( ! isset( $tabs[ $tab ] ) ) { $tab = 'overview'; }
