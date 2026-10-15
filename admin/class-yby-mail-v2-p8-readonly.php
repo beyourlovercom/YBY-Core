@@ -82,7 +82,13 @@ final class YBY_Mail_V2_P8_Readonly {
         if (count($cols)!==count(self::COLUMNS)) {return false;}
         $names=array_keys(self::COLUMNS);$defs=array_values(self::COLUMNS);
         foreach ($cols as $i=>$r) {
-            $observed=strtolower($r['COLUMN_TYPE']).($r['IS_NULLABLE']==='YES'?' null':' not null');
+            $type=strtolower((string)$r['COLUMN_TYPE']);
+            // MariaDB 11.x reports legacy integer display widths (e.g.
+            // bigint(20) unsigned); MySQL 8.x omits them. Width does not
+            // change the stored integer type. Normalize only int families.
+            $type=preg_replace('/\\A(tinyint|int|bigint)\\([0-9]+\\)( unsigned)?\\z/D',
+                '$1$2',$type);
+            $observed=$type.($r['IS_NULLABLE']==='YES'?' null':' not null');
             if ($r['COLUMN_NAME']!==$names[$i] || $observed!==$defs[$i]) {return false;}
         }
         $stmt=$pdo->prepare('SELECT INDEX_NAME,COLUMN_NAME,NON_UNIQUE,SEQ_IN_INDEX FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? ORDER BY INDEX_NAME,SEQ_IN_INDEX');
