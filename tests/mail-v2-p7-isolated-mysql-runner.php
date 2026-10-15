@@ -33,6 +33,24 @@ function p7db($socket,$db='') {
         'root','',array(PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,
                         PDO::ATTR_EMULATE_PREPARES=>false));
 }
+// Execute the competitor in a fresh PHP image, without inherited PDO sockets.
+if (($argv[1] ?? '') === '--cas-child') {
+    $child_id=$argv[2] ?? '';
+    if (!is_string($child_id) || !preg_match('/\\A[a-f0-9]{64}\\z/D',$child_id) ||
+        count($argv)!==3) { exit(89); }
+    $child_marker=$base.'/artifacts/race-result.txt';
+    try {
+        $child=p7db($socket,'p7_mail_synthetic_uat');
+        $child->exec('SET innodb_lock_wait_timeout=4');
+        $stmt=$child->prepare("UPDATE p7_yby_mail_v2_outbox SET state='leased',state_version=2 WHERE opaque_id=? AND state='queued' AND state_version=0");
+        $stmt->execute(array($child_id));
+        file_put_contents($child_marker,(string)$stmt->rowCount(),LOCK_EX);
+        exit(0);
+    } catch (Throwable $e) {
+        file_put_contents($child_marker,'ERROR',LOCK_EX);
+        exit(90);
+    }
+}
 $root=p7db($socket);
 $meta=$root->query('SELECT @@datadir AS d,@@skip_networking AS n,@@version AS v')->fetch(PDO::FETCH_ASSOC);
 p7ok(1 === (int)$meta['n'],'network must be off');
@@ -117,15 +135,11 @@ p7ok(!file_exists($marker),'no stale race marker');
 $pid=pcntl_fork();
 if($pid===-1){throw new RuntimeException('FORK_UNAVAILABLE');}
 if($pid===0){
-    try{
-        unset($root,$other);
-        $child=p7db($socket,$dbname);
-        $child->exec('SET innodb_lock_wait_timeout=4');
-        $stmt2=$child->prepare("UPDATE ".$table." SET state='leased',state_version=2 WHERE opaque_id=? AND state='queued' AND state_version=0");
-        $stmt2->execute(array($rowid));
-        file_put_contents($marker,(string)$stmt2->rowCount(),LOCK_EX);
-        exit(0);
-    }catch(Throwable $e){file_put_contents($marker,'ERROR',LOCK_EX);exit(9);}
+    // exec discards all inherited parent PDO connections, avoiding mysqlnd QUIT
+    // sent from destructors in a forked child against the parent's sockets.
+    pcntl_exec(PHP_BINARY,array(__FILE__,'--cas-child',$rowid));
+    file_put_contents($marker,'EXEC_FAILED',LOCK_EX);
+    exit(91);
 }
 usleep(250000);
 $root->commit();
