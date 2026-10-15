@@ -16,7 +16,7 @@ final class YBY_Andy_OS_Navigation {
 	 */
 	public static function root_capability() {
 		foreach ( array( 'manage_options', 'andy_core_settings_manage', 'andy_core_leads_view',
-			'andy_core_newsletter_view', 'andy_core_mail_view', 'manage_woocommerce', 'edit_posts' ) as $cap ) {
+			'andy_core_newsletter_view', 'andy_core_mail_view', 'manage_woocommerce' ) as $cap ) {
 			if ( current_user_can( $cap ) ) { return $cap; }
 		}
 		return 'manage_options'; // No capability is granted by returning a string.
