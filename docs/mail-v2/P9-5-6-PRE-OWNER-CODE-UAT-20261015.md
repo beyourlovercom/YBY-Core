@@ -15,7 +15,7 @@
   `~/.byl-dev-canary/mail-v2-p9-mysql-20261015/artifacts/p9-5-cold-datadir-102-20261015.tar.gz`;
   permissions `0600`, archive size **3,006,048 bytes**, 179 listed entries.
   SHA256 `1fd73f8915f0b05b38c2c99f22c739ff182121d254b3a4bdcedf0e489b6374f7`.
-  Contents include private MySQL system state; do NOT upload to GitHub, chats or public storage. Archive listing + SHA verified; **an independent restore test is still needed** before calling it a fully verified recoverable backup.
+  Contents include private MySQL system state; do NOT upload to GitHub, chats or public storage. Archive listing + SHA verified. **Independent cold restore PASS**: extracted into a distinct private `mail-v2-p9-restore-20261015` directory; started only the isolated MySQL 8.4.11 instance with a separate Unix socket, `@@skip_networking=1`, authenticated independently as `p9_reader@localhost` and performed read-only query. The restored database contains exactly **102 synthetic records: 98 queued, 1 leased, 2 uncertain, 1 deferred with retry_exhausted**; no customer records or SMTP. Restore instance shut down cleanly and remains OFF. No other MySQL was restarted. This is a **verified point-in-time cold restore**, not a proof of actual operational sender recovery.
 - Original P9 dedicated MySQL instance is **cleanly shut down**, system Homebrew MySQL remains running. No READY machine restart. Do not initialize or overwrite any datadir.
 
 ## 2. Additional source-only audit fault simulation
