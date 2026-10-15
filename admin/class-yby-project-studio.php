@@ -222,6 +222,11 @@ class YBY_Project_Studio {
 			exit;
 		}
 
+		if ( 'clone' === $view && $post_id ) {
+			$this->render_country_clone( $post_id );
+			return;
+		}
+
 		if ( 'runtime' === $view && $post_id ) {
 			$this->render_runtime_viewer( $post_id );
 			return;
@@ -252,6 +257,57 @@ class YBY_Project_Studio {
 		);
 
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/project-list.php';
+	}
+
+	/**
+	 * Render Germany clone read-only preflight.
+	 * No Project, Landing Page or settings writes take place here.
+	 *
+	 * @param int $post_id Source Project post ID.
+	 * @return void
+	 */
+	protected function render_country_clone( $post_id ) {
+		$post_id = absint( $post_id );
+		$post = get_post( $post_id );
+		if ( ! $post || YBY_Project_CPT::post_type() !== $post->post_type ||
+			! current_user_can( 'edit_post', $post_id ) ) {
+			wp_die( esc_html__( 'Source Project not accessible.', 'yby-core' ) );
+		}
+
+		$preflight = null;
+		$clone_result = null;
+		$clone_error = null;
+		// The exact Tanzania #518 → #292 pairing is confirmed on Local and
+		// isolated Dev. Other projects must supply their real Landing ID.
+		$submitted_landing_id = 518 === $post_id ? 292 : 0;
+		$preview_requested = isset( $_POST['yby_country_clone_preflight'] );
+		$create_requested = isset( $_POST['yby_country_clone_create'] );
+		if ( $preview_requested || $create_requested ) {
+			check_admin_referer(
+				( $create_requested ? 'yby_country_clone_create_' : 'yby_country_clone_preflight_' ) . $post_id
+			);
+			$submitted_project = isset( $_POST['source_project_id'] )
+				? absint( wp_unslash( $_POST['source_project_id'] ) ) : 0;
+			if ( $submitted_project !== $post_id ) {
+				wp_die( esc_html__( 'Source Project mismatch.', 'yby-core' ) );
+			}
+			$submitted_landing_id = isset( $_POST['source_landing_id'] )
+				? absint( wp_unslash( $_POST['source_landing_id'] ) ) : 0;
+			$preflight = YBY_Country_Clone_Preflight::evaluate( $post_id, $submitted_landing_id, 'DE' );
+			if ( $create_requested ) {
+				$expected_fingerprint = isset( $_POST['source_fingerprint'] )
+					? sanitize_text_field( wp_unslash( $_POST['source_fingerprint'] ) ) : '';
+				$operation = YBY_Country_Clone_Draft_Service::create(
+					$post_id, $submitted_landing_id, $expected_fingerprint
+				);
+				if ( is_wp_error( $operation ) ) {
+					$clone_error = $operation->get_error_message();
+				} else {
+					$clone_result = $operation;
+				}
+			}
+		}
+		include YBY_CORE_PLUGIN_DIR . 'admin/views/project-country-clone.php';
 	}
 
 	/**
