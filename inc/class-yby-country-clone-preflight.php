@@ -139,6 +139,9 @@ class YBY_Country_Clone_Preflight {
 			serialize( $page_settings ),
 			(string) ( $page->post_content ?? '' ),
 			serialize( get_post_meta( $project_id ) ),
+			serialize( $meta ),
+			(string) ( $project->post_status ?? '' ),
+			(string) ( $page->post_status ?? '' ),
 		) ) );
 		$result['allowed'] = 0 === count( array_filter( $result['checks'], static function ( $check ) {
 			return ! $check['passed'];
