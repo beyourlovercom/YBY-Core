@@ -12,6 +12,8 @@ class YBY_Global_Popup {
 	public static function defaults() {
 		return array(
 			'inquiry_title' => '', 'inquiry_subtitle' => '', 'inquiry_image' => '',
+			// Visual template and business preset are independent, site-local choices. Legacy defaults are unchanged.
+			'inquiry_template' => 'classic', 'inquiry_preset' => 'irrigation_quick_inquiry',
 			'subscribe_title' => 'Stay in the loop', 'subscribe_subtitle' => 'Get useful updates from us.', 'subscribe_image' => '',
 			'inquiry_custom_css' => '', 'subscribe_custom_css' => '',
 			'inquiry_shortcode_custom_css' => '', 'subscribe_shortcode_custom_css' => '',
@@ -23,6 +25,10 @@ class YBY_Global_Popup {
 		$raw = is_array( $raw ) ? $raw : array(); $out = array();
 		foreach ( array( 'inquiry_title','inquiry_subtitle','subscribe_title','subscribe_subtitle' ) as $key ) { $out[ $key ] = sanitize_text_field( $raw[ $key ] ?? '' ); }
 		foreach ( array( 'inquiry_image','subscribe_image' ) as $key ) { $out[ $key ] = esc_url_raw( $raw[ $key ] ?? '' ); }
+		$template = sanitize_key( $raw['inquiry_template'] ?? 'classic' );
+		$out['inquiry_template'] = in_array( $template, array( 'classic', 'premium_v22' ), true ) ? $template : 'classic';
+		$preset_id = sanitize_key( $raw['inquiry_preset'] ?? 'irrigation_quick_inquiry' );
+		$out['inquiry_preset'] = in_array( $preset_id, array( 'irrigation_quick_inquiry', 'bottle_oem_inquiry', 'bottle_wholesale_inquiry' ), true ) ? $preset_id : 'irrigation_quick_inquiry';
 		foreach ( array( 'subscribe_shortcode_show_title', 'subscribe_shortcode_show_subtitle', 'subscribe_shortcode_show_image' ) as $key ) { $out[ $key ] = empty( $raw[ $key ] ) ? 0 : 1; }
 		foreach ( array( 'inquiry_custom_css', 'subscribe_custom_css', 'inquiry_shortcode_custom_css', 'subscribe_shortcode_custom_css' ) as $key ) { $out[ $key ] = self::sanitize_custom_css( $raw[ $key ] ?? '' ); }
 		return wp_parse_args( $out, self::defaults() );
@@ -35,11 +41,19 @@ class YBY_Global_Popup {
 	}
 	public function render() {
 		$settings = self::sanitize( self::settings() );
-		$preset = $this->manager->get_preset_manager()->get_preset( 'irrigation_quick_inquiry' );
+		$preset = $this->manager->get_preset_manager()->get_preset( $settings['inquiry_preset'] );
 		if ( ! is_array( $preset ) || empty( $preset['enabled'] ) ) { return; }
 		$fields = $this->manager->get_field_manager()->get_fields(); $ordered = array();
 		foreach ( $preset['fields'] as $id ) { if ( isset( $fields[ $id ] ) && ! empty( $fields[ $id ]['enabled'] ) ) { $ordered[] = $fields[ $id ]; } }
-		$inquiry = $this->renderer->render_modal( $preset, $ordered, array( 'id' => 'yby-global-inquiry-popup', 'title' => $settings['inquiry_title'], 'subtitle' => $settings['inquiry_subtitle'], 'image' => $settings['inquiry_image'], 'class' => array( 'yby-global-popup__legacy-form' ) ) );
+		$premium = 'premium_v22' === $settings['inquiry_template'];
+		$attributes = array( 'id' => 'yby-global-inquiry-popup', 'title' => $settings['inquiry_title'], 'subtitle' => $settings['inquiry_subtitle'], 'image' => $settings['inquiry_image'], 'class' => array( 'yby-global-popup__legacy-form' ) );
+		if ( $premium ) {
+			// Rendering only: no alternate submit endpoint, tracking protocol or field schema.
+			$attributes['class'][] = 'andy-popup-template--premium-v22';
+			$attributes['layout'] = 'premium_split';
+			$attributes['mobile_layout'] = 'premium_stack';
+		}
+		$inquiry = $this->renderer->render_modal( $preset, $ordered, $attributes );
 		$inquiry = preg_replace( '/class="yby-inquiry-modal/', 'class="yby-global-popup yby-global-popup--inquiry yby-inquiry-modal', $inquiry, 1 );
 		$inquiry = str_replace( 'data-yby-inquiry-modal ', 'data-yby-inquiry-modal data-yby-global-popup="inquiry" ', $inquiry );
 		$theme = class_exists( 'YBY_Brand_Profile' ) ? YBY_Brand_Profile::get_theme_config() : array();
