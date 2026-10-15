@@ -1,0 +1,132 @@
+{
+  "version": 1,
+  "environment": "DEV ONLY",
+  "site": "dev.beyourlover.com",
+  "source_pr": 111,
+  "source_sha": "f84652f7c5128640ddabac0db5327fabf846a16c",
+  "approved_design": "Andy Core V2.2",
+  "status": "PREPARED_NOT_DEPLOYED",
+  "plugin_root": "wp-content/plugins",
+  "items": [
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-andy-admin-shell-v22.php",
+      "dev_before_git_blob": null,
+      "release_git_blob": "f836ebd9ffa800772460e6cd9b22152a47bff196"
+    },
+    {
+      "plugin": "yby-core",
+      "path": "assets/css/andy-core-admin-shell-v22.css",
+      "dev_before_git_blob": null,
+      "release_git_blob": "866bbf587b7ada4539506f99c0db17162c1e8f4d"
+    },
+    {
+      "plugin": "yby-core",
+      "path": "inc/class-yby-core.php",
+      "dev_before_git_blob": "271126e86165cfb9f5038f37f3a4aeade0a12285",
+      "release_git_blob": "b54ff6134297213378d0ac95d8009e890ce2ce6e"
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-three-os-admin.php",
+      "dev_before_git_blob": "c088cd7d848f100d906f45bf635ba9fdfa005420",
+      "release_git_blob": "51f628a36fdc71acd7d06c088dd5311025c19afd"
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-inquiry-admin.php",
+      "dev_before_git_blob": "cc241abd3bffecf24d93dd83512995a48c31e5cf",
+      "release_git_blob": "7ee144cee4c60004d2bd5861d3cf7df65ea8a945"
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-business-os-admin.php",
+      "dev_before_git_blob": "793dd03d89c7bbaa7b4bd0ff7a2fd3193bf39d93",
+      "release_git_blob": "a112cdff97083a62ece8a7e030171ccdc13839da"
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/class-yby-admin.php",
+      "dev_before_git_blob": "b35c15354715603aff76bb32b9d96c584b87b299",
+      "release_git_blob": "0cd987be10d46b2aa00976d6a4127e9027841c0a"
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/views/settings-page.php",
+      "dev_before_git_blob": "d3e50c44d723d1172d66bad997c8705e5a2f062c",
+      "release_git_blob": "bfdd64889ff5a89d2294de9a0eea1646380421e1"
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/views/modules-page.php",
+      "dev_before_git_blob": "6569f8b9af65f2860f43f40eb0fbcc7cabded4a1",
+      "release_git_blob": "c4a2e1377c86cec60c8f6d2672a94ba836739517"
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/views/addons-page.php",
+      "dev_before_git_blob": "0b3d706622922337c85c83601814855faf0a6294",
+      "release_git_blob": "8a29b27f049d4ad16cbae4159e1e1b3d0453f826"
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/views/article-toc-settings.php",
+      "dev_before_git_blob": "1297726e5b44f6e99de765ef02619e0c9e524b40",
+      "release_git_blob": "b90525c66c17cb95b87728cd5434e9da181f3c48"
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/views/system-status.php",
+      "dev_before_git_blob": "b73b54b2e5c9f5180791457c9b81732a74e5015c",
+      "release_git_blob": "052c46b440cd1420463f11b3aa1c043e623f4480"
+    },
+    {
+      "plugin": "yby-core",
+      "path": "admin/views/connector-page.php",
+      "dev_before_git_blob": "3644a4b08f4d34a9544f382098516fe9c530615b",
+      "release_git_blob": "0ace9147411f03b57a3d6598f4d087faa49fe4b6"
+    },
+    {
+      "plugin": "andy-commerce",
+      "path": "admin/class-andy-commerce-admin.php",
+      "dev_before_git_blob": "52346e54f73546533009ecfd32134b12875f38bc",
+      "release_git_blob": "974c5b6c558e45f92b13a19cde17981290eee786"
+    },
+    {
+      "plugin": "andy-commerce",
+      "path": "admin/views/overview.php",
+      "dev_before_git_blob": "11f562618721766cb02684170683fb8223e70e8f",
+      "release_git_blob": "4c19aede7fa99edb3a97261525576e932e21fe9d"
+    },
+    {
+      "plugin": "andy-commerce",
+      "path": "admin/views/checkout-shipping.php",
+      "dev_before_git_blob": "3bcd8beeb9e9bf2238ad278e6aaf656580b2279b",
+      "release_git_blob": "f4dcf47828b9c5860725dc14d50f587c38f1e3fe"
+    },
+    {
+      "plugin": "andy-commerce",
+      "path": "admin/views/order-export.php",
+      "dev_before_git_blob": "1ccd46d79c9836b7305c4fe93c6bfaa6462966d6",
+      "release_git_blob": "8aa0c04e7fd1363de49ea3510166e9c610e99903"
+    },
+    {
+      "plugin": "andy-commerce",
+      "path": "admin/views/marketing-promotions.php",
+      "dev_before_git_blob": "98781e73c8cce3cd61e444605257d997e461ac23",
+      "release_git_blob": "233c9bb6d7973f247c3c651c3bb60d5dba5c9c7c"
+    }
+  ],
+  "forbidden": [
+    "WWW",
+    "Production",
+    "ERP",
+    "DB migration",
+    "orders",
+    "payments",
+    "SMTP credentials",
+    "real email",
+    "restarting READY devices"
+  ],
+  "release_gate": "Every current Dev original must match dev_before_git_blob before upload; null denotes file must be absent."
+}
