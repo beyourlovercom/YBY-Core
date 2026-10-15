@@ -24,16 +24,16 @@ class YBY_Update_Verifier {
 		return '' !== $candidate && '' !== $current && version_compare( $candidate, $current, '>' );
 	}
 
-	public static function release_version( $release ) {
-		if ( ! is_array( $release ) || ! empty( $release['draft'] ) || ! empty( $release['prerelease'] ) ) {
+	public static function release_version( $release, $allow_prerelease = false ) {
+		if ( ! is_array( $release ) || ! empty( $release['draft'] ) || ( ! $allow_prerelease && ! empty( $release['prerelease'] ) ) ) {
 			return '';
 		}
 		$tag = isset( $release['tag_name'] ) ? trim( (string) $release['tag_name'] ) : '';
 		return 1 === preg_match( '/^v([0-9]+\.[0-9]+\.[0-9]+)$/', $tag, $match ) ? self::stable_version( $match[1] ) : '';
 	}
 
-	public static function select_asset( $release, $version ) {
-		if ( self::release_version( $release ) !== $version || ! isset( $release['assets'] ) || ! is_array( $release['assets'] ) ) {
+	public static function select_asset( $release, $version, $allow_prerelease = false ) {
+		if ( self::release_version( $release, $allow_prerelease ) !== $version || ! isset( $release['assets'] ) || ! is_array( $release['assets'] ) ) {
 			return false;
 		}
 
