@@ -82,7 +82,7 @@ class P9TestPDO extends PDO {
            "GRANT SELECT, INSERT, UPDATE ON {$g}p9_mail_synthetic_uat{$g}.* TO 'p9_writer'@'localhost'");
         $this->tables=array(array('TABLE_NAME'=>'p9_yby_mail_v2_outbox','ENGINE'=>'InnoDB','TABLE_COLLATION'=>'ascii_bin'));
         foreach(YBY_Mail_V2_P6_Outbox_Plan::columns() as $k=>$v){
-            $nullable=str_ends_with(strtolower($v),' null');
+            $nullable=!str_ends_with(strtolower($v),'not null');
             $this->columns[]=array('COLUMN_NAME'=>$k,'COLUMN_TYPE'=>strtolower(preg_replace('/ (?:NOT )?NULL\z/i','',$v)),'IS_NULLABLE'=>$nullable?'YES':'NO');
         }
         foreach(YBY_Mail_V2_P6_Outbox_Plan::INDEXES as $key=>$fields){
