@@ -68,6 +68,21 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 			<?php echo esc_html( sprintf( 'Bricks elements: %d; Code/SVG elements: %d; Country mentions in Bricks data: %d',
 				(int) $preflight['bricks_elements'], (int) $preflight['bricks_code_elements'], (int) $preflight['country_mentions'] ) ); ?>
 		</p>
+		<?php if ( ! empty( $preflight['transform_plan'] ) ) : ?>
+			<h3><?php esc_html_e( '国家字段分类 / Country Transform Review', 'yby-core' ); ?></h3>
+			<table class="widefat striped">
+				<tbody>
+				<?php foreach ( array(
+					'form_country_defaults' => '表单国家默认值 / Form Country Inputs',
+					'country_pills' => '国家选择按钮 / Country Pills',
+					'scenario_headings' => '项目案例标题（需人工核实） / Scenario Country',
+					'unclassified_code_refs' => '未分类国家引用（阻断） / Unclassified References',
+				) as $code => $label ) : ?>
+				<tr><th><?php echo esc_html( $label ); ?></th><td><?php echo esc_html( (string) (int) ( $preflight['transform_plan'][ $code ] ?? 0 ) ); ?></td></tr>
+				<?php endforeach; ?>
+				</tbody>
+			</table>
+		<?php endif; ?>
 		<p><strong><?php esc_html_e( 'Bricks 元数据键（不显示敏感值）：', 'yby-core' ); ?></strong>
 			<?php echo esc_html( implode( ', ', $preflight['bricks_keys'] ) ); ?>
 		</p>
