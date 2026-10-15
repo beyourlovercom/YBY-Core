@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 ?>
 <div class="wrap">
 	<?php if ( ! class_exists( 'YBY_Andy_Admin_Shell_V22' ) || ! YBY_Andy_Admin_Shell_V22::suppress_legacy_tabs( Andy_Commerce_Admin::PAGE_SLUG ) ) : ?>
-<h1><?php esc_html_e( 'Andy Commerce', 'andy-commerce' ); ?></h1>
+	<h1><?php esc_html_e( 'Andy Commerce', 'andy-commerce' ); ?></h1>
 	<nav class="nav-tab-wrapper" aria-label="Andy Commerce sections">
 		<a class="nav-tab" href="<?php echo esc_url( add_query_arg( array( 'page' => Andy_Commerce_Admin::PAGE_SLUG, 'tab' => 'overview' ), admin_url( 'admin.php' ) ) ); ?>">Overview</a>
 		<a class="nav-tab" href="<?php echo esc_url( add_query_arg( array( 'page' => Andy_Commerce_Admin::PAGE_SLUG, 'tab' => 'order-export' ), admin_url( 'admin.php' ) ) ); ?>">Order Export</a>
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 		<a class="nav-tab nav-tab-active" aria-current="page" href="<?php echo esc_url( add_query_arg( array( 'page' => Andy_Commerce_Admin::PAGE_SLUG, 'tab' => 'marketing-promotions' ), admin_url( 'admin.php' ) ) ); ?>">Marketing / Promotions</a>
 		<a class="nav-tab" href="<?php echo esc_url( add_query_arg( array( 'page' => Andy_Commerce_Admin::PAGE_SLUG, 'tab' => 'settings' ), admin_url( 'admin.php' ) ) ); ?>">Settings</a>
 	</nav>
-<?php endif; ?>
+	<?php endif; ?>
 
 	<div class="notice notice-info inline"><p><strong><?php esc_html_e( 'Design preview only — all new promotions are OFF.', 'andy-commerce' ); ?></strong>
 		<?php esc_html_e( 'The existing shipping and coupon policy is unchanged. Draft editing, scheduling and publishing are not available in this phase.', 'andy-commerce' ); ?></p></div>

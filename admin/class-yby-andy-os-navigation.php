@@ -268,6 +268,18 @@ final class YBY_Andy_OS_Navigation {
 				$tabs['preview_queue'] = '队列（Dev 预览）';
 				$tabs['preview_failures'] = '失败处理（Dev 预览）';
 			}
+			// Preserve independently deployed P8 setup and read-only MySQL views.
+			if ( current_user_can( 'manage_options' ) &&
+			     class_exists( 'YBY_Mail_V2_P8_Setup' ) && YBY_Mail_V2_P8_Setup::available() ) {
+				$tabs['p8_setup'] = 'P8 数据库连接';
+			}
+			if ( current_user_can( 'manage_options' ) &&
+			     class_exists( 'YBY_Mail_V2_P8_Readonly' ) && YBY_Mail_V2_P8_Readonly::configured() ) {
+				$url = YBY_Mail_V2_P8_Readonly::url();
+				if ( is_string( $url ) && '' !== $url ) {
+					$items[] = array( 'title' => '独立 MySQL 实时只读', 'url' => $url );
+				}
+			}
 			foreach ( $tabs as $tab=>$label ) {
 				if ( 'email_templates' === $tab && ! current_user_can( 'andy_core_settings_manage' ) ) { continue; }
 				$add( $label, 'admin.php?page=andy-core-email&tab='.$tab, 'andy_core_mail_view', 'email_os' );

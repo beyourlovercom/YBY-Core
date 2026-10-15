@@ -78,3 +78,36 @@
 	#wpbody-content .andy-core-shell-v22__body { padding: 12px 8px; }
 	#wpbody-content .andy-core-shell-v22__header { padding: 12px 14px; }
 }
+
+
+/* M6-D mobile UAT fix: full-width L3 navigation and accessible wide tables. */
+@media (max-width: 600px) {
+    #wpbody-content .andy-core-shell-v22__columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    #wpbody-content .andy-core-shell-v22__rail {
+        border-right: 0;
+        border-bottom: 1px solid var(--andy-border);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+        padding: 8px;
+    }
+    #wpbody-content .andy-core-shell-v22__rail-title {
+        flex: 0 0 100%;
+        margin: 0 0 4px;
+    }
+    #wpbody-content .andy-core-shell-v22__link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 6px 9px;
+        font-size: 12px;
+    }
+    #wpbody-content .andy-core-shell-v22__body {
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+}
