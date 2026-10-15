@@ -49,6 +49,7 @@
 		const existingTabs = wrap.querySelector(':scope > nav.nav-tab-wrapper');
 		if (existingTabs && /^(andy-core-leads|andy-core-newsletter|andy-core-email|andy-commerce|yby-core)$/.test(config.page)) {
 			existingTabs.hidden = true;
+			existingTabs.style.setProperty('display', 'none', 'important');
 			existingTabs.setAttribute('aria-hidden', 'true');
 		}
 		const view = document.createElement('div');
