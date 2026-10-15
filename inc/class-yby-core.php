@@ -88,6 +88,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-docs-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-content-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-andy-os-navigation.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-andy-admin-shell-v22.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-inquiry-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-business-os-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
@@ -214,7 +215,8 @@ class YBY_Core {
 		$this->loader->add_action( 'admin_menu', $project_studio, 'normalize_root_menu', 999 );
 		$this->loader->add_action( 'admin_menu', new YBY_Andy_OS_Navigation(), 'consolidate', 1100 );
 		$this->loader->add_action( 'admin_init', new YBY_Andy_OS_Navigation(), 'redirect_entry', 9 );
-		$this->loader->add_action( 'admin_enqueue_scripts', new YBY_Andy_OS_Navigation(), 'enqueue_tertiary' );
+		// V2.2: disable the V2 generic late DOM mover; originals remain intact until individually adapted.
+		$this->loader->add_action( 'admin_enqueue_scripts', new YBY_Andy_Admin_Shell_V22(), 'enqueue_styles' );
 		$this->loader->add_filter( 'parent_file', new YBY_Andy_OS_Navigation(), 'filter_parent_file', 1100 );
 		$this->loader->add_filter( 'submenu_file', new YBY_Andy_OS_Navigation(), 'filter_submenu_file', 1100 );
 		$this->loader->add_action( 'admin_enqueue_scripts', $brand_os, 'enqueue_assets' );
