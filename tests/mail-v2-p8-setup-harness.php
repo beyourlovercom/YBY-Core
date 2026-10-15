@@ -53,7 +53,7 @@ class P8FakeResult {
  private $rows;
  public function __construct($r){$this->rows=$r;}
  public function fetchColumn(){return $this->rows[0][0]??null;}
- public function fetchAll($mode=0){return $this->rows;}
+ public function fetchAll($mode=0){return $mode===PDO::FETCH_COLUMN ? array_map(static function($r){return is_array($r)?$r[0]:$r;},$this->rows) : $this->rows;}
  public function fetch($mode=0){return $this->rows[0]??false;}
 }
 class P8FakeStmt {
