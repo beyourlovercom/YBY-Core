@@ -2,6 +2,10 @@
 /** V2.2 Premium popup: zero-IO renderer, preset, visual isolation and legacy fallback regression. */
 if ( ! defined( 'ABSPATH' ) ) { define( 'ABSPATH', __DIR__ ); }
 $GLOBALS['popup_options'] = array();
+$GLOBALS['test_page_profile'] = '';
+class YBY_Page_Profile {
+    public static function get_current_profile() { return array( 'profileId' => $GLOBALS['test_page_profile'] ); }
+}
 function get_option( $key, $fallback = array() ) { return $GLOBALS['popup_options']; }
 function wp_parse_args( $args, $defaults ) { return array_merge( $defaults, is_array( $args ) ? $args : array() ); }
 function sanitize_key( $v ) { return preg_replace( '/[^a-z0-9_-]/', '', strtolower( (string) $v ) ); }
@@ -27,7 +31,8 @@ class Premium_Test_Presets {
             'fields' => $id === 'bottle_oem_inquiry'
                 ? array( 'name', 'company', 'contact', 'estimated_quantity' )
                 : array( 'name', 'company', 'contact' ),
-            'mobile_fields' => array( 'name', 'contact' )
+            'mobile_fields' => array( 'name', 'contact' ),
+            'page_profiles' => $id === 'bottle_oem_inquiry' ? array( 'bottle_oem' ) : array()
         );
     }
 }
@@ -69,12 +74,18 @@ $assert( strpos( $classic, 'id="yby-global-inquiry-popup"' ) !== false, 'origina
 $assert( strpos( $classic, 'data-yby-global-popup="inquiry"' ) !== false, 'original popup trigger contract kept' );
 $assert( strpos( $classic, 'data-yby-source-component="inquiry_modal"' ) !== false, 'original source marker kept' );
 $GLOBALS['popup_options'] = array( 'inquiry_template' => 'premium_v22', 'inquiry_preset' => 'bottle_oem_inquiry' );
+$GLOBALS['test_page_profile'] = 'bottle_oem';
 $oem = $render();
 $second = $renderer->captures[1];
 $assert( $second['preset']['id'] === 'bottle_oem_inquiry', 'OEM preset retained' );
 $assert( in_array( 'andy-popup-template--premium-v22', $second['attributes']['class'], true ), 'scoped Premium class' );
 $assert( count( $second['mobile_fields'] ) === 2 && $second['mobile_fields'][1]['id'] === 'contact', 'OEM mobile fields use same schema' );
 $assert( strpos( $oem, 'data-yby-preset="bottle_oem_inquiry"' ) !== false, 'OEM preset metadata kept' );
+$GLOBALS['test_page_profile'] = 'irrigation';
+$blocked = $render();
+$assert( strpos( $blocked, 'data-yby-global-popup="inquiry"' ) === false, 'OEM popup must never appear on another business profile' );
+$assert( strpos( $blocked, 'data-yby-global-popup="subscribe"' ) !== false, 'cross-profile guard does not hide Newsletter popup' );
+$assert( count( $renderer->captures ) === 2, 'no unrelated page OEM form rendered' );
 $GLOBALS['popup_options']['inquiry_preset'] = 'bottle_wholesale_inquiry';
 $wholesale = $render();
 $assert( $renderer->captures[2]['preset']['id'] === 'bottle_wholesale_inquiry', 'Wholesale independent from OEM' );
