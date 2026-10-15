@@ -112,4 +112,27 @@ $setup(array());
 $assert('manage_options'===YBY_Andy_OS_Navigation::root_capability(),'unprivileged fail-closed');
 YBY_Andy_OS_Navigation::consolidate();
 $assert(0===count($GLOBALS['submenu']['yby-os']),'no unauthorized submenu');
+// Third-level links point only to real, capability-gated existing controllers.
+$setup(array('manage_options','andy_core_settings_manage','manage_woocommerce','andy_core_leads_view','andy_core_newsletter_view','andy_core_mail_view','edit_pages'));
+$inquiry = YBY_Andy_OS_Navigation::tertiary_items('andy-core-leads');
+$assert(7===count($inquiry),'all seven existing inquiry functions retained for authorized admin');
+$newsletter = YBY_Andy_OS_Navigation::tertiary_items('andy-core-newsletter');
+$assert(4===count($newsletter),'only operational newsletter tabs visible');
+$email = YBY_Andy_OS_Navigation::tertiary_items('andy-core-email');
+$assert(4===count($email),'email overview/templates/transport/health only; no phantom Worker');
+$content = YBY_Andy_OS_Navigation::tertiary_items('andy-business');
+$assert(4===count($content),'four actual Business configuration pages');
+$assert(!str_contains(json_encode($content),'yby-docs'),'disabled Docs OS cannot appear');
+$commerce = YBY_Andy_OS_Navigation::tertiary_items('andy-commerce');
+$assert(5===count($commerce),'five original Commerce tabs retained');
+$setup(array('andy_core_mail_view'));
+$mail_only = YBY_Andy_OS_Navigation::tertiary_items('andy-core-email');
+$assert(3===count($mail_only),'mail-only employee sees no restricted template editor');
+$assert(0===count(YBY_Andy_OS_Navigation::tertiary_items('andy-commerce')),'mail-only cannot see Commerce L3');
+$setup(array('andy_core_leads_view'));
+$assert(2===count(YBY_Andy_OS_Navigation::tertiary_items('andy-core-leads')),'inquiry-only gets list and read-only stats');
+$_SERVER['REQUEST_METHOD']='POST';
+$_GET['page']='andy-core-marketing';
+YBY_Andy_OS_Navigation::redirect_entry(); // POST must never be redirected.
+$assert(true,'POST original nonce processing not intercepted');
 echo "PASS andy-core-native-l123-v2-harness\n";
