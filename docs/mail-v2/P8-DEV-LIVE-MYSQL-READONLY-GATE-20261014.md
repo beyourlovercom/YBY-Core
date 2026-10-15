@@ -21,11 +21,15 @@ GitHub parent: Draft P7 Dev snapshot PR #109 exact HEAD `786f3e2dc1712d1907d9e04
 - Exact-head source CI and standalone permission tests are mandatory before any code-only deployment. This PR **does not create** the DB, user, schema or queue entries.
 
 ## Next isolated database provisioning gate
-Owner or authorized Hostinger hPanel administrator must create a fresh database distinct from the WordPress DB (example `u247343654_mailv2uat`, choose actual name per Hostinger rules), plus two separate users:
-1. A temporary setup/testing account allowed to create P6 exact Outbox table and at most 100 synthetic tasks in **that database only**, no access to WordPress DB.
-2. A dedicated runtime reader granted **SELECT only** on the new database, no write/grant/global permissions.
+Hostinger shared hosting officially allows **one non-system database user per database**. The operator must create a fresh DB assigned to Dev and a single scoped account (for example `u247343654_mailv2uat` with Hostinger-managed name prefix), distinct from WordPress `DB_NAME`.
 
-Use Hostinger hPanel/database tools; **do not share password in chat**. After creation, deploy the connection.php private file with correct actual socket, name, reader and password directly on authorized Dev account (0600). Verify no accidental php web access, create empty Outbox with P6 20-column DDL, seed strictly synthetic <=100 records, and backup. No credentials in GitHub.
+**Two-phase single-account permission workflow:**
+1. Create the new DB/account in hPanel; it initially has privileges scoped to this **new DB only**. No other website's database can be modified.
+2. Provision the exact P6 20-column `p8_yby_mail_v2_outbox` schema and at most 100 synthetic tasks using this account; verify unique keys/CAS and an independent SQL backup. Stop on drift or nonempty schema.
+3. In hPanel → Databases Management → new DB ⋮ → Change Permissions, **revoke everything except SELECT**, Save/Update. This is a MUST-HAVE final gate; do not leave INSERT/CREATE or global privileges.
+4. Set up the private Dev `connection.php` (0600, outside public_html) using this same DB user, with credentials entered only on the authorized server. Run P8 live readonly `SHOW GRANTS` verifier and a denied UPDATE smoke before enabling Owner UAT.
+
+Do not share DB passwords in chat or GitHub. Hostinger's database-account model does not support the originally drafted two-user plan on this hosting tier. Creation and permission change require hPanel/API authority unavailable to the current Dev WordPress SSH account.
 
 Then allowlist PHP deploy after drift/SHA/CI/rollback preflight, and authenticated WordPress runtime smoke proving live COUNT, failure filtering, paging, a separate rejected UPDATE through read-only identity, actual readonly grants, behavior when DB is inaccessible, no SMTP/Worker. Visual iPhone 14 + desktop Owner UAT remains separate from source code UAT.
 
