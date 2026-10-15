@@ -108,7 +108,7 @@ final class YBY_Wholesale_Country_Clone_V2 {
         }
         $target=self::slugs($code);
         $posts=get_posts([
-          'post_type'=>'any','post_status'=>'any','posts_per_page'=>30,
+          'post_type'=>['landing_page','yby_project'],'post_status'=>'any','posts_per_page'=>30,
           'meta_key'=>'_yby_wholesale_clone_v2_key','meta_value'=>$target['key']
         ]);
         if (count($posts)===2) {
