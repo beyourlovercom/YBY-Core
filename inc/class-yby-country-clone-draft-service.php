@@ -102,6 +102,7 @@ class YBY_Country_Clone_Draft_Service {
 		}
 		$new_project_id = 0;
 		$new_page_id = 0;
+		$success = false;
 		try {
 			$new_project_id = wp_insert_post( array(
 				'post_type' => 'yby_project', 'post_status' => 'draft',
@@ -156,11 +157,15 @@ class YBY_Country_Clone_Draft_Service {
 					return new WP_Error( 'clone_page_meta_failed', 'Landing draft metadata failed.' );
 				}
 			}
+			$success = true;
 			return array( 'project_id' => $new_project_id, 'page_id' => $new_page_id,
 				'reused' => false, 'status' => 'draft' );
 		} finally {
-			// Failure compensation is handled by success marker below in subsequent
-			// phases; do not expose this transactional writer through the admin UI yet.
+			// Compensation only removes IDs created by THIS invocation; source stays intact.
+			if ( ! $success ) {
+				if ( is_int( $new_page_id ) && $new_page_id > 0 ) { wp_delete_post( $new_page_id, true ); }
+				if ( is_int( $new_project_id ) && $new_project_id > 0 ) { wp_delete_post( $new_project_id, true ); }
+			}
 			delete_option( $lock_key );
 		}
 	}
