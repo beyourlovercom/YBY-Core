@@ -41,10 +41,29 @@ class YBY_Global_Popup {
 		$css = preg_replace( '/(?:expression\s*\(|-moz-binding\s*:|behavior\s*:|(?:java|vb)script\s*:)/i', '', $css );
 		return is_string( $css ) ? $css : '';
 	}
+	/**
+	 * Respect Inquiry OS page_profiles for global business presets.
+	 * A business-specific preset must not be shown on an unrelated landing
+	 * page. No redirect, writes or guessed campaign/page ownership.
+	 */
+	public static function preset_allowed_on_page( $preset ) {
+		$profiles = isset( $preset['page_profiles'] ) && is_array( $preset['page_profiles'] )
+			? array_values( array_filter( array_map( 'sanitize_key', $preset['page_profiles'] ) ) )
+			: array();
+		if ( ! $profiles ) { return true; }
+		if ( ! class_exists( 'YBY_Page_Profile' ) ) { return false; }
+		$current = YBY_Page_Profile::get_current_profile();
+		$id = is_array( $current ) && isset( $current['profileId'] ) && is_scalar( $current['profileId'] )
+			? sanitize_key( (string) $current['profileId'] ) : '';
+		return '' !== $id && in_array( $id, $profiles, true );
+	}
+
 	public function render() {
 		$settings = self::sanitize( self::settings() );
 		$preset = $this->manager->get_preset_manager()->get_preset( $settings['inquiry_preset'] );
 		if ( ! is_array( $preset ) || empty( $preset['enabled'] ) ) { return; }
+		$inquiry = '';
+		if ( self::preset_allowed_on_page( $preset ) ) {
 		$fields = $this->manager->get_field_manager()->get_fields(); $ordered = array();
 		foreach ( $preset['fields'] as $id ) { if ( isset( $fields[ $id ] ) && ! empty( $fields[ $id ]['enabled'] ) ) { $ordered[] = $fields[ $id ]; } }
 		$premium = 'premium_v22' === $settings['inquiry_template'];
@@ -65,6 +84,9 @@ class YBY_Global_Popup {
 		$inquiry = $this->renderer->render_modal( $preset, $ordered, $attributes, $mobile_fields );
 		$inquiry = preg_replace( '/class="yby-inquiry-modal/', 'class="yby-global-popup yby-global-popup--inquiry yby-inquiry-modal', $inquiry, 1 );
 		$inquiry = str_replace( 'data-yby-inquiry-modal ', 'data-yby-inquiry-modal data-yby-global-popup="inquiry" ', $inquiry );
+		}
+		// Newsletter rendering stays available even when a page-scoped inquiry
+		// is intentionally suppressed on another campaign landing page.
 		$theme = class_exists( 'YBY_Brand_Profile' ) ? YBY_Brand_Profile::get_theme_config() : array();
 		$image = $settings['subscribe_image'] ?: (string) ( $theme['subscribeImage'] ?? '' );
 		$subscribe = '<div id="yby-global-subscribe-popup" class="yby-global-popup yby-global-popup--subscribe" data-yby-global-popup="subscribe" aria-hidden="true" hidden><div class="yby-global-popup__backdrop" data-yby-popup-close></div><div class="yby-global-popup__dialog" role="dialog" aria-modal="true" aria-labelledby="yby-global-subscribe-title" tabindex="-1"><button type="button" class="yby-global-popup__close" data-yby-popup-close aria-label="'.esc_attr__( 'Close popup', 'yby-core' ).'"><span aria-hidden="true">&times;</span></button>'.( $image ? '<div class="yby-global-popup__media"><img src="'.esc_url( $image ).'" alt="" loading="lazy"></div>' : '' ).'<div class="yby-global-popup__content"><h2 id="yby-global-subscribe-title">'.esc_html( $settings['subscribe_title'] ).'</h2><p>'.esc_html( $settings['subscribe_subtitle'] ).'</p><form data-yby-subscribe-contract data-yby-newsletter-enabled="'.( YBY_Newsletter_REST_Controller::subscribe_ready() ? '1' : '0' ).'" data-yby-newsletter-endpoint="'.esc_url( rest_url( 'andy-core/v1/newsletter/' ) ).'" data-yby-newsletter-policy="'.esc_attr( YBY_Newsletter_REST_Controller::policy_version() ).'" novalidate><label>Email<input type="email" name="email" required></label><label class="yby-newsletter-consent"><input type="checkbox" name="marketing_consent" value="1" required><span>'.esc_html__( 'I agree to receive marketing emails. I can unsubscribe at any time.', 'yby-core' ).'</span></label><label class="yby-newsletter-honeypot" aria-hidden="true">Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label><button type="submit">Subscribe</button><p role="status" data-yby-subscribe-status>Subscribe submission is not configured yet.</p></form></div></div></div>';
