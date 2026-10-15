@@ -103,4 +103,16 @@ $_GET=array('page'=>'andy-commerce','tab'=>'marketing-promotions');
 $assert(YBY_Andy_OS_Navigation::active_second_level()==='andy-core-marketing','M5 old Commerce deep link keeps Marketing L2 selected');
 $_GET=array('page'=>'yby-brand-os');
 $assert(YBY_Andy_OS_Navigation::active_second_level()==='andy-core-system','M5 Brand deep link keeps System L2 selected');
+// M4/M5 popup settings are reachable inside both Inquiry and Newsletter OS.
+// There must be ONE existing handler, with old nonces and no second L2/L3 bar.
+$popup=file_get_contents($root.'/admin/class-yby-popup-admin.php');
+$popup_view=file_get_contents($root.'/admin/views/popup-settings.php');
+$assert(strpos($popup,'function render_embedded( $tab )')!==false,'embedded inquiry/newsletter popup route exists');
+$assert(strpos($popup,'function render_screen( $requested_tab, $embedded )')!==false,'shared original popup option handler');
+$assert(strpos($popup,"check_admin_referer( 'yby_popup_save'")!==false,'popup settings nonce preserved');
+$assert(strpos($popup,"check_admin_referer( 'yby_inquiry_dock_save'")!==false,'dock settings nonce preserved');
+$assert(strpos($popup_view,"if ( empty( \$embedded ) )")!==false,'old popup heading/tabs suppressed inside shell');
+$assert(strpos($popup_view,'name="yby_popup_submit"')!==false,'old popup save action retained');
+$assert(strpos($popup_view,'<nav class="nav-tab-wrapper"')!==false,'legacy popup view still available on fallback');
+$assert(strpos($source,'->render_embedded( $tab )')!==false,'Three OS reuses actual popup controller');
 echo "PASS andy-admin-architecture-v22-governance-harness\n";
