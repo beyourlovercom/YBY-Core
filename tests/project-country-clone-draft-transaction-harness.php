@@ -140,6 +140,14 @@ must( is_wp_error( $r ) && 'clone_environment_blocked' === $r->get_error_code(),
 must( empty( $GLOBALS['test_writes'] ), 'production blocked before writes' );
 
 reset_test_state();
+$GLOBALS['test_host'] = 'ybyirrigation.com';
+$GLOBALS['test_env'] = 'production';
+$r = create_test();
+must( is_wp_error( $r ) && 'clone_production_flag_closed' === $r->get_error_code(),
+	'production writes blocked unless separate production flag exists' );
+must( empty( $GLOBALS['test_writes'] ), 'production flag check before all DB writes' );
+
+reset_test_state();
 $GLOBALS['test_access'] = false;
 $r = create_test();
 must( is_wp_error( $r ) && 'clone_access_denied' === $r->get_error_code(), 'capability gate' );
