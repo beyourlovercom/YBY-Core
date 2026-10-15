@@ -9,6 +9,8 @@ final class YBY_Mail_V2_P6_Dev_Preview {
     const NONCE = 'yby_mail_v2_p6_dev_preview';
     const DIR = '.byl-dev-canary/mail-v2-p6-uat-20261014';
     const FILE = 'outbox.sqlite';
+    const MYSQL_SNAPSHOT_SHA256 = 'aa10d6ee5a12ecfdeb6ac580f464a6fe75acea1e89ce217464ba7ed7f15e04c4';
+    const MYSQL_SNAPSHOT_DIR = '.byl-dev-canary/mail-v2-p7-verified-snapshot-20261014';
     const MAX_FIXTURES = 100;
     const STATES = array(
         'queued', 'leased', 'sending', 'accepted_by_provider',
@@ -44,7 +46,7 @@ final class YBY_Mail_V2_P6_Dev_Preview {
             extension_loaded( 'sqlite3' );
     }
     public static function url( $tab ) {
-        if ( ! in_array( $tab, array( 'preview_queue', 'preview_failures' ), true ) ) {
+        if ( ! in_array( $tab, array( 'preview_queue', 'preview_failures', 'mysql_snapshot' ), true ) ) {
             return '';
         }
         return wp_nonce_url(
@@ -77,8 +79,12 @@ final class YBY_Mail_V2_P6_Dev_Preview {
         if ( ! self::permitted() ) {
             wp_die( esc_html__( 'Permission denied.', 'yby-core' ) );
         }
-        if ( ! in_array( $tab, array( 'preview_queue', 'preview_failures' ), true ) ) {
+        if ( ! in_array( $tab, array( 'preview_queue', 'preview_failures', 'mysql_snapshot' ), true ) ) {
             wp_die( esc_html__( 'Invalid preview.', 'yby-core' ) );
+        }
+        if ( 'mysql_snapshot' === $tab ) {
+            self::render_mysql_snapshot();
+            return;
         }
         echo '<div class="notice notice-warning inline"><p><strong>DEV 隔离测试数据</strong>：';
         echo '这些均为合成任务；不是实际邮件、正式队列或投递结果。SMTP 与 Worker 均关闭。</p></div>';
@@ -167,4 +173,109 @@ final class YBY_Mail_V2_P6_Dev_Preview {
             if ( $db instanceof SQLite3 ) { $db->close(); }
         }
     }
+    /** P7 exact-SHA, point-in-time MySQL laboratory export. Not a live queue. */
+    private static function render_mysql_snapshot() {
+        echo '<div class="notice notice-warning inline"><p><strong>P7 MySQL 8.4 隔离验证快照</strong>：';
+        echo '100 条合成任务，从独立 MySQL 测试库导出。此页非实时、非正式 Outbox，';
+        echo '不是邮件投递结果；SMTP 与 Worker 均未启用。</p></div>';
+        $root = dirname( ABSPATH, 3 );
+        $dir = $root . '/' . self::MYSQL_SNAPSHOT_DIR;
+        $file = $dir . '/p7-mysql-verified-snapshot.json';
+        if ( realpath( $dir ) !== $dir || is_link( $dir ) ||
+             ! is_file( $file ) || is_link( $file ) ||
+             realpath( $file ) !== $file || ! is_readable( $file ) ||
+             filesize( $file ) < 10000 || filesize( $file ) > 60000 ||
+             ! hash_equals( self::MYSQL_SNAPSHOT_SHA256, hash_file( 'sha256', $file ) ) ) {
+            echo '<p>MySQL 测试快照缺失、被修改或无法核验；预览已安全关闭。</p>';
+            return;
+        }
+        $data = json_decode( file_get_contents( $file ), true );
+        $keys = array( 'opaque_id', 'state', 'channel', 'sender_key', 'priority',
+            'attempt', 'max_attempts', 'next_attempt_at', 'diagnostic_code', 'state_version' );
+        if ( ! is_array( $data ) ||
+             array_keys( $data ) !== array( 'schema', 'source', 'snapshot_not_live',
+                'mysql_network_disabled', 'email_sent', 'worker_enabled', 'total', 'counts', 'rows' ) ||
+             ( $data['schema'] ?? '' ) !== 'mail-v2-p7-mysql8-synthetic-snapshot-v1' ||
+             ( $data['source'] ?? '' ) !== 'isolated_mysql_8_4_point_in_time' ||
+             $data['snapshot_not_live'] !== true ||
+             $data['mysql_network_disabled'] !== true ||
+             $data['email_sent'] !== false || $data['worker_enabled'] !== false ||
+             $data['total'] !== 100 || ! is_array( $data['rows'] ) ||
+             count( $data['rows'] ) !== 100 || ! is_array( $data['counts'] ) ) {
+            echo '<p>快照协议校验失败；未展示任何任务信息。</p>';
+            return;
+        }
+        $counts = array_fill_keys( self::STATES, 0 );
+        $seen = array();
+        foreach ( $data['rows'] as $item ) {
+            if ( ! is_array( $item ) || array_keys( $item ) !== $keys ||
+                 ! is_string( $item['opaque_id'] ) ||
+                 ! preg_match( '/\A[a-f0-9]{64}\z/D', $item['opaque_id'] ) ||
+                 isset( $seen[ $item['opaque_id'] ] ) ||
+                 ! in_array( $item['state'], self::STATES, true ) ||
+                 ! in_array( $item['channel'], array( 'critical_system','account','newsletter','campaign','low_priority' ), true ) ||
+                 ! preg_match( '/\A[a-z][a-z0-9_]{0,47}\z/D', $item['sender_key'] ) ||
+                 ! in_array( $item['diagnostic_code'], array( 'none','preacceptance_reject',
+                     'acceptance_unknown','permanent_reject','provider_accepted' ), true ) ) {
+                echo '<p>快照记录异常；未展示任何任务信息。</p>';
+                return;
+            }
+            foreach ( array( 'priority','attempt','max_attempts','next_attempt_at','state_version' ) as $num ) {
+                if ( ! is_int( $item[ $num ] ) || $item[ $num ] < 0 ) {
+                    echo '<p>快照字段校验失败。</p>';
+                    return;
+                }
+            }
+            $seen[ $item['opaque_id'] ] = true;
+            ++$counts[ $item['state'] ];
+        }
+        if ( $counts !== $data['counts'] ||
+             $counts['deferred'] + $counts['uncertain'] + $counts['permanent_failed'] !== 60 ) {
+            echo '<p>快照状态与汇总不一致。</p>';
+            return;
+        }
+        $filter = isset( $_GET['filter'] ) && is_scalar( $_GET['filter'] )
+            ? sanitize_key( wp_unslash( $_GET['filter'] ) ) : 'all';
+        if ( ! in_array( $filter, array( 'all','failures' ), true ) ) { $filter = 'all'; }
+        $rows = 'failures' === $filter
+            ? array_values( array_filter( $data['rows'], static function ( $r ) {
+                return in_array( $r['state'], array( 'deferred','permanent_failed','uncertain' ), true );
+              } ) )
+            : $data['rows'];
+        $page = max( 1, min( 5, absint( $_GET['paged'] ?? 1 ) ) );
+        $shown = array_slice( $rows, ( $page - 1 ) * 20, 20 );
+        echo '<p>已核验的 MySQL 快照：100 条合成任务；失败/待复核 60 条。';
+        echo '只读快照，不提供发送、重试、取消或删除操作。</p>';
+        echo '<p><a class="button" href="' . esc_url( add_query_arg( 'filter', 'all', self::url( 'mysql_snapshot' ) ) ) .
+            '">全部 100</a> <a class="button" href="' .
+            esc_url( add_query_arg( 'filter', 'failures', self::url( 'mysql_snapshot' ) ) ) .
+            '">失败/待复核 60</a></p>';
+        echo '<div style="overflow-x:auto"><table class="widefat striped" style="min-width:750px"><thead><tr>';
+        foreach ( array( '测试编号','状态','通道','发送身份','优先级','尝试次数','模拟时间','诊断代码','版本' ) as $label ) {
+            echo '<th scope="col">' . esc_html( $label ) . '</th>';
+        }
+        echo '</tr></thead><tbody>';
+        foreach ( $shown as $r ) {
+            $cells = array( substr( $r['opaque_id'], 0, 12 ), $r['state'], $r['channel'],
+                $r['sender_key'], (string)$r['priority'],
+                $r['attempt'].'/'.$r['max_attempts'], (string)$r['next_attempt_at'],
+                $r['diagnostic_code'], (string)$r['state_version'] );
+            echo '<tr>';
+            foreach ( $cells as $cell ) { echo '<td>' . esc_html( $cell ) . '</td>'; }
+            echo '</tr>';
+        }
+        echo '</tbody></table></div>';
+        echo '<p>第 ' . esc_html( $page ) . ' 页 / ' .
+             esc_html( (int)ceil( count( $rows ) / 20 ) ) . ' 页。';
+        if ( $page > 1 ) {
+            echo ' <a class="button" href="' . esc_url( add_query_arg(
+                array( 'filter' => $filter, 'paged' => $page - 1 ), self::url( 'mysql_snapshot' ) ) ) . '">上一页</a>';
+        }
+        if ( $page * 20 < count( $rows ) ) {
+            echo ' <a class="button" href="' . esc_url( add_query_arg(
+                array( 'filter' => $filter, 'paged' => $page + 1 ), self::url( 'mysql_snapshot' ) ) ) . '">下一页</a>';
+        }
+        echo '</p>';
+    }
+
 }
