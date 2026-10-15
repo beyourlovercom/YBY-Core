@@ -106,7 +106,7 @@ class YBY_Global_Popup {
 			$attributes['mobile_layout'] = 'premium_stack';
 		}
 		$mobile_fields = array();
-        if ( $premium || $exact_oem ) {
+        if ( $premium ) {
             // The existing renderer owns mobile field validation; keep the original field registry and JS.
 			foreach ( $preset['mobile_fields'] ?? array() as $id ) {
 				if ( isset( $fields[ $id ] ) && ! empty( $fields[ $id ]['enabled'] ) ) { $mobile_fields[] = $fields[ $id ]; }
