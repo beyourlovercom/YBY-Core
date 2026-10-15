@@ -136,6 +136,9 @@ class YBY_Country_Clone_Preflight {
 			$project_id, $project->post_modified_gmt, $landing_id, $page->post_modified_gmt,
 			$result['source_country'], $result['page_country'],
 			serialize( $source_data ),
+			serialize( $page_settings ),
+			(string) ( $page->post_content ?? '' ),
+			serialize( get_post_meta( $project_id ) ),
 		) ) );
 		$result['allowed'] = 0 === count( array_filter( $result['checks'], static function ( $check ) {
 			return ! $check['passed'];
