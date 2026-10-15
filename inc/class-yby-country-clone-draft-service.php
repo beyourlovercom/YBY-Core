@@ -71,7 +71,7 @@ class YBY_Country_Clone_Draft_Service {
 			! method_exists( '\\Bricks\\Helpers', 'generate_new_element_ids' ) ) {
 			return new WP_Error( 'clone_bricks_helper_unavailable', 'Bricks native element-ID generator is required.' );
 		}
-		$new_elements = \\Bricks\\Helpers::generate_new_element_ids( $elements );
+		$new_elements = \Bricks\Helpers::generate_new_element_ids( $elements );
 		if ( ! is_array( $new_elements ) || count( $new_elements ) !== count( $elements ) ||
 			serialize( $elements ) === serialize( $new_elements ) ) {
 			return new WP_Error( 'clone_bricks_ids_unmodified', 'Bricks elements must receive independent new IDs.' );
