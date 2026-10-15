@@ -89,10 +89,14 @@ class YBY_Germany_Clone_Transform {
 		}
 		// New DE entry is an illustrative planning request, not a real case.
 		// Tanzania data and its original scenario object are NOT rewritten.
-		$scenario = 'var PROJECT_SCENARIOS = { Tanzania:';
-		$germany = 'var PROJECT_SCENARIOS = { Germany: { status: "Illustrative planning scenario — no completed Germany project claimed", crop: "To be confirmed", area: "To be confirmed", system: "Engineering recommendation pending", support: "Request a technical proposal and quotation" }, Tanzania:';
+		$scenario = '~(var\\s+PROJECT_SCENARIOS\\s*=\\s*\\{\\s*)Tanzania\\s*:~';
+		if ( 1 !== preg_match_all( $scenario, $script ) ) {
+			return new WP_Error( 'clone_script_contract', 'Source scenario registry does not match the reviewed Bricks JS.' );
+		}
+		$germany_entry = 'Germany: { status: "Illustrative planning scenario — no completed Germany project claimed", crop: "To be confirmed", area: "To be confirmed", system: "Engineering recommendation pending", support: "Request a technical proposal and quotation" }, Tanzania:';
+		$script = preg_replace( $scenario, '$1' . $germany_entry, $script, 1 );
+		++$counts['page_scripts'];
 		$rules = array(
-			array( $scenario, $germany ),
 			array( 'selectedCountry: "Tanzania"', 'selectedCountry: "Germany"' ),
 			array( 'PROJECT_SCENARIOS[country] || PROJECT_SCENARIOS.Tanzania', 'PROJECT_SCENARIOS[country] || PROJECT_SCENARIOS.Germany' ),
 			array( 'button.getAttribute("data-yby-country") || "Tanzania"', 'button.getAttribute("data-yby-country") || "Germany"' ),
