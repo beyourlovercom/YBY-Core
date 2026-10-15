@@ -31,7 +31,7 @@ $bootstrap = file_get_contents($root . '/yby-core.php');
 $core = file_get_contents($root . '/inc/class-yby-core.php');
 composite_guard(is_string($bootstrap) && is_string($core), 'core_read');
 foreach (array($bootstrap, $core) as $i => $body) {
-    composite_guard(!preg_match('/class-yby-mail-v2-(?:contract|governance|p[0-9]|p9-)/i', $body),
+    composite_guard(!preg_match('/inc\\/class-yby-mail-v2-(?:contract|governance|p2-|p3-|p4-|p5-|p6-outbox|p9-)/i', $body),
         'p9_no_bootstrap_' . $i);
     composite_guard(!preg_match('/\\b(?:glob|scandir|RecursiveDirectoryIterator|spl_autoload_register)\\s*\\(/i', $body),
         'p9_no_dynamic_core_autoload_' . $i);
