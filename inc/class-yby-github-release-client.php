@@ -38,6 +38,37 @@ class YBY_GitHub_Release_Client {
 		return $response;
 	}
 
+	/**
+	 * Canary is deliberately isolated from /releases/latest.
+	 * Only releases explicitly flagged as prerelease with an ordinary x.y.z
+	 * version tag are eligible. Detached signature validation remains mandatory.
+	 */
+	public function latest_canary_release( $force = false ) {
+		$key = 'yby_core_public_github_canary_release';
+		if ( ! $force ) {
+			$cached = get_site_transient( $key );
+			if ( is_array( $cached ) ) { return $cached; }
+		}
+		$url = 'https://' . self::API_HOST . '/repos/' . self::OWNER . '/' . self::REPOSITORY . '/releases';
+		$list = $this->request_json( $url );
+		if ( is_wp_error( $list ) ) { return $list; }
+		if ( ! is_array( $list ) ) { return new WP_Error( 'yby_canary_invalid_list', 'Invalid Canary release list.' ); }
+		$selected = false;
+		$selected_version = '';
+		foreach ( $list as $candidate ) {
+			if ( ! is_array( $candidate ) || ! empty( $candidate['draft'] ) || empty( $candidate['prerelease'] ) ) { continue; }
+			$tag = isset( $candidate['tag_name'] ) ? (string) $candidate['tag_name'] : '';
+			if ( 1 !== preg_match( '/^v([0-9]+\.[0-9]+\.[0-9]+)$/', $tag, $match ) ) { continue; }
+			if ( false === $selected || version_compare( $match[1], $selected_version, '>' ) ) {
+				$selected = $candidate;
+				$selected_version = $match[1];
+			}
+		}
+		if ( false === $selected ) { return new WP_Error( 'yby_canary_not_published', 'No eligible signed Canary release is published.' ); }
+		set_site_transient( $key, $selected, 10 * MINUTE_IN_SECONDS );
+		return $selected;
+	}
+
 	public function request_json( $url ) {
 		if ( ! $this->is_api_url( $url ) ) {
 			return new WP_Error( 'yby_update_host_denied', __( 'The update API endpoint is not trusted.', 'yby-core' ) );
