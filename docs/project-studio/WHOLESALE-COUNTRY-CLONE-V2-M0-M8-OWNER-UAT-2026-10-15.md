@@ -16,11 +16,11 @@
 | M1 | GitHub standalone `YBY_Wholesale_Country_Clone_V2` fail-closed implementation: exact Dev host, canonical source ID+slug+meta hash, native Bricks regeneration+signing, Admin capability, fingerprint, new independent Project+Landing Drafts, collision detection and idempotent reuse. Dev CLI explicit temporary write flag. | **PASS on isolated Dev** |
 | M2 | Germany Project #818, Germany landing #819, both `draft`; signed Code 2/2; source and protected records unchanged. | **PASS** |
 | M3 | Germany Dev structural/render evidence PASS and Owner visual UAT explicitly approved. Dev Wholesale inquiry controls preserved; no real inquiry was submitted. Production follow-up CDP also validated real mobile and popup behavior independently. | **Dev Owner PASS; automated PASS** |
-| M4 | Germany independently published on WWW as Wholesale Landing #824, from Production Wholesale master #215 / Thank You #310; Production uses 10 Bricks nodes/4 signed Code and Andy Core 1.5.2 (no plugin upgrade). Live HTTP 200, 17 Wholesale triggers, Germany-specific copy, iPhone 14 390px and desktop 1440px CDP PASS. Page-only backups exist. | **PRODUCTION PUBLISHED; browser tech PASS; final Owner Production UAT pending** |
+| M4 | Germany independently published on WWW as Wholesale Landing #824, from Production Wholesale master #215 / Thank You #310; Production uses 10 Bricks nodes/4 signed Code and Andy Core 1.5.2 (no plugin upgrade). Live HTTP 200, 17 Wholesale triggers, Germany-specific copy, iPhone 14 390px and desktop 1440px CDP PASS. Page-only backups exist. | **PRODUCTION PUBLISHED; browser PASS; Owner Production UAT PASS (2026-10-15)** |
 | M5 | Andy Core > Project Studio > Wholesale Country Clone V2. Dev injected 4-file allowlist only and saved rollback. Dev constant `YBY_WHOLESALE_CLONE_V2_DEV_ENABLED=true`; Production has no enabled V2 runtime. Dev admin render smoke `DEV_STUDIO_GET_PASS`: 4175 HTML bytes, country selection, create/reuse Draft button, preview links. | Dev **PASS**, Owner UI UAT pending |
 | M6 | Germany repeat call reused #818/#819; USA #820/#821 and France #822/#823 independent Dev-only Draft pairs. Mother #215, Thank You #310 and protected #699 unchanged. | Dev multi-country **PASS** |
 | M7 | Google Ads wholesale-only implementation plan and exact campaign/adgroup final-URL inspection rules below. Connected Windsor.ai reads were blocked by its Free plan because 2 accounts are connected, so no reliable IDs; do **not** claim Solution campaigns paused or touch unknown targets. | **PREPARED; Ads write verification pending** |
-| M8 | GitHub SOP and rollback documented, isolated Chrome CDP browser UAT reusable, 390px no overflow and popup opens without any submission. Closure requires final Production Owner UAT and separate Google Ads pause verification. | **TECHNICAL HANDOFF PASS; final closure pending** |
+| M8 | GitHub SOP and rollback documented, isolated Chrome CDP browser UAT reusable, 390px no overflow and popup opens without any submission. Closure requires final Production Owner UAT and separate Google Ads pause verification. | **M8 TECHNICAL CLOSURE PASS; overall Ads M7 remains OPEN** |
 
 ### Actual Dev state / UAT links
 - WordPress Studio: https://dev.ybyirrigation.com/wp-admin/admin.php?page=yby-project-studio&view=wholesale
@@ -65,7 +65,7 @@
 - [ ] Confirm US/France remain only unpublished Dev regression Drafts.
 - [ ] Explicitly approve Dev Owner UAT. Production release and Ads follow separate live-only protections above.
 
-**Status truth (updated 2026-10-15):** M0–M3/M5/M6 Dev PASS, Dev Owner PASS. Germany Wholesale Production #824 is PUBLISHED with HTTP/Bricks/iPhone14/desktop/CDP popup technical PASS. Final Production Owner visual UAT remains pending. M7 Google Ads campaign pause status NOT VERIFIED (Windsor Free-plan data restriction); no Ads writes. M8 final closure pending. PR #121 remains Draft and unmerged.
+**Status truth (updated 2026-10-15):** M0–M3/M5/M6 Dev PASS, Dev Owner PASS. Germany Wholesale Production #824 is PUBLISHED with HTTP/Bricks/iPhone14/desktop/CDP popup technical PASS. Owner explicitly confirmed Germany Production visual UAT PASS on 2026-10-15. M7 Google Ads campaign pause status NOT VERIFIED (Windsor Free-plan data restriction); no Ads writes. M8 technical/SOP closure PASS; overall program closure blocked only on M7 Ads verification. PR #121 remains Draft and unmerged.
 
 
 ## Germany Wholesale M4 — Actual Production release evidence (2026-10-15)
@@ -82,9 +82,17 @@ This section supersedes the earlier *release plan / not deployed* wording. The O
 - **Public HTTP check:** Germany, source Wholesale and Wholesale Thank You all returned **HTTP 200**. Germany live HTML has 17 Wholesale trigger attributes, global inquiry script/popup contract, no Africa copy.
 - **Independent real browser test:** \`scripts/wholesale-v2-browser-uat.mjs\` launched isolated headless Chrome via CDP. Mobile emulation 390×844 @ DPR2: \`window.innerWidth=390\`, document scroll width \`390\`, title \`white-space:normal\`, \`overflow-wrap:anywhere\`, title/content/description boxes x24…366, 28px headline, Germany-specific copy. Desktop 1440×900: 17 triggers; correct title and page layout. The Wholesale CTA \`click()\` opened global popup (\`aria-hidden=false\`, \`hidden=false\`) with inquiry form present; **no form submitted**.
 - **UAT captures (authorized Windows device only):** \`D:\\ai\\_uat\\wholesale-production-de\\cdp-iphone14.png\`, \`cdp-desktop.png\`, \`cdp-report.json\`. Actual screenshot confirmed mobile H1, description and CTA fully within viewport. No user Chrome profile was restarted.
-- **Owner final gate:** Dev Owner PASS already recorded; ask the Owner to review this **actual Production** Germany page and confirm visual/CTA UAT. This approval is separate from Google Ads writes and PR merge. No real test lead was sent.
+- **Owner final gate:** Dev Owner PASS and actual Production Germany Owner UAT **PASS** both recorded in chat on 2026-10-15. This approval does not authorize unverified Google Ads mutations or PR merge. No real test lead was sent.
 
 ### Google Ads M7 — explicitly unresolved
 - Account \`502-024-8458\` (YBY Irrigation). Owner instructed stopping \`irrigation-solution\`/1-hectare campaigns and preserving only \`irrigation-wholesale\` B2B campaigns, including mixed-campaign ad group granularity.
 - Windsor.ai returned a **Free-plan read restriction**, not real campaign rows, because two Ads accounts are connected. Do not derive or invent Campaign IDs/Final URLs, pause by guess, or state that ads have been stopped.
 - No Google Ads campaign/ad-group/ad writes were executed here. Resolve through a valid direct Google Ads view/connector or Owner manual Ads UI, selecting exact campaigns/URLs and reporting statuses. Germany Ads must not be activated until country-specific conversion tracking and the final owner release gate pass.
+
+
+## Owner acceptance / M7 disposition (2026-10-15)
+
+- **Owner Production UAT: PASS** for live Germany Wholesale #824. M4 published and accepted; stop repeat Dev/Production redesign or deployment.
+- **M8 technical SOP/CI release evidence: PASS**. Roadmap handoff and source immutability documented. GitHub PR #121 stays Draft/unmerged unless an independent code-merge authorization is supplied.
+- **M7 remains OPEN, assigned to [GitHub Issue #124](https://github.com/beyourlovercom/YBY-Core/issues/124)**: verified Google Ads final URLs and active campaign IDs cannot currently be retrieved through Windsor.ai because the Free plan allows only 1 of 2 connected accounts. A read attempting only account 502-024-8458 still returned the billing notice instead of real data; no pause actions executed. Windows browser/debug inspection was blocked by platform security checking; do not bypass or restart logged-in Chrome.
+- For M7 safe closure, use a genuine Google Ads campaign+ad group+ad final URL listing from the account or restore connector read entitlement. Pause `irrigation-solution` ads only; retain Wholesale ads, and preserve mixed campaigns at the lowest supported level. Require post-change statuses and URL evidence.
