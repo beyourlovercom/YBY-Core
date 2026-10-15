@@ -86,7 +86,12 @@ class YBY_Public {
 						$this->asset_version( 'public/css/andy-core-popup-premium-v22.css' )
 					);
 				}
-				if ( '' !== $popup_settings['inquiry_custom_css'] ) { wp_add_inline_style( 'yby-global-popup', $popup_settings['inquiry_custom_css'] ); }
+				if ( '' !== $popup_settings['inquiry_custom_css'] ) {
+                    // OEM Original: custom CSS must follow the base template CSS.
+                    // Keep existing attachment for every other global popup template.
+                    $custom_handle = ( 'oem_original' === $popup_settings['inquiry_template'] || YBY_Global_Popup::is_oem_exact_preview() ) ? 'andy-core-oem-original' : 'yby-global-popup';
+                    wp_add_inline_style( $custom_handle, $popup_settings['inquiry_custom_css'] );
+                }
 				if ( '' !== $popup_settings['subscribe_custom_css'] ) { wp_add_inline_style( 'yby-global-popup', $popup_settings['subscribe_custom_css'] ); }
 				if ( '' !== $popup_settings['inquiry_shortcode_custom_css'] ) { wp_add_inline_style( 'yby-email-shortcodes', $popup_settings['inquiry_shortcode_custom_css'] ); }
 				if ( '' !== $popup_settings['subscribe_shortcode_custom_css'] ) { wp_add_inline_style( 'yby-email-shortcodes', $popup_settings['subscribe_shortcode_custom_css'] ); }
