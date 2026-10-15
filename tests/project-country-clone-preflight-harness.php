@@ -83,6 +83,26 @@ verify( code_exists( $r, 'target_country_buttons', false ), 'missing Germany but
 unset( $GLOBALS['clone_meta'][292]['_bricks_page_settings'] );
 array_pop( $GLOBALS['clone_meta'][292]['_bricks_page_content_2'] );
 
+// A saved preflight fingerprint must become stale when private metadata changes,
+// even if WordPress post_modified_gmt is unchanged.
+$baseline_fingerprint = YBY_Country_Clone_Preflight::evaluate( 11, 292, 'DE' )['source_fingerprint'];
+$GLOBALS['clone_meta'][292]['_bricks_page_settings'] = array(
+	'customScriptsBodyFooter' => 'const projectConfig = "changed";',
+);
+verify( $baseline_fingerprint !== YBY_Country_Clone_Preflight::evaluate( 11, 292, 'DE' )['source_fingerprint'],
+	'page-level JS mutation invalidates preflight fingerprint' );
+unset( $GLOBALS['clone_meta'][292]['_bricks_page_settings'] );
+
+$GLOBALS['clone_meta'][11]['yby_tracking_group'] = 'new-unapproved-group';
+verify( $baseline_fingerprint !== YBY_Country_Clone_Preflight::evaluate( 11, 292, 'DE' )['source_fingerprint'],
+	'Project metadata mutation invalidates preflight fingerprint' );
+unset( $GLOBALS['clone_meta'][11]['yby_tracking_group'] );
+
+$GLOBALS['clone_meta'][292]['yby_thank_you_url'] = '/lp/changed/';
+verify( $baseline_fingerprint !== YBY_Country_Clone_Preflight::evaluate( 11, 292, 'DE' )['source_fingerprint'],
+	'Landing thank-you mutation invalidates preflight fingerprint' );
+unset( $GLOBALS['clone_meta'][292]['yby_thank_you_url'] );
+
 $GLOBALS['clone_meta'][11]['yby_country'] = '';
 $r = YBY_Country_Clone_Preflight::evaluate( 11, 292, 'DE' );
 verify( code_exists( $r, 'source_country', false ), 'empty Project country cannot use title/fallback' );
