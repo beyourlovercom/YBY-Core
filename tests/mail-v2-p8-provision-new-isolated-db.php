@@ -42,8 +42,11 @@ $quoted = preg_quote( $config['dbname'], '/' );
 $have_privilege = false;
 foreach ( $pdo->query( 'SHOW GRANTS' )->fetchAll( PDO::FETCH_COLUMN ) as $grant ) {
     // Do not log grants: some provider versions may include auth data.
-    if ( preg_match( '/\bGRANT (?:ALL PRIVILEGES|.+\bCREATE\b.+\bINSERT\b) ON [\x60]?' .
-            $quoted . '[\x60]?[.][*] TO\b/i', (string)$grant ) ) {
+    $on_new_db = preg_match( '/\bON [\x60]?' . $quoted . '[\x60]?[.][*] TO\b/i', (string)$grant );
+    $can_setup = preg_match( '/\bALL PRIVILEGES\b/i', (string)$grant ) ||
+        ( preg_match( '/\bCREATE\b/i', (string)$grant ) &&
+          preg_match( '/\bINSERT\b/i', (string)$grant ) );
+    if ( $on_new_db && $can_setup ) {
         $have_privilege = true;
     } elseif ( ! preg_match( '/\bGRANT USAGE ON [*][.][*] TO\b/i', (string)$grant ) ) {
         throw new RuntimeException( 'UNEXPECTED_DATABASE_PRIVILEGE' );
