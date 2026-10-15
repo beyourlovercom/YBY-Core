@@ -23,14 +23,20 @@ class YBY_Country_Clone_Draft_Service {
 	 * @return array<string,mixed>|WP_Error
 	 */
 	public static function create( $source_project_id, $source_page_id, $expected_fingerprint ) {
-		if ( ! defined( self::FLAG ) || true !== constant( self::FLAG ) ) {
-			return new WP_Error( 'clone_flag_closed', 'Country Clone draft writes are disabled.' );
-		}
 		$hostname = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
 		$environment = function_exists( 'wp_get_environment_type' ) ? wp_get_environment_type() : '';
-		if ( ! in_array( $hostname, array( 'localdev.ybyirrigation.com', 'dev.ybyirrigation.com' ), true ) ||
-			! in_array( $environment, array( 'local', 'development' ), true ) ) {
-			return new WP_Error( 'clone_environment_blocked', 'Only explicitly configured YBY Irrigation Local/Dev may create country drafts.' );
+		$is_dev = in_array( $hostname, array( 'localdev.ybyirrigation.com', 'dev.ybyirrigation.com' ), true ) &&
+			in_array( $environment, array( 'local', 'development' ), true );
+		$is_production = 'ybyirrigation.com' === $hostname && 'production' === $environment;
+		if ( $is_production ) {
+			// Production is intentionally controlled by a DIFFERENT explicit
+			// runtime constant. Never inherit Dev permission or settings.
+			if ( ! defined( 'YBY_COUNTRY_CLONE_V1_PRODUCTION_DRAFT_ENABLED' ) ||
+				true !== constant( 'YBY_COUNTRY_CLONE_V1_PRODUCTION_DRAFT_ENABLED' ) ) {
+				return new WP_Error( 'clone_production_flag_closed', 'Production Country Clone writes remain disabled.' );
+			}
+		} elseif ( ! $is_dev || ! defined( self::FLAG ) || true !== constant( self::FLAG ) ) {
+			return new WP_Error( 'clone_environment_blocked', 'Country Clone writes are not authorized for this host/environment.' );
 		}
 
 		$source_project_id = absint( $source_project_id );
