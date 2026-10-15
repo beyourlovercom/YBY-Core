@@ -37,7 +37,13 @@ class Andy_Commerce_Admin {
 		}
 
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
-		if ( ! in_array( $tab, array( 'overview', 'order-export', 'checkout-shipping', 'settings' ), true ) ) { $tab = 'overview'; }
+		if ( ! in_array( $tab, array( 'overview', 'order-export', 'checkout-shipping', 'marketing-promotions', 'settings' ), true ) ) { $tab = 'overview'; }
+
+		if ( 'marketing-promotions' === $tab ) {
+			// Owner-gated M1 UI shell: no form handlers, options, coupons or runtime hooks.
+			include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-promotions.php';
+			return;
+		}
 
 		if ( 'checkout-shipping' === $tab ) {
 			include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/checkout-shipping.php';

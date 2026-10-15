@@ -5,6 +5,7 @@
 		<a class="nav-tab nav-tab-active" href="<?php echo esc_url( add_query_arg( array( 'page' => Andy_Commerce_Admin::PAGE_SLUG, 'tab' => 'overview' ), admin_url( 'admin.php' ) ) ); ?>">Overview</a>
 		<a class="nav-tab" href="<?php echo esc_url( add_query_arg( array( 'page' => Andy_Commerce_Admin::PAGE_SLUG, 'tab' => 'order-export' ), admin_url( 'admin.php' ) ) ); ?>">Order Export</a>
 		<a class="nav-tab" href="<?php echo esc_url( add_query_arg( array( 'page' => Andy_Commerce_Admin::PAGE_SLUG, 'tab' => 'checkout-shipping' ), admin_url( 'admin.php' ) ) ); ?>">Checkout / Shipping</a>
+		<a class="nav-tab" href="<?php echo esc_url( add_query_arg( array( 'page' => Andy_Commerce_Admin::PAGE_SLUG, 'tab' => 'marketing-promotions' ), admin_url( 'admin.php' ) ) ); ?>">Marketing / Promotions</a>
 		<a class="nav-tab" href="<?php echo esc_url( add_query_arg( array( 'page' => Andy_Commerce_Admin::PAGE_SLUG, 'tab' => 'settings' ), admin_url( 'admin.php' ) ) ); ?>">Settings</a>
 	</nav>
 	<p><?php esc_html_e( 'Reusable B2C / WooCommerce Addon for Andy Core.', 'andy-commerce' ); ?></p>
