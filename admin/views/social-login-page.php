@@ -17,7 +17,9 @@ $page_url = admin_url( 'admin.php?page=' . YBY_Social_Login_Admin::page_slug() )
 	<?php endif; ?>
 
 	<?php if ( 'google' !== $provider ) : ?>
+		<?php if ( ! class_exists( 'YBY_Andy_Admin_Shell_V22' ) || ! YBY_Andy_Admin_Shell_V22::suppress_legacy_tabs( YBY_Social_Login_Admin::page_slug() ) ) : ?>
 		<h1><?php esc_html_e( 'Social Login', 'yby-core' ); ?></h1>
+		<?php endif; ?>
 		<p><?php esc_html_e( 'Configure social sign-in providers and choose where login buttons appear.', 'yby-core' ); ?></p>
 
 		<div class="card">
