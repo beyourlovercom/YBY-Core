@@ -222,6 +222,11 @@ class YBY_Project_Studio {
 			exit;
 		}
 
+		if ( 'wholesale' === $view ) {
+			$this->render_wholesale_country_v2();
+			return;
+		}
+
 		if ( 'runtime' === $view && $post_id ) {
 			$this->render_runtime_viewer( $post_id );
 			return;
@@ -233,6 +238,40 @@ class YBY_Project_Studio {
 		}
 
 		$this->render_project_list();
+	}
+
+
+	/**
+	 * Dev-only B2B Wholesale country-clone UI. Source is never edited.
+	 */
+	protected function render_wholesale_country_v2() {
+		if ( ! class_exists( 'YBY_Wholesale_Country_Clone_V2' ) ) {
+			require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-wholesale-country-clone-v2.php';
+		}
+		$countries = YBY_Wholesale_Country_Clone_V2::countries();
+		$country   = isset( $_REQUEST['country'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_REQUEST['country'] ) ) ) : 'DE';
+		if ( ! isset( $countries[ $country ] ) ) { $country = 'DE'; }
+		$preflight = YBY_Wholesale_Country_Clone_V2::preflight( $country );
+		$may_write = ! is_wp_error( $preflight ) &&
+			defined( YBY_Wholesale_Country_Clone_V2::FLAG ) &&
+			true === constant( YBY_Wholesale_Country_Clone_V2::FLAG ) &&
+			current_user_can( 'manage_options' ) &&
+			current_user_can( 'andy_core_settings_manage' );
+		$clone_result = null;
+		if ( 'POST' === ( $_SERVER['REQUEST_METHOD'] ?? '' ) && isset( $_POST['yby_wholesale_create'] ) ) {
+			check_admin_referer( 'yby_wholesale_clone_v2_' . $country );
+			if ( ! $may_write ) {
+				$clone_result = new WP_Error( 'v2_ui_disabled', 'Wholesale clone is not enabled for this Dev environment.' );
+			} else {
+				$expected = isset( $_POST['source_fingerprint'] ) ? sanitize_text_field( wp_unslash( $_POST['source_fingerprint'] ) ) : '';
+				$clone_result = YBY_Wholesale_Country_Clone_V2::create_drafts( $country, $expected );
+			}
+		}
+		$existing = get_posts( array(
+			'post_type' => 'yby_project', 'post_status' => array( 'draft', 'publish', 'pending', 'private' ),
+			'posts_per_page' => 60, 'meta_key' => '_yby_wholesale_clone_v2_key',
+		) );
+		include YBY_CORE_PLUGIN_DIR . 'admin/views/wholesale-country-clone-v2.php';
 	}
 
 	/**
