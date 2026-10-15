@@ -14,7 +14,7 @@ $c=require $secrets;
 if(!is_array($c)||$c['database']!=='p9_mail_synthetic_uat'||
    $c['socket']!==$base.'/mysql.sock'||$c['writer_user']!=='p9_writer'||
    $c['reader_user']!=='p9_reader'||
-   !is_file($c['socket'])||is_link($c['socket'])){exit(83);}
+   !file_exists($c['socket'])||is_link($c['socket'])){exit(83);}
 $dsn='mysql:unix_socket='.$c['socket'].';dbname=p9_mail_synthetic_uat;charset=ascii';
 $opts=array(PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_EMULATE_PREPARES=>false,PDO::ATTR_TIMEOUT=>3);
