@@ -12,7 +12,7 @@ $assert(strpos($src, "'ybybottle.com', 'ybyirrigation.com'") !== false, 'known t
 $assert(strpos($src, "add_filter( 'auto_update_plugin'") !== false, 'WordPress auto-update hook');
 $assert(strpos($src, 'check_admin_referer( self::CHANNEL_NONCE') !== false, 'CSRF protection');
 $assert(strpos($src, "sanitize_text_field( wp_unslash(") !== false, 'sanitized admin setting');
-$assert(strpos($src, 'if ( ! $this->allowed_release() ) { return $transient; }') !== false, 'no update shown on excluded sites');
+$assert(strpos($src, 'unset( $transient->response[ $plugin ] );') !== false, 'no update shown on excluded sites');
 $assert(strpos($src, "yby_update_site_denied") !== false, 'download path denied when disabled');
 $assert(strpos($src, 'YBY_Update_Backup::create') !== false, 'backup still enforced');
 $assert(strpos($src, 'YBY_Update_Verifier::validate_zip') !== false, 'signature/zip verifier still enforced');
