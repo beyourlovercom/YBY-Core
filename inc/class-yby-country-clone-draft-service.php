@@ -101,7 +101,7 @@ class YBY_Country_Clone_Draft_Service {
 		$css = array();
 		foreach ( array( 'customCss', 'customCss:mobile_portrait' ) as $key ) {
 			if ( isset( $page_settings[ $key ] ) && is_string( $page_settings[ $key ] ) ) {
-				if ( false !== stripos( $page_settings[ $key ], (string) $audit['source_country'] ) ) {
+				if ( false !== stripos( $page_settings[ $key ], $source_country ) ) {
 					return new WP_Error( 'clone_css_country', 'Source Country still appears in Bricks CSS.' );
 				}
 				if ( preg_match( '~[.#]brxe-[a-z0-9_-]+~i', $page_settings[ $key ] ) ) {
@@ -165,13 +165,15 @@ class YBY_Country_Clone_Draft_Service {
 			}
 			$new_page_id = absint( $new_page_id );
 			if ( ! update_post_meta( $new_page_id, '_bricks_page_content_2', wp_slash( $new_elements ) ) ||
-				( ! empty( $css ) && ! update_post_meta( $new_page_id, '_bricks_page_settings', $css ) ) ) {
+				( ! empty( $css ) && ! update_post_meta( $new_page_id, '_bricks_page_settings', wp_slash( $css ) ) ) ) {
 				return new WP_Error( 'clone_bricks_copy_failed', 'Bricks draft structure could not be copied.' );
 			}
 			$project_meta = array(
 				'yby_country' => 'Germany',
 				'yby_project_name' => 'Germany Irrigation Solution',
 				'yby_project_status' => 'draft',
+				'yby_project_id' => (string) $new_project_id,
+				'yby_tracking_group' => 'irrigation_germany_dev_draft',
 				'yby_landing_url' => '/lp/' . self::PAGE_SLUG . '/',
 				'yby_clone_v1_key' => $clone_key,
 				'yby_clone_v1_page_id' => $new_page_id,
@@ -180,6 +182,8 @@ class YBY_Country_Clone_Draft_Service {
 			);
 			$page_meta = array(
 				'yby_country' => 'Germany',
+				'yby_project_id' => (string) $new_project_id,
+				'yby_project_name' => 'Germany Irrigation Solution',
 				'yby_page_type' => 'landing_page',
 				'yby_profile_id' => 'irrigation-solution-germany',
 				'yby_return_page_url' => '/lp/' . self::PAGE_SLUG . '/',
