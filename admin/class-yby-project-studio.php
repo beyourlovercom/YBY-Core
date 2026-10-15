@@ -275,9 +275,17 @@ class YBY_Project_Studio {
 		}
 
 		$preflight = null;
-		$submitted_landing_id = 0;
-		if ( isset( $_POST['yby_country_clone_preflight'] ) ) {
-			check_admin_referer( 'yby_country_clone_preflight_' . $post_id );
+		$clone_result = null;
+		$clone_error = null;
+		// The exact Tanzania #518 → #292 pairing is confirmed on Local and
+		// isolated Dev. Other projects must supply their real Landing ID.
+		$submitted_landing_id = 518 === $post_id ? 292 : 0;
+		$preview_requested = isset( $_POST['yby_country_clone_preflight'] );
+		$create_requested = isset( $_POST['yby_country_clone_create'] );
+		if ( $preview_requested || $create_requested ) {
+			check_admin_referer(
+				( $create_requested ? 'yby_country_clone_create_' : 'yby_country_clone_preflight_' ) . $post_id
+			);
 			$submitted_project = isset( $_POST['source_project_id'] )
 				? absint( wp_unslash( $_POST['source_project_id'] ) ) : 0;
 			if ( $submitted_project !== $post_id ) {
@@ -285,9 +293,19 @@ class YBY_Project_Studio {
 			}
 			$submitted_landing_id = isset( $_POST['source_landing_id'] )
 				? absint( wp_unslash( $_POST['source_landing_id'] ) ) : 0;
-			$preflight = YBY_Country_Clone_Preflight::evaluate(
-				$post_id, $submitted_landing_id, 'DE'
-			);
+			$preflight = YBY_Country_Clone_Preflight::evaluate( $post_id, $submitted_landing_id, 'DE' );
+			if ( $create_requested ) {
+				$expected_fingerprint = isset( $_POST['source_fingerprint'] )
+					? sanitize_text_field( wp_unslash( $_POST['source_fingerprint'] ) ) : '';
+				$operation = YBY_Country_Clone_Draft_Service::create(
+					$post_id, $submitted_landing_id, $expected_fingerprint
+				);
+				if ( is_wp_error( $operation ) ) {
+					$clone_error = $operation->get_error_message();
+				} else {
+					$clone_result = $operation;
+				}
+			}
 		}
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/project-country-clone.php';
 	}
