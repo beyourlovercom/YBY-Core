@@ -160,6 +160,8 @@ $assert('edit_pages'===YBY_Andy_OS_Navigation::root_capability(),'landing-only e
 $groups=YBY_Andy_OS_Navigation::sections();
 $assert('edit_pages'===$groups['andy-core-content'][1],'landing content route uses edit_pages, not manage_options');
 $assert('edit.php?post_type=landing_page'===YBY_Andy_OS_Navigation::destination('andy-core-content'),'landing editor defaults to actual CPT');
-$assert(0===count(YBY_Andy_OS_Navigation::tertiary_items('andy-business')),'landing editor cannot access Business config');
+$editor_links=YBY_Andy_OS_Navigation::tertiary_items('andy-business');
+$assert(1===count($editor_links),'landing-only editor sees only original Landing Pages');
+$assert(!str_contains(json_encode($editor_links),'andy-business'),'landing editor cannot access Business settings');
 $GLOBALS['enabled_modules']=array('business_os','inquiry_os','newsletter_os','email_os');
 echo "PASS andy-core-native-l123-v2-harness\n";
