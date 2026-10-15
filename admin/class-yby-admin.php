@@ -115,6 +115,16 @@ class YBY_Admin {
 	 * @return void
 	 */
 	public function render_settings_page() {
+		if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
+			YBY_Andy_Admin_Shell_V22::render( 'yby-core', 'Andy Core · 系统设置',
+				function () { $this->render_settings_page_original(); } );
+			return;
+		}
+		$this->render_settings_page_original();
+	}
+
+	/** Existing feature flags, nonce checks and option handlers unchanged. */
+	private function render_settings_page_original() {
 		if ( ! $this->security->can_manage_settings() ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'yby-core' ) );
 		}
