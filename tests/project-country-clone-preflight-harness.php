@@ -46,6 +46,7 @@ class YBY_Project_CPT {
 		return '';
 	}
 }
+require_once dirname( __DIR__ ) . '/inc/class-yby-country-transform-registry.php';
 require_once dirname( __DIR__ ) . '/inc/class-yby-country-clone-preflight.php';
 function verify( $passed, $message ) {
 	if ( ! $passed ) { fwrite( STDERR, 'FAIL ' . $message . "\n" ); exit( 1 ); }
