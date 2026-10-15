@@ -181,6 +181,12 @@ final class YBY_Three_OS_Admin {
     }
 
     public static function render_tabs( $page, $tabs, $active, $heading ) {
+        // V2.2 PHP shell owns the ONLY heading and tertiary navigation.
+        if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) &&
+             YBY_Andy_Admin_Shell_V22::suppress_legacy_tabs( $page ) ) {
+            echo '<div class="wrap yby-three-os">';
+            return;
+        }
         echo '<div class="wrap yby-three-os"><h1>' . esc_html( $heading ) . '</h1>';
         echo '<nav class="nav-tab-wrapper" style="display:flex;flex-wrap:wrap;gap:2px;margin:16px 0 20px" aria-label="' . esc_attr( $heading ) . '">';
         foreach ( $tabs as $key => $label ) {
@@ -204,6 +210,15 @@ final class YBY_Three_OS_Admin {
     }
 
     public function render_newsletter() {
+        if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
+            YBY_Andy_Admin_Shell_V22::render( self::NEWSLETTER, 'Newsletter OS · 订阅与营销',
+                function () { $this->render_newsletter_original(); } );
+            return;
+        }
+        $this->render_newsletter_original();
+    }
+
+    private function render_newsletter_original() {
         if ( ! YBY_Module_Registry::is_enabled( 'newsletter_os' ) ||
              ! current_user_can( self::NEWSLETTER_VIEW ) ) {
             wp_die( esc_html__( 'Permission denied.', 'yby-core' ) );
@@ -236,6 +251,15 @@ final class YBY_Three_OS_Admin {
     }
 
     public function render_email() {
+        if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
+            YBY_Andy_Admin_Shell_V22::render( self::EMAIL, 'Email OS · 邮件基础设施',
+                function () { $this->render_email_original(); } );
+            return;
+        }
+        $this->render_email_original();
+    }
+
+    private function render_email_original() {
         if ( ! YBY_Module_Registry::is_enabled( 'email_os' ) ||
              ! current_user_can( self::MAIL_VIEW ) ) {
             wp_die( esc_html__( 'Permission denied.', 'yby-core' ) );
