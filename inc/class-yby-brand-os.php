@@ -309,6 +309,16 @@ class YBY_Brand_OS {
 	 * @return void
 	 */
 	public function render_settings_page() {
+		if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
+			YBY_Andy_Admin_Shell_V22::render( self::page_slug(), 'Andy Core · Brand',
+				function () { $this->render_settings_page_original(); } );
+			return;
+		}
+		$this->render_settings_page_original();
+	}
+
+	/** Preserve the original authorization, POST/nonce and Brand form handler. */
+	private function render_settings_page_original() {
 		if ( ! $this->security->can_manage_settings() ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'yby-core' ) );
 		}
