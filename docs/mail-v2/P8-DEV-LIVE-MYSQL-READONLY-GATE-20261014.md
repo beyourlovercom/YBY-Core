@@ -38,3 +38,17 @@ Then allowlist PHP deploy after drift/SHA/CI/rollback preflight, and authenticat
 - MariaDB 11.8 Hostinger and MySQL 8.4 US Mac are different engines/versions. Actual Dev database engine/schema must be independently checked, not inferred from prior tests.
 
 **Current P8 status:** source implementation in progress; runtime UAT BLOCKED by independent database provisioning and SELECT-only account until verified.
+
+
+## P8 credential handoff without SSH
+
+WordPress Dev-only credentials setup form: `/wp-admin/admin.php?page=andy-core-email&tab=p8_setup`.
+Only an administrator with both `manage_options` and `andy_core_mail_view` on the exact dev.beyourlover.com site can access it. The POST endpoint enforces WordPress nonce and TLS.
+
+Owner enters FULL hPanel-prefixed database name, user and password directly into this Dev HTTPS form, **never into chat or GitHub**. Server validates that the new database is not WordPress `DB_NAME`, that SHOW GRANTS includes CREATE/INSERT scoped only to this new schema and not global privileges, and that the target database is empty. A failure writes no configuration.
+
+On successful verification, exclusive file creation (`fopen x`) stores a single mode-0600 private config outside public_html. No submitted values or errors are echoed in output or redirect. This form does not execute DDL, seed data, send mail or start workers.
+
+Next the already-authorized private CLI synthetic setup script may create the exact P6 metadata-only table and up to 100 synthetic records in the NEW EMPTY database only, after an isolated backup plan. The owner then uses Hostinger hPanel Change Permissions to revoke everything except SELECT for the one database account. The P8 live reader refuses to display data until SELECT-only grants and exact schema match.
+
+Unavailability of private credentials remains a required owner-entry gate; never fall back to WordPress business database.
