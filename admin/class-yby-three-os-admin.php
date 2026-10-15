@@ -41,6 +41,12 @@ final class YBY_Three_OS_Admin {
             $tabs['preview_failures'] = '失败处理（Dev 预览）';
             $tabs['mysql_snapshot'] = 'MySQL 验证快照';
         }
+        if ( class_exists( 'YBY_Mail_V2_P8_Readonly' ) && YBY_Mail_V2_P8_Readonly::configured() ) {
+            $tabs['live_readonly'] = '独立 MySQL 实时只读';
+        }
+        if ( class_exists( 'YBY_Mail_V2_P8_Setup' ) && YBY_Mail_V2_P8_Setup::available() ) {
+            $tabs['p8_setup'] = 'P8 数据库连接';
+        }
         return $tabs;
     }
 
@@ -184,8 +190,10 @@ final class YBY_Three_OS_Admin {
         echo '<div class="wrap yby-three-os"><h1>' . esc_html( $heading ) . '</h1>';
         echo '<nav class="nav-tab-wrapper" style="display:flex;flex-wrap:wrap;gap:2px;margin:16px 0 20px" aria-label="' . esc_attr( $heading ) . '">';
         foreach ( $tabs as $key => $label ) {
-            $link = self::EMAIL === $page && in_array( $key, array( 'preview_queue', 'preview_failures', 'mysql_snapshot' ), true )
-                ? YBY_Mail_V2_P6_Dev_Preview::url( $key ) : self::url( $page, $key );
+            $link = self::EMAIL === $page && 'live_readonly' === $key
+                ? YBY_Mail_V2_P8_Readonly::url()
+                : ( self::EMAIL === $page && in_array( $key, array( 'preview_queue', 'preview_failures', 'mysql_snapshot' ), true )
+                    ? YBY_Mail_V2_P6_Dev_Preview::url( $key ) : self::url( $page, $key ) );
             echo '<a class="nav-tab ' . ( $key === $active ? 'nav-tab-active' : '' ) . '" href="' . esc_url( $link ) . '">' . esc_html( $label ) . '</a>';
         }
         echo '</nav>';
@@ -246,10 +254,20 @@ final class YBY_Three_OS_Admin {
             $tabs['preview_failures'] = '失败处理（Dev 预览）';
             $tabs['mysql_snapshot'] = 'MySQL 验证快照';
         }
+        if ( class_exists( 'YBY_Mail_V2_P8_Readonly' ) && YBY_Mail_V2_P8_Readonly::configured() ) {
+            $tabs['live_readonly'] = '独立 MySQL 实时只读';
+        }
+        if ( class_exists( 'YBY_Mail_V2_P8_Setup' ) && YBY_Mail_V2_P8_Setup::available() ) {
+            $tabs['p8_setup'] = 'P8 数据库连接';
+        }
         $tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
         if ( ! isset( $tabs[ $tab ] ) ) { $tab = 'overview'; }
         self::render_tabs( self::EMAIL, self::email_visible_tabs(), $tab, 'Email OS · 邮件基础设施' );
-        if ( in_array( $tab, array( 'preview_queue', 'preview_failures', 'mysql_snapshot' ), true ) ) {
+        if ( 'p8_setup' === $tab && YBY_Mail_V2_P8_Setup::available() ) {
+            YBY_Mail_V2_P8_Setup::render();
+        } elseif ( 'live_readonly' === $tab && YBY_Mail_V2_P8_Readonly::configured() ) {
+            YBY_Mail_V2_P8_Readonly::render();
+        } elseif ( in_array( $tab, array( 'preview_queue', 'preview_failures', 'mysql_snapshot' ), true ) ) {
             YBY_Mail_V2_P6_Dev_Preview::render( $tab );
         } elseif ( 'email_templates' === $tab ) {
             if ( current_user_can( 'andy_core_settings_manage' ) ) {
