@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "dev-only-precise-file-candidate",
+  "owner": "andy-core",
+  "depends_on_parent_pr": 111,
+  "requires_parent_v22_dev_baseline": true,
+  "target_origin": "https://dev.beyourlover.com",
+  "destination_plugin": "wp-content/plugins/yby-core",
+  "status": "BLOCKED_PENDING_CURRENT_DEV_HASHES_AND_ROLLBACK",
+  "source_branch": "feature/andy-core-v22-premium-oem-popup-20261015",
+  "upload_method": "verified-individual-files-only-never-plugin-zip",
+  "files": [
+    {
+      "path": "inc/class-yby-global-popup.php",
+      "source_git_blob_sha1": "3a5add78ab1d0920daf007f9bf9ca58a0d15c566",
+      "current_dev_blob_sha1": null,
+      "verified_backup": false
+    },
+    {
+      "path": "public/class-yby-public.php",
+      "source_git_blob_sha1": "82b5bca5213f3235654bf9c06e6ed24c2c6b3565",
+      "current_dev_blob_sha1": null,
+      "verified_backup": false
+    },
+    {
+      "path": "public/css/andy-core-popup-premium-v22.css",
+      "source_git_blob_sha1": "0061d44e6842acf16420f720d3440e00aceeab5c",
+      "current_dev_blob_sha1": null,
+      "verified_backup": false
+    },
+    {
+      "path": "admin/views/popup-settings.php",
+      "source_git_blob_sha1": "88a0d4a03da5ee032c31a3078fe7a3c749453600",
+      "current_dev_blob_sha1": null,
+      "verified_backup": false
+    }
+  ],
+  "guards": [
+    "parent-v22-dev-owner-uat",
+    "exact-head-ci-4-of-4-success",
+    "current-dev-source-hash-proof",
+    "backup-rollback-proof",
+    "dev-only-no-www",
+    "legacy-url-capability-nonce-regressions",
+    "no-real-inquiry-submits",
+    "desktop-m390-visual-owner-uat"
+  ]
+}

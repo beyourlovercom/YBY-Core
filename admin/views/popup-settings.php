@@ -120,6 +120,23 @@ $dock_preview_settings['inquiry_text_color'] = $dock_inquiry_text;
 	<form method="post">
 		<?php wp_nonce_field( 'yby_popup_save', 'yby_popup_nonce' ); ?>
 		<table class="form-table"><tbody>
+			<?php if ( 'inquiry' === $popup_prefix ) : ?>
+			<tr><th><label for="andy-popup-template">弹窗视觉模板</label></th><td>
+				<select id="andy-popup-template" name="yby_popup_settings[inquiry_template]">
+					<option value="classic" <?php selected( $settings['inquiry_template'], 'classic' ); ?>>Classic · 原有默认外观</option>
+					<option value="premium_v22" <?php selected( $settings['inquiry_template'], 'premium_v22' ); ?>>Premium V2.2 · 高级 OEM 可复用模板</option>
+				</select>
+				<p class="description">视觉只影响 Global Popup；不改 Landing Page、短代码、表单引擎或 CRM/ERP。默认 Classic 保持兼容。</p>
+			</td></tr>
+			<tr><th><label for="andy-popup-business-preset">业务表单预设</label></th><td>
+				<select id="andy-popup-business-preset" name="yby_popup_settings[inquiry_preset]">
+					<option value="irrigation_quick_inquiry" <?php selected( $settings['inquiry_preset'], 'irrigation_quick_inquiry' ); ?>>Irrigation · 原默认</option>
+					<option value="bottle_oem_inquiry" <?php selected( $settings['inquiry_preset'], 'bottle_oem_inquiry' ); ?>>Bottle OEM</option>
+					<option value="bottle_wholesale_inquiry" <?php selected( $settings['inquiry_preset'], 'bottle_wholesale_inquiry' ); ?>>Bottle Wholesale</option>
+				</select>
+				<p class="description">沿用现有 Inquiry OS 预设 ID、字段校验、来源追踪和提交接口。需先验证 Dev 预设存在且启用；不会自动切换现有广告落地页表单。</p>
+			</td></tr>
+			<?php endif; ?>
 			<tr><th>标题</th><td><input class="regular-text" name="yby_popup_settings[<?php echo esc_attr( $popup_prefix ); ?>_title]" value="<?php echo esc_attr( $settings[ $popup_prefix . '_title' ] ); ?>" type="text"></td></tr>
 			<tr><th>副标题</th><td><input class="regular-text" name="yby_popup_settings[<?php echo esc_attr( $popup_prefix ); ?>_subtitle]" value="<?php echo esc_attr( $settings[ $popup_prefix . '_subtitle' ] ); ?>" type="text"></td></tr>
 			<tr><th>图片 URL</th><td><input id="yby-popup-<?php echo esc_attr( $popup_prefix ); ?>-image" class="regular-text yby-media-url" name="yby_popup_settings[<?php echo esc_attr( $popup_prefix ); ?>_image]" value="<?php echo esc_attr( $settings[ $popup_prefix . '_image' ] ); ?>" type="url" data-yby-media-target="yby-popup-<?php echo esc_attr( $popup_prefix ); ?>-image"> <button type="button" class="button yby-media-button" data-yby-media-target="yby-popup-<?php echo esc_attr( $popup_prefix ); ?>-image">从媒体库选择</button></td></tr>
