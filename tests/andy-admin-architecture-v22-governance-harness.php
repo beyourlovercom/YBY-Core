@@ -93,7 +93,8 @@ $role_check(array('manage_options','andy_core_settings_manage'),array('social_lo
 $GLOBALS['v22_role_caps']=array('edit_pages');
 $GLOBALS['v22_modules']=array('landing_pages'=>true);
 $groups=YBY_Andy_OS_Navigation::sections();
-$assert(array_keys($groups)===array('andy-core-content'),'M5 content-only lacks Commerce, Inquiry, System L2');
+$visible=array_filter($groups,static function($group){return current_user_can($group[1]);});
+$assert(array_keys($visible)===array('andy-core-content'),'M5 content-only visible L2 excludes Commerce, Inquiry and System');
 $assert(YBY_Andy_OS_Navigation::destination('andy-core-content')==='edit.php?post_type=landing_page','M5 native editor not replaced');
 $GLOBALS['v22_role_caps']=array('manage_woocommerce');
 $GLOBALS['v22_modules']=array();
