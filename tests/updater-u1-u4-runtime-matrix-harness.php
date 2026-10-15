@@ -22,7 +22,7 @@ foreach (array(
   array('dev.ybybottle.com','stable',true,false),
   array('dev.ybybottle.com','canary',true,true),
   array('dev.beyourlover.com','canary',false,true),
-  array('dev.beyourlover.com','canary',true,false),
+  array('dev.beyourlover.com','canary',true,true),
   array('ybybottle.com','disabled',true,false),
   array('ybybottle.com','canary',true,false),
   array('ybybottle.com','stable',true,true),
