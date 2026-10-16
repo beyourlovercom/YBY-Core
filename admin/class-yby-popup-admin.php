@@ -14,7 +14,7 @@ class YBY_Popup_Admin {
 
 	public function add_admin_menu() {
 		$this->hook = add_submenu_page(
-			YBY_Project_Studio::menu_slug(), 'Email OS', 'Email OS',
+			YBY_Project_Studio::menu_slug(), '邮件', '邮件',
 			'manage_options', 'yby-core-popups', array( $this, 'render' )
 		);
 	}
