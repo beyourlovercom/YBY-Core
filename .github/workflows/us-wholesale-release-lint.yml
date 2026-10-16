@@ -1,0 +1,24 @@
+name: US Wholesale release PHP lint
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/wholesale-us-production-page-release.php'
+      - '.github/workflows/us-wholesale-release-lint.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate US Wholesale release PHP syntax
+        run: php -l scripts/wholesale-us-production-page-release.php
+      - name: Verify release contains no implicit deployment
+        shell: bash
+        run: |
+          test -f scripts/wholesale-us-production-page-release.php
+          ! grep -Eq 'system\(|shell_exec\(|exec\(' scripts/wholesale-us-production-page-release.php
