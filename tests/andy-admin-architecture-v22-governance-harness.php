@@ -85,11 +85,11 @@ $role_check=static function($caps,$modules,$page,$expected_tabs) use($assert){
 };
 $role_check(array('andy_core_leads_view'),array('inquiry_os'),'andy-core-leads',array('列表','统计'));
 $role_check(array('andy_core_newsletter_view'),array('newsletter_os'),'andy-core-newsletter',array('订阅用户','确认退订'));
-$role_check(array('andy_core_mail_view'),array('email_os'),'andy-core-email',array('邮件总览','发送通道','系统健康'));
+$role_check(array('andy_core_mail_view'),array('email_os'),'andy-core-email',array('总览','通道','健康'));
 $role_check(array('manage_woocommerce'),array(),'andy-commerce',array('总览','订单导出','结账运费','促销','设置'));
 $role_check(array(),array('inquiry_os','newsletter_os','email_os'),'andy-core-leads',array());
 $role_check(array('andy_core_leads_view'),array(),'andy-core-leads',array());
-$role_check(array('manage_options','andy_core_settings_manage'),array('social_login'),'yby-brand-os',array('常规设置','模块管理','Addons','系统状态','插件更新','Brand','Social Login'));
+$role_check(array('manage_options','andy_core_settings_manage'),array('social_login'),'yby-brand-os',array('常规','模块','扩展','状态','更新','品牌','社交登录'));
 $GLOBALS['v22_role_caps']=array('edit_pages');
 $GLOBALS['v22_modules']=array('landing_pages'=>true);
 $groups=YBY_Andy_OS_Navigation::sections();
