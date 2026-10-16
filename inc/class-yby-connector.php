@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 require_once __DIR__ . '/class-yby-subscriber-snapshot.php';
+require_once __DIR__ . '/class-yby-creator-readonly-history.php';
 require_once __DIR__ . '/class-yby-native-subscriber-snapshot.php';
 require_once __DIR__ . '/class-yby-connector-newsletter-readonly.php';
 require_once __DIR__ . '/class-yby-content-erp-contract.php';
@@ -191,6 +192,7 @@ class YBY_Connector {
 	public static function is_https() { return function_exists( 'is_ssl' ) && is_ssl(); }
 
 	public static function register_routes() {
+        YBY_Creator_Readonly_History::register_routes();
 		register_rest_route( self::REST_NAMESPACE, '/health', array( 'methods' => 'GET', 'callback' => array( __CLASS__, 'dispatch_health' ), 'permission_callback' => '__return_true' ) );
 		foreach ( array( 'affiliates', 'coupons', 'referrals', 'payouts', 'subscribers', 'email-templates' ) as $resource ) {
 			register_rest_route( self::REST_NAMESPACE, '/snapshot/' . $resource, array( 'methods' => 'GET', 'callback' => array( __CLASS__, 'dispatch_snapshot' ), 'permission_callback' => '__return_true' ) );
