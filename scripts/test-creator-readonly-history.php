@@ -28,7 +28,10 @@ class WP_User {
 }
 class MockAffiliateDB {
     public $badOwner=false;
-    function get_affiliate($id){return (object)['user_id'=>55,'earnings'=>'500.50','unpaid_earnings'=>'40.25','visits'=>55,'referrals'=>3];}
+    // Live AffiliateWP: payouts live under affiliates->payouts and the DB has
+    // no get_affiliate() method. This mock intentionally enforces that shape.
+    public $payouts;
+    function __construct() { $this->payouts=$this; }
     function get_referrals($args){
         if ((int)$args['affiliate_id']!==99 || $args['number']!==13) throw new RuntimeException('Referral query not scoped');
         return [(object)['affiliate_id'=>$this->badOwner?100:99,'referral_id'=>5,'date'=>'2026-10-15','amount'=>'20.10','status'=>'paid','currency'=>'USD']];
@@ -43,8 +46,9 @@ $GLOBALS['transients']=[];
 function get_userdata($id){return (int)$id===55 ? new WP_User(55):false;}
 function affwp_get_affiliate_id($user_id){return (int)$user_id===55 ? 99:0;}
 function affwp_get_affiliate_status($aff_id){return (int)$aff_id===99?'active':'inactive';}
+function affwp_get_affiliate($aff_id){return (int)$aff_id===99 ? (object)['user_id'=>55,'earnings'=>'500.50','unpaid_earnings'=>'40.25','visits'=>55,'referrals'=>3] : false;}
 function affwp_get_currency(){return 'USD';}
-function affiliate_wp(){return (object)['affiliates'=>$GLOBALS['mocks'],'referrals'=>$GLOBALS['mocks'],'payouts'=>$GLOBALS['mocks']];}
+function affiliate_wp(){return (object)['affiliates'=>$GLOBALS['mocks'],'referrals'=>$GLOBALS['mocks']];}
 function get_transient($k){return $GLOBALS['transients'][$k]??false;}
 function set_transient($k,$v,$ttl){$GLOBALS['transients'][$k]=$v;}
 function is_ssl(){return true;}

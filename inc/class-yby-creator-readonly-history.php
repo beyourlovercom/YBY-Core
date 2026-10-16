@@ -88,7 +88,8 @@ final class YBY_Creator_Readonly_History {
 
     public static function handle($request) {
         if (!function_exists('affwp_get_affiliate_id') || !function_exists('affwp_get_affiliate_status') ||
-            !function_exists('affiliate_wp') || !function_exists('affwp_get_currency')) {
+            !function_exists('affwp_get_affiliate') || !function_exists('affiliate_wp') ||
+            !function_exists('affwp_get_currency')) {
             return self::deny('AffiliateWP provider unavailable.',503);
         }
         $params=$request->get_params();
@@ -112,11 +113,13 @@ final class YBY_Creator_Readonly_History {
         }
         $engine=affiliate_wp();
         if (!is_object($engine) || !isset($engine->affiliates,$engine->referrals) ||
-            !method_exists($engine->affiliates,'get_affiliate') ||
+            !is_object($engine->affiliates) || !is_object($engine->referrals) ||
             !method_exists($engine->referrals,'get_referrals')) { return self::deny('AffiliateWP provider unavailable.',503); }
         $payout_provider = isset($engine->payouts) ? $engine->payouts : ($engine->affiliates->payouts ?? null);
         if (!is_object($payout_provider) || !method_exists($payout_provider,'get_payouts')) { return self::deny('AffiliateWP payout provider unavailable.',503); }
-        $account=$engine->affiliates->get_affiliate($affiliate_id);
+        // AffiliateWP 2.35 and 2.37 expose the supported public helper, not
+        // DB::get_affiliate(). Do not couple to a nonexistent DB method.
+        $account=affwp_get_affiliate($affiliate_id);
         if (!is_object($account) || (isset($account->user_id) && (int)$account->user_id!==$www_user_id)) {
             return self::deny('Affiliate identity mismatch.',403);
         }

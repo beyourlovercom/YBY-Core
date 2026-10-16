@@ -26,3 +26,6 @@ The consumer is independently prepared in beyourlover-web-v3 PR #127. A Dev Word
 - Separate Dev and WWW secrets provisioning in trusted private config (not chat or GitHub).
 - Real approved account mapping, redacted authenticated read, forbidden-other-affiliate, pagination and Fx checks, visual Owner UAT on desktop and mobile.
 - Never automatically enable on WWW or merge to main merely because tests pass.
+
+## Live plugin API compatibility ? 2026-10-16
+AffiliateWP 2.35.0 PHP source and Dev 2.37.1 runtime both expose affwp_get_affiliate(affiliate_id). The affiliates DB does NOT have get_affiliate(). Payouts are provided through affiliate_wp()->affiliates->payouts, not affiliate_wp()->payouts; the provider now implements the supported lookups, with isolated mocks reproducing both absent methods. This is a source-only repair until an exact-head WWW standalone Canary update is verified; do not automatically treat the earlier deployed package as updated.
