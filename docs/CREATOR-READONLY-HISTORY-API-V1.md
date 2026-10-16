@@ -8,11 +8,12 @@ This is a separate, disabled-by-default GET-only API for the new BYL Website V3 
 BYL_CREATOR_REMOTE_API_ENABLED=true
 BYL_CREATOR_REMOTE_KEY_ID=an independently chosen 8–64 character key ID
 BYL_CREATOR_REMOTE_SIGN_KEY=an independently generated 32+ byte secret
+BYL_CREATOR_REMOTE_BINDINGS=verified Dev-user-id => [wp_user_id => WWW ID, affiliate_id => AffiliateWP ID] allowlist; no wildcard
 
 All values are runtime config only. No real keys in GitHub, theme pages, browser JS, logs, or PR comments. NEVER reuse the ERP Connector or AffiliateWP administrator API key. Default OFF; immediate revocation by removing the enabled flag or rotating the secret.
 
 ## Endpoint
-GET /wp-json/andy-core/v1/creator/history?affiliate_id=N&wp_user_id=N&ref_page=N&pay_page=N
+GET /wp-json/andy-core/v1/creator/history?dev_user_id=N&affiliate_id=N&wp_user_id=N&ref_page=N&pay_page=N
 
 It verifies SSL, required exact-signature headers, timestamp age <=120 seconds, single-use nonce, bounded paging, and WWW-side AffiliateWP ownership before reading. Returned fields contain only current approved affiliate totals, limited referral and payout lists, native currency and referral URL. Any missing plugin, inactive affiliate, foreign owner, mixed-owner record, invalid signature, or unsupported currency fails closed.
 

@@ -51,9 +51,9 @@ final class YBY_Creator_Readonly_History {
         $query = wp_parse_url($uri, PHP_URL_QUERY);
         if (!is_string($query) || $query === '') { return self::deny(); }
         parse_str($query, $params);
-        if (!is_array($params) || count($params) !== 4 ||
-            array_keys($params) !== ['affiliate_id','wp_user_id','ref_page','pay_page']) { return self::deny(); }
-        if (!is_string($params['affiliate_id']) || !ctype_digit($params['affiliate_id']) || (int)$params['affiliate_id'] < 1 || (int)$params['affiliate_id'] > 2147483647 || !is_string($params['wp_user_id']) || !ctype_digit($params['wp_user_id']) || (int)$params['wp_user_id'] < 1 || (int)$params['wp_user_id'] > 2147483647 ||
+        if (!is_array($params) || count($params) !== 5 ||
+            array_keys($params) !== ['dev_user_id','affiliate_id','wp_user_id','ref_page','pay_page']) { return self::deny(); }
+        if (!is_string($params['dev_user_id']) || !ctype_digit($params['dev_user_id']) || (int)$params['dev_user_id'] < 1 || (int)$params['dev_user_id'] > 2147483647 || !is_string($params['affiliate_id']) || !ctype_digit($params['affiliate_id']) || (int)$params['affiliate_id'] < 1 || (int)$params['affiliate_id'] > 2147483647 || !is_string($params['wp_user_id']) || !ctype_digit($params['wp_user_id']) || (int)$params['wp_user_id'] < 1 || (int)$params['wp_user_id'] > 2147483647 ||
             self::page($params['ref_page']) === 0 || self::page($params['pay_page']) === 0) { return self::deny(); }
         // The authenticated Dev server supplies both exact IDs, but the provider
         // independently verifies ownership before returning anything.
@@ -94,6 +94,17 @@ final class YBY_Creator_Readonly_History {
         $params=$request->get_params();
         $www_user_id=(int)$params['wp_user_id'];
         $affiliate_id=(int)$params['affiliate_id'];
+        $dev_user_id=(int)$params['dev_user_id'];
+        // Dedicated key is permitted to read only independently allowlisted
+        // Dev-account ? WWW-account ? affiliate triples.
+        if (!defined('BYL_CREATOR_REMOTE_BINDINGS') || !is_array(BYL_CREATOR_REMOTE_BINDINGS)) {
+            return self::deny('No approved account bindings.', 403);
+        }
+        $approved = BYL_CREATOR_REMOTE_BINDINGS[$dev_user_id] ?? null;
+        if (!is_array($approved) || (int)($approved['wp_user_id'] ?? 0) !== $www_user_id ||
+            (int)($approved['affiliate_id'] ?? 0) !== $affiliate_id) {
+            return self::deny('Creator mapping is not approved.', 403);
+        }
         $user=get_userdata($www_user_id);
         if (!$user || !(int)$user->ID || (int)affwp_get_affiliate_id($www_user_id)!==$affiliate_id ||
             affwp_get_affiliate_status($affiliate_id)!=='active') {

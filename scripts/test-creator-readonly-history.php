@@ -5,6 +5,7 @@ define('ABSPATH', __DIR__.'/');
 define('BYL_CREATOR_REMOTE_API_ENABLED', true);
 define('BYL_CREATOR_REMOTE_KEY_ID', 'creator-dev-v1');
 define('BYL_CREATOR_REMOTE_SIGN_KEY', str_repeat('K', 64));
+define('BYL_CREATOR_REMOTE_BINDINGS', [21=>['wp_user_id'=>55,'affiliate_id'=>99]]);
 class WP_Error {
     public $code, $message, $data;
     function __construct($code,$message,$data=[]) {$this->code=$code;$this->message=$message;$this->data=$data;}
@@ -54,7 +55,7 @@ function nocache_headers(){}
 function affwp_get_affiliate_referral_url($arr){return 'https://www.beyourlover.com/?ref=99';}
 require dirname(__DIR__).'/inc/class-yby-creator-readonly-history.php';
 function check($state,$label){if(!$state){throw new RuntimeException('FAIL '.$label);}echo 'PASS '.$label."\n";}
-$parameters=['affiliate_id'=>99,'wp_user_id'=>55,'ref_page'=>1,'pay_page'=>1];
+$parameters=['dev_user_id'=>21,'affiliate_id'=>99,'wp_user_id'=>55,'ref_page'=>1,'pay_page'=>1];
 function request_for($p,$override=[]) {
     $query=http_build_query($p,'','&',PHP_QUERY_RFC3986);
     $_SERVER['REQUEST_URI']='/wp-json/andy-core/v1/creator/history?'.$query;
@@ -81,6 +82,10 @@ $invalid=$parameters; $invalid['affiliate_id']=100;
 $foreign=request_for($invalid);
 check(YBY_Creator_Readonly_History::authorize($foreign)===true,'foreign identity request signed but untrusted');
 check(is_wp_error(YBY_Creator_Readonly_History::handle($foreign)),'foreign affiliate bound to same user is denied');
+$invalid=$parameters; $invalid['dev_user_id']=22;
+$not_allowlisted=request_for($invalid);
+check(YBY_Creator_Readonly_History::authorize($not_allowlisted)===true,'unknown Dev account signature accepted but no mapping privilege');
+check(is_wp_error(YBY_Creator_Readonly_History::handle($not_allowlisted)),'WWW independent allowlist rejects other Dev account');
 $invalid=$parameters; $invalid['wp_user_id']=56;
 $other=request_for($invalid);
 check(YBY_Creator_Readonly_History::authorize($other)===true,'alternate WordPress ID request signed but untrusted');
