@@ -18,8 +18,8 @@ final class YBY_Three_OS_Admin {
 
     public static function newsletter_tabs() {
         return array(
-            'subscribers' => '订阅者列表', 'consent' => '双重确认与退订',
-            'popup_subscribe' => '订阅弹窗', 'shortcode_subscribe' => '订阅短代码',
+            'subscribers' => '订阅用户', 'consent' => '确认退订',
+            'popup_subscribe' => '订阅弹窗', 'shortcode_subscribe' => '短代码',
             'popup_lottery' => '弹窗抽奖', 'campaigns' => '营销活动',
             'approvals' => '审批与发送计划', 'statistics' => '活动统计',
         );
@@ -37,15 +37,15 @@ final class YBY_Three_OS_Admin {
         ) ) );
         if ( class_exists( 'YBY_Mail_V2_P6_Dev_Preview' ) &&
              YBY_Mail_V2_P6_Dev_Preview::eligible_site() ) {
-            $tabs['preview_queue'] = '队列（Dev 预览）';
-            $tabs['preview_failures'] = '失败处理（Dev 预览）';
-            $tabs['mysql_snapshot'] = 'MySQL 验证快照';
+            $tabs['preview_queue'] = '队列预览';
+            $tabs['preview_failures'] = '失败预览';
+            $tabs['mysql_snapshot'] = '验证快照';
         }
         if ( class_exists( 'YBY_Mail_V2_P8_Readonly' ) && YBY_Mail_V2_P8_Readonly::configured() ) {
-            $tabs['live_readonly'] = '独立 MySQL 实时只读';
+            $tabs['live_readonly'] = '实时只读';
         }
         if ( class_exists( 'YBY_Mail_V2_P8_Setup' ) && YBY_Mail_V2_P8_Setup::available() ) {
-            $tabs['p8_setup'] = 'P8 数据库连接';
+            $tabs['p8_setup'] = '数据库连接';
         }
         return $tabs;
     }
@@ -54,16 +54,16 @@ final class YBY_Three_OS_Admin {
         return array(
             'overview' => '总览', 'queue' => '邮件队列',
             'failures' => '失败处理', 'logs' => '事件日志',
-            'email_templates' => '邮件模板中心', 'transport' => '发送通道',
-            'health' => '系统健康',
+            'email_templates' => '模板', 'transport' => '通道',
+            'health' => '健康',
         );
     }
 
     public static function inquiry_tabs() {
         return array(
-            'leads' => '询盘列表', 'stats' => '询盘统计',
-            'floating_inquiry' => '悬浮询盘', 'popup_inquiry' => '询盘弹窗',
-            'shortcode_inquiry' => '询盘短代码', 'settings' => '询盘设置', 'notification' => '询盘通知',
+            'leads' => '列表', 'stats' => '统计',
+            'floating_inquiry' => '悬浮询盘', 'popup_inquiry' => '弹窗',
+            'shortcode_inquiry' => '短代码', 'settings' => '设置', 'notification' => '通知',
         );
     }
 
@@ -71,13 +71,13 @@ final class YBY_Three_OS_Admin {
     public function register_menus() {
         if ( YBY_Module_Registry::is_enabled( 'newsletter_os' ) ) {
             add_submenu_page(
-                YBY_Project_Studio::menu_slug(), 'Newsletter OS', 'Newsletter OS',
+                YBY_Project_Studio::menu_slug(), '订阅', '订阅',
                 self::NEWSLETTER_VIEW, self::NEWSLETTER, array( $this, 'render_newsletter' )
             );
         }
         if ( YBY_Module_Registry::is_enabled( 'email_os' ) ) {
             add_submenu_page(
-                YBY_Project_Studio::menu_slug(), 'Email OS', 'Email OS',
+                YBY_Project_Studio::menu_slug(), '邮件', '邮件',
                 self::MAIL_VIEW, self::EMAIL, array( $this, 'render_email' )
             );
         }
@@ -212,14 +212,14 @@ final class YBY_Three_OS_Admin {
              ! current_user_can( 'andy_core_settings_manage' ) ) {
             wp_die( esc_html__( 'Permission denied.', 'yby-core' ) );
         }
-        self::render_tabs( YBY_Inquiry_Admin::page_slug(), self::inquiry_tabs(), $tab, 'Inquiry OS · 询盘中心' );
+        self::render_tabs( YBY_Inquiry_Admin::page_slug(), self::inquiry_tabs(), $tab, '询盘管理' );
         ( new YBY_Popup_Admin( 'yby-core', YBY_CORE_VERSION ) )->render_embedded( $tab );
         echo '</div>';
     }
 
     public function render_newsletter() {
         if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
-            YBY_Andy_Admin_Shell_V22::render( self::NEWSLETTER, 'Newsletter OS · 订阅与营销',
+            YBY_Andy_Admin_Shell_V22::render( self::NEWSLETTER, '订阅管理',
                 function () { $this->render_newsletter_original(); } );
             return;
         }
@@ -235,7 +235,7 @@ final class YBY_Three_OS_Admin {
         $tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'subscribers';
         if ( 'bulk_marketing' === $tab ) { $tab = 'campaigns'; }
         if ( ! isset( $tabs[ $tab ] ) ) { $tab = 'subscribers'; }
-        self::render_tabs( self::NEWSLETTER, self::newsletter_visible_tabs(), $tab, 'Newsletter OS · 订阅与营销' );
+        self::render_tabs( self::NEWSLETTER, self::newsletter_visible_tabs(), $tab, '订阅管理' );
         if ( 'subscribers' === $tab ) {
             $this->subscribers();
         } elseif ( 'consent' === $tab ) {
@@ -260,7 +260,7 @@ final class YBY_Three_OS_Admin {
 
     public function render_email() {
         if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
-            YBY_Andy_Admin_Shell_V22::render( self::EMAIL, 'Email OS · 邮件基础设施',
+            YBY_Andy_Admin_Shell_V22::render( self::EMAIL, '邮件管理',
                 function () { $this->render_email_original(); } );
             return;
         }
@@ -274,19 +274,19 @@ final class YBY_Three_OS_Admin {
         }
         $tabs = self::email_tabs();
         if ( YBY_Mail_V2_P6_Dev_Preview::eligible_site() ) {
-            $tabs['preview_queue'] = '队列（Dev 预览）';
-            $tabs['preview_failures'] = '失败处理（Dev 预览）';
-            $tabs['mysql_snapshot'] = 'MySQL 验证快照';
+            $tabs['preview_queue'] = '队列预览';
+            $tabs['preview_failures'] = '失败预览';
+            $tabs['mysql_snapshot'] = '验证快照';
         }
         if ( class_exists( 'YBY_Mail_V2_P8_Readonly' ) && YBY_Mail_V2_P8_Readonly::configured() ) {
-            $tabs['live_readonly'] = '独立 MySQL 实时只读';
+            $tabs['live_readonly'] = '实时只读';
         }
         if ( class_exists( 'YBY_Mail_V2_P8_Setup' ) && YBY_Mail_V2_P8_Setup::available() ) {
-            $tabs['p8_setup'] = 'P8 数据库连接';
+            $tabs['p8_setup'] = '数据库连接';
         }
         $tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
         if ( ! isset( $tabs[ $tab ] ) ) { $tab = 'overview'; }
-        self::render_tabs( self::EMAIL, self::email_visible_tabs(), $tab, 'Email OS · 邮件基础设施' );
+        self::render_tabs( self::EMAIL, self::email_visible_tabs(), $tab, '邮件管理' );
         if ( 'p8_setup' === $tab && YBY_Mail_V2_P8_Setup::available() ) {
             YBY_Mail_V2_P8_Setup::render();
         } elseif ( 'live_readonly' === $tab && YBY_Mail_V2_P8_Readonly::configured() ) {
