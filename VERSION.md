@@ -1,7 +1,7 @@
 # VERSION
 
 - Product Name: Andy Core
-- Stable Version: 2.2.0
+- Stable Version: 2.2.1
 - Development Version: None
 - Stable Release Type: Stable
 - Development Status: V2.2 unified source + Mail P9 source-only; production release held until site-channel exclusion and Dev UAT
