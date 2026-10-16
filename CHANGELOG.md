@@ -1,3 +1,9 @@
+## v2.2.4 - 2026-10-16
+
+- Main-integrated Canary candidate carrying Andy Core v2.2.3, native WordPress L2 persistent-open navigation (#138), and concise Chinese L2/L3 admin labels (#140).
+- No route/capability/schema changes; Mail OS P9 live writer, real SMTP and standalone irrigation country cloning remain separately gated.
+- Prerelease signing and publication not approved by this code-only candidate. Existing v2.2.3 public assets stay unchanged.
+
 ## v2.2.3 - 2026-10-16
 
 - Signed Canary manual upgrade UAT patch (2.2.2 to 2.2.3).
