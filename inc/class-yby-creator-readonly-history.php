@@ -23,6 +23,16 @@ final class YBY_Creator_Readonly_History {
         return new WP_Error('byl_creator_readonly_denied', $message, ['status'=>$status]);
     }
 
+    // Canary-only, temporary auth-stage telemetry. Never returns credentials,
+    // signatures, user data or request header values.
+    private static function deny_auth_stage(string $stage): WP_Error {
+        if (defined('BYL_CREATOR_CANARY_STAGE_DIAGNOSTICS') && BYL_CREATOR_CANARY_STAGE_DIAGNOSTICS === true) {
+            return new WP_Error('byl_creator_readonly_denied', 'Creator history authorization denied.',
+                ['status'=>401, 'gate'=>$stage]);
+        }
+        return self::deny();
+    }
+
     private static function page($value): int {
         if (!(is_string($value) || is_int($value)) || !preg_match('/^[0-9]{1,5}$/D', (string)$value)) { return 0; }
         $number = (int)$value;
@@ -34,7 +44,7 @@ final class YBY_Creator_Readonly_History {
             !defined('BYL_CREATOR_REMOTE_KEY_ID') || !defined('BYL_CREATOR_REMOTE_SIGN_KEY') ||
             !is_string(BYL_CREATOR_REMOTE_SIGN_KEY) || strlen(BYL_CREATOR_REMOTE_SIGN_KEY) < 32 ||
             !is_string(BYL_CREATOR_REMOTE_KEY_ID) || !preg_match('/^[A-Za-z0-9._-]{8,64}$/D', BYL_CREATOR_REMOTE_KEY_ID) ||
-            !is_ssl() || $request->get_method() !== 'GET') { return self::deny(); }
+            !is_ssl() || $request->get_method() !== 'GET') { return self::deny_auth_stage('transport_or_config'); }
 
         $key = (string)$request->get_header('X-BYL-Creator-Key');
         $ts = (string)$request->get_header('X-BYL-Creator-Time');
@@ -43,23 +53,23 @@ final class YBY_Creator_Readonly_History {
         if (!hash_equals(BYL_CREATOR_REMOTE_KEY_ID, $key) ||
             !preg_match('/^[0-9]{10}$/D', $ts) || abs(time() - (int)$ts) > 120 ||
             !preg_match('/^[a-f0-9]{32}$/D', $nonce) ||
-            !preg_match('/^[a-f0-9]{64}$/D', $signature)) { return self::deny(); }
+            !preg_match('/^[a-f0-9]{64}$/D', $signature)) { return self::deny_auth_stage('request_headers'); }
 
         $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
         $path = wp_parse_url($uri, PHP_URL_PATH);
-        if ($path !== '/wp-json/andy-core/v1/creator/history') { return self::deny(); }
+        if ($path !== '/wp-json/andy-core/v1/creator/history') { return self::deny_auth_stage('path'); }
         $query = wp_parse_url($uri, PHP_URL_QUERY);
-        if (!is_string($query) || $query === '') { return self::deny(); }
+        if (!is_string($query) || $query === '') { return self::deny_auth_stage('query'); }
         parse_str($query, $params);
         if (!is_array($params) || count($params) !== 5 ||
-            array_keys($params) !== ['dev_user_id','affiliate_id','wp_user_id','ref_page','pay_page']) { return self::deny(); }
+            array_keys($params) !== ['dev_user_id','affiliate_id','wp_user_id','ref_page','pay_page']) { return self::deny_auth_stage('query_fields'); }
         if (!is_string($params['dev_user_id']) || !ctype_digit($params['dev_user_id']) || (int)$params['dev_user_id'] < 1 || (int)$params['dev_user_id'] > 2147483647 || !is_string($params['affiliate_id']) || !ctype_digit($params['affiliate_id']) || (int)$params['affiliate_id'] < 1 || (int)$params['affiliate_id'] > 2147483647 || !is_string($params['wp_user_id']) || !ctype_digit($params['wp_user_id']) || (int)$params['wp_user_id'] < 1 || (int)$params['wp_user_id'] > 2147483647 ||
-            self::page($params['ref_page']) === 0 || self::page($params['pay_page']) === 0) { return self::deny(); }
+            self::page($params['ref_page']) === 0 || self::page($params['pay_page']) === 0) { return self::deny_auth_stage('query_values'); }
         // The authenticated Dev server supplies both exact IDs, but the provider
         // independently verifies ownership before returning anything.
         $canonical = "GET\n".$uri."\n".$ts."\n".$nonce."\n".$key;
         $expected = hash_hmac('sha256', $canonical, BYL_CREATOR_REMOTE_SIGN_KEY);
-        if (!hash_equals($expected, $signature)) { return self::deny(); }
+        if (!hash_equals($expected, $signature)) { return self::deny_auth_stage('signature'); }
         $reuse = 'byl_creator_nonce_'.hash('sha256', $key.'|'.$nonce);
         if (get_transient($reuse)) { return self::deny('Duplicate request.', 409); }
         set_transient($reuse, '1', 180);

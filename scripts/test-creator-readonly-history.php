@@ -6,6 +6,7 @@ define('BYL_CREATOR_REMOTE_API_ENABLED', true);
 define('BYL_CREATOR_REMOTE_KEY_ID', 'creator-dev-v1');
 define('BYL_CREATOR_REMOTE_SIGN_KEY', str_repeat('K', 64));
 define('BYL_CREATOR_REMOTE_BINDINGS', [21=>['wp_user_id'=>55,'affiliate_id'=>99]]);
+define('BYL_CREATOR_CANARY_STAGE_DIAGNOSTICS', true);
 class WP_Error {
     public $code, $message, $data;
     function __construct($code,$message,$data=[]) {$this->code=$code;$this->message=$message;$this->data=$data;}
@@ -82,6 +83,7 @@ check(count($res->data['data']['referrals'])===1 && count($res->data['data']['pa
 check(is_wp_error(YBY_Creator_Readonly_History::authorize($r)),'HMAC nonce replay denied');
 $bad=request_for($parameters,['X-BYL-Creator-Signature'=>str_repeat('0',64)]);
 check(is_wp_error(YBY_Creator_Readonly_History::authorize($bad)),'invalid HMAC denied');
+check(YBY_Creator_Readonly_History::authorize(request_for($parameters,['X-BYL-Creator-Signature'=>str_repeat('0',64)]))->data['gate']==='signature','auth diagnostic reports only stage, not private values');
 $invalid=$parameters; $invalid['affiliate_id']=100;
 $foreign=request_for($invalid);
 check(YBY_Creator_Readonly_History::authorize($foreign)===true,'foreign identity request signed but untrusted');
