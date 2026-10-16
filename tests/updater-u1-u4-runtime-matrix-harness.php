@@ -11,6 +11,35 @@ function home_url() { return 'https://' . $GLOBALS['u_host'] . '/'; }
 function wp_parse_url( $url, $component = -1 ) { return parse_url( $url, $component ); }
 function plugin_basename( $file ) { return 'yby-core/yby-core.php'; }
 class YBY_GitHub_Release_Client {}
+// Isolated cache stubs for same-version update-offer and post-install cleanup.
+$GLOBALS['u_verified_release'] = false;
+$GLOBALS['u_pending'] = false;
+$GLOBALS['u_deleted_keys'] = array();
+function get_site_transient( $key ) {
+    if ('yby_core_verified_release_canary' === $key) return $GLOBALS['u_verified_release'];
+    if ('yby_core_updater_pending' === $key) return $GLOBALS['u_pending'];
+    return false;
+}
+function delete_site_transient( $key ) {
+    $GLOBALS['u_deleted_keys'][] = $key;
+    if ('yby_core_updater_pending' === $key) $GLOBALS['u_pending'] = false;
+    return true;
+}
+function is_wp_error( $item ) { return $item instanceof WP_Error; }
+class WP_Error { public function __construct() {} }
+class YBY_Update_Verifier {
+    public static function is_newer( $candidate, $current ) {
+        return version_compare( $candidate, $current, '>' );
+    }
+    public static function stable_version( $version ) { return (string) $version; }
+}
+class YBY_Update_Backup {
+    public static function health( $path, $version ) { return $version === '2.2.5'; }
+}
+function get_current_user_id() { return 0; }
+function get_bloginfo( $key ) { return '6.7'; }
+function __( $message, $domain = null ) { return $message; }
+function absint( $value ) { return abs( (int) $value ); }
 require dirname( __DIR__ ) . '/inc/class-yby-updater.php';
 $updater = new YBY_Updater('/test/plugins/yby-core/yby-core.php', '2.2.0');
 $reflect = new ReflectionMethod(YBY_Updater::class, 'allowed_release');
@@ -44,4 +73,105 @@ foreach (array(
       ++$assertions;
   }
 }
+// Regression: after 2.2.4 installs, a cached 2.2.4 response is STALE,
+// and the signed downloader must not be offered an equal-version ZIP again.
+$GLOBALS['u_host']='dev.beyourlover.com';
+$GLOBALS['u_channel']='canary';
+$latest = new YBY_Updater('/test/plugins/yby-core/yby-core.php','2.2.4');
+$GLOBALS['u_verified_release']=array('version'=>'2.2.4','sha256'=>str_repeat('a',64),
+  'release_url'=>'https://example.invalid/release',
+  'package_url'=>'https://example.invalid/package');
+$old_offer=(object)array('response'=>array(
+  'yby-core/yby-core.php'=>(object)array('new_version'=>'2.2.4'),
+  'another-plugin/example.php'=>(object)array('new_version'=>'5.0.0')
+));
+$out=$latest->filter_updates($old_offer);
+if (isset($out->response['yby-core/yby-core.php']))
+    throw new RuntimeException('Same-version Andy Core stale update offer remains');
+if (!isset($out->response['another-plugin/example.php']))
+    throw new RuntimeException('Unrelated plugin update offer was removed');
+$assertions+=2;
+
+// A verified higher version remains discoverable and preserves other offers.
+$GLOBALS['u_verified_release']['version']='2.2.5';
+$new_offer=$latest->filter_updates((object)array('response'=>array(
+  'another-plugin/example.php'=>(object)array('new_version'=>'5.0.0')
+)));
+if (($new_offer->response['yby-core/yby-core.php']->new_version??null)!=='2.2.5')
+    throw new RuntimeException('Genuine newer signed release was not offered');
+if (!isset($new_offer->response['another-plugin/example.php']))
+    throw new RuntimeException('Updating Andy Core suppressed unrelated plugin');
+$assertions+=2;
+
+// On confirmed successful install, WordPress's previous plugin update list
+// must be invalidated while preserving the exact backup validation gate.
+$GLOBALS['u_pending']=array('target_version'=>'2.2.5','backup_reference'=>'/tmp/verified-backup');
+$GLOBALS['u_deleted_keys']=array();
+$latest->validate_install(null,array('plugin'=>'yby-core/yby-core.php'));
+if ($GLOBALS['u_deleted_keys']!==array('yby_core_updater_pending','update_plugins'))
+    throw new RuntimeException('Successful install did not clear stale update_plugins transient');
+$assertions++;
+
+// On an older release, even a previously cached newer-looking offer must go.
+$GLOBALS['u_verified_release']['version']='2.2.3';
+$expired=$latest->filter_updates((object)array('response'=>array(
+    'yby-core/yby-core.php'=>(object)array('new_version'=>'2.2.4')
+)));
+if (isset($expired->response['yby-core/yby-core.php']))
+    throw new RuntimeException('Older-than-installed release retained a stale offer');
+$assertions++;
+
+// The update_plugins transient may contain an offer created by the *old*
+// plugin instance during installation. Test the WordPress read path, not only
+// pre_set_site_transient_update_plugins writes.
+$GLOBALS['u_host'] = 'dev.beyourlover.com';
+$GLOBALS['u_channel'] = 'canary';
+$installed225 = new YBY_Updater('/test/plugins/yby-core/yby-core.php', '2.2.5');
+$cachedSameVersion = (object)array('response'=>array(
+  'yby-core/yby-core.php' => (object)array('new_version'=>'2.2.5'),
+  'another-plugin/example.php' => (object)array('new_version'=>'5.0.0')
+));
+$readResult = $installed225->filter_cached_updates($cachedSameVersion);
+if (isset($readResult->response['yby-core/yby-core.php']))
+    throw new RuntimeException('Cached same-version offer survives site_transient_update_plugins read');
+if (!isset($readResult->response['another-plugin/example.php']))
+    throw new RuntimeException('Read filter modified an unrelated plugin');
+$assertions += 2;
+
+// Older and malformed own-version offers are discarded without any writes.
+foreach (array('2.2.4', '', '2.2.3') as $oldVersion) {
+    $stale = (object)array('response'=>array(
+       'yby-core/yby-core.php'=>(object)array('new_version'=>$oldVersion)
+    ));
+    $readResult = $installed225->filter_cached_updates($stale);
+    if (isset($readResult->response['yby-core/yby-core.php']))
+        throw new RuntimeException('Read filter retained invalid or older version: ' . $oldVersion);
+    $assertions++;
+}
+// Future verified offers still pass through. Signature verification remains
+// enforced when the offer is initially created (write filter / downloader).
+$future = (object)array('response'=>array(
+    'yby-core/yby-core.php'=>(object)array('new_version'=>'2.2.6')
+));
+$readResult = $installed225->filter_cached_updates($future);
+if (($readResult->response['yby-core/yby-core.php']->new_version ?? '') !== '2.2.6')
+    throw new RuntimeException('Read filter suppressed a newer release');
+$assertions++;
+
+// Site policy is fail closed even for transient offers saved before disabling.
+$GLOBALS['u_channel'] = 'disabled';
+$denied = (object)array('response'=>array(
+   'yby-core/yby-core.php'=>(object)array('new_version'=>'2.2.6'),
+   'another-plugin/example.php'=>(object)array('new_version'=>'3.0.0')
+));
+$readResult = $installed225->filter_cached_updates($denied);
+if (isset($readResult->response['yby-core/yby-core.php']) || !isset($readResult->response['another-plugin/example.php']))
+    throw new RuntimeException('Disabled site exposed a cached Canary offer or affected other plugins');
+$assertions++;
+
+// Defensive: malformed WordPress transient values remain unchanged.
+if ($installed225->filter_cached_updates(false) !== false)
+    throw new RuntimeException('Non-object transient was changed');
+$assertions++;
+
 echo "PASS U1-U4 runtime policy matrix assertions={$assertions} no_network=1 no_writes=1\n";
