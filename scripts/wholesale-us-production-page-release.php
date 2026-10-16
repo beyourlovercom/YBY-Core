@@ -44,7 +44,7 @@ function yby_wv2_localize_h1($html, &$modified_count) {
     $result=preg_replace_callback($pattern,function($m) use (&$modified_count) {
         if (yby_wv2_heading_count($m[0],YBY_WV2_H1.' in Germany')!==1) return $m[0];
         $count=0;
-        $localized=str_replace('in Germany','in United States',$m[0],$count);
+        $localized=str_replace('in Germany','in the United States',$m[0],$count);
         if($count===1) $modified_count++;
         return $localized;
     },$html);
@@ -147,7 +147,7 @@ function yby_wv2_verify($id, $source) {
             return new WP_Error('SIGNED','Unsigned or invalid Germany Code.');
         }
         $code++;
-        $target_heading += yby_wv2_heading_count($c,YBY_WV2_H1.' in United States');
+        $target_heading += yby_wv2_heading_count($c,YBY_WV2_H1.' in the United States');
         $source_heading += yby_wv2_heading_count($c,YBY_WV2_H1);
         $triggers += substr_count($c,'data-yby-inquiry-trigger');
         if (strpos($c,'Germany')!==false) return new WP_Error('COUNTRY_COPY','Germany text remained in the US page Code.');
@@ -194,7 +194,7 @@ if ($verb==='create') {
     foreach($nodes as &$n) {
         if (($n['name']??'')!=='code') continue;
         $text=(string)$n['settings']['code'];
-        $n['settings']['code']=str_replace('Germany','United States',yby_wv2_localize_h1($text,$localized_headings));
+        $n['settings']['code']=str_replace(['in Germany','Germany'],['in the United States','United States'],yby_wv2_localize_h1($text,$localized_headings));
         unset($n['settings']['signature'],$n['settings']['user_id'],$n['settings']['time']);
     }
     unset($n);
@@ -208,7 +208,7 @@ if ($verb==='create') {
       'post_type'=>'landing_page','post_status'=>'draft',
       'post_name'=>YBY_WV2_SLUG,
       'post_title'=>'IRRIGATION WHOLESALE — United States',
-      'post_content'=>str_replace('Germany','United States',$src['post']->post_content)
+      'post_content'=>str_replace(['in Germany','Germany'],['in the United States','United States'],$src['post']->post_content)
     ],true);
     if (is_wp_error($id)||!$id) yby_wv2_fail('INSERT','Could not insert separate Germany draft.');
     update_post_meta($id,'_bricks_editor_mode','bricks');
