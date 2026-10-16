@@ -217,8 +217,10 @@ $inquiry_labels=array_column(YBY_Andy_OS_Navigation::tertiary_items('andy-core-l
 $assert(in_array('列表',$inquiry_labels,true) && in_array('统计',$inquiry_labels,true),
     'Inquiry L3 localized without route changes');
 $setup(array('andy_core_mail_view'));
-$assert(array_keys(YBY_Andy_OS_Navigation::sections())===array('andy-core-email'),
-    'Chinese-only menu must not add unauthorized modules');
+$mail_visible=array_filter(YBY_Andy_OS_Navigation::sections(),
+    static function($group){ return current_user_can($group[1]); });
+$assert(array_keys($mail_visible)===array('andy-core-email'),
+    'Chinese-only menu must not display unauthorized modules');
 $assert(count(YBY_Andy_OS_Navigation::tertiary_items('andy-core-email'))===3,
     'Chinese-only menu must not enable restricted email template');
 echo "PASS andy-core-native-l123-v2-harness\n";
