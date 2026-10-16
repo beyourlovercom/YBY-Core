@@ -1,3 +1,8 @@
+## v2.2.2 - 2026-10-16
+
+- Signed Dev Canary for automatic update UAT from v2.2.1.
+- No database schema, email send, or production rollout changes.
+
 ## v2.2.1 - 2026-10-16
 
 - Signed Canary update channel and WordPress automatic upgrade policy test candidate.
