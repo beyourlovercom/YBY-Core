@@ -34,7 +34,7 @@ $assert( false !== strpos( $admin_view, 'yby-media-button' ) && false !== strpos
 $assert( false !== strpos( $css, '.yby-global-popup--inquiry' ) && false !== strpos( $css, '--yby-theme-surface' ), 'Global inquiry shell must inherit Brand Theme tokens in a scoped override.' );
 $assert( false !== strpos( $css, '--yby-theme-border' ) && false !== strpos( $css, '--yby-theme-overlay' ), 'Global inquiry controls and overlay must inherit scoped Brand Theme tokens.' );
 $assert( false === strpos( $popup, 'CREATE TABLE' ) && false === strpos( $popup, 'dbDelta' ), 'Popup must not change database schema.' );
-$assert( false !== strpos( $admin, "'Email OS', 'Email OS'" ) && false !== strpos( $admin_view, 'nav-tab-wrapper' ), 'Email OS must retain the legacy page slug and use WordPress nav tabs.' );
+$assert( false !== strpos( $admin, "'邮件', '邮件'" ) && false !== strpos( $admin_view, 'nav-tab-wrapper' ), 'Email OS must retain the legacy page slug and use WordPress nav tabs.' );
 $assert( false !== strpos( $admin_view, "'floating_inquiry' => '悬浮询盘'" ) && strpos( $admin_view, "'floating_inquiry' => '悬浮询盘'" ) < strpos( $admin_view, "'popup_inquiry' => '弹窗询盘'" ) && false !== strpos( $admin_view, "'bulk_marketing' => '营销群发', 'email_templates' => '邮件模板'" ), 'Email OS must expose eight Chinese tabs with 悬浮询盘 first and 邮件模板 last.' );
 $assert( false !== strpos( $admin, 'popup_lottery' ) && false !== strpos( $admin, 'bulk_marketing' ) && false !== strpos( $admin, "'inquiry' => 'popup_inquiry'" ), 'Email hub modes and legacy aliases missing.' );
 $assert( false !== strpos( $popup, 'inquiry_shortcode_custom_css' ) && false !== strpos( $popup, 'subscribe_shortcode_custom_css' ), 'Inquiry and Subscribe shortcode CSS keys must be independent.' );
