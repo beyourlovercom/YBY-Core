@@ -324,6 +324,12 @@ class YBY_Updater {
 	}
 
 	private function validated_release( $force ) {
+		// Reuse fully verified release evidence to limit requests on admin and cron.
+		$cache_key = 'yby_core_verified_release_' . $this->update_channel();
+		$cached = get_site_transient( $cache_key );
+		if ( is_array( $cached ) && ! empty( $cached['version'] ) && ! empty( $cached['sha256'] ) ) {
+			return $cached;
+		}
 		$is_canary = 'canary' === $this->update_channel();
 		$raw = $is_canary ? $this->client->latest_canary_release( $force ) : $this->client->latest_release( $force );
 		if ( is_wp_error( $raw ) ) {
@@ -378,12 +384,14 @@ class YBY_Updater {
 			return new WP_Error( 'yby_update_metadata_invalid', __( 'The Andy Core release metadata is incompatible with this updater.', 'yby-core' ) );
 		}
 
-		return array(
+		$verified_release = array(
 			'version'     => $version,
 			'package_url' => (string) $assets['package']['url'],
 			'release_url' => isset( $raw['html_url'] ) && is_string( $raw['html_url'] ) ? esc_url_raw( $raw['html_url'] ) : 'https://github.com/' . YBY_GitHub_Release_Client::OWNER . '/' . YBY_GitHub_Release_Client::REPOSITORY,
 			'sha256'      => $sha256,
 		);
+		set_site_transient( $cache_key, $verified_release, 10 * MINUTE_IN_SECONDS );
+		return $verified_release;
 	}
 
 	private function is_this_plugin_hook( $hook_extra ) {
