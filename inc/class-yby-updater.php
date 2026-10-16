@@ -84,6 +84,13 @@ class YBY_Updater {
 		}
 		$release = $this->validated_release( false );
 		if ( is_wp_error( $release ) || ! YBY_Update_Verifier::is_newer( $release['version'], $this->version ) ) {
+			// WordPress may retain our previous offer in update_plugins after
+			// installing that exact release. Do not leave a same-version (or
+			// unverified) plugin update selectable in the cached response.
+			$plugin = plugin_basename( $this->plugin_file );
+			if ( isset( $transient->response ) && is_array( $transient->response ) ) {
+				unset( $transient->response[ $plugin ] );
+			}
 			return $transient;
 		}
 		if ( ! isset( $transient->response ) || ! is_array( $transient->response ) ) {
@@ -223,6 +230,11 @@ class YBY_Updater {
 		}
 
 		delete_site_transient( self::PENDING_KEY );
+		// The current updater object may still refer to the previous version
+		// during this installation request. Invalidate WordPress's old update
+		// offer so the next admin load cannot advertise the now-installed
+		// package again (which our signed downloader correctly rejects).
+		delete_site_transient( 'update_plugins' );
 		$this->notice( 'success', sprintf( __( 'Andy Core %s was installed and passed local health validation.', 'yby-core' ), $target ), $user_id );
 	}
 
