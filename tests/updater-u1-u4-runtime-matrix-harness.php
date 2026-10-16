@@ -37,6 +37,7 @@ class YBY_Update_Backup {
     public static function health( $path, $version ) { return $version === '2.2.5'; }
 }
 function get_current_user_id() { return 0; }
+function get_bloginfo( $key ) { return '6.7'; }
 require dirname( __DIR__ ) . '/inc/class-yby-updater.php';
 $updater = new YBY_Updater('/test/plugins/yby-core/yby-core.php', '2.2.0');
 $reflect = new ReflectionMethod(YBY_Updater::class, 'allowed_release');
