@@ -45,8 +45,8 @@ class YBY_Social_Login_Admin {
 	public function add_admin_menu() {
 		add_submenu_page(
 			YBY_Project_Studio::menu_slug(),
-			__( 'Social Login', 'yby-core' ),
-			__( 'Social Login', 'yby-core' ),
+			__( '社交登录', 'yby-core' ),
+			__( '社交登录', 'yby-core' ),
 			'manage_options',
 			self::page_slug(),
 			array( $this, 'render_page' )
@@ -78,6 +78,16 @@ class YBY_Social_Login_Admin {
 	 * @return void
 	 */
 	public function render_page() {
+		if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
+			YBY_Andy_Admin_Shell_V22::render( self::page_slug(), 'Andy Core · 社交登录',
+				function () { $this->render_page_original(); } );
+			return;
+		}
+		$this->render_page_original();
+	}
+
+	/** Original role check, general and Google POST/nonce are authoritative. */
+	private function render_page_original() {
 		if ( ! $this->security->can_manage_settings() ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'yby-core' ) );
 		}

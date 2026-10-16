@@ -35,6 +35,9 @@ class YBY_Admin {
 	 */
 	protected $security;
 
+	/** Embedded in Inquiry OS without rendering duplicate Settings tabs. */
+	protected $inquiry_os_embedded = false;
+
 	/**
 	 * Constructor.
 	 *
@@ -64,8 +67,8 @@ class YBY_Admin {
 	public function add_admin_menu() {
 		add_submenu_page(
 			YBY_Project_Studio::menu_slug(),
-			__( 'Settings', 'yby-core' ),
-			__( 'Settings', 'yby-core' ),
+			__( '设置', 'yby-core' ),
+			__( '设置', 'yby-core' ),
 			'andy_core_settings_manage',
 			YBY_Helpers::admin_page_slug(),
 			array( $this, 'render_settings_page' )
@@ -115,12 +118,22 @@ class YBY_Admin {
 	 * @return void
 	 */
 	public function render_settings_page() {
+		if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
+			YBY_Andy_Admin_Shell_V22::render( 'yby-core', 'Andy Core · 系统设置',
+				function () { $this->render_settings_page_original(); } );
+			return;
+		}
+		$this->render_settings_page_original();
+	}
+
+	/** Existing feature flags, nonce checks and option handlers unchanged. */
+	private function render_settings_page_original() {
 		if ( ! $this->security->can_manage_settings() ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'yby-core' ) );
 		}
 
 		$tab         = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general';
-		$tab         = in_array( $tab, array_keys( self::settings_tabs() ), true ) ? $tab : 'general';
+		$tab         = in_array( $tab, array_keys( self::settings_tabs( true ) ), true ) ? $tab : 'general';
 		if ( 'modules' === $tab ) {
 			$this->render_modules_page();
 			return;
@@ -176,15 +189,16 @@ class YBY_Admin {
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/settings-page.php';
 	}
 
-	public static function settings_tabs() {
-		$tabs = array( 'general' => '常规', 'modules' => '模块', 'addons' => 'Addons' );
-		if ( YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) {
+	public static function settings_tabs( $include_legacy_inquiry = false ) {
+		$tabs = array( 'general' => '常规', 'modules' => '模块', 'addons' => '扩展' );
+		// Hide these business tabs in Settings navigation; preserve old GET/POST routes.
+		if ( $include_legacy_inquiry && YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) {
 			$tabs['inquiry'] = '询盘';
 			$tabs['inquiry-notification'] = '询盘通知';
 		}
-		if ( YBY_Module_Registry::is_enabled( 'connector' ) ) { $tabs['wp-api'] = 'WP-API'; }
+		if ( YBY_Module_Registry::is_enabled( 'connector' ) ) { $tabs['wp-api'] = '接口'; }
 		if ( ! empty( YBY_Module_Registry::module( 'article_toc' ) ) ) { $tabs['article-toc'] = '文章目录'; }
-		$tabs['system-status'] = '系统状态';
+		$tabs['system-status'] = '状态';
 		$tabs['updates'] = '更新';
 		return $tabs;
 	}
@@ -222,6 +236,21 @@ class YBY_Admin {
 		$options = YBY_Article_TOC_Module::get_settings();
 		$module_enabled = YBY_Module_Registry::is_enabled( YBY_Article_TOC_Module::MODULE_ID );
 		include YBY_CORE_PLUGIN_DIR . 'admin/views/article-toc-settings.php';
+	}
+
+	/** Reuse the original Settings handlers and nonce-protected POST saves in Inquiry OS. */
+	public function render_inquiry_os_settings( $tab ) {
+		if ( ! YBY_Module_Registry::is_enabled( 'inquiry_os' ) || ! $this->security->can_manage_settings() ||
+			! in_array( $tab, array( 'inquiry', 'inquiry-notification' ), true ) ) {
+			wp_die( esc_html__( 'Permission denied.', 'yby-core' ) );
+		}
+		$this->inquiry_os_embedded = true;
+		try {
+			if ( 'inquiry' === $tab ) { $this->render_inquiry_settings(); }
+			else { $this->render_inquiry_notification_settings(); }
+		} finally {
+			$this->inquiry_os_embedded = false;
+		}
 	}
 
 	protected function render_inquiry_settings() {

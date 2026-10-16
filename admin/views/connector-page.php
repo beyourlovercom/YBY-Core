@@ -3,13 +3,15 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 ?>
 <div class="wrap yby-connector-page">
-	<h1>WP-API</h1>
+	<?php if ( ! class_exists( 'YBY_Andy_Admin_Shell_V22' ) || ! YBY_Andy_Admin_Shell_V22::suppress_legacy_tabs( 'yby-core' ) ) : ?>
+<h1>WP-API</h1>
 	<p class="yby-connector-kicker">ERP 接口设置 · Andy Core v<?php echo esc_html( YBY_CORE_VERSION ); ?></p>
 	<nav class="nav-tab-wrapper" aria-label="WP-API 设置">
 		<?php foreach ( YBY_Admin::settings_tabs() as $key => $label ) : ?>
 			<a class="nav-tab <?php echo 'wp-api' === $key ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => YBY_Helpers::admin_page_slug(), 'tab' => $key ), admin_url( 'admin.php' ) ) ); ?>"><?php echo esc_html( $label ); ?></a>
 		<?php endforeach; ?>
 	</nav>
+<?php endif; ?>
 	<?php if ( $notice ) : ?><div class="notice notice-<?php echo esc_attr( $notice_type ); ?> is-dismissible"><p><?php echo esc_html( $notice ); ?></p></div><?php endif; ?>
 
 	<div class="yby-connector-columns">

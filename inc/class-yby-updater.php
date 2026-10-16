@@ -13,6 +13,35 @@ class YBY_Updater {
 	const ROLLBACK_NONCE = 'yby_core_rollback';
 	const PENDING_KEY    = 'yby_core_updater_pending';
 
+
+	/* Fail-closed rollout policy: sites opt in individually; no upgrade by hostname inference. */
+	const CHANNEL_OPTION = 'yby_core_update_channel';
+	const AUTO_OPTION = 'yby_core_automatic_updates';
+	const CHANNEL_NONCE = 'yby_core_update_channel_save';
+
+	public function update_channel() {
+		$channel = get_option( self::CHANNEL_OPTION, 'disabled' );
+		return in_array( $channel, array( 'canary', 'stable', 'disabled' ), true ) ? $channel : 'disabled';
+	}
+
+	private function allowed_release() {
+		$channel = $this->update_channel();
+		if ( 'disabled' === $channel ) { return false; }
+		/* Distribution is currently stable only; canary never falls through to stable. */
+		if ( 'canary' === $channel ) {
+			return in_array( $site = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ), array( 'dev.ybybottle.com', 'dev.beyourlover.com' ), true );
+		}
+		/* Host allowlist is mandatory even when an admin selected Stable. */
+		$site = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+		return in_array( $site, array( 'ybybottle.com', 'ybyirrigation.com' ), true );
+	}
+
+	public function automatic_updates( $update, $item ) {
+		if ( ! is_object( $item ) || ( $item->plugin ?? '' ) !== plugin_basename( $this->plugin_file ) ) {
+			return $update;
+		}
+		return $this->allowed_release() && (bool) get_option( self::AUTO_OPTION, false );
+	}
 	private $plugin_file;
 	private $version;
 	private $client;
@@ -25,6 +54,7 @@ class YBY_Updater {
 
 	public function register_hooks( $loader ) {
 		$loader->add_filter( 'pre_set_site_transient_update_plugins', $this, 'filter_updates', 10, 1 );
+		$loader->add_filter( 'auto_update_plugin', $this, 'automatic_updates', 10, 2 );
 		$loader->add_filter( 'plugins_api', $this, 'filter_plugin_information', 10, 3 );
 		$loader->add_filter( 'upgrader_pre_download', $this, 'secure_download', 10, 4 );
 		$loader->add_filter( 'upgrader_pre_install', $this, 'prepare_backup', 10, 2 );
@@ -43,6 +73,13 @@ class YBY_Updater {
 
 	public function filter_updates( $transient ) {
 		if ( ! is_object( $transient ) ) {
+			return $transient;
+		}
+		if ( ! $this->allowed_release() ) {
+			$plugin = plugin_basename( $this->plugin_file );
+			if ( isset( $transient->response ) && is_array( $transient->response ) ) {
+				unset( $transient->response[ $plugin ] );
+			}
 			return $transient;
 		}
 		$release = $this->validated_release( false );
@@ -69,6 +106,7 @@ class YBY_Updater {
 		if ( 'plugin_information' !== $action || ! is_object( $args ) || 'yby-core' !== (string) ( $args->slug ?? '' ) ) {
 			return $result;
 		}
+		if ( ! $this->allowed_release() ) { return $result; }
 		$release = $this->validated_release( false );
 		if ( is_wp_error( $release ) ) {
 			return $result;
@@ -92,6 +130,7 @@ class YBY_Updater {
 			return $reply;
 		}
 
+		if ( ! $this->allowed_release() ) { return new WP_Error( 'yby_update_site_denied', 'This site is excluded from Andy Core stable updates.' ); }
 		$release = $this->validated_release( true );
 		if ( is_wp_error( $release ) ) {
 			return $release;
@@ -192,6 +231,19 @@ class YBY_Updater {
 			return;
 		}
 
+
+		if ( isset( $_POST['yby_core_save_update_policy'] ) ) {
+			check_admin_referer( self::CHANNEL_NONCE, 'yby_core_update_channel_nonce' );
+			$requested = isset( $_POST['yby_core_update_channel'] ) ? sanitize_text_field( wp_unslash( $_POST['yby_core_update_channel'] ) ) : 'disabled';
+			if ( ! in_array( $requested, array( 'disabled', 'canary', 'stable' ), true ) ) {
+				$requested = 'disabled';
+			}
+			update_option( self::CHANNEL_OPTION, $requested );
+			update_option( self::AUTO_OPTION, ! empty( $_POST['yby_core_auto_updates'] ) );
+			delete_site_transient( 'update_plugins' );
+			$this->notice( 'success', __( 'Update policy saved. Rollout restrictions remain enforced.', 'yby-core' ) );
+			$this->redirect();
+		}
 		if ( isset( $_POST['yby_core_check_updates'] ) ) {
 			check_admin_referer( self::CHECK_NONCE, 'yby_core_check_updates_nonce' );
 			$release = $this->validated_release( true );
@@ -244,6 +296,17 @@ class YBY_Updater {
 		echo '</h2><h2>' . esc_html__( 'Secure Updates', 'yby-core' ) . '</h2>';
 		echo '<p>' . esc_html__( 'Andy Core checks the public signed GitHub stable release channel. No GitHub token or server-side credential is required on this WordPress site.', 'yby-core' ) . '</p>';
 		echo '<p>' . esc_html( sprintf( __( 'Current version: %s', 'yby-core' ), $this->version ) ) . '</p>';
+		echo '<h3>' . esc_html__( 'Update Channel', 'yby-core' ) . '</h3>';
+		echo '<p>' . esc_html__( 'Disabled is the safe default. Canary uses signed GitHub prereleases only on approved Dev hosts. Stable requires an explicitly allowed production hostname.', 'yby-core' ) . '</p>';
+		echo '<form method="post">';
+		wp_nonce_field( self::CHANNEL_NONCE, 'yby_core_update_channel_nonce' );
+		echo '<select name="yby_core_update_channel">';
+		foreach ( array( 'disabled' => 'Disabled', 'canary' => 'Canary (signed prerelease)', 'stable' => 'Stable' ) as $value => $label ) {
+			echo '<option value="' . esc_attr( $value ) . '" ' . selected( $this->update_channel(), $value, false ) . '>' . esc_html( $label ) . '</option>';
+		}
+		echo '</select> <label><input type="checkbox" name="yby_core_auto_updates" value="1" ' . checked( (bool) get_option( self::AUTO_OPTION, false ), true, false ) . '> ' . esc_html__( 'Automatic updates (only when allowed)', 'yby-core' ) . '</label>';
+		echo '<p><button class="button button-primary" type="submit" name="yby_core_save_update_policy" value="1">' . esc_html__( 'Save Update Policy', 'yby-core' ) . '</button></p></form>';
+
 		if ( is_wp_error( $release ) ) {
 			echo '<p><strong>' . esc_html( $release->get_error_message() ) . '</strong></p>';
 		} elseif ( YBY_Update_Verifier::is_newer( $release['version'], $this->version ) ) {
@@ -261,15 +324,22 @@ class YBY_Updater {
 	}
 
 	private function validated_release( $force ) {
-		$raw = $this->client->latest_release( $force );
+		// Reuse fully verified release evidence to limit requests on admin and cron.
+		$cache_key = 'yby_core_verified_release_' . $this->update_channel();
+		$cached = get_site_transient( $cache_key );
+		if ( ! $force && is_array( $cached ) && ! empty( $cached['version'] ) && ! empty( $cached['sha256'] ) ) {
+			return $cached;
+		}
+		$is_canary = 'canary' === $this->update_channel();
+		$raw = $is_canary ? $this->client->latest_canary_release( $force ) : $this->client->latest_release( $force );
 		if ( is_wp_error( $raw ) ) {
 			return $raw;
 		}
-		$version = YBY_Update_Verifier::release_version( $raw );
+		$version = YBY_Update_Verifier::release_version( $raw, $is_canary );
 		if ( ! $version ) {
 			return new WP_Error( 'yby_update_release_invalid', __( 'GitHub did not return a valid stable Andy Core release.', 'yby-core' ) );
 		}
-		$assets = YBY_Update_Verifier::select_asset( $raw, $version );
+		$assets = YBY_Update_Verifier::select_asset( $raw, $version, $is_canary );
 		if ( ! $assets ) {
 			return new WP_Error( 'yby_update_assets_missing', __( 'The Andy Core release is missing unique required update assets or has invalid digest metadata.', 'yby-core' ) );
 		}
@@ -314,12 +384,14 @@ class YBY_Updater {
 			return new WP_Error( 'yby_update_metadata_invalid', __( 'The Andy Core release metadata is incompatible with this updater.', 'yby-core' ) );
 		}
 
-		return array(
+		$verified_release = array(
 			'version'     => $version,
 			'package_url' => (string) $assets['package']['url'],
 			'release_url' => isset( $raw['html_url'] ) && is_string( $raw['html_url'] ) ? esc_url_raw( $raw['html_url'] ) : 'https://github.com/' . YBY_GitHub_Release_Client::OWNER . '/' . YBY_GitHub_Release_Client::REPOSITORY,
 			'sha256'      => $sha256,
 		);
+		set_site_transient( $cache_key, $verified_release, 10 * MINUTE_IN_SECONDS );
+		return $verified_release;
 	}
 
 	private function is_this_plugin_hook( $hook_extra ) {

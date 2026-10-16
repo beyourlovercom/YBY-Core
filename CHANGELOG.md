@@ -1,3 +1,25 @@
+## v2.2.3 - 2026-10-16
+
+- Signed Canary manual upgrade UAT patch (2.2.2 to 2.2.3).
+- Reuse SHA256/Ed25519 verified release evidence across admin/Cron requests for 10 minutes; allow explicit Check for Updates to fetch new version.
+- No schema migration, payments, orders or email workers.
+
+## v2.2.2 - 2026-10-16
+
+- Signed Dev Canary for automatic update UAT from v2.2.1.
+- No database schema, email send, or production rollout changes.
+
+## v2.2.1 - 2026-10-16
+
+- Signed Canary update channel and WordPress automatic upgrade policy test candidate.
+- Only Dev sites can access Canary; production stable channel unchanged.
+
+## v2.2.0 - 2026-10-15
+
+- Integrated admin navigation shell, Inquiry OEM original styling, read-only Three OS and Commerce UI.
+- Mail OS P9 source-only contracts, zero operational worker/SMTP/queue hooks.
+- Public stable distribution held pending excluded-site update isolation and Dev UAT.
+
 # CHANGELOG
 
 ## v1.9.0 - 2026-09-24
@@ -53,7 +75,7 @@
 
 - Added Email OS V1.1 native WordPress / Andy Core template lifecycle, immutable Published snapshots, SHA-256 integrity, health/test tooling and ERP read-only Published metadata contract.
 - Preserved WooCommerce / VillaTheme runtime ownership and added read-only Legacy Customizer governance.
-- Integrated PR #40 `completed-delivered / 完结&送达` with the ordered Woo REST segment `completed → completed-delivered → cancelled`.
+- Integrated PR #40 `completed-delivered / 瀹岀粨&閫佽揪` with the ordered Woo REST segment `completed 鈫?completed-delivered 鈫?cancelled`.
 - Advanced runtime database schema to `1.5.0` for Email OS tables.
 - Preserved updater compatibility marker `1.4.0` so existing 1.5.7 installations can validate and install the signed 1.5.8 package; release metadata also records `runtime_database_version=1.5.0`.
 - The obsolete `v1.5.4-hotfix-completed-delivered-20260915` is not part of this release path.
@@ -120,7 +142,7 @@
 
 ### Changed
 
-- Centralized WhatsApp and Email Notification configuration under `Settings -> 璇㈢洏閫氱煡` without changing their underlying option authorities.
+- Centralized WhatsApp and Email Notification configuration under `Settings -> 鐠囥垻娲忛柅姘辩叀` without changing their underlying option authorities.
 - Reused the existing WhatsApp URL/message runtime for the new floating dock instead of introducing a second WhatsApp configuration path.
 
 ### Compatibility

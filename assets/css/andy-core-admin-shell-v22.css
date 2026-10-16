@@ -1,0 +1,113 @@
+/* Andy Core V2.2 single server-rendered L3 shell. No JS reparenting. */
+#wpbody-content .andy-core-shell-v22 {
+	--andy-green: #006241;
+	--andy-ink: #1f2823;
+	--andy-border: #dfe6e1;
+	background: #fff;
+	color: var(--andy-ink);
+	border: 1px solid var(--andy-border);
+	border-radius: 9px;
+	margin: 18px 20px 16px 2px;
+	max-width: 100%;
+	min-width: 0;
+	overflow: clip;
+}
+#wpbody-content .andy-core-shell-v22__header {
+	padding: 18px 22px;
+	background: #fff;
+	border-bottom: 1px solid var(--andy-border);
+}
+#wpbody-content .andy-core-shell-v22__header h1 { padding: 0; margin: 0; font-size: 21px; }
+#wpbody-content .andy-core-shell-v22__columns {
+	display: grid;
+	grid-template-columns: minmax(155px,184px) minmax(0,1fr);
+	align-items: stretch;
+	min-width: 0;
+}
+#wpbody-content .andy-core-shell-v22__rail {
+	background: #f7faf8;
+	border-right: 1px solid var(--andy-border);
+	padding: 12px 8px;
+	min-width: 0;
+}
+#wpbody-content .andy-core-shell-v22__rail-title {
+	margin: 0 8px 10px;
+	font-weight: 600;
+	font-size: 11px;
+	letter-spacing: .02em;
+	color: #63756a;
+}
+#wpbody-content .andy-core-shell-v22__link {
+	display: block;
+	padding: 10px 8px;
+	border-left: 3px solid transparent;
+	border-radius: 0 5px 5px 0;
+	color: var(--andy-ink);
+	text-decoration: none;
+	overflow-wrap: anywhere;
+	box-shadow: none;
+	font-size: 13px;
+	line-height: 1.55;
+}
+#wpbody-content .andy-core-shell-v22__link:is(:hover,:focus-visible) { color: var(--andy-green); background: #eaf3ed; }
+#wpbody-content .andy-core-shell-v22__link[aria-current=page] {
+	background: #e4f0e8;
+	border-left-color: var(--andy-green);
+	font-weight: 600;
+	color: var(--andy-green);
+}
+#wpbody-content .andy-core-shell-v22__body {
+	padding: 18px 20px 24px;
+	min-width: 0;
+	overflow-wrap: break-word;
+}
+#wpbody-content .andy-core-shell-v22__body .wrap {
+	min-width: 0;
+	width: auto;
+	max-width: 100%;
+	margin: 0;
+}
+#wpbody-content .andy-core-shell-v22__body :where(table.widefat,.wp-list-table) {
+	max-width: 100%;
+}
+@media (max-width: 782px) {
+	#wpbody-content .andy-core-shell-v22 { margin: 10px 4px 14px; }
+	#wpbody-content .andy-core-shell-v22__columns { grid-template-columns: 120px minmax(0,1fr); }
+	#wpbody-content .andy-core-shell-v22__rail { padding: 8px 4px; }
+	#wpbody-content .andy-core-shell-v22__link { font-size: 12px; padding: 9px 6px; }
+	#wpbody-content .andy-core-shell-v22__body { padding: 12px 8px; }
+	#wpbody-content .andy-core-shell-v22__header { padding: 12px 14px; }
+}
+
+
+/* M6-D mobile UAT fix: full-width L3 navigation and accessible wide tables. */
+@media (max-width: 600px) {
+    #wpbody-content .andy-core-shell-v22__columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    #wpbody-content .andy-core-shell-v22__rail {
+        border-right: 0;
+        border-bottom: 1px solid var(--andy-border);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+        padding: 8px;
+    }
+    #wpbody-content .andy-core-shell-v22__rail-title {
+        flex: 0 0 100%;
+        margin: 0 0 4px;
+    }
+    #wpbody-content .andy-core-shell-v22__link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 6px 9px;
+        font-size: 12px;
+    }
+    #wpbody-content .andy-core-shell-v22__body {
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+}

@@ -13,7 +13,7 @@ $assert( false !== strpos( $dock, "'enabled' => 0" ) && false !== strpos( $dock,
 $assert( false === strpos( $dock, 'CREATE TABLE' ) && false === strpos( $dock, 'dbDelta' ), 'Dock must not create database tables.' );
 $assert( false !== strpos( $dock, 'data-yby-popup-open="inquiry"' ) && false !== strpos( $dock, 'data-yby-modal-open="yby-global-inquiry-popup"' ) && false !== strpos( $dock, 'data-yby-source="global_inquiry_dock"' ), 'Dock source/delegation attributes missing.' );
 $assert( false !== strpos( $view, "'floating_inquiry' => '悬浮询盘'" ) && strpos( $view, "'floating_inquiry' => '悬浮询盘'" ) < strpos( $view, "'popup_inquiry' => '弹窗询盘'" ), 'Email first tab must be 悬浮询盘.' );
-$assert( false !== strpos( $popup_admin, "\$_GET['tab'] ?? 'floating_inquiry'" ) && false !== strpos( $popup_admin, 'YBY_Global_Inquiry_Dock::OPTION' ), 'Email controller must own dock settings.' );
+$assert( false !== strpos( $popup_admin, "function render_screen( \$requested_tab, \$embedded )" ) && false !== strpos( $popup_admin, "'floating_inquiry'" ) && false !== strpos( $popup_admin, 'YBY_Global_Inquiry_Dock::OPTION' ), 'Shared legacy/embedded popup controller must own dock settings and preserve floating inquiry default.' );
 $assert( false !== strpos( $popup_admin, "wp_enqueue_style( 'yby-global-inquiry-dock-preview'" ), 'Email page must enqueue dock preview CSS.' );
 $assert( false !== strpos( $view, 'yby_inquiry_dock_submit' ) && false !== strpos( $view, '当前预览' ) && false !== strpos( $view, 'Preview / Test' ) && false !== strpos( $view, 'Custom CSS' ), 'Floating inquiry Email tab controls missing.' );
 $assert( false === strpos( $settings_views, "'inquiry-dock' => 'Inquiry Dock'" ), 'Inquiry Dock must not remain in Settings tabs.' );

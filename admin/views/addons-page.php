@@ -3,12 +3,14 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 ?>
 <div class="wrap yby-modules-page">
+<?php if ( ! class_exists( 'YBY_Andy_Admin_Shell_V22' ) || ! YBY_Andy_Admin_Shell_V22::suppress_legacy_tabs( 'yby-core' ) ) : ?>
 <h1><?php esc_html_e( 'Andy Core', 'yby-core' ); ?></h1>
 <h2 class="nav-tab-wrapper">
 <?php foreach ( YBY_Admin::settings_tabs() as $key => $label ) : ?>
 <a class="nav-tab <?php echo 'addons' === $key ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => YBY_Helpers::admin_page_slug(), 'tab' => $key ), admin_url( 'admin.php' ) ) ); ?>"><?php echo esc_html( $label ); ?></a>
 <?php endforeach; ?>
 </h2>
+<?php endif; ?>
 <div class="yby-modules-hero"><div><span class="yby-modules-kicker">Andy Core Addon Runtime V1</span><h2>Addon 管理</h2><p>这里仅显示已加载并向 Andy Core 注册的 Addon。Core 负责兼容性与依赖状态，不承载 Addon 的业务逻辑。</p></div><span class="yby-status-badge yby-status-ready">Registry v<?php echo esc_html( YBY_Addon_Registry::VERSION ); ?></span></div>
 <div class="yby-modules-table-wrap"><table class="widefat fixed striped yby-modules-table"><thead><tr>
 <th class="col-module">Addon</th><th class="col-desc">说明</th><th class="col-type">版本</th><th class="col-status">安装</th><th class="col-status">状态</th><th class="col-status">Core 兼容</th><th class="col-status">依赖</th><th class="col-action">进入</th>

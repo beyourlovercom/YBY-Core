@@ -17,6 +17,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-settings-store.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-article-toc-module.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-module.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-business-os-module.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-security.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-database.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-config.php';
@@ -86,10 +87,16 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-updater.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-docs-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-content-admin.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-andy-os-navigation.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-andy-admin-shell-v22.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-inquiry-admin.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-business-os-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-social-login-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-popup-admin.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-three-os-admin.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-three-os-readonly.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-mail-v2-p6-dev-preview.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-connector-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-email-template-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-docs-os-admin.php';
@@ -114,6 +121,7 @@ class YBY_Core {
 		$this->loader = new YBY_Loader();
 
 		YBY_Module_Registry::adopt_default_modules_once( 'v170_landing_pages', array( 'landing_pages' ) );
+		YBY_Module_Registry::adopt_default_modules_once( 'v1_three_os_newsletter_menu', array( 'newsletter_os' ) );
 
 		$this->define_system_hooks();
 		$this->set_locale();
@@ -132,6 +140,7 @@ class YBY_Core {
 
 		$this->loader->add_action( 'andy_core_register_modules', 'YBY_Article_TOC_Module', 'register_module', 10, 0 );
 		$this->loader->add_action( 'andy_core_register_modules', 'YBY_Analytics_Module', 'register_module', 11, 0 );
+$this->loader->add_action( 'andy_core_register_modules', 'YBY_Business_OS_Module', 'register_module', 12, 0 );
 		$this->loader->add_action( 'plugins_loaded', 'YBY_Activator', 'sync_capabilities', 1, 0 );
 		$this->loader->add_action( 'plugins_loaded', $database, 'maybe_upgrade', 5, 0 );
 		$this->loader->add_action( 'plugins_loaded', 'YBY_Addon_Registry', 'discover', 15, 0 );
@@ -164,6 +173,7 @@ class YBY_Core {
 		$content_admin   = new YBY_Content_Admin();
 		$brand_os        = new YBY_Brand_OS( 'yby-core', YBY_CORE_VERSION );
 		$project_studio  = new YBY_Project_Studio( 'yby-core', YBY_CORE_VERSION );
+		$three_os        = new YBY_Three_OS_Admin();
 		$updater         = new YBY_Updater( YBY_CORE_PLUGIN_FILE, YBY_CORE_VERSION );
 		$inquiry_enabled = YBY_Module_Registry::is_enabled( 'inquiry_os' );
 		$email_enabled   = YBY_Module_Registry::is_enabled( 'email_os' );
@@ -207,10 +217,22 @@ class YBY_Core {
 			$this->loader->add_action( 'admin_menu', $inquiry_admin, 'add_admin_menu', 20 );
 			$this->loader->add_action( 'admin_enqueue_scripts', $inquiry_admin, 'enqueue_assets' );
 		}
+		$this->loader->add_action( 'admin_menu', $three_os, 'register_menus', 21 );
 		$this->loader->add_action( 'admin_menu', $project_studio, 'normalize_root_menu', 999 );
+		$this->loader->add_action( 'admin_menu', new YBY_Andy_OS_Navigation(), 'consolidate', 1100 );
+		$this->loader->add_action( 'admin_init', new YBY_Andy_OS_Navigation(), 'redirect_entry', 9 );
+		// V2.2: prevent late DOM reparent and duplicate old/new navigation.
+		$this->loader->add_action( 'admin_enqueue_scripts', new YBY_Andy_Admin_Shell_V22(), 'enqueue_styles' );
+		$this->loader->add_filter( 'parent_file', new YBY_Andy_OS_Navigation(), 'filter_parent_file', 1100 );
+		$this->loader->add_filter( 'submenu_file', new YBY_Andy_OS_Navigation(), 'filter_submenu_file', 1100 );
+		$this->loader->add_action( 'admin_menu', $three_os, 'hide_old_menu', 1000 );
+		$this->loader->add_action( 'admin_menu', $three_os, 'order_os_menus', 1001 );
 		$this->loader->add_action( 'admin_enqueue_scripts', $brand_os, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_assets' );
+		$this->loader->add_action( 'admin_enqueue_scripts', $three_os, 'enqueue_assets' );
 		$this->loader->add_action( 'admin_init', $admin, 'redirect_legacy_inquiry_dock' );
+		$this->loader->add_action( 'admin_init', $three_os, 'redirect_legacy_get', 20 );
+		$this->loader->add_action( 'admin_init', $three_os, 'redirect_legacy_settings_get', 21 );
 		$updater->register_hooks( $this->loader );
 
 		if ( $project_enabled ) {

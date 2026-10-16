@@ -18,14 +18,14 @@ class YBY_Docs_OS_Admin {
 
 	public function add_admin_menu() {
 		$parent = YBY_Content_Admin::MENU_SLUG;
-		add_submenu_page( $parent, self::MENU_LABEL, 'Docs', 'andy_core_settings_manage', self::PAGE_SLUG, array( $this, 'render_page' ) );
-		add_submenu_page( $parent, 'All Docs', '全部文档', 'edit_posts', self::ALL_PAGE_SLUG, array( $this, 'render_all_docs_page' ) );
-		add_submenu_page( $parent, 'Docs Categories', '分类目录', 'manage_categories', self::DIRECTORY_PAGE_SLUG, array( $this, 'render_directory_page' ) );
-		add_submenu_page( $parent, 'Docs Tags', 'Tags', 'manage_categories', 'edit-tags.php?taxonomy=doc_tag&post_type=docs' );
-		add_submenu_page( $parent, 'FAQ', 'FAQ', 'edit_posts', 'yby-docs-faq', array( $this, 'render_faq_page' ) );
-		add_submenu_page( $parent, 'Tutorial', 'Tutorial', 'edit_posts', 'yby-docs-tutorial', array( $this, 'render_tutorial_page' ) );
-		add_submenu_page( $parent, 'Docs Settings', '设置', 'andy_core_settings_manage', self::SETTINGS_PAGE_SLUG, array( $this, 'render_settings_page' ) );
-		add_submenu_page( null, 'Docs Editor', 'Docs Editor', 'edit_posts', self::EDITOR_PAGE_SLUG, array( $this, 'render_editor_page' ) );
+		add_submenu_page( $parent, self::MENU_LABEL, '文档', 'andy_core_settings_manage', self::PAGE_SLUG, array( $this, 'render_page' ) );
+		add_submenu_page( $parent, '全部文档', '文档列表', 'edit_posts', self::ALL_PAGE_SLUG, array( $this, 'render_all_docs_page' ) );
+		add_submenu_page( $parent, '文档分类', '分类目录', 'manage_categories', self::DIRECTORY_PAGE_SLUG, array( $this, 'render_directory_page' ) );
+		add_submenu_page( $parent, '文档标签', '标签', 'manage_categories', 'edit-tags.php?taxonomy=doc_tag&post_type=docs' );
+		add_submenu_page( $parent, '常见问题', '问答', 'edit_posts', 'yby-docs-faq', array( $this, 'render_faq_page' ) );
+		add_submenu_page( $parent, '教程', '教程', 'edit_posts', 'yby-docs-tutorial', array( $this, 'render_tutorial_page' ) );
+		add_submenu_page( $parent, '文档设置', '设置', 'andy_core_settings_manage', self::SETTINGS_PAGE_SLUG, array( $this, 'render_settings_page' ) );
+		add_submenu_page( null, '文档编辑', '文档编辑', 'edit_posts', self::EDITOR_PAGE_SLUG, array( $this, 'render_editor_page' ) );
 	}
 
 	public function filter_parent_file( $parent_file ) {

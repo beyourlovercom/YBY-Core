@@ -284,7 +284,7 @@ $tests['admin_menu'] = static function () {
 	harness_assert( 1 === count( $GLOBALS['yby_submenus'] ), 'Exactly one Social Login submenu must be registered.' );
 	$menu = $GLOBALS['yby_submenus'][0];
 	harness_assert( 'yby-os' === $menu['parent'], 'Social Login parent menu is invalid.' );
-	harness_assert( 'Social Login' === $menu['page_title'] && 'Social Login' === $menu['menu_title'], 'Social Login menu labels are invalid.' );
+	harness_assert( '社交登录' === $menu['page_title'] && '社交登录' === $menu['menu_title'], 'Social Login menu labels are invalid.' );
 	harness_assert( 'manage_options' === $menu['capability'], 'Social Login menu capability is invalid.' );
 	harness_assert( 'yby-social-login' === $menu['slug'], 'Social Login menu slug is invalid.' );
 	harness_assert( array( $menu['callback'][0], 'render_page' ) === $menu['callback'], 'Social Login menu callback is invalid.' );

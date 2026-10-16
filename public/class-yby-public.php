@@ -73,7 +73,25 @@ class YBY_Public {
 			wp_enqueue_style( 'yby-email-shortcodes', YBY_CORE_PLUGIN_URL . 'public/css/yby-email-shortcodes.css', array( 'yby-inquiry-components' ), $this->asset_version( 'public/css/yby-email-shortcodes.css' ) );
 			if ( class_exists( 'YBY_Global_Popup' ) ) {
 				$popup_settings = YBY_Global_Popup::sanitize( YBY_Global_Popup::settings() );
-				if ( '' !== $popup_settings['inquiry_custom_css'] ) { wp_add_inline_style( 'yby-global-popup', $popup_settings['inquiry_custom_css'] ); }
+				// Only opt-in Premium sites receive the V2.2 popup skin; all
+				// classic and shortcode CSS remains byte-for-byte unchanged.
+				if ( ( 'oem_original' === $popup_settings['inquiry_template'] && 'bottle_oem_inquiry' === $popup_settings['inquiry_preset'] ) || YBY_Global_Popup::is_oem_exact_preview() ) {
+                    wp_enqueue_style( 'andy-core-oem-original', YBY_CORE_PLUGIN_URL . 'public/css/andy-core-oem-original.css', array( 'yby-global-popup' ), $this->asset_version( 'public/css/andy-core-oem-original.css' ) );
+                }
+                if ( 'premium_v22' === $popup_settings['inquiry_template'] && ! YBY_Global_Popup::is_oem_exact_preview() ) {
+					wp_enqueue_style(
+						'andy-core-popup-premium-v22',
+						YBY_CORE_PLUGIN_URL . 'public/css/andy-core-popup-premium-v22.css',
+						array( 'yby-global-popup' ),
+						$this->asset_version( 'public/css/andy-core-popup-premium-v22.css' )
+					);
+				}
+				if ( '' !== $popup_settings['inquiry_custom_css'] ) {
+                    // OEM Original: custom CSS must follow the base template CSS.
+                    // Keep existing attachment for every other global popup template.
+                    $custom_handle = ( 'oem_original' === $popup_settings['inquiry_template'] || YBY_Global_Popup::is_oem_exact_preview() ) ? 'andy-core-oem-original' : 'yby-global-popup';
+                    wp_add_inline_style( $custom_handle, $popup_settings['inquiry_custom_css'] );
+                }
 				if ( '' !== $popup_settings['subscribe_custom_css'] ) { wp_add_inline_style( 'yby-global-popup', $popup_settings['subscribe_custom_css'] ); }
 				if ( '' !== $popup_settings['inquiry_shortcode_custom_css'] ) { wp_add_inline_style( 'yby-email-shortcodes', $popup_settings['inquiry_shortcode_custom_css'] ); }
 				if ( '' !== $popup_settings['subscribe_shortcode_custom_css'] ) { wp_add_inline_style( 'yby-email-shortcodes', $popup_settings['subscribe_shortcode_custom_css'] ); }

@@ -10,7 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 <div class="wrap">
+	<?php if ( ! class_exists( 'YBY_Andy_Admin_Shell_V22' ) || ! YBY_Andy_Admin_Shell_V22::suppress_legacy_tabs( YBY_Brand_OS::page_slug() ) ) : ?>
 	<h1><?php echo esc_html__( 'Brand', 'yby-core' ); ?></h1>
+	<?php endif; ?>
 	<p><?php echo esc_html__( 'Manage approved YBY brand assets, system font stacks, colors, and brand document references.', 'yby-core' ); ?></p>
 
 	<?php if ( ! empty( $notice ) ) : ?>
