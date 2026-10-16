@@ -10,6 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class YBY_Andy_OS_Navigation {
 	const ROOT = 'yby-os';
 
+	/** Legacy-only aliases registered in this request; not other plugins' pages. */
+	private static $hidden_aliases = array();
+
 	/**
 	 * WordPress menus accept a single capability. Choose a capability the
 	 * current user already has; each child checks its original capability.
@@ -178,6 +181,10 @@ final class YBY_Andy_OS_Navigation {
 			}
 		}
 		$submenu[ self::ROOT ] = $ordered;
+		// Admin permissions and legacy route hooks must resolve before we clean
+		// the hidden alias for menu rendering. admin_head runs after WordPress
+		// page authorization, but before wp-admin/menu-header.php.
+		add_action( 'admin_head', array( __CLASS__, 'preserve_native_parent' ), 1000 );
 	}
 
 	/** If admin_init redirect is unavailable, show only a safe direct link. */
@@ -226,12 +233,51 @@ final class YBY_Andy_OS_Navigation {
 			$plugin_page = $saved_plugin_page;
 		}
 		if ( false === $new_hook ) { return false; }
+		self::$hidden_aliases[ $slug ] = true;
 		if ( $new_hook !== $old_hook ) {
 			add_action( $new_hook, static function () use ( $old_hook ) {
 				do_action( $old_hook );
 			} );
 		}
 		return true;
+	}
+
+	/**
+	 * WordPress menu-header.php applies parent_file/submenu_file, then calls
+	 * get_admin_page_parent() again. That second resolver sees our hidden
+	 * add_submenu_page(null, ...) alias and overwrites the correct L1 parent
+	 * with the empty hidden-menu parent. L2 is selected but remains collapsed.
+	 *
+	 * At admin_head page authorization has already run. Remove only the
+	 * current Andy Core legacy alias from the hidden *menu list*; preserve
+	 * registered hooks, access checks, original callbacks and all unrelated
+	 * plugins' hidden pages. Native WordPress then renders wp-menu-open.
+	 */
+	public static function preserve_native_parent() {
+		if ( ! is_admin() ) { return; }
+		$group = self::active_second_level();
+		$sections = self::sections();
+		if ( ! $group || ! isset( $sections[ $group ] ) ||
+			 ! current_user_can( $sections[ $group ][1] ) ) { return; }
+
+		global $submenu;
+		if ( empty( $submenu[''] ) || ! is_array( $submenu[''] ) ) { return; }
+		$page = isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
+			? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( ! $page ) {
+			$post_type = isset( $_GET['post_type'] ) && is_scalar( $_GET['post_type'] )
+				? sanitize_key( wp_unslash( $_GET['post_type'] ) ) : '';
+			global $pagenow;
+			if ( $post_type && in_array( $pagenow, array( 'edit.php', 'edit-tags.php', 'post-new.php' ), true ) ) {
+				$page = $pagenow . '?post_type=' . $post_type;
+			}
+		}
+		if ( ! $page || ! isset( self::$hidden_aliases[ $page ] ) ) { return; }
+		foreach ( $submenu[''] as $key => $item ) {
+			if ( isset( $item[2] ) && $page === $item[2] ) {
+				unset( $submenu[''][ $key ] );
+			}
+		}
 	}
 
 	/** Only allow existing, verified WordPress routes in right-side L3. */
