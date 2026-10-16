@@ -54,6 +54,8 @@ class YBY_Updater {
 
 	public function register_hooks( $loader ) {
 		$loader->add_filter( 'pre_set_site_transient_update_plugins', $this, 'filter_updates', 10, 1 );
+		// Read-time guard: a saved or object-cached same-version offer may survive the update request.
+		$loader->add_filter( 'site_transient_update_plugins', $this, 'filter_cached_updates', 10, 1 );
 		$loader->add_filter( 'auto_update_plugin', $this, 'automatic_updates', 10, 2 );
 		$loader->add_filter( 'plugins_api', $this, 'filter_plugin_information', 10, 3 );
 		$loader->add_filter( 'upgrader_pre_download', $this, 'secure_download', 10, 4 );
@@ -106,6 +108,31 @@ class YBY_Updater {
 			'tested'      => get_bloginfo( 'version' ),
 			'icons'       => array(),
 		);
+		return $transient;
+	}
+
+	/**
+	 * Do not advertise an already installed Andy Core release from the cached
+	 * WordPress update list. Unlike pre_set_site_transient_update_plugins,
+	 * this runs when WordPress *reads* an existing update_plugins transient.
+	 * No network requests, transient writes, or updates to other plugins.
+	 *
+	 * @param mixed $transient Cached WordPress plugin update list.
+	 * @return mixed
+	 */
+	public function filter_cached_updates( $transient ) {
+		if ( ! is_object( $transient ) || ! isset( $transient->response ) || ! is_array( $transient->response ) ) {
+			return $transient;
+		}
+		$plugin = plugin_basename( $this->plugin_file );
+		if ( ! array_key_exists( $plugin, $transient->response ) ) {
+			return $transient;
+		}
+		$offer = $transient->response[ $plugin ];
+		$offered_version = is_object( $offer ) ? (string) ( $offer->new_version ?? '' ) : '';
+		if ( ! $this->allowed_release() || '' === $offered_version || ! YBY_Update_Verifier::is_newer( $offered_version, $this->version ) ) {
+			unset( $transient->response[ $plugin ] );
+		}
 		return $transient;
 	}
 
