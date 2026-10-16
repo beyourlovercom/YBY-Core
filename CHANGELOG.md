@@ -1,3 +1,9 @@
+## v2.2.5 - 2026-10-16
+
+- Prevent an already-installed Andy Core version from being offered again in WordPress's cached plugin updates; preserve other plugin offers and reject unsigned/older releases.
+- Clear the WordPress plugin update transient after successful signed update health verification, ensuring a subsequent admin refresh does not repeat the same-version upgrade banner (PR #143).
+- Based on published v2.2.4 Canary; no new permissions, route, schema, Mail OS P9 activation, checkout, payments or SMTP changes. **Candidate only: no public release or website deployment authorized.**
+
 ## v2.2.4 - 2026-10-16
 
 - Main-integrated Canary candidate carrying Andy Core v2.2.3, native WordPress L2 persistent-open navigation (#138), and concise Chinese L2/L3 admin labels (#140).
