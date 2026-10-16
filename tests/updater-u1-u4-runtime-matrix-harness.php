@@ -120,4 +120,58 @@ $expired=$latest->filter_updates((object)array('response'=>array(
 if (isset($expired->response['yby-core/yby-core.php']))
     throw new RuntimeException('Older-than-installed release retained a stale offer');
 $assertions++;
+
+// The update_plugins transient may contain an offer created by the *old*
+// plugin instance during installation. Test the WordPress read path, not only
+// pre_set_site_transient_update_plugins writes.
+$GLOBALS['u_host'] = 'dev.beyourlover.com';
+$GLOBALS['u_channel'] = 'canary';
+$installed225 = new YBY_Updater('/test/plugins/yby-core/yby-core.php', '2.2.5');
+$cachedSameVersion = (object)array('response'=>array(
+  'yby-core/yby-core.php' => (object)array('new_version'=>'2.2.5'),
+  'another-plugin/example.php' => (object)array('new_version'=>'5.0.0')
+));
+$readResult = $installed225->filter_cached_updates($cachedSameVersion);
+if (isset($readResult->response['yby-core/yby-core.php']))
+    throw new RuntimeException('Cached same-version offer survives site_transient_update_plugins read');
+if (!isset($readResult->response['another-plugin/example.php']))
+    throw new RuntimeException('Read filter modified an unrelated plugin');
+$assertions += 2;
+
+// Older and malformed own-version offers are discarded without any writes.
+foreach (array('2.2.4', '', '2.2.3') as $oldVersion) {
+    $stale = (object)array('response'=>array(
+       'yby-core/yby-core.php'=>(object)array('new_version'=>$oldVersion)
+    ));
+    $readResult = $installed225->filter_cached_updates($stale);
+    if (isset($readResult->response['yby-core/yby-core.php']))
+        throw new RuntimeException('Read filter retained invalid or older version: ' . $oldVersion);
+    $assertions++;
+}
+// Future verified offers still pass through. Signature verification remains
+// enforced when the offer is initially created (write filter / downloader).
+$future = (object)array('response'=>array(
+    'yby-core/yby-core.php'=>(object)array('new_version'=>'2.2.6')
+));
+$readResult = $installed225->filter_cached_updates($future);
+if (($readResult->response['yby-core/yby-core.php']->new_version ?? '') !== '2.2.6')
+    throw new RuntimeException('Read filter suppressed a newer release');
+$assertions++;
+
+// Site policy is fail closed even for transient offers saved before disabling.
+$GLOBALS['u_channel'] = 'disabled';
+$denied = (object)array('response'=>array(
+   'yby-core/yby-core.php'=>(object)array('new_version'=>'2.2.6'),
+   'another-plugin/example.php'=>(object)array('new_version'=>'3.0.0')
+));
+$readResult = $installed225->filter_cached_updates($denied);
+if (isset($readResult->response['yby-core/yby-core.php']) || !isset($readResult->response['another-plugin/example.php']))
+    throw new RuntimeException('Disabled site exposed a cached Canary offer or affected other plugins');
+$assertions++;
+
+// Defensive: malformed WordPress transient values remain unchanged.
+if ($installed225->filter_cached_updates(false) !== false)
+    throw new RuntimeException('Non-object transient was changed');
+$assertions++;
+
 echo "PASS U1-U4 runtime policy matrix assertions={$assertions} no_network=1 no_writes=1\n";
