@@ -192,4 +192,35 @@ $GLOBALS['caps']=array();
 YBY_Andy_OS_Navigation::preserve_native_parent();
 $assert($before===array_column($GLOBALS['submenu']['']??array(),2),
     'unauthorized user cannot change the hidden menu');
+// Owner compact-Chinese navigation contract: display labels only; slugs,
+ // capability gates, URLs, menu order, and native L2 state must remain stable.
+$setup(array('manage_options','andy_core_settings_manage','manage_woocommerce',
+    'andy_core_leads_view','andy_core_newsletter_view','andy_core_mail_view','edit_pages'));
+$sections=YBY_Andy_OS_Navigation::sections();
+$expected_labels=array(
+    'andy-core-leads'=>'询盘', 'andy-core-newsletter'=>'订阅', 'andy-core-email'=>'邮件',
+    'andy-core-content'=>'内容', 'andy-core-marketing'=>'营销',
+    'andy-core-commerce'=>'交易', 'andy-core-system'=>'系统',
+);
+$assert(array_keys($sections)===array_keys($expected_labels),'Chinese L2 preserves canonical order and slugs');
+foreach($expected_labels as $slug=>$label){
+    $assert($sections[$slug][0]===$label,'compact Chinese L2 '.$slug);
+}
+$assert(array_column(YBY_Andy_OS_Navigation::tertiary_items('andy-commerce'),'title')===
+    array('总览','订单导出','结账运费','促销','设置'),
+    'Commerce L3 localized without changing routes');
+$system_labels=array_column(YBY_Andy_OS_Navigation::tertiary_items('yby-core'),'title');
+foreach(array('常规','模块','扩展','状态','更新','品牌') as $label) {
+    $assert(in_array($label,$system_labels,true),'System L3 localized '.$label);
+}
+$inquiry_labels=array_column(YBY_Andy_OS_Navigation::tertiary_items('andy-core-leads'),'title');
+$assert(in_array('列表',$inquiry_labels,true) && in_array('统计',$inquiry_labels,true),
+    'Inquiry L3 localized without route changes');
+$setup(array('andy_core_mail_view'));
+$mail_visible=array_filter(YBY_Andy_OS_Navigation::sections(),
+    static function($group){ return current_user_can($group[1]); });
+$assert(array_keys($mail_visible)===array('andy-core-email'),
+    'Chinese-only menu must not display unauthorized modules');
+$assert(count(YBY_Andy_OS_Navigation::tertiary_items('andy-core-email'))===3,
+    'Chinese-only menu must not enable restricted email template');
 echo "PASS andy-core-native-l123-v2-harness\n";

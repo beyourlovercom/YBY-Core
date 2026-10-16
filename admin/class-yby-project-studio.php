@@ -94,8 +94,8 @@ class YBY_Project_Studio {
 
 		$this->studio_page_hook = add_submenu_page(
 			self::menu_slug(),
-			__( 'Project Studio', 'yby-core' ),
-			__( 'Project Studio', 'yby-core' ),
+			__( '项目', 'yby-core' ),
+			__( '项目', 'yby-core' ),
 			'manage_options',
 			self::studio_page_slug(),
 			array( $this, 'render_project_studio_page' )
@@ -103,8 +103,8 @@ class YBY_Project_Studio {
 
 		add_submenu_page(
 			self::menu_slug(),
-			__( 'Projects', 'yby-core' ),
-			__( 'Projects', 'yby-core' ),
+			__( '项目列表', 'yby-core' ),
+			__( '项目列表', 'yby-core' ),
 			'manage_options',
 			'edit.php?post_type=' . YBY_Project_CPT::post_type()
 		);

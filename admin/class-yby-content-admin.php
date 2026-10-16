@@ -12,8 +12,8 @@ class YBY_Content_Admin {
 
 	public function add_admin_menu() {
 		add_menu_page(
-			__( 'Andy Content', 'yby-core' ),
-			__( 'Andy Content', 'yby-core' ),
+			__( '内容', 'yby-core' ),
+			__( '内容', 'yby-core' ),
 			self::CAPABILITY,
 			self::MENU_SLUG,
 			array( $this, 'render_overview' ),
@@ -23,8 +23,8 @@ class YBY_Content_Admin {
 
 		add_submenu_page(
 			self::MENU_SLUG,
-			__( 'Andy Content Overview', 'yby-core' ),
-			__( 'Overview', 'yby-core' ),
+			__( '内容总览', 'yby-core' ),
+			__( '总览', 'yby-core' ),
 			self::CAPABILITY,
 			self::MENU_SLUG,
 			array( $this, 'render_overview' )
