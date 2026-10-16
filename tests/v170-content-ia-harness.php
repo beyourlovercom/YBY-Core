@@ -31,7 +31,7 @@ $landing->add_admin_menu();
 
 $assert( 1 === count( $GLOBALS['yby_top_menus'] ), 'Content IA must register exactly one top-level menu in this harness' );
 $top = $GLOBALS['yby_top_menus'][0];
-$assert( 'Andy Content' === $top['menu_title'], 'top-level menu must be Andy Content' );
+$assert( '内容' === $top['menu_title'], 'top-level menu must be Andy Content' );
 $assert( 'yby-content' === $top['menu_slug'], 'Andy Content slug mismatch' );
 $assert( 21 === $top['position'], 'Andy Content must sit beside WordPress Pages' );
 
@@ -40,13 +40,13 @@ $visible = array_values( array_filter( $GLOBALS['yby_submenus'], static function
 } ) );
 $assert( 8 === count( $visible ), 'Andy Content should expose Overview plus the full Docs workbench without duplicating Landing Pages' );
 $expected_visible = array(
-	array( 'yby-content', 'Overview' ),
-	array( 'yby-docs-os', 'Docs' ),
-	array( 'yby-docs-all', '全部文档' ),
+	array( 'yby-content', '总览' ),
+	array( 'yby-docs-os', '文档' ),
+	array( 'yby-docs-all', '文档列表' ),
 	array( 'yby-docs-directory', '分类目录' ),
-	array( 'edit-tags.php?taxonomy=doc_tag&post_type=docs', 'Tags' ),
-	array( 'yby-docs-faq', 'FAQ' ),
-	array( 'yby-docs-tutorial', 'Tutorial' ),
+	array( 'edit-tags.php?taxonomy=doc_tag&post_type=docs', '标签' ),
+	array( 'yby-docs-faq', '问答' ),
+	array( 'yby-docs-tutorial', '教程' ),
 	array( 'yby-docs-settings', '设置' ),
 );
 foreach ( $expected_visible as $index => $expected ) {
