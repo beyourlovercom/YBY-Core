@@ -67,8 +67,8 @@ class YBY_Admin {
 	public function add_admin_menu() {
 		add_submenu_page(
 			YBY_Project_Studio::menu_slug(),
-			__( 'Settings', 'yby-core' ),
-			__( 'Settings', 'yby-core' ),
+			__( '设置', 'yby-core' ),
+			__( '设置', 'yby-core' ),
 			'andy_core_settings_manage',
 			YBY_Helpers::admin_page_slug(),
 			array( $this, 'render_settings_page' )
@@ -190,15 +190,15 @@ class YBY_Admin {
 	}
 
 	public static function settings_tabs( $include_legacy_inquiry = false ) {
-		$tabs = array( 'general' => '常规', 'modules' => '模块', 'addons' => 'Addons' );
+		$tabs = array( 'general' => '常规', 'modules' => '模块', 'addons' => '扩展' );
 		// Hide these business tabs in Settings navigation; preserve old GET/POST routes.
 		if ( $include_legacy_inquiry && YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) {
 			$tabs['inquiry'] = '询盘';
 			$tabs['inquiry-notification'] = '询盘通知';
 		}
-		if ( YBY_Module_Registry::is_enabled( 'connector' ) ) { $tabs['wp-api'] = 'WP-API'; }
+		if ( YBY_Module_Registry::is_enabled( 'connector' ) ) { $tabs['wp-api'] = '接口'; }
 		if ( ! empty( YBY_Module_Registry::module( 'article_toc' ) ) ) { $tabs['article-toc'] = '文章目录'; }
-		$tabs['system-status'] = '系统状态';
+		$tabs['system-status'] = '状态';
 		$tabs['updates'] = '更新';
 		return $tabs;
 	}
