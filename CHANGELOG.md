@@ -1,3 +1,9 @@
+## v2.2.3 - 2026-10-16
+
+- Signed Canary manual upgrade UAT patch (2.2.2 to 2.2.3).
+- Reuse SHA256/Ed25519 verified release evidence across admin/Cron requests for 10 minutes; allow explicit Check for Updates to fetch new version.
+- No schema migration, payments, orders or email workers.
+
 ## v2.2.2 - 2026-10-16
 
 - Signed Dev Canary for automatic update UAT from v2.2.1.
