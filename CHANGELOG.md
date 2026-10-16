@@ -1,3 +1,10 @@
+## v2.2.6 - 2026-10-16
+
+- Fix Owner-reproduced WordPress same-version upgrade banner even after Andy Core 2.2.5 is installed: on reading cached `update_plugins`, suppress only invalid, older or same-version Andy Core update offers.
+- Preserve legitimate newer signed Canary offers and all unrelated WordPress plugin updates; safeguard channel-excluded sites; add U1-U4 runtime regression assertions.
+- Code scope: updater + regression harness only; no database schema migration (runtime 1.5.0, updater compatibility 1.4.0), menus, mail, orders, payments or WooCommerce changes.
+- Canary release and Dev manual UAT separately approved by Owner; GitHub PR merge, Stable and WWW remain blocked by separate gates.
+
 ## v2.2.5 - 2026-10-16
 
 - Prevent an already-installed Andy Core version from being offered again in WordPress's cached plugin updates; preserve other plugin offers and reject unsigned/older releases.
