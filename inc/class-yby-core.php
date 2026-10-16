@@ -75,6 +75,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-service.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-management.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-rest-controller.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-connector.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-creator-readonly-history.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-connector-idempotency.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-connector-audit.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-connector-affiliate-bindings.php';
@@ -312,6 +313,7 @@ $this->loader->add_action( 'andy_core_register_modules', 'YBY_Business_OS_Module
 		if ( $connector_enabled ) {
 			$connector_route = new YBY_Connector();
 			$this->loader->add_action( 'rest_api_init', $connector_route, 'register_routes' );
+        $this->loader->add_action( 'rest_api_init', 'YBY_Creator_Readonly_History', 'register_routes' );
 		}
 	}
 
