@@ -164,4 +164,32 @@ $editor_links=YBY_Andy_OS_Navigation::tertiary_items('andy-business');
 $assert(1===count($editor_links),'landing-only editor sees only original Landing Pages');
 $assert(!str_contains(json_encode($editor_links),'andy-business'),'landing editor cannot access Business settings');
 $GLOBALS['enabled_modules']=array('business_os','inquiry_os','newsletter_os','email_os');
+// Regression: WordPress menu-header's second parent resolver must not see
+// the current Andy Core hidden alias after admin authorization. Other hidden
+// pages and the original registered callback must remain untouched.
+$setup(array('manage_options','andy_core_settings_manage','manage_woocommerce',
+    'andy_core_leads_view','andy_core_newsletter_view','andy_core_mail_view'));
+YBY_Andy_OS_Navigation::consolidate();
+$_GET=array('page'=>'yby-social-login');
+$before=array_column($GLOBALS['submenu']['']??array(),2);
+$assert(in_array('yby-social-login',$before,true),'hidden alias must survive access registration');
+$assert(in_array('andy-business',$before,true),'other hidden aliases exist');
+YBY_Andy_OS_Navigation::preserve_native_parent();
+$after=array_column($GLOBALS['submenu']['']??array(),2);
+$assert(!in_array('yby-social-login',$after,true),'current hidden alias removed before menu rendering');
+$assert(in_array('andy-business',$after,true),'other hidden aliases untouched');
+do_action('admin_page_yby-social-login');
+$assert(1===$GLOBALS['called'],'legacy route callback preserved after menu correction');
+$_GET=array('page'=>'andy-business');
+YBY_Andy_OS_Navigation::preserve_native_parent();
+$assert(!in_array('andy-business',array_column($GLOBALS['submenu']['']??array(),2),true),
+    'content route hidden alias must not collapse native parent');
+$setup(array('manage_options','andy_core_settings_manage','andy_core_leads_view'));
+YBY_Andy_OS_Navigation::consolidate();
+$_GET=array('page'=>'yby-social-login');
+$before=array_column($GLOBALS['submenu']['']??array(),2);
+$GLOBALS['caps']=array();
+YBY_Andy_OS_Navigation::preserve_native_parent();
+$assert($before===array_column($GLOBALS['submenu']['']??array(),2),
+    'unauthorized user cannot change the hidden menu');
 echo "PASS andy-core-native-l123-v2-harness\n";
