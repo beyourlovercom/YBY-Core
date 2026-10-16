@@ -327,7 +327,7 @@ class YBY_Updater {
 		// Reuse fully verified release evidence to limit requests on admin and cron.
 		$cache_key = 'yby_core_verified_release_' . $this->update_channel();
 		$cached = get_site_transient( $cache_key );
-		if ( is_array( $cached ) && ! empty( $cached['version'] ) && ! empty( $cached['sha256'] ) ) {
+		if ( ! $force && is_array( $cached ) && ! empty( $cached['version'] ) && ! empty( $cached['sha256'] ) ) {
 			return $cached;
 		}
 		$is_canary = 'canary' === $this->update_channel();
