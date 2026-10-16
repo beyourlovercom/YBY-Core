@@ -84,6 +84,7 @@ check(is_wp_error(YBY_Creator_Readonly_History::authorize($r)),'HMAC nonce repla
 $bad=request_for($parameters,['X-BYL-Creator-Signature'=>str_repeat('0',64)]);
 check(is_wp_error(YBY_Creator_Readonly_History::authorize($bad)),'invalid HMAC denied');
 check(YBY_Creator_Readonly_History::authorize(request_for($parameters,['X-BYL-Creator-Signature'=>str_repeat('0',64)]))->data['gate']==='signature','auth diagnostic reports only stage, not private values');
+check((bool) preg_match('/^[a-f0-9]{64}$/D', YBY_Creator_Readonly_History::authorize(request_for($parameters,['X-BYL-Creator-Signature'=>str_repeat('0',64)]))->data['canonical_sha256'] ?? ''),'auth diagnostic emits only canonical message hash');
 $invalid=$parameters; $invalid['affiliate_id']=100;
 $foreign=request_for($invalid);
 check(YBY_Creator_Readonly_History::authorize($foreign)===true,'foreign identity request signed but untrusted');

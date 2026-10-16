@@ -25,10 +25,12 @@ final class YBY_Creator_Readonly_History {
 
     // Canary-only, temporary auth-stage telemetry. Never returns credentials,
     // signatures, user data or request header values.
-    private static function deny_auth_stage(string $stage): WP_Error {
+    private static function deny_auth_stage(string $stage, array $debug = []): WP_Error {
         if (defined('BYL_CREATOR_CANARY_STAGE_DIAGNOSTICS') && BYL_CREATOR_CANARY_STAGE_DIAGNOSTICS === true) {
+            // Hashes are over the non-secret canonical request bytes only.
+            // Never emit HMAC signatures, keys, nonce contents, or user data.
             return new WP_Error('byl_creator_readonly_denied', 'Creator history authorization denied.',
-                ['status'=>401, 'gate'=>$stage]);
+                array_merge(['status'=>401, 'gate'=>$stage], $debug));
         }
         return self::deny();
     }
@@ -69,7 +71,12 @@ final class YBY_Creator_Readonly_History {
         // independently verifies ownership before returning anything.
         $canonical = "GET\n".$uri."\n".$ts."\n".$nonce."\n".$key;
         $expected = hash_hmac('sha256', $canonical, BYL_CREATOR_REMOTE_SIGN_KEY);
-        if (!hash_equals($expected, $signature)) { return self::deny_auth_stage('signature'); }
+        if (!hash_equals($expected, $signature)) {
+            return self::deny_auth_stage('signature', [
+                'canonical_sha256'=>hash('sha256', $canonical),
+                'uri_sha256'=>hash('sha256', $uri),
+            ]);
+        }
         $reuse = 'byl_creator_nonce_'.hash('sha256', $key.'|'.$nonce);
         if (get_transient($reuse)) { return self::deny('Duplicate request.', 409); }
         set_transient($reuse, '1', 180);
