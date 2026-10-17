@@ -67,7 +67,7 @@ if ! flock -n 9; then
 fi
 
 # WordPress native update discovery: checks only, does NOT install a plugin.
-wp_live eval 'delete_site_transient("update_plugins"); wp_update_plugins();' >/dev/null
+wp_live eval 'if (!function_exists("wp_update_plugins")) require_once ABSPATH . "wp-includes/update.php"; delete_site_transient("update_plugins"); wp_update_plugins();' >/dev/null
 row="$(wp_live plugin list --fields=name,version,update_version --format=csv | grep '^yby-core,' || true)"
 IFS=, read -r plugin installed offered <<<"$row"
 [[ "$plugin" == "yby-core" && "$installed" == "$EXPECTED_INSTALLED" && "$offered" == "$EXPECTED_TARGET" ]] ||
