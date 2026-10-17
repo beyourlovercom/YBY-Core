@@ -31,7 +31,7 @@ class HB_Loader {
 }
 require dirname( __DIR__ ) . '/inc/class-yby-updater.php';
 
-$updater = new YBY_Updater( '/fixture/yby-core/yby-core.php', '2.2.6' );
+$updater = new YBY_Updater( '/fixture/yby-core/yby-core.php', '2.2.7' );
 $loader = new HB_Loader();
 $updater->register_hooks( $loader );
 $assert = static function ( $condition, $message ) {
