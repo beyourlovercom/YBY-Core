@@ -41,6 +41,40 @@ final class YBY_Creator_Readonly_History {
         return $number >= 1 && $number <= 1000 ? $number : 0;
     }
 
+    /**
+     * Canonical signed URL is the sole source of business parameters.
+     * WordPress REST get_params() may merge JSON/GET body data, which
+     * must never override the URL bytes authenticated by the HMAC.
+     */
+    private static function signed_query_params(): ?array {
+        $uri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+        if (wp_parse_url($uri, PHP_URL_PATH) !== '/wp-json/andy-core/v1/creator/history') {
+            return null;
+        }
+        $query = wp_parse_url($uri, PHP_URL_QUERY);
+        if (!is_string($query) || $query === '') { return null; }
+        parse_str($query, $params);
+        if (!is_array($params) || count($params) !== 5 ||
+            array_keys($params) !== ['dev_user_id','affiliate_id','wp_user_id','ref_page','pay_page']) {
+            return null;
+        }
+        foreach (['dev_user_id','affiliate_id','wp_user_id'] as $id) {
+            if (!is_string($params[$id]) || !ctype_digit($params[$id]) ||
+                (int)$params[$id] < 1 || (int)$params[$id] > 2147483647) {
+                return null;
+            }
+        }
+        if (self::page($params['ref_page']) === 0 || self::page($params['pay_page']) === 0) {
+            return null;
+        }
+        // Also reject duplicate, reordered, or non-canonical query encodings,
+        // even if a trusted client accidentally signs that altered URI.
+        if (http_build_query($params, '', '&', PHP_QUERY_RFC3986) !== $query) {
+            return null;
+        }
+        return $params;
+    }
+
     public static function authorize($request) {
         if (!defined('BYL_CREATOR_REMOTE_API_ENABLED') || BYL_CREATOR_REMOTE_API_ENABLED !== true ||
             !defined('BYL_CREATOR_REMOTE_KEY_ID') || !defined('BYL_CREATOR_REMOTE_SIGN_KEY') ||
@@ -58,15 +92,7 @@ final class YBY_Creator_Readonly_History {
             !preg_match('/^[a-f0-9]{64}$/D', $signature)) { return self::deny_auth_stage('request_headers'); }
 
         $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
-        $path = wp_parse_url($uri, PHP_URL_PATH);
-        if ($path !== '/wp-json/andy-core/v1/creator/history') { return self::deny_auth_stage('path'); }
-        $query = wp_parse_url($uri, PHP_URL_QUERY);
-        if (!is_string($query) || $query === '') { return self::deny_auth_stage('query'); }
-        parse_str($query, $params);
-        if (!is_array($params) || count($params) !== 5 ||
-            array_keys($params) !== ['dev_user_id','affiliate_id','wp_user_id','ref_page','pay_page']) { return self::deny_auth_stage('query_fields'); }
-        if (!is_string($params['dev_user_id']) || !ctype_digit($params['dev_user_id']) || (int)$params['dev_user_id'] < 1 || (int)$params['dev_user_id'] > 2147483647 || !is_string($params['affiliate_id']) || !ctype_digit($params['affiliate_id']) || (int)$params['affiliate_id'] < 1 || (int)$params['affiliate_id'] > 2147483647 || !is_string($params['wp_user_id']) || !ctype_digit($params['wp_user_id']) || (int)$params['wp_user_id'] < 1 || (int)$params['wp_user_id'] > 2147483647 ||
-            self::page($params['ref_page']) === 0 || self::page($params['pay_page']) === 0) { return self::deny_auth_stage('query_values'); }
+        if (self::signed_query_params() === null) { return self::deny_auth_stage('query_fields'); }
         // The authenticated Dev server supplies both exact IDs, but the provider
         // independently verifies ownership before returning anything.
         $canonical = "GET\n".$uri."\n".$ts."\n".$nonce."\n".$key;
@@ -109,7 +135,10 @@ final class YBY_Creator_Readonly_History {
             !function_exists('affwp_get_currency')) {
             return self::deny('AffiliateWP provider unavailable.',503);
         }
-        $params=$request->get_params();
+        // Never trust WP_REST_Request::get_params() after HMAC authorization:
+        // it can include unsigned JSON/body parameters with higher precedence.
+        $params=self::signed_query_params();
+        if ($params === null) { return self::deny('Signed query unavailable.', 401); }
         $www_user_id=(int)$params['wp_user_id'];
         $affiliate_id=(int)$params['affiliate_id'];
         $dev_user_id=(int)$params['dev_user_id'];

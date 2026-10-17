@@ -85,6 +85,26 @@ check(YBY_Creator_Readonly_History::authorize($r)===true,'HMAC GET authenticated
 $res=YBY_Creator_Readonly_History::handle($r);
 check($res instanceof WP_REST_Response && $res->status===200,'owner verified and snapshot accepted');
 check($res->data['data']['affiliate_id']===99 && $res->data['data']['wp_user_id']===55,'both provider identity keys preserved');
+// Regression: REST combines body/JSON with GET query, but only HMAC-signed
+// URI query fields may govern the AffiliateWP data scope and pagination.
+$override=request_for($parameters);
+$override->params=['dev_user_id'=>22,'affiliate_id'=>100,'wp_user_id'=>56,'ref_page'=>999,'pay_page'=>999];
+check(YBY_Creator_Readonly_History::authorize($override)===true,'HMAC URL remains valid even with merged body-param spoof');
+$signedOnly=YBY_Creator_Readonly_History::handle($override);
+check($signedOnly instanceof WP_REST_Response && $signedOnly->status===200 &&
+    $signedOnly->data['data']['affiliate_id']===99 &&
+    $signedOnly->data['data']['wp_user_id']===55,
+    'unsigned REST body/JSON parameters cannot change signed affiliate scope');
+$duplicate=request_for($parameters);
+$_SERVER['REQUEST_URI'].='&affiliate_id=100';
+$duplicate->headers['X-BYL-Creator-Signature']=hash_hmac('sha256',
+    "GET\n".$_SERVER['REQUEST_URI']."\n".
+    $duplicate->headers['X-BYL-Creator-Time']."\n".
+    $duplicate->headers['X-BYL-Creator-Nonce']."\n".
+    $duplicate->headers['X-BYL-Creator-Key'], BYL_CREATOR_REMOTE_SIGN_KEY);
+check(is_wp_error(YBY_Creator_Readonly_History::authorize($duplicate)),
+    'even correctly HMAC-signed duplicated query fields fail canonical validation');
+
 check(count($res->data['data']['referrals'])===1 && count($res->data['data']['payouts'])===1,'own referrals/payouts only');
 check($res->data['data']['account']['referrals']===20,'Total Referrals counts all owned statuses, not paid-only account counter');
 check($res->data['data']['account']['earnings']==='500.50','Paid Earnings remains native account field');
