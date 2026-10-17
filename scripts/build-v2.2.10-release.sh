@@ -91,7 +91,11 @@ if [[ "${build_context}" == "FINAL_RELEASE" && "${signature_status}" != "PASS" ]
   echo "Version: ${version}"
   echo "Updater Compatibility Database Version: ${database_version}"
   echo "Runtime Database Version: ${runtime_database_version}"
-  echo 'Release Stage: Stable (candidate only; not published)'
+  if [[ "${build_context}" == "FINAL_RELEASE" ]]; then
+    echo 'Release Stage: Stable (FINAL_RELEASE)'
+  else
+    echo 'Release Stage: Stable (candidate only; not published)'
+  fi
   echo "Build Context: ${build_context}"
   echo "Repository Remote: ${repository_remote}"
   echo "Source Ref: ${source_ref}"
