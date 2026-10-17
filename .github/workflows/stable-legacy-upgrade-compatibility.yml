@@ -53,12 +53,20 @@ jobs:
           git archive 073ef9d34bbd5bfda1db7ca52caf358f7e6ade87 | tar -x -C "$WP_PATH/wp-content/plugins/yby-core"
           wp plugin activate yby-core --path="$WP_PATH"
           YBY_LEGACY_VERSION=1.5.2 YBY_LEGACY_PHASE=seed wp eval-file "$GITHUB_WORKSPACE/tests/stable-legacy-upgrade-compatibility.php" --path="$WP_PATH"
+          wp db export /tmp/andy-core-152-synthetic-before-upgrade.sql --path="$WP_PATH"
           wp plugin deactivate yby-core --path="$WP_PATH"
           rm -rf "$WP_PATH/wp-content/plugins/yby-core"
           mkdir -p "$WP_PATH/wp-content/plugins/yby-core"
           git archive HEAD | tar -x -C "$WP_PATH/wp-content/plugins/yby-core"
           wp plugin activate yby-core --path="$WP_PATH"
           YBY_LEGACY_VERSION=1.5.2 YBY_LEGACY_PHASE=verify wp eval-file "$GITHUB_WORKSPACE/tests/stable-legacy-upgrade-compatibility.php" --path="$WP_PATH"
+          wp plugin deactivate yby-core --path="$WP_PATH"
+          rm -rf "$WP_PATH/wp-content/plugins/yby-core"
+          mkdir -p "$WP_PATH/wp-content/plugins/yby-core"
+          git archive 073ef9d34bbd5bfda1db7ca52caf358f7e6ade87 | tar -x -C "$WP_PATH/wp-content/plugins/yby-core"
+          wp db reset --yes --path="$WP_PATH"
+          wp db import /tmp/andy-core-152-synthetic-before-upgrade.sql --path="$WP_PATH"
+          YBY_LEGACY_VERSION=1.5.2 YBY_LEGACY_PHASE=rollback wp eval-file "$GITHUB_WORKSPACE/tests/stable-legacy-upgrade-compatibility.php" --path="$WP_PATH"
       - name: Reset disposable database and baseline 1.9.0 then migrate
         shell: bash
         run: |
