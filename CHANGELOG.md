@@ -1,3 +1,10 @@
+## v2.2.8 - 2026-10-17 (U3B Canary candidate; NOT published)
+
+- Independent version-only Canary candidate based on v2.2.7 PR #154. No new Hostinger policy code: keeps signed-channel and hostname allowlist plus explicit opt-in, with non-Andy background updates denied during the scoped exception.
+- Separately versioned ZIP, metadata, GitHub Actions Artifact, tests and rollback instructions to enable future native WordPress WP-Cron 2.2.7 -> 2.2.8 UAT.
+- BYL Dev manually installed v2.2.7 with auto OFF (U3A PASS). Bottle Dev Canary/OFF. No public v2.2.8 Release, site install or WP-Cron auto-install authorized or completed.
+- Stable/Latest 2.2.6 and Production / BYL WWW unchanged; runtime database 1.5.0, updater compatibility database 1.4.0; Mail OS, WooCommerce, payment, order, SMTP runtime unchanged.
+
 ## v2.2.7 - 2026-10-17 (Canary candidate; not published)
 
 - Prepare Hostinger Smart Auto Updates compatibility within Andy Core: scoped, priority-1000 WordPress background-update gate only for explicit signed channel + allowlisted domain + automatic-update opt-in.

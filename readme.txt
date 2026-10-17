@@ -4,7 +4,7 @@ Tags: andy-core, yby, case-id, tracking, lead-session, configuration
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.2.7
+Stable tag: 2.2.8
 License: Proprietary
 License URI: https://ybyglobal.com/
 
