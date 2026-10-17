@@ -1,23 +1,24 @@
 name: Andy Core Stable Legacy Upgrade Compatibility (Disposable)
 on:
   pull_request:
-  workflow_dispatch:
+    branches: [main]
+  workflow_dispatch: {}
 
 permissions:
   contents: read
 
 jobs:
   synthetic-legacy-upgrade:
-    name: "Legacy ${{ matrix.from }} to 2.2.6 — disposable MySQL"
+    name: "Legacy upgrade disposable"
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         include:
-          - from: '1.5.2'
-            source: '073ef9d34bbd5bfda1db7ca52caf358f7e6ade87'
-          - from: '1.9.0'
-            source: '2da7fe87b7daa348c4ba8b51c73052f9d9422ab7'
+          - legacy_version: '1.5.2'
+            source_sha: '073ef9d34bbd5bfda1db7ca52caf358f7e6ade87'
+          - legacy_version: '1.9.0'
+            source_sha: '2da7fe87b7daa348c4ba8b51c73052f9d9422ab7'
     services:
       mysql:
         image: mysql:8.0
@@ -34,10 +35,10 @@ jobs:
           --health-timeout=5s
           --health-retries=10
     env:
-      WP_PATH: ${{ runner.temp }}/wordpress
+      WP_PATH: '${{ runner.temp }}/wordpress'
       YBY_DISPOSABLE_MYSQL_ONLY: 'true'
-      YBY_LEGACY_VERSION: ${{ matrix.from }}
-      LEGACY_SOURCE_SHA: ${{ matrix.source }}
+      YBY_LEGACY_VERSION: ${{ matrix.legacy_version }}
+      LEGACY_SOURCE_SHA: ${{ matrix.source_sha }}
     steps:
       - name: Checkout repository with exact historic source commits
         uses: actions/checkout@v4.2.2
