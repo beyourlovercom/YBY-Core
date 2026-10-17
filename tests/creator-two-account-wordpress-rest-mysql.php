@@ -1,6 +1,5 @@
 <?php
 /** Disposable real WordPress REST + MySQL, synthetic AffiliateWP provider only. */
-declare(strict_types=1);
 if (!defined('ABSPATH') || get_option('siteurl')!=='http://creator-ci.invalid') {
     throw new RuntimeException('Refuse non-disposable WordPress instance');
 }
