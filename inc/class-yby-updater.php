@@ -36,11 +36,36 @@ class YBY_Updater {
 		return in_array( $site, array( 'ybybottle.com', 'ybyirrigation.com' ), true );
 	}
 
+	/**
+	 * Explicit owner opt-in and hostname allowlist for signed background updates.
+	 *
+	 * This does not bypass the Ed25519, SHA256, rollback, or newer-version
+	 * checks made later in the normal WordPress plugin upgrader.
+	 */
+	private function background_updates_opted_in() {
+		return $this->allowed_release() && (bool) get_option( self::AUTO_OPTION, false );
+	}
+
+	/**
+	 * Hostinger Smart Auto Updates disables WordPress background updates using
+	 * automatic_updater_disabled. Re-enable only on a precisely opted-in host,
+	 * with all other update target types explicitly denied below.
+	 */
+	public function background_updater_disabled( $disabled ) {
+		return $this->background_updates_opted_in() ? false : $disabled;
+	}
+
+	public function background_other_update_types( $update ) {
+		return $this->background_updates_opted_in() ? false : $update;
+	}
+
 	public function automatic_updates( $update, $item ) {
 		if ( ! is_object( $item ) || ( $item->plugin ?? '' ) !== plugin_basename( $this->plugin_file ) ) {
-			return $update;
+			// Once the global updater is enabled for Andy Core, prevent any
+			// other plugin from being updated by the same WP-Cron pass.
+			return $this->background_updates_opted_in() ? false : $update;
 		}
-		return $this->allowed_release() && (bool) get_option( self::AUTO_OPTION, false );
+		return $this->background_updates_opted_in();
 	}
 	private $plugin_file;
 	private $version;
@@ -56,7 +81,13 @@ class YBY_Updater {
 		$loader->add_filter( 'pre_set_site_transient_update_plugins', $this, 'filter_updates', 10, 1 );
 		// Read-time guard: a saved or object-cached same-version offer may survive the update request.
 		$loader->add_filter( 'site_transient_update_plugins', $this, 'filter_cached_updates', 10, 1 );
-		$loader->add_filter( 'auto_update_plugin', $this, 'automatic_updates', 10, 2 );
+		// The managed Hostinger MU plugin disables WP_Automatic_Updater globally.
+		// The late-priority exception is explicit-policy + hostname scoped.
+		$loader->add_filter( 'automatic_updater_disabled', $this, 'background_updater_disabled', 1000, 1 );
+		$loader->add_filter( 'auto_update_core', $this, 'background_other_update_types', 1000, 1 );
+		$loader->add_filter( 'auto_update_theme', $this, 'background_other_update_types', 1000, 1 );
+		$loader->add_filter( 'auto_update_translation', $this, 'background_other_update_types', 1000, 1 );
+		$loader->add_filter( 'auto_update_plugin', $this, 'automatic_updates', 1000, 2 );
 		$loader->add_filter( 'plugins_api', $this, 'filter_plugin_information', 10, 3 );
 		$loader->add_filter( 'upgrader_pre_download', $this, 'secure_download', 10, 4 );
 		$loader->add_filter( 'upgrader_pre_install', $this, 'prepare_backup', 10, 2 );
