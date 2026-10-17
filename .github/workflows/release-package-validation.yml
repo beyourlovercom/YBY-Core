@@ -11,11 +11,38 @@ jobs:
   release-package:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout
+      # Pull requests validate GitHub's disposable base+head merge result.
+      # Previously a head-only checkout lacked the current v2.2.6 builder.
+      - name: Checkout PR merge candidate
         uses: actions/checkout@v4.2.2
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
+
+      - name: Verify exact merge-source provenance
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_REF: ${{ github.ref }}
+          EVENT_SHA: ${{ github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          checkout_sha="$(git rev-parse HEAD)"
+          test "$checkout_sha" = "$EVENT_SHA"
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            test "$EVENT_REF" = "refs/pull/${PR_NUMBER}/merge"
+            git merge-base --is-ancestor "$PR_BASE_SHA" "$checkout_sha"
+            git merge-base --is-ancestor "$PR_HEAD_SHA" "$checkout_sha"
+            test "$(git rev-parse HEAD^1)" = "$PR_BASE_SHA"
+            test "$(git rev-parse HEAD^2)" = "$PR_HEAD_SHA"
+            echo "PR_BASE_HEAD_MERGE_PROVENANCE_PASS base=$PR_BASE_SHA head=$PR_HEAD_SHA merge=$checkout_sha"
+          else
+            echo "NON_PR_SOURCE_PROVENANCE_PASS source=$checkout_sha"
+          fi
+          test -s scripts/build-v2.2.6-release.sh
+          echo "CURRENT_RELEASE_BUILDER_PRESENT"
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -43,45 +70,45 @@ jobs:
         shell: bash
         env:
           SOURCE_BRANCH: ${{ github.head_ref || github.ref_name }}
-          SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+          SOURCE_COMMIT: ${{ github.sha }}
           ANDY_CORE_UPDATE_SIGNING_SECRET: ${{ secrets.ANDY_CORE_UPDATE_SIGNING_SECRET }}
         run: |
           set -euo pipefail
           release_root="$GITHUB_WORKSPACE"
-          RELEASE_SOURCE_DIR="$release_root" RELEASE_OUTPUT_DIR="$GITHUB_WORKSPACE/releases/v2.2.3" SOURCE_BRANCH="${SOURCE_BRANCH}" SOURCE_COMMIT="${SOURCE_COMMIT}" BUILD_CONTEXT=RELEASE_CANDIDATE bash scripts/build-v2.2.3-release.sh
-          package="releases/v2.2.3/andy-core-v2.2.3.zip"
-          checksum="releases/v2.2.3/SHA256.txt"
-          metadata="releases/v2.2.3/update-metadata.json"
+          RELEASE_SOURCE_DIR="$release_root" RELEASE_OUTPUT_DIR="$GITHUB_WORKSPACE/releases/v2.2.6" SOURCE_BRANCH="${SOURCE_BRANCH}" SOURCE_COMMIT="${SOURCE_COMMIT}" BUILD_CONTEXT=RELEASE_CANDIDATE bash scripts/build-v2.2.6-release.sh
+          package="releases/v2.2.6/andy-core-v2.2.6.zip"
+          checksum="releases/v2.2.6/SHA256.txt"
+          metadata="releases/v2.2.6/update-metadata.json"
           test -s "$package"
           test -s "$checksum"
           test -s "$metadata"
-          if [[ -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" ]]; then test -s releases/v2.2.3/update-metadata.sig; else test ! -e releases/v2.2.3/update-metadata.sig; fi
-          test -s releases/v2.2.3/BUILD_INFO.md
-          for doc in RELEASE_NOTES_v2.2.3.md UPGRADE_GUIDE_v2.2.3.md ROLLBACK_GUIDE_v2.2.3.md; do
+          if [[ -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" ]]; then test -s releases/v2.2.6/update-metadata.sig; else test ! -e releases/v2.2.6/update-metadata.sig; fi
+          test -s releases/v2.2.6/BUILD_INFO.md
+          for doc in RELEASE_NOTES_v2.2.6.md UPGRADE_GUIDE_v2.2.6.md ROLLBACK_GUIDE_v2.2.6.md; do
             test -s "$doc"
-            cp "$doc" releases/v2.2.3/
+            cp "$doc" releases/v2.2.6/
           done
           unzip -Z1 "$package" | awk -F/ 'NF && $1 != "yby-core" { exit 1 }'
           unzip -Z1 "$package" | grep -Fx 'yby-core/yby-core.php'
           ! unzip -Z1 "$package" | grep -E '(^|/)(\.git|\.github|tests|docs|releases|scripts|packages)(/|$)'
-          unzip -p "$package" yby-core/yby-core.php | grep -F 'Version:           2.2.3'
-          unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_CORE_VERSION', '2.2.3' );"
+          unzip -p "$package" yby-core/yby-core.php | grep -F 'Version:           2.2.6'
+          unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_CORE_VERSION', '2.2.6' );"
           unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_DATABASE_VERSION', '1.4.0' );"
           unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_RUNTIME_DATABASE_VERSION', '1.5.0' );"
           expected_sha="$(awk 'NF {print $1; exit}' "$checksum")"
           actual_sha="$(sha256sum "$package" | awk '{print $1}')"
           test "$expected_sha" = "$actual_sha"
-          php -r '$m=json_decode(file_get_contents($argv[1]),true); if (!is_array($m) || ($m["schema_version"] ?? null)!==1 || ($m["version"] ?? "")!=="2.2.3" || ($m["database_version"] ?? "")!=="1.4.0" || ($m["runtime_database_version"] ?? "")!=="1.5.0" || ($m["package"] ?? "")!=="andy-core-v2.2.3.zip" || ($m["sha256"] ?? "")!==$argv[2]) exit(1);' "$metadata" "$actual_sha"
+          php -r '$m=json_decode(file_get_contents($argv[1]),true); if (!is_array($m) || ($m["schema_version"] ?? null)!==1 || ($m["version"] ?? "")!=="2.2.6" || ($m["database_version"] ?? "")!=="1.4.0" || ($m["runtime_database_version"] ?? "")!=="1.5.0" || ($m["package"] ?? "")!=="andy-core-v2.2.6.zip" || ($m["sha256"] ?? "")!==$argv[2]) exit(1);' "$metadata" "$actual_sha"
           git show v1.5.7:inc/class-yby-update-verifier.php > "$RUNNER_TEMP/v157-update-verifier.php"
           php tests/updater-backward-compat-harness.php "$RUNNER_TEMP/v157-update-verifier.php" "$package" "$metadata"
-          grep -F 'Build Context: RELEASE_CANDIDATE' releases/v2.2.3/BUILD_INFO.md
-          grep -F 'PHP Lint: PASS' releases/v2.2.3/BUILD_INFO.md
-          grep -F 'git diff --check: PASS' releases/v2.2.3/BUILD_INFO.md
-          if [[ -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" ]]; then grep -F 'Ed25519 Signature: PASS' releases/v2.2.3/BUILD_INFO.md; else grep -F 'Ed25519 Signature: NOT_SIGNED' releases/v2.2.3/BUILD_INFO.md; fi
+          grep -F 'Build Context: RELEASE_CANDIDATE' releases/v2.2.6/BUILD_INFO.md
+          grep -F 'PHP Lint: PASS' releases/v2.2.6/BUILD_INFO.md
+          grep -F 'git diff --check: PASS' releases/v2.2.6/BUILD_INFO.md
+          if [[ -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" ]]; then grep -F 'Ed25519 Signature: PASS' releases/v2.2.6/BUILD_INFO.md; else grep -F 'Ed25519 Signature: NOT_SIGNED' releases/v2.2.6/BUILD_INFO.md; fi
 
       - name: Upload release candidate
         uses: actions/upload-artifact@v4
         with:
-          name: andy-core-v2.2.3-release-candidate
-          path: releases/v2.2.3
+          name: andy-core-v2.2.6-release-candidate
+          path: releases/v2.2.6
           if-no-files-found: error
