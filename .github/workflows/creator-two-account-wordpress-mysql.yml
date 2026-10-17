@@ -1,0 +1,71 @@
+name: Creator Two-Account Disposable WordPress MySQL REST
+
+on:
+  pull_request:
+    paths:
+      - 'inc/class-yby-creator-readonly-history.php'
+      - 'inc/class-yby-connector.php'
+      - 'tests/creator-core-only-wordpress-rest.php'
+      - 'tests/creator-two-account-wordpress-rest-mysql.php'
+      - '.github/workflows/creator-two-account-wordpress-mysql.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  creator-wordpress-mysql:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: creator_synthetic_ci
+          MYSQL_USER: creator_synthetic
+          MYSQL_PASSWORD: synthetic-ci-only
+          MYSQL_ROOT_PASSWORD: synthetic-ci-root-only
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -psynthetic-ci-root-only"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli
+          coverage: none
+      - name: Install disposable WordPress and MySQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          chmod +x /usr/local/bin/wp
+          wp core download --path="$RUNNER_TEMP/creator-wp" --version=6.6.2
+          wp config create --path="$RUNNER_TEMP/creator-wp" --dbname=creator_synthetic_ci --dbuser=creator_synthetic --dbpass=synthetic-ci-only --dbhost=127.0.0.1 --skip-check
+          wp core install --path="$RUNNER_TEMP/creator-wp" --url=http://creator-ci.invalid --title="Disposable Creator REST Test" --admin_user=creator-ci-admin --admin_password=synthetic-ci-admin-only --admin_email=ci-admin@example.invalid --skip-email
+          test "$(wp user list --role=subscriber --field=ID --path="$RUNNER_TEMP/creator-wp" | wc -l)" -eq 0
+      - name: Validate signed REST and account isolation against real WordPress MySQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l inc/class-yby-creator-readonly-history.php
+          php -l inc/class-yby-connector.php
+          php -l tests/creator-core-only-wordpress-rest.php
+          php -l tests/creator-two-account-wordpress-rest-mysql.php
+          wp eval-file "$GITHUB_WORKSPACE/tests/creator-core-only-wordpress-rest.php" --path="$RUNNER_TEMP/creator-wp" | tee "$RUNNER_TEMP/creator-core-only.txt"
+          grep -q 'CREATOR_CORE_ONLY_LAZY_ROUTE_WP_REST_PASS' "$RUNNER_TEMP/creator-core-only.txt"
+          wp eval-file "$GITHUB_WORKSPACE/tests/creator-two-account-wordpress-rest-mysql.php" --path="$RUNNER_TEMP/creator-wp" | tee "$RUNNER_TEMP/creator-rest-uat.txt"
+          grep -q 'CREATOR_WP_MYSQL_REAL_REST_SYNTHETIC_UAT_PASS' "$RUNNER_TEMP/creator-rest-uat.txt"
+      - name: Confirm no production credentials or deployments
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(printenv BYL_CREATOR_REMOTE_SIGN_KEY || true)"
+          test -z "$(printenv BYL_CREATOR_REMOTE_BINDINGS || true)"
+          echo 'DISPOSABLE_CI_ONLY_NO_DEPLOYMENT'
