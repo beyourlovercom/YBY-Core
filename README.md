@@ -4,14 +4,21 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `2.2.6`
-- Development version: None
+- Product version: `2.2.9` (independent signed Canary **U3D candidate, not publicly released**)
+- Current published Canary: `2.2.8` (BYL Dev installed; automatic updates OFF)
+- Current published Stable / Latest: `2.2.6` (Production unchanged)
 - Database version: `1.5.0`
 - Updater compatibility database version: `1.4.0`
-- Release status: Addon Foundation V1 Release Candidate
-- Development status: Addon Framework + Andy Commerce integration merged; Dev is the primary integration/UAT environment; Production deploy deferred
+- Technical namespace: existing `YBY_*` and `yby_*` identifiers retained
 - Plugin path: `yby-core/yby-core.php`
-- Technical namespace: existing `YBY_*` and `yby_*` identifiers retained for compatibility
+
+## v2.2.9 U3D candidate scope (NOT PUBLIC)
+
+- Preserve the reviewed v2.2.8 runtime and Hostinger-specific signed WordPress updater **without changes**.
+- Increment only version, signed release archive/metadata/docs/CI and the version-pinned Mail OS no-boot test.
+- U3B native Cron updater installation PASS (2.2.7 -> 2.2.8); U3C Hostinger unattended --check PASS; **U3D unattended installation 2.2.8 -> 2.2.9 not yet attempted**.
+- The separate Hostinger scheduler script is from Draft PR #156 outside public_html and currently check-only every four hours; BYL Dev auto OFF.
+- No new business features, DB migration, Hostinger MU edits, Site/WWW installation, main merge or public release during candidate creation.
 
 ## v1.9.0 release scope
 
