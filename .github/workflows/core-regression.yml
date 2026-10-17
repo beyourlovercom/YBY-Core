@@ -50,6 +50,15 @@ jobs:
           set -euo pipefail
           for file in tests/*-harness.php; do php "$file"; done
 
+      - name: Creator two-account synthetic cross-tenant isolation UAT
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l scripts/test-creator-readonly-history.php
+          php scripts/test-creator-readonly-history.php
+          php -l scripts/test-creator-two-identity-synthetic-uat.php
+          php scripts/test-creator-two-identity-synthetic-uat.php
+
       - name: Andy Commerce regression
         shell: bash
         run: |
