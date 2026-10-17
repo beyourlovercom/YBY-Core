@@ -1,3 +1,11 @@
+## v2.2.7 - 2026-10-17 (Canary candidate; not published)
+
+- Prepare Hostinger Smart Auto Updates compatibility within Andy Core: scoped, priority-1000 WordPress background-update gate only for explicit signed channel + allowlisted domain + automatic-update opt-in.
+- While an Andy Core automatic-update exception is active, disallow background updates to unrelated plugins, WordPress Core, themes and translations.
+- Reuse Dev-only v2.2.2 native WP-Cron auto-install evidence and PR #153 Hostinger policy CI; add separately signed candidate and upcoming BYL Dev-only WP-Cron UAT gate.
+- Preserve v2.2.6 Stable release and existing site versions, no Hostinger managed MU modifications, database migrations (runtime 1.5.0 / updater compatibility 1.4.0), BYL WWW, payment, orders or mail changes.
+- Do not publish Canary/Stable or enable Dev automatic updates without new Owner approval.
+
 ## v2.2.6 - 2026-10-16
 
 - Fix Owner-reproduced WordPress same-version upgrade banner even after Andy Core 2.2.5 is installed: on reading cached `update_plugins`, suppress only invalid, older or same-version Andy Core update offers.
