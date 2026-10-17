@@ -35,6 +35,21 @@ if ( 'seed' === $phase ) {
         'created_at'=>'2026-01-01 00:00:00' ) );
     $assert( $result === 1, 'Unable to insert synthetic lead into legacy schema' );
     update_option( $option, 'synthetic-preserved', false );
+    if ( $from === '1.9.0' ) {
+        $assert( class_exists( 'YBY_Update_Verifier' ) && class_exists( 'YBY_Update_Backup' ), 'Old Bottle signed updater is missing' );
+        $meta_path = getenv( 'YBY_SIGNED_META_FILE' );
+        $sig_path = getenv( 'YBY_SIGNED_SIG_FILE' );
+        $assert( is_file( $meta_path ) && is_file( $sig_path ), 'Signed public Canary evidence not staged in disposable CI' );
+        $meta = file_get_contents( $meta_path );
+        $sig = file_get_contents( $sig_path );
+        $assert( YBY_Update_Verifier::signature( $meta, $sig ), 'Historic Bottle updater cannot verify public v2.2.6 Ed25519' );
+        $assert( YBY_Update_Verifier::metadata( $meta, '2.2.6', 'andy-core-v2.2.6.zip',
+            '404e3a88df368dc9d270fb86be2447921479e34e7fe60c20ef3f497260700709' ), 'Historic Bottle updater rejects signed metadata' );
+        $record = YBY_Update_Backup::create( WP_PLUGIN_DIR . '/yby-core', '1.9.0' );
+        $assert( ! is_wp_error( $record ) && $record['version'] === '1.9.0', 'Historic Bottle updater failed code-only backup creation' );
+        $assert( false !== YBY_Update_Backup::latest(), 'Historic Bottle updater backup invalid before code replacement' );
+        echo 'LEGACY_BOTTLE_SIGNATURE_AND_BACKUP_PASS'.PHP_EOL;
+    }
     echo 'LEGACY_BASELINE_PASS '.wp_json_encode( array( 'plugin'=>$from, 'schema'=>$version,
         'legacy_tables'=>$found, 'synthetic_rows'=>1 ) ).PHP_EOL;
     return;
@@ -55,6 +70,10 @@ $assert( is_array($row) && $row['name'] === 'Synthetic Lead'
 $assert( get_option( $option ) === 'synthetic-preserved', 'Synthetic WP option not preserved' );
 $assert( (new YBY_Updater( YBY_CORE_PLUGIN_FILE, YBY_CORE_VERSION ))->update_channel() === 'disabled',
     'Update channel must fail closed on unknown host' );
+if ( $from === '1.9.0' ) {
+    $saved_backup = YBY_Update_Backup::latest();
+    $assert( is_array($saved_backup) && $saved_backup['version'] === '1.9.0', 'Code-only backup not compatible after upgrade' );
+}
 echo 'LEGACY_MIGRATION_PASS '.wp_json_encode( array( 'source'=>$from, 'target'=>'2.2.6',
     'schema'=>'1.5.0', 'tables'=>11, 'synthetic_leads_preserved'=>true,
     'synthetic_options_preserved'=>true, 'production_backup'=>'NOT_TESTED' ) ).PHP_EOL;
