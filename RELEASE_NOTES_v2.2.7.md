@@ -8,6 +8,11 @@
 - Preserve GitHub Ed25519 metadata signature + SHA256 + ZIP validation, code-only rollback, same-version stale-offer guards, Canary/Stable distribution separation, Chinese menu and addon boundaries.
 - No changes to database schema, settings migration, WordPress business data, Mail OS worker, WooCommerce, checkout, payments or orders.
 
+## Owner UAT bootstrapping note
+
+- The new Hostinger bypass only begins to run **after 2.2.7 is installed**. BYL Dev currently runs 2.2.6 with the Hostinger global background-updater disabled. Publishing v2.2.7 and toggling BYL Dev auto ON **cannot** prove 2.2.7's own automatic update functionality.
+- Phase A (Owner-gated) is a signed BYL Dev native **manual** 2.2.7 bootstrap. Phase B (separate Owner-gated new signed **2.2.8+** Canary) validates a real native WP-Cron auto-install from installed 2.2.7, with strict other-plugin/core/theme/translation isolation. No Bottle Dev auto ON, no Production changes.
+
 ## Release gates — NOT authorized by this candidate
 
 1. GitHub CI 4/4 must PASS against the exact 2.2.7 candidate HEAD, including reproducible package safety and signer/key verification.
