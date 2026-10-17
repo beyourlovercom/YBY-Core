@@ -33,6 +33,12 @@ class MockAffiliateDB {
     // no get_affiliate() method. This mock intentionally enforces that shape.
     public $payouts;
     function __construct() { $this->payouts=$this; }
+    function count($args){
+        if (count($args)!==1 || (int)($args['affiliate_id']??0)!==99) {
+            throw new RuntimeException('Count query must be affiliate-scoped');
+        }
+        return 20;
+    }
     function get_referrals($args){
         if ((int)$args['affiliate_id']!==99 || $args['number']!==13) throw new RuntimeException('Referral query not scoped');
         return [(object)['affiliate_id'=>$this->badOwner?100:99,'referral_id'=>5,'date'=>'2026-10-15','amount'=>'20.10','status'=>'paid','currency'=>'USD']];
@@ -80,6 +86,8 @@ $res=YBY_Creator_Readonly_History::handle($r);
 check($res instanceof WP_REST_Response && $res->status===200,'owner verified and snapshot accepted');
 check($res->data['data']['affiliate_id']===99 && $res->data['data']['wp_user_id']===55,'both provider identity keys preserved');
 check(count($res->data['data']['referrals'])===1 && count($res->data['data']['payouts'])===1,'own referrals/payouts only');
+check($res->data['data']['account']['referrals']===20,'Total Referrals counts all owned statuses, not paid-only account counter');
+check($res->data['data']['account']['earnings']==='500.50','Paid Earnings remains native account field');
 check(is_wp_error(YBY_Creator_Readonly_History::authorize($r)),'HMAC nonce replay denied');
 $bad=request_for($parameters,['X-BYL-Creator-Signature'=>str_repeat('0',64)]);
 check(is_wp_error(YBY_Creator_Readonly_History::authorize($bad)),'invalid HMAC denied');

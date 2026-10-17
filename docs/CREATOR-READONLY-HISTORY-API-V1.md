@@ -29,3 +29,6 @@ The consumer is independently prepared in beyourlover-web-v3 PR #127. A Dev Word
 
 ## Live plugin API compatibility ? 2026-10-16
 AffiliateWP 2.35.0 PHP source and Dev 2.37.1 runtime both expose affwp_get_affiliate(affiliate_id). The affiliates DB does NOT have get_affiliate(). Payouts are provided through affiliate_wp()->affiliates->payouts, not affiliate_wp()->payouts; the provider now implements the supported lookups, with isolated mocks reproducing both absent methods. This is a source-only repair until an exact-head WWW standalone Canary update is verified; do not automatically treat the earlier deployed package as updated.
+
+## Historical referral KPI correction
+The AffiliateWP account field referrals is PAID-only referral count, not the count of all historical records. Dashboard Total Referrals uses the native scoped referrals DB count method with affiliate_id, with owner checks and validation. Paid Earnings and Unpaid Commission remain native account fields. Offline regression compares paid-only count 3 to all-status referral count 20. No payout or customer writes.

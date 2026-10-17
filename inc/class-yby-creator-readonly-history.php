@@ -156,10 +156,20 @@ final class YBY_Creator_Readonly_History {
         if (is_wp_error($pays)) { return $pays; }
 
         $totals=[];
-        foreach (['earnings','unpaid_earnings','visits','referrals'] as $field) {
+        // AffiliateWP affiliate->referrals is PAID referrals only. The UI
+        // label Total Referrals covers all statuses through the native DB count.
+        if (!method_exists($engine->referrals, 'count')) {
+            return self::deny('AffiliateWP referral count unavailable.',503);
+        }
+        $total_referrals=$engine->referrals->count(['affiliate_id'=>$affiliate_id]);
+        if (!is_numeric($total_referrals) || (int)$total_referrals < 0) {
+            return self::deny('AffiliateWP referral total invalid.',503);
+        }
+        foreach (['earnings','unpaid_earnings','visits'] as $field) {
             $val=$account->$field ?? null;
             $totals[$field]=is_numeric($val) && (float)$val>=0 ? $val : null;
         }
+        $totals['referrals']=(int)$total_referrals;
         $currency=(string)affwp_get_currency();
         if (!preg_match('/^[A-Z]{3}$/D',$currency)) { return self::deny('Currency source unavailable.',503); }
         $url='';
