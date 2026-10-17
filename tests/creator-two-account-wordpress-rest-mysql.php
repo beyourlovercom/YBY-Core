@@ -82,11 +82,23 @@ function affiliate_wp(){return (object)['affiliates'=>$GLOBALS['creator_db'],
     'referrals'=>$GLOBALS['creator_db'],'payouts'=>$GLOBALS['creator_db']];}
 
 $file=getenv('GITHUB_WORKSPACE').'/inc/class-yby-creator-readonly-history.php';
-if(!is_file($file))throw new RuntimeException('Missing exact PR provider source');
+$connector=getenv('GITHUB_WORKSPACE').'/inc/class-yby-connector.php';
+if(!is_file($file) || !is_file($connector))throw new RuntimeException('Missing exact PR provider/connector source');
+// Simulate actual WordPress load order: Andy Core's connector is loaded before
+// the separate Canary plugin. It must NOT eagerly declare the Canary's class.
+require $connector;
+verify(!class_exists('YBY_Creator_Readonly_History',false),
+    'Core connector defers identically named Creator class until REST initialization');
 require $file;
-add_action('rest_api_init',['YBY_Creator_Readonly_History','register_routes']);
+$canary_callback=['YBY_Creator_Readonly_History','register_routes'];
+add_action('rest_api_init',$canary_callback,30);
+verify(has_action('rest_api_init',$canary_callback)===30,
+    'Independent Canary owns REST hook with its existing priority');
+add_action('rest_api_init',['YBY_Connector','register_routes'],10);
 $routes=rest_get_server()->get_routes();
 verify(isset($routes['/andy-core/v1/creator/history']),'Registered real WordPress REST route');
+verify(count($routes['/andy-core/v1/creator/history'])===1,
+    'Canary/Core coexist with exactly one Creator REST endpoint');
 verify(get_current_user_id()===0,'No real logged-in WordPress user');
 function send_rest($p,$opts=[]){
     $uri='/wp-json/andy-core/v1/creator/history?'.http_build_query($p,'','&',PHP_QUERY_RFC3986).

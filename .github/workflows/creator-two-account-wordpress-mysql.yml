@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'inc/class-yby-creator-readonly-history.php'
+      - 'inc/class-yby-connector.php'
+      - 'tests/creator-core-only-wordpress-rest.php'
       - 'tests/creator-two-account-wordpress-rest-mysql.php'
       - '.github/workflows/creator-two-account-wordpress-mysql.yml'
   workflow_dispatch:
@@ -53,7 +55,11 @@ jobs:
         run: |
           set -euo pipefail
           php -l inc/class-yby-creator-readonly-history.php
+          php -l inc/class-yby-connector.php
+          php -l tests/creator-core-only-wordpress-rest.php
           php -l tests/creator-two-account-wordpress-rest-mysql.php
+          wp eval-file "$GITHUB_WORKSPACE/tests/creator-core-only-wordpress-rest.php" --path="$RUNNER_TEMP/creator-wp" | tee "$RUNNER_TEMP/creator-core-only.txt"
+          grep -q 'CREATOR_CORE_ONLY_LAZY_ROUTE_WP_REST_PASS' "$RUNNER_TEMP/creator-core-only.txt"
           wp eval-file "$GITHUB_WORKSPACE/tests/creator-two-account-wordpress-rest-mysql.php" --path="$RUNNER_TEMP/creator-wp" | tee "$RUNNER_TEMP/creator-rest-uat.txt"
           grep -q 'CREATOR_WP_MYSQL_REAL_REST_SYNTHETIC_UAT_PASS' "$RUNNER_TEMP/creator-rest-uat.txt"
       - name: Confirm no production credentials or deployments
