@@ -69,7 +69,9 @@ jobs:
           mkdir -p "$WP_PATH/wp-content/plugins/yby-core"
           git archive 2da7fe87b7daa348c4ba8b51c73052f9d9422ab7 | tar -x -C "$WP_PATH/wp-content/plugins/yby-core"
           wp plugin activate yby-core --path="$WP_PATH"
-          YBY_LEGACY_VERSION=1.9.0 YBY_LEGACY_PHASE=seed wp eval-file "$GITHUB_WORKSPACE/tests/stable-legacy-upgrade-compatibility.php" --path="$WP_PATH"
+          curl -fsSL --retry 2 -o /tmp/andy-v226-metadata.json https://github.com/beyourlovercom/andy-core-release/releases/download/v2.2.6/update-metadata.json
+          curl -fsSL --retry 2 -o /tmp/andy-v226-metadata.sig https://github.com/beyourlovercom/andy-core-release/releases/download/v2.2.6/update-metadata.sig
+          YBY_SIGNED_META_FILE=/tmp/andy-v226-metadata.json YBY_SIGNED_SIG_FILE=/tmp/andy-v226-metadata.sig YBY_LEGACY_VERSION=1.9.0 YBY_LEGACY_PHASE=seed wp eval-file "$GITHUB_WORKSPACE/tests/stable-legacy-upgrade-compatibility.php" --path="$WP_PATH"
           wp plugin deactivate yby-core --path="$WP_PATH"
           rm -rf "$WP_PATH/wp-content/plugins/yby-core"
           mkdir -p "$WP_PATH/wp-content/plugins/yby-core"
