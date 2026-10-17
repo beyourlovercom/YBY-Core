@@ -240,4 +240,3 @@ assertion(count($GLOBALS['syntheticAccounts'])===2 &&
     'Fixtures remain unchanged; no business writes');
 
 echo 'CREATOR_TWO_IDENTITY_SYNTHETIC_UAT_PASS tests='.$checks.PHP_EOL;
-
