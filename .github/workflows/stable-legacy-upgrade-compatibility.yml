@@ -7,8 +7,76 @@ permissions:
   contents: read
 
 jobs:
-  smoke:
-    runs-on: ubuntu-latest
+  mysql-legacy:
+    runs-on: ubuntu-24.04
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: legacy_validation
+          MYSQL_USER: legacy
+          MYSQL_PASSWORD: disposable-only
+          MYSQL_ROOT_PASSWORD: disposable-only-root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pdisposable-only-root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      WP_PATH: /tmp/andy-legacy-ci-wordpress
+      YBY_DISPOSABLE_MYSQL_ONLY: 'true'
     steps:
-      - name: Smoke
-        run: echo legacy-ci-workflow-valid
+      - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli, zip, sodium
+          coverage: none
+      - name: Install disposable WordPress 7.1.3
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          chmod +x /usr/local/bin/wp
+          wp core download --path="$WP_PATH" --version=7.1.3
+          wp config create --path="$WP_PATH" --dbname=legacy_validation --dbuser=legacy --dbpass=disposable-only --dbhost=127.0.0.1 --skip-check
+          wp core install --path="$WP_PATH" --url=http://disposable.test --title=Validation --admin_user=admin --admin_password=disposable-only --admin_email=nonexistent@disposable.test --skip-email
+      - name: Baseline 1.5.2 then migrate to 2.2.6
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$WP_PATH/wp-content/plugins/yby-core"
+          git archive 073ef9d34bbd5bfda1db7ca52caf358f7e6ade87 | tar -x -C "$WP_PATH/wp-content/plugins/yby-core"
+          wp plugin activate yby-core --path="$WP_PATH"
+          YBY_LEGACY_VERSION=1.5.2 YBY_LEGACY_PHASE=seed wp eval-file "$GITHUB_WORKSPACE/tests/stable-legacy-upgrade-compatibility.php" --path="$WP_PATH"
+          wp plugin deactivate yby-core --path="$WP_PATH"
+          rm -rf "$WP_PATH/wp-content/plugins/yby-core"
+          mkdir -p "$WP_PATH/wp-content/plugins/yby-core"
+          git archive HEAD | tar -x -C "$WP_PATH/wp-content/plugins/yby-core"
+          wp plugin activate yby-core --path="$WP_PATH"
+          YBY_LEGACY_VERSION=1.5.2 YBY_LEGACY_PHASE=verify wp eval-file "$GITHUB_WORKSPACE/tests/stable-legacy-upgrade-compatibility.php" --path="$WP_PATH"
+      - name: Reset disposable database and baseline 1.9.0 then migrate
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp db reset --yes --path="$WP_PATH"
+          wp core install --path="$WP_PATH" --url=http://disposable.test --title=Validation --admin_user=admin --admin_password=disposable-only --admin_email=nonexistent@disposable.test --skip-email
+          rm -rf "$WP_PATH/wp-content/plugins/yby-core"
+          mkdir -p "$WP_PATH/wp-content/plugins/yby-core"
+          git archive 2da7fe87b7daa348c4ba8b51c73052f9d9422ab7 | tar -x -C "$WP_PATH/wp-content/plugins/yby-core"
+          wp plugin activate yby-core --path="$WP_PATH"
+          YBY_LEGACY_VERSION=1.9.0 YBY_LEGACY_PHASE=seed wp eval-file "$GITHUB_WORKSPACE/tests/stable-legacy-upgrade-compatibility.php" --path="$WP_PATH"
+          wp plugin deactivate yby-core --path="$WP_PATH"
+          rm -rf "$WP_PATH/wp-content/plugins/yby-core"
+          mkdir -p "$WP_PATH/wp-content/plugins/yby-core"
+          git archive HEAD | tar -x -C "$WP_PATH/wp-content/plugins/yby-core"
+          wp plugin activate yby-core --path="$WP_PATH"
+          YBY_LEGACY_VERSION=1.9.0 YBY_LEGACY_PHASE=verify wp eval-file "$GITHUB_WORKSPACE/tests/stable-legacy-upgrade-compatibility.php" --path="$WP_PATH"
+      - name: Confirm production stayed out of scope
+        shell: bash
+        run: |
+          echo 'Synthetic migration fixture only. Signed Update Now, actual Web PHP and production rollback remain separately gated.'
