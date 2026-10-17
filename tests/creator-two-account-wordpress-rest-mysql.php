@@ -5,8 +5,8 @@ if (!defined('ABSPATH') || get_option('siteurl')!=='http://creator-ci.invalid') 
 }
 $_SERVER['HTTPS']='on';
 $_SERVER['SERVER_PORT']='443';
-$checks=0;
-function verify($ok,$label){global $checks;if(!$ok)throw new RuntimeException('CREATOR_MYSQL_TEST_FAILED: '.$label);$checks++;echo 'PASS '.$label.PHP_EOL;}
+$GLOBALS['creator_synth_assertions']=0;
+function verify($ok,$label){if(!$ok)throw new RuntimeException('CREATOR_MYSQL_TEST_FAILED: '.$label);$GLOBALS['creator_synth_assertions']++;echo 'PASS '.$label.PHP_EOL;}
 function test_user($suffix){
     $name='creator-ci-'.$suffix;
     verify(!get_user_by('login',$name),'Account not pre-existing');
@@ -159,4 +159,4 @@ verify(get_user_meta($a,'_creator_synth_fixture',true)['earnings']==='10.21'&&
     get_user_meta($b,'_creator_synth_fixture',true)['earnings']==='91.92',
     'No financial fixture mutation');
 verify(!array_diff($GLOBALS['creator_reads'],[$aid,$bid]),'Every provider read scoped');
-echo 'CREATOR_WP_MYSQL_REAL_REST_SYNTHETIC_UAT_PASS checks='.$checks.PHP_EOL;
+echo 'CREATOR_WP_MYSQL_REAL_REST_SYNTHETIC_UAT_PASS checks='.$GLOBALS['creator_synth_assertions'].PHP_EOL;
