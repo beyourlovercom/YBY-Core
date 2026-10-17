@@ -1,3 +1,11 @@
+## v2.2.10 - 2026-10-17 (Stable candidate / NOT published)
+
+- Derived from latest integrated GitHub main after PR #159, the U3D-proven signed Hostinger native auto-updater and PR #157's exact PR merge-source CI provenance guard.
+- Version bump, signed candidate build/workflow, compatibility-pinned regression and release docs only. No runtime PHP feature changes or database migration **relative to integrated main**.
+- **Compared with published Stable v2.2.6, current main includes additional already integrated features** (including Creator read-only code). Stable rollout must audit those differences before publication or per-site install.
+- New signed 8-asset CI candidate is isolated from immutable public Canary v2.2.9 (no republish). Published Stable/Latest still v2.2.6; no WordPress/Hostinger/Production change.
+- Database stays updater compatibility 1.4.0 and runtime 1.5.0; production rollout separately Owner-gated.
+
 ## v2.2.9 - 2026-10-17 (U3D Canary candidate; NOT published)
 
 - Version-only signed Canary candidate based on v2.2.8 Draft PR #155. No change to Hostinger managed MU, application/runtime policy, signed updater/verifier, or business code.
