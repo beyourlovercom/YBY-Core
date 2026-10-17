@@ -4,22 +4,21 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Current release
 
-- Product version: `2.2.8` (independent signed Canary U3B candidate; NOT publicly released)
-- Current published Canary: `2.2.7` (BYL Dev installed; automatic updates OFF)
+- Product version: `2.2.9` (independent signed Canary **U3D candidate, not publicly released**)
+- Current published Canary: `2.2.8` (BYL Dev installed; automatic updates OFF)
 - Current published Stable / Latest: `2.2.6` (Production unchanged)
 - Database version: `1.5.0`
 - Updater compatibility database version: `1.4.0`
 - Technical namespace: existing `YBY_*` and `yby_*` identifiers retained
 - Plugin path: `yby-core/yby-core.php`
 
-## v2.2.8 U3B candidate scope (NOT PUBLIC)
+## v2.2.9 U3D candidate scope (NOT PUBLIC)
 
-- Carry forward the reviewed v2.2.7 Hostinger-specific background updater unchanged.
-- Increment only the signed candidate version, archive/docs/CI contracts for a future **installed 2.2.7 -> newer 2.2.8** native WP-Cron UAT.
-- No new application features, database migration, Mail OS runtime changes or managed Hostinger MU edits.
-- BYL Dev auto OFF, Bottle Dev Canary/OFF pending separate release and runtime permissions.
-- Signed Actions Artifact is NOT a public Release nor genuine WP-Cron UAT PASS.
-- No main merge, v2.2.8 Tag/Release, Stable promotion, Production/WWW install or real commerce changes.
+- Preserve the reviewed v2.2.8 runtime and Hostinger-specific signed WordPress updater **without changes**.
+- Increment only version, signed release archive/metadata/docs/CI and the version-pinned Mail OS no-boot test.
+- U3B native Cron updater installation PASS (2.2.7 -> 2.2.8); U3C Hostinger unattended --check PASS; **U3D unattended installation 2.2.8 -> 2.2.9 not yet attempted**.
+- The separate Hostinger scheduler script is from Draft PR #156 outside public_html and currently check-only every four hours; BYL Dev auto OFF.
+- No new business features, DB migration, Hostinger MU edits, Site/WWW installation, main merge or public release during candidate creation.
 
 ## v1.9.0 release scope
 
