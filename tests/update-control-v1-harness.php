@@ -2,12 +2,15 @@
 /** Scoped Update Control contract tests: no WordPress, network or external writes. */
 define( 'ABSPATH', '/test/' );
 define( 'YBY_CORE_PLUGIN_FILE', '/test/wp-content/plugins/yby-core/yby-core.php' );
+define( 'HOUR_IN_SECONDS', 3600 );
+define( 'DISABLE_WP_CRON', true );
 $GLOBALS['settings'] = array();
 $GLOBALS['events'] = array( 'wp_update_themes', 'wp_update_plugins', 'wp_version_check', 'wp_maybe_auto_update', 'woocommerce_cleanup_sessions', 'andy_mail_outbox' );
 function get_option( $key, $default = false ) { return $GLOBALS['settings'][ $key ] ?? $default; }
 function esc_attr( $value ) { return htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' ); }
 function plugin_basename( $file ) { return 'yby-core/yby-core.php'; }
 function wp_next_scheduled( $hook ) { return in_array( $hook, $GLOBALS['events'], true ) ? 1 : false; }
+function wp_get_ready_cron_jobs() { return array( 100 => array( 'woocommerce_task' => array( 'a' => array(), 'b' => array() ) ), 200 => array( 'mail_task' => array( 'c' => array() ) ) ); }
 function wp_clear_scheduled_hook( $hook ) { $GLOBALS['events'] = array_values( array_diff( $GLOBALS['events'], array( $hook ) ) ); return 1; }
 class YBY_Updater {
 	public $allowed = false;
@@ -61,6 +64,14 @@ $assert( 'wp_update_plugins' === $rows[1]['hook'] && true === $rows[1]['pass'] &
 $assert( 'wp_update_themes' === $rows[2]['hook'] && true === $rows[2]['pass'], 'theme update Cron removed' );
 $assert( 'wp_maybe_auto_update' === $rows[3]['hook'] && true === $rows[3]['pass'], 'independent background auto update Cron removed' );
 $assert( $events_before_read === $GLOBALS['events'], 'audit is strictly read-only' );
+$runtime_before = $GLOBALS['events'];
+$health = $control->cron_runtime_health( 10801 );
+$assert( true === $health['page_trigger_disabled'], 'external cron required when DISABLE_WP_CRON is true' );
+$assert( 1 === $health['core_next'] && 10800 === $health['core_overdue_seconds'], 'report three-hour core delay accurately' );
+$assert( 3 === $health['due_count'] && 100 === $health['oldest_due'], 'count overdue WooCommerce and mail without running them' );
+$assert( true === $health['needs_attention'], 'overdue core and business events flag health warning' );
+$assert( $runtime_before === $GLOBALS['events'], 'health audit never clears or reschedules events' );
+
 
 $updater->allowed = true;
 $assert( true === $control->guard_plugin_auto_updates( false, (object) array( 'plugin' => 'yby-core/yby-core.php' ) ), 'allow signed Andy opt-in' );
