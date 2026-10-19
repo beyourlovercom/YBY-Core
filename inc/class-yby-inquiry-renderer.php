@@ -397,6 +397,12 @@ class YBY_Inquiry_Renderer {
 			$attributes[] = 'size="4"';
 		}
 		$output = '<select ' . implode( ' ', $attributes ) . '>';
+		// Site-defined choice fields start empty; never treat the first real
+		// option as a completed answer to a required B2B inquiry question.
+		if ( isset( $field['id'], $field['placeholder'] )
+			&& 0 === strpos( $field['id'], 'site_' ) && '' !== $field['placeholder'] ) {
+			$output .= '<option value="">' . esc_html( $field['placeholder'] ) . '</option>';
+		}
 
 		foreach ( isset( $field['options'] ) && is_array( $field['options'] ) ? $field['options'] : array() as $option ) {
 			if ( ! is_array( $option ) ) {
