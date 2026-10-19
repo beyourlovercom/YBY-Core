@@ -134,8 +134,18 @@ $dock_preview_settings['inquiry_text_color'] = $dock_inquiry_text;
 					<option value="irrigation_quick_inquiry" <?php selected( $settings['inquiry_preset'], 'irrigation_quick_inquiry' ); ?>>Irrigation · 原默认</option>
 					<option value="bottle_oem_inquiry" <?php selected( $settings['inquiry_preset'], 'bottle_oem_inquiry' ); ?>>Bottle OEM</option>
 					<option value="bottle_wholesale_inquiry" <?php selected( $settings['inquiry_preset'], 'bottle_wholesale_inquiry' ); ?>>Bottle Wholesale</option>
+					<?php foreach ( YBY_Popup_Field_Studio::get_state()['presets'] as $site_preset ) : ?>
+						<?php if ( ! empty( $site_preset['enabled'] ) ) : ?>
+						<option value="<?php echo esc_attr( $site_preset['id'] ); ?>" <?php selected( $settings['inquiry_preset'], $site_preset['id'] ); ?>><?php echo esc_html( $site_preset['label'] ); ?> · 本站方案</option>
+						<?php endif; ?>
+					<?php endforeach; ?>
 				</select>
 				<p class="description">沿用现有 Inquiry OS 预设 ID、字段校验、来源追踪和提交接口。需先验证 Dev 预设存在且启用；不会自动切换现有广告落地页表单。</p>
+			</td></tr>
+			<?php endif; ?>
+			<?php if ( 'inquiry' === $popup_prefix ) : ?>
+			<tr><td colspan="2" style="padding:0"><!-- Existing settings form; no new route or menu -->
+				<?php include YBY_CORE_PLUGIN_DIR . 'admin/views/popup-field-studio.php'; ?>
 			</td></tr>
 			<?php endif; ?>
 			<tr><th>标题</th><td><input class="regular-text" name="yby_popup_settings[<?php echo esc_attr( $popup_prefix ); ?>_title]" value="<?php echo esc_attr( $settings[ $popup_prefix . '_title' ] ); ?>" type="text"></td></tr>
