@@ -25,5 +25,5 @@ $assert( strpos( $updater, 'YBY_Update_Verifier::validate_zip' ) !== false, 'sig
 foreach ( array( '文档', '招商', '落地页', '项目' ) as $name ) {
     $assert( strpos( $nav, $name ) !== false, 'V3_content_group_' . $name );
 }
-$assert( strpos( $nav, '\$items[\'edit.php?post_type=landing_page\']' ) === false, 'no_duplicate_landing_L2' );
+$assert( strpos( $nav, '$items[\'edit.php?post_type=landing_page\']' ) === false, 'no_duplicate_landing_L2' );
 echo 'PASS v2.2.11 V3 + Update Control unified plugin contract' . PHP_EOL;
