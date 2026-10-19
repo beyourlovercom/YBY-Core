@@ -720,3 +720,60 @@ body.yby-inquiry-modal-open {
     font-size: 22px;
   }
 }
+
+/*
+ * US Irrigation Wholesale V2 — isolated native modal layout correction.
+ * Opt in through [yby_inquiry_modal class="us-wholesale-modal-v2"] only.
+ * Keeps message textarea usable while the submit/privacy footer stays separate.
+ */
+@media (min-width: 860px) {
+  .yby-inquiry-modal.us-wholesale-modal-v2.yby-inquiry-modal--layout-split-visual.yby-inquiry-modal--has-media .yby-inquiry-modal__dialog {
+    height: min(750px, calc(100dvh - 40px)) !important;
+    max-height: calc(100dvh - 40px) !important;
+  }
+  .yby-inquiry-modal.us-wholesale-modal-v2 .yby-inquiry-modal__content {
+    overflow: hidden !important;
+    padding: 17px 25px 17px 27px !important;
+  }
+  .yby-inquiry-modal.us-wholesale-modal-v2 .yby-inquiry-modal__brandline { margin-bottom: 11px !important; }
+  .yby-inquiry-modal.us-wholesale-modal-v2 .yby-inquiry-modal__subtitle { margin-bottom: 10px !important; }
+  .yby-inquiry-modal.us-wholesale-modal-v2 .yby-inquiry-form {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+  }
+  .yby-inquiry-modal.us-wholesale-modal-v2 .yby-inquiry-form__fields {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    align-content: start !important;
+    grid-auto-rows: max-content !important;
+    gap: 8px 13px !important;
+    padding: 0 5px 8px 0 !important;
+    scrollbar-width: thin;
+  }
+  .yby-inquiry-modal.us-wholesale-modal-v2 .yby-inquiry-field--textarea { grid-column: 1 / -1 !important; }
+  .yby-inquiry-modal.us-wholesale-modal-v2 [data-yby-field-wrapper="message"] textarea {
+    height: 96px !important;
+    min-height: 96px !important;
+    max-height: 150px !important;
+    resize: vertical !important;
+  }
+  .yby-inquiry-modal.us-wholesale-modal-v2 .yby-inquiry-form__submit {
+    flex: 0 0 50px !important;
+    height: 50px !important;
+    position: relative !important;
+    margin: 0 !important;
+    z-index: 2 !important;
+  }
+  .yby-inquiry-modal.us-wholesale-modal-v2 .yby-inquiry-modal__privacy-note {
+    flex: 0 0 auto !important;
+    margin: 0 !important;
+  }
+}
