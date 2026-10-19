@@ -30,7 +30,7 @@ class YBY_Global_Popup {
 		$out['inquiry_template'] = in_array( $template, array( 'classic', 'premium_v22', 'oem_original' ), true ) ? $template : 'classic';
 		$preset_raw = $raw['inquiry_preset'] ?? 'irrigation_quick_inquiry';
 		$preset_id = is_scalar( $preset_raw ) ? sanitize_key( (string) $preset_raw ) : 'irrigation_quick_inquiry';
-		$out['inquiry_preset'] = in_array( $preset_id, array( 'irrigation_quick_inquiry', 'bottle_oem_inquiry', 'bottle_wholesale_inquiry' ), true ) ? $preset_id : 'irrigation_quick_inquiry';
+		$out['inquiry_preset'] = in_array( $preset_id, array( 'irrigation_quick_inquiry', 'bottle_oem_inquiry', 'bottle_wholesale_inquiry' ), true ) || ( class_exists( 'YBY_Popup_Field_Studio' ) && YBY_Popup_Field_Studio::has_preset( $preset_id ) ) ? $preset_id : 'irrigation_quick_inquiry';
 		foreach ( array( 'subscribe_shortcode_show_title', 'subscribe_shortcode_show_subtitle', 'subscribe_shortcode_show_image' ) as $key ) { $out[ $key ] = empty( $raw[ $key ] ) ? 0 : 1; }
 		foreach ( array( 'inquiry_custom_css', 'subscribe_custom_css', 'inquiry_shortcode_custom_css', 'subscribe_shortcode_custom_css' ) as $key ) { $out[ $key ] = self::sanitize_custom_css( $raw[ $key ] ?? '' ); }
 		return wp_parse_args( $out, self::defaults() );
@@ -81,10 +81,11 @@ class YBY_Global_Popup {
         }
         if ( ! is_array( $preset ) || empty( $preset['enabled'] ) ) { return; }
         if ( $oem_preview ) { $preset['page_profiles'] = array(); }
+		$studio_preset = class_exists( 'YBY_Popup_Field_Studio' ) && YBY_Popup_Field_Studio::has_preset( $settings['inquiry_preset'] );
 		$inquiry = '';
 		if ( self::preset_allowed_on_page( $preset ) ) {
 		$fields = $this->manager->get_field_manager()->get_fields(); $ordered = array();
-		foreach ( $preset['fields'] as $id ) { if ( isset( $fields[ $id ] ) && ! empty( $fields[ $id ]['enabled'] ) ) { $ordered[] = $fields[ $id ]; } }
+		foreach ( $studio_preset ? YBY_Popup_Field_Studio::desktop_fields( $preset['id'] ) : $preset['fields'] as $id ) { if ( isset( $fields[ $id ] ) && ! empty( $fields[ $id ]['enabled'] ) ) { $ordered[] = $fields[ $id ]; } }
         $exact_oem = 'oem_original' === $settings['inquiry_template'] && 'bottle_oem_inquiry' === $settings['inquiry_preset'];
         $premium = 'premium_v22' === $settings['inquiry_template'];
         if ( $exact_oem ) {
@@ -105,8 +106,16 @@ class YBY_Global_Popup {
 			$attributes['layout'] = 'premium_split';
 			$attributes['mobile_layout'] = 'premium_stack';
 		}
+		if ( $studio_preset ) {
+			$site_attrs = YBY_Popup_Field_Studio::render_attributes( $preset['id'] );
+			$attributes = array_merge( $attributes, $site_attrs );
+			$attributes['class'] = array_merge( array( 'yby-global-popup__legacy-form' ), $site_attrs['class'] );
+			$attributes['title'] = '' !== $settings['inquiry_title'] ? $settings['inquiry_title'] : $site_attrs['title'];
+			$attributes['subtitle'] = '' !== $settings['inquiry_subtitle'] ? $settings['inquiry_subtitle'] : $site_attrs['subtitle'];
+			$attributes['image'] = '' !== $settings['inquiry_image'] ? $settings['inquiry_image'] : $site_attrs['image'];
+		}
 		$mobile_fields = array();
-        if ( $premium ) {
+        if ( $premium || $studio_preset ) {
             // The existing renderer owns mobile field validation; keep the original field registry and JS.
 			foreach ( $preset['mobile_fields'] ?? array() as $id ) {
 				if ( isset( $fields[ $id ] ) && ! empty( $fields[ $id ]['enabled'] ) ) { $mobile_fields[] = $fields[ $id ]; }
