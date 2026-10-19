@@ -246,7 +246,9 @@
       var fieldId = safeString(field.getAttribute("data-yby-field-id"), 80);
 
       if (fieldId && !field.disabled && field.getAttribute("data-yby-active") !== "false") {
-        fields[fieldId] = field;
+        if (field.type !== "radio" || !fields[fieldId] || field.checked) {
+          fields[fieldId] = field;
+        }
       }
     });
 
@@ -412,7 +414,7 @@
     Object.keys(fields).forEach(function (fieldId) {
       var field = fields[fieldId];
       var type = safeString(field.type || field.tagName.toLowerCase(), 40);
-      var value = type === "checkbox" ? (field.checked ? "1" : "") : (field.multiple ? Array.prototype.map.call(field.selectedOptions || [], function (o) { return o.value; }).filter(Boolean).join(",") : safeString(field.value, 3000));
+      var value = type === "checkbox" ? (field.checked ? "1" : "") : type === "radio" ? (field.checked ? safeString(field.value, 3000) : "") : (field.multiple ? Array.prototype.map.call(field.selectedOptions || [], function (o) { return o.value; }).filter(Boolean).join(",") : safeString(field.value, 3000));
 
       if (field.required) {
         if (type === "checkbox" && !field.checked) {
@@ -488,7 +490,7 @@
     Object.keys(fields).forEach(function (fieldId) {
       var field = fields[fieldId];
       var type = safeString(field.type || field.tagName.toLowerCase(), 40);
-      var value = type === "checkbox" ? (field.checked ? "1" : "") : (field.multiple ? Array.prototype.map.call(field.selectedOptions || [], function (o) { return o.value; }).filter(Boolean).join(",") : safeString(field.value, 3000));
+      var value = type === "checkbox" ? (field.checked ? "1" : "") : type === "radio" ? (field.checked ? safeString(field.value, 3000) : "") : (field.multiple ? Array.prototype.map.call(field.selectedOptions || [], function (o) { return o.value; }).filter(Boolean).join(",") : safeString(field.value, 3000));
 
       if (value && fieldId !== "contact") {
         payload[fieldId] = value;
