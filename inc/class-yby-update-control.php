@@ -135,6 +135,44 @@ class YBY_Update_Control {
 		return $rows;
 	}
 
+	/**
+	 * Read the scheduler's stored due-work snapshot without running tasks.
+	 * DISABLE_WP_CRON means an external trigger is required; it is NOT proof
+	 * that an external trigger is configured or working.
+	 *
+	 * @param int|null $now Testable UTC reference timestamp.
+	 * @return array<string, int|bool|null>
+	 */
+	public function cron_runtime_health( $now = null ) {
+		$now = null === $now ? time() : (int) $now;
+		$core_next = wp_next_scheduled( 'wp_version_check' );
+		$core_due = false === $core_next ? null : (int) $core_next;
+		$core_overdue_seconds = null !== $core_due ? max( 0, $now - $core_due ) : null;
+		$due_count = 0;
+		$oldest_due = null;
+		if ( function_exists( 'wp_get_ready_cron_jobs' ) ) {
+			$due = wp_get_ready_cron_jobs();
+			if ( is_array( $due ) ) {
+				foreach ( $due as $timestamp => $hooks ) {
+					if ( ! is_array( $hooks ) ) { continue; }
+					$oldest_due = null === $oldest_due ? (int) $timestamp : min( $oldest_due, (int) $timestamp );
+					foreach ( $hooks as $events ) {
+						$due_count += is_array( $events ) ? count( $events ) : 0;
+					}
+				}
+			}
+		}
+		return array(
+			'page_trigger_disabled' => defined( 'DISABLE_WP_CRON' ) && (bool) DISABLE_WP_CRON,
+			'core_next' => $core_due,
+			'core_overdue_seconds' => $core_overdue_seconds,
+			'due_count' => $due_count,
+			'oldest_due' => $oldest_due,
+			'needs_attention' => ( null !== $core_overdue_seconds && $core_overdue_seconds > HOUR_IN_SECONDS )
+				|| ( null !== $oldest_due && $oldest_due < $now - HOUR_IN_SECONDS ),
+		);
+	}
+
 	/** Administrator-visible snapshot; does not run WP-Cron or test execution. */
 	public function render_cron_diagnostics() {
 		echo '<h3>' . esc_html__( 'Cron 状态（只读）', 'yby-core' ) . '</h3>';
@@ -154,7 +192,22 @@ class YBY_Update_Control {
 				. '<td>' . esc_html( $policy ) . '</td></tr>';
 		}
 		echo '</tbody></table>';
-		echo '<p class="description">' . esc_html__( '此表仅证明 WordPress 计划记录的当前快照。不能单凭它证明 Cron 已执行、更新签名验证通过或系统安全更新已完成。', 'yby-core' ) . '</p>';
+		$health = $this->cron_runtime_health();
+		echo '<h4>' . esc_html__( 'Cron 执行健康', 'yby-core' ) . '</h4>';
+		echo '<p>' . esc_html( $health['page_trigger_disabled'] ? 'WP-Cron 访问触发：关闭；需要独立服务器定时执行器。' : 'WP-Cron 访问触发：启用；执行仍取决于访问及服务器运行状态。' ) . '</p>';
+		if ( null === $health['core_next'] ) {
+			echo '<p><strong>' . esc_html__( '核心版本检查任务未计划，请复核。', 'yby-core' ) . '</strong></p>';
+		} elseif ( $health['core_overdue_seconds'] > HOUR_IN_SECONDS ) {
+			$hours = round( $health['core_overdue_seconds'] / HOUR_IN_SECONDS, 1 );
+			echo '<p><strong>' . esc_html( sprintf( '注意：wp_version_check 已逾期约 %s 小时，存在 Cron 执行异常风险。', $hours ) ) . '</strong></p>';
+		} else {
+			echo '<p>' . esc_html__( '核心版本检查任务未显著逾期。', 'yby-core' ) . '</p>';
+		}
+		echo '<p>' . esc_html( sprintf( '当前已到期任务：%d 个（所有模块；只读计数，不执行）。', $health['due_count'] ) ) . '</p>';
+		if ( $health['needs_attention'] ) {
+			echo '<p><strong>' . esc_html__( '执行健康：需要复核。更新清理规则 PASS 不代表定时执行正常。', 'yby-core' ) . '</strong></p>';
+		}
+		echo '<p class="description">' . esc_html__( '此表只证明 WordPress 计划记录与当前到期状态。不能证明外部 Cron 已配置、任务已执行、更新签名验证通过或系统安全更新已完成。', 'yby-core' ) . '</p>';
 	}
 
 	public function render_settings() {
