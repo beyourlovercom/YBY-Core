@@ -61,7 +61,7 @@ class YBY_Inquiry_Renderer {
 		$form_markup   = '<div class="yby-inquiry-form__fields">';
 
 		foreach ( $fields as $field ) {
-			$field = $this->apply_field_presentation_overrides( $field, $attributes, false );
+			$field = $this->apply_contact_requirement( $this->apply_field_presentation_overrides( $field, $attributes, false ), $preset );
 			$form_markup .= $this->render_field(
 				$field,
 				array(
@@ -71,7 +71,7 @@ class YBY_Inquiry_Renderer {
 			);
 		}
 		foreach ( $mobile_fields as $field ) {
-			$field = $this->apply_field_presentation_overrides( $field, $attributes, true );
+			$field = $this->apply_contact_requirement( $this->apply_field_presentation_overrides( $field, $attributes, true ), $preset );
 			$form_markup .= $this->render_field(
 				$field,
 				array(
@@ -128,6 +128,30 @@ class YBY_Inquiry_Renderer {
 		return $output;
 	}
 
+
+	/**
+	 * Mark preset-required contact inputs without changing the global field registry.
+	 *
+	 * This is intentionally based on the preset rather than the global Email
+	 * field definition: other sites may still accept WhatsApp as an alternative.
+	 *
+	 * @param array<string, mixed> $field  The field definition.
+	 * @param array<string, mixed> $preset The selected preset.
+	 * @return array<string, mixed>
+	 */
+	protected function apply_contact_requirement( $field, $preset ) {
+		if ( ! is_array( $field ) || empty( $field['id'] ) || ! is_array( $preset ) ) {
+			return $field;
+		}
+		$requirement = isset( $preset['validation']['contact_requirement'] )
+			? sanitize_key( $preset['validation']['contact_requirement'] )
+			: '';
+		if ( ( 'email' === $requirement && 'email' === $field['id'] )
+			|| ( 'whatsapp' === $requirement && 'whatsapp' === $field['id'] ) ) {
+			$field['required'] = true;
+		}
+		return $field;
+	}
 
 	/**
 	 * Apply page-owned labels/placeholders without mutating the global field registry.
