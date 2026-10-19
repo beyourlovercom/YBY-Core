@@ -108,8 +108,18 @@ class YBY_Global_Popup {
 		}
 		if ( $studio_preset ) {
 			$site_attrs = YBY_Popup_Field_Studio::render_attributes( $preset['id'] );
+			// Business fields and appearance are independent selections: never
+			// discard the current Classic/Premium visual template class or layout
+			// while merging this site's data-driven field overrides.
+			$current_classes = $attributes['class'];
+			$current_layout = isset( $attributes['layout'] ) ? $attributes['layout'] : '';
+			$current_mobile_layout = isset( $attributes['mobile_layout'] ) ? $attributes['mobile_layout'] : '';
 			$attributes = array_merge( $attributes, $site_attrs );
-			$attributes['class'] = array_merge( array( 'yby-global-popup__legacy-form' ), $site_attrs['class'] );
+			$attributes['class'] = array_values( array_unique( array_merge( $current_classes, $site_attrs['class'] ) ) );
+			if ( $premium ) {
+				$attributes['layout'] = $current_layout;
+				$attributes['mobile_layout'] = $current_mobile_layout;
+			}
 			$attributes['title'] = '' !== $settings['inquiry_title'] ? $settings['inquiry_title'] : $site_attrs['title'];
 			$attributes['subtitle'] = '' !== $settings['inquiry_subtitle'] ? $settings['inquiry_subtitle'] : $site_attrs['subtitle'];
 			$attributes['image'] = '' !== $settings['inquiry_image'] ? $settings['inquiry_image'] : $site_attrs['image'];
