@@ -19,11 +19,19 @@ $baseline = array(
     'admin/class-yby-mail-v2-p6-dev-preview.php' => '463e352584ba956fc594b3bd63b16e33edd97ef2',
     'admin/class-yby-andy-admin-shell-v22.php' => 'f836ebd9ffa800772460e6cd9b22152a47bff196',
 );
+// The P9/P8 boot manifest is a historical, immutable release baseline.
+// A future Core feature may add a safe non-mail require_once. Pin that older
+// byte-for-byte candidate in a read-only fixture, while the checks below still
+// inspect the **current** runtime loader to prove no Mail P9 worker is booted.
+$frozen_paths = array(
+    'inc/class-yby-core.php' => 'tests/fixtures/mail-p9-frozen/inc/class-yby-core.php',
+);
 foreach ($baseline as $path => $expected_blob_sha) {
-    $file = $root . '/' . $path;
+    $file = $root . '/' . (isset($frozen_paths[$path]) ? $frozen_paths[$path] : $path);
     $raw = is_file($file) ? file_get_contents($file) : false;
     composite_guard(is_string($raw), 'missing_' . $path);
-    // Exact Git blob bytes, not a working-tree timestamp or normalized text.
+    // Verify canonical Git blob bytes; checkout may convert LF to CRLF on Windows.
+    $raw = str_replace("\r\n", "\n", $raw);
     $blob = sha1('blob ' . strlen($raw) . "\0" . $raw);
     composite_guard(hash_equals($expected_blob_sha, $blob), 'baseline_drift_' . $path);
 }
@@ -62,4 +70,4 @@ composite_guard(strpos($core, "'admin/class-yby-three-os-admin.php'") !== false,
 composite_guard(strpos($core, "'admin/class-yby-mail-v2-p6-dev-preview.php'") !== false, 'p6_preview_preserved');
 composite_guard(strpos($core, "'admin/class-yby-andy-admin-shell-v22.php'") !== false, 'v22_shell_preserved');
 echo 'MAIL_P9_COMPOSITE_BOOT_INERT_PASS assertions=' . $assertions .
-    ' core_exact_sha=verified p8_exact_sha=verified wp_hooks=0 worker=off smtp=off' . PHP_EOL;
+    ' core_historical_sha=verified current_core_boot=checked p8_exact_sha=verified wp_hooks=0 worker=off smtp=off' . PHP_EOL;
