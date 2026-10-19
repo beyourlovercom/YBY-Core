@@ -127,6 +127,9 @@ foreach ( $listed as $file ) {
     $full_path = dirname( __DIR__ ) . '/' . $legacy_path;
     $assert( is_file( $full_path ), 'Legacy candidate snapshot exists: ' . $legacy_path );
     $data = file_get_contents( $full_path );
+    // Git blob OIDs are based on LF source bytes. Windows working trees may
+    // check out CRLF; normalize that transport difference before comparison.
+    $data = str_replace( "\r\n", "\n", $data );
     $sha = sha1( 'blob ' . strlen( $data ) . "\0" . $data );
     $assert( hash_equals( $file['source_git_blob_sha1'], $sha ), 'Frozen original blob unchanged: ' . $file['path'] );
     $assert( ( $file['current_dev_blob_sha1'] ?? null ) === null && $file['verified_backup'] === false, 'No fabricated Dev hash or backup proof' );
