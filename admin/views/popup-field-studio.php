@@ -32,6 +32,10 @@ $studio_boot = array(
 		<button type="button" class="button" id="yby-studio-activate">应用为 Global Popup</button>
 	</div>
 	<div class="yby-studio-note" id="yby-studio-note" role="status" aria-live="polite">原有预设默认只读。点击“复制为本站预设”后才会生成独立配置，不覆盖原表单。</div>
+	<div class="yby-studio-preset-meta">
+		<label class="yby-studio-field"><span>适用页面 Profile ID（逗号分隔）</span><input type="text" id="yby-studio-page-profiles" placeholder="irrigation_wholesale" maxlength="500"></label>
+		<span class="yby-studio-profile-hint" id="yby-studio-profile-hint">预设与落地页通过 Page Profile 关联。空白代表全站适用，请谨慎选择。</span>
+	</div>
 	<div class="yby-studio-matrix">
 		<div class="yby-studio-section-head">
 			<div><h4>完整字段矩阵</h4><small id="yby-studio-count">加载中…</small></div>
