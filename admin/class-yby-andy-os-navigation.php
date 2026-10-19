@@ -437,7 +437,8 @@ final class YBY_Andy_OS_Navigation {
 		     YBY_Module_Registry::is_enabled( 'landing_pages' ) && current_user_can( 'edit_pages' ) ) {
 			return 'edit.php?post_type=landing_page';
 		}
-		if ( 'yby_project' === $post_type || 'docs' === $post_type ) { return 'andy-core-content'; }
+		if ( 'landing_page' === $post_type || 'yby_project' === $post_type ||
+		     'docs' === $post_type ) { return 'andy-core-content'; }
 		return '';
 	}
 
