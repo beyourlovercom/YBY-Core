@@ -412,7 +412,7 @@
     Object.keys(fields).forEach(function (fieldId) {
       var field = fields[fieldId];
       var type = safeString(field.type || field.tagName.toLowerCase(), 40);
-      var value = type === "checkbox" ? (field.checked ? "1" : "") : safeString(field.value, 3000);
+      var value = type === "checkbox" ? (field.checked ? "1" : "") : (field.multiple ? Array.prototype.map.call(field.selectedOptions || [], function (o) { return o.value; }).filter(Boolean).join(",") : safeString(field.value, 3000));
 
       if (field.required) {
         if (type === "checkbox" && !field.checked) {
@@ -488,7 +488,7 @@
     Object.keys(fields).forEach(function (fieldId) {
       var field = fields[fieldId];
       var type = safeString(field.type || field.tagName.toLowerCase(), 40);
-      var value = type === "checkbox" ? (field.checked ? "1" : "") : safeString(field.value, 3000);
+      var value = type === "checkbox" ? (field.checked ? "1" : "") : (field.multiple ? Array.prototype.map.call(field.selectedOptions || [], function (o) { return o.value; }).filter(Boolean).join(",") : safeString(field.value, 3000));
 
       if (value && fieldId !== "contact") {
         payload[fieldId] = value;
@@ -522,6 +522,7 @@
     payload.source_preset = safeString(form.getAttribute("data-yby-preset"), 100);
     payload.source_page = getSourcePage(form, modal);
     payload.form_version = safeString(form.getAttribute("data-yby-form-version"), 30);
+    if (form.closest(".yby-popup-field-studio")) { payload.form_device = isMobileViewport() ? "mobile" : "desktop"; }
     payload.trigger_source = safeString(form.getAttribute("data-yby-trigger-source"), 120);
     payload.page_profile = getPageProfile(form);
     payload.utm_source = safeString(getQueryParam("utm_source"), 100);
