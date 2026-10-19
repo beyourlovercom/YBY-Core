@@ -131,6 +131,7 @@ class YBY_Lead_REST_Controller {
 				'quantity'         => $this->limit_text( $request->get_param( 'quantity' ), 100 ),
 				'project_details'  => $this->limit_textarea( $request->get_param( 'project_details' ), 3000 ),
 				'custom_fields'    => $custom_fields,
+				'form_device'      => 'mobile' === sanitize_key( (string) $request->get_param( 'form_device' ) ) ? 'mobile' : 'desktop',
 				'utm_source'       => $this->limit_text( $request->get_param( 'utm_source' ), 100 ),
 				'utm_medium'       => $this->limit_text( $request->get_param( 'utm_medium' ), 100 ),
 				'utm_campaign'     => $this->limit_text( $request->get_param( 'utm_campaign' ), 150 ),
@@ -194,6 +195,9 @@ class YBY_Lead_REST_Controller {
 			$errors['whatsapp'] = __( 'Invalid WhatsApp', 'yby-core' );
 		}
 
+		if ( class_exists( 'YBY_Popup_Field_Studio' ) ) {
+			$errors = array_merge( $errors, YBY_Popup_Field_Studio::required_errors( $lead ) );
+		}
 		return $errors;
 	}
 
