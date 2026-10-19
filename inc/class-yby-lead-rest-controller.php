@@ -155,7 +155,10 @@ class YBY_Lead_REST_Controller {
 			$errors = array_merge( $errors, $mapper->validate_submission_context( $lead['source_preset'], $lead['page_profile'] ) );
 		}
 
-		if ( '' === trim( (string) $lead['name'] ) ) {
+		// Legacy forms still require Name. Studio-managed presets honor their
+		// independently configured desktop/mobile required-state matrix instead.
+		$studio_preset = class_exists( 'YBY_Popup_Field_Studio' ) && YBY_Popup_Field_Studio::has_preset( isset( $lead['source_preset'] ) ? $lead['source_preset'] : '' );
+		if ( ! $studio_preset && '' === trim( (string) $lead['name'] ) ) {
 			$errors['name'] = __( 'Name is required', 'yby-core' );
 		}
 
