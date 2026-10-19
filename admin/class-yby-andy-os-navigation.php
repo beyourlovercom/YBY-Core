@@ -59,6 +59,10 @@ final class YBY_Andy_OS_Navigation {
 		if ( $content_cap ) {
 			$items['andy-core-content'] = array( '内容', $content_cap, 'content' );
 		}
+		// Keep the original landing_page CPT one-click WP-native submenu.
+		if ( YBY_Module_Registry::is_enabled( 'landing_pages' ) && current_user_can( 'edit_pages' ) ) {
+			$items['edit.php?post_type=landing_page'] = array( 'Landing Pages', 'edit_pages', 'native' );
+		}
 		if ( class_exists( 'Andy_Commerce_Admin' ) ) {
 			$items['andy-core-marketing'] = array( '营销', 'manage_woocommerce', 'marketing' );
 			$items['andy-core-commerce'] = array( '交易', 'manage_woocommerce', 'commerce' );
@@ -289,10 +293,12 @@ final class YBY_Andy_OS_Navigation {
 	/** Only allow existing, verified WordPress routes in right-side L3. */
 	public static function tertiary_items( $page ) {
 		$items = array();
-		$add = static function ( $title, $url, $cap, $module = '' ) use ( &$items ) {
+		$add = static function ( $title, $url, $cap, $module = '', $group = '' ) use ( &$items ) {
 			if ( ! current_user_can( $cap ) ) { return; }
 			if ( $module && ! YBY_Module_Registry::is_enabled( $module ) ) { return; }
-			$items[] = array( 'title' => $title, 'url' => admin_url( $url ) );
+			$item = array( 'title' => $title, 'url' => admin_url( $url ) );
+			if ( '' !== $group ) { $item['group'] = $group; }
+			$items[] = $item;
 		};
 		if ( 'andy-core-leads' === $page ) {
 			foreach ( array( 'leads'=>'列表', 'stats'=>'统计' ) as $tab=>$label ) {
@@ -340,25 +346,29 @@ final class YBY_Andy_OS_Navigation {
 			'andy-business-applications', 'andy-business-settings', 'yby-content',
 			'yby-project-studio', 'yby-docs-os', 'yby-docs-all', 'yby-docs-directory',
 			'yby-docs-faq', 'yby-docs-tutorial', 'yby-docs-settings' ), true ) ) {
-			foreach ( array( 'andy-business'=>'招商页面', 'andy-business-programs'=>'合作项目',
-				'andy-business-applications'=>'申请来源', 'andy-business-settings'=>'ERP连接' ) as $slug=>$label ) {
-				$add( $label, 'admin.php?page='.$slug, 'andy_core_settings_manage', 'business_os' );
-			}
-			$add( '落地页', 'edit.php?post_type=landing_page', 'edit_pages', 'landing_pages' );
-			$add( '项目', 'admin.php?page=yby-project-studio', 'manage_options', 'project_studio' );
+			// L3 grouped in Owner order; each link is an existing original controller.
+			$add( '内容总览', 'admin.php?page=yby-content', 'andy_core_settings_manage', '', 'Andy Content' );
 			if ( YBY_Module_Registry::is_enabled( 'docs_os' ) ) {
 				foreach ( array(
-					'yby-docs-os' => array( '文档', 'andy_core_settings_manage' ),
+					'yby-docs-os' => array( 'Docs 总览', 'andy_core_settings_manage' ),
 					'yby-docs-all' => array( '文档列表', 'edit_posts' ),
-					'yby-docs-directory' => array( '分类', 'manage_categories' ),
-					'yby-docs-faq' => array( '常见问题', 'edit_posts' ),
-					'yby-docs-tutorial' => array( '教程', 'edit_posts' ),
+					'yby-docs-directory' => array( '文档分类', 'manage_categories' ),
+					'yby-docs-faq' => array( '常见问题 FAQ', 'edit_posts' ),
+					'yby-docs-tutorial' => array( '教程 Tutorial', 'edit_posts' ),
 					'yby-docs-settings' => array( '文档设置', 'andy_core_settings_manage' ),
 				) as $slug => $details ) {
-					$add( $details[0], 'admin.php?page='.$slug, $details[1], 'docs_os' );
+					$add( $details[0], 'admin.php?page='.$slug, $details[1], 'docs_os', 'Andy Content' );
 				}
-				$add( '标签', 'edit-tags.php?taxonomy=doc_tag&post_type=docs', 'manage_categories', 'docs_os' );
+				$add( '文档标签', 'edit-tags.php?taxonomy=doc_tag&post_type=docs',
+					'manage_categories', 'docs_os', 'Andy Content' );
 			}
+			foreach ( array( 'andy-business'=>'招商页面', 'andy-business-programs'=>'合作项目',
+				'andy-business-applications'=>'申请来源', 'andy-business-settings'=>'ERP连接' ) as $slug=>$label ) {
+				$add( $label, 'admin.php?page='.$slug, 'andy_core_settings_manage', 'business_os', 'Andy Business' );
+			}
+			$add( '全部落地页', 'edit.php?post_type=landing_page', 'edit_pages', 'landing_pages', 'Landing Pages' );
+			$add( '新建落地页', 'post-new.php?post_type=landing_page', 'edit_pages', 'landing_pages', 'Landing Pages' );
+			$add( 'Project Studio', 'admin.php?page=yby-project-studio', 'manage_options', 'project_studio', 'Landing Pages' );
 		} elseif ( 'andy-commerce' === $page ) {
 			foreach ( array( 'overview'=>'总览', 'order-export'=>'订单导出',
 				'checkout-shipping'=>'结账运费', 'marketing-promotions'=>'促销',
@@ -423,8 +433,11 @@ final class YBY_Andy_OS_Navigation {
 		if ( ! $post_type && isset( $_GET['post'] ) ) {
 			$post_type = get_post_type( absint( $_GET['post'] ) );
 		}
-		if ( 'landing_page' === $post_type || 'yby_project' === $post_type ||
-		     'docs' === $post_type ) { return 'andy-core-content'; }
+		if ( 'landing_page' === $post_type &&
+		     YBY_Module_Registry::is_enabled( 'landing_pages' ) && current_user_can( 'edit_pages' ) ) {
+			return 'edit.php?post_type=landing_page';
+		}
+		if ( 'yby_project' === $post_type || 'docs' === $post_type ) { return 'andy-core-content'; }
 		return '';
 	}
 
