@@ -20,3 +20,7 @@
 .yby-studio [hidden]{display:none!important}
 @media(max-width:1130px){.yby-studio-bottom{grid-template-columns:1fr}.yby-studio-preview-surface{max-height:none}}
 @media(max-width:760px){.yby-studio-toolbar{align-items:stretch}.yby-studio-toolbar .yby-studio-select-preset{max-width:none;width:100%}.yby-studio-head{padding:12px}.yby-studio-matrix{padding:11px}.yby-studio-panel{padding:11px}.yby-studio-two-devices{grid-template-columns:1fr}.yby-studio-preview{grid-template-columns:1fr}.yby-studio-preview-photo{display:none}}
+
+.yby-studio-preset-meta{padding:11px 17px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border:1px solid var(--ys-line);border-top:0;background:#fcfdfc}
+.yby-studio-preset-meta .yby-studio-field{flex:1;min-width:260px;max-width:500px}
+.yby-studio-profile-hint{flex:1;color:#687d6c;font-size:11px;min-width:220px}
