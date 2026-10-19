@@ -84,6 +84,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-github-release-client.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-update-verifier.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-update-backup.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-updater.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-update-control.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-docs-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-content-admin.php';
@@ -234,6 +235,7 @@ $this->loader->add_action( 'andy_core_register_modules', 'YBY_Business_OS_Module
 		$this->loader->add_action( 'admin_init', $three_os, 'redirect_legacy_get', 20 );
 		$this->loader->add_action( 'admin_init', $three_os, 'redirect_legacy_settings_get', 21 );
 		$updater->register_hooks( $this->loader );
+		( new YBY_Update_Control( $updater ) )->register_hooks( $this->loader );
 
 		if ( $project_enabled ) {
 			$project_cpt = new YBY_Project_CPT();
