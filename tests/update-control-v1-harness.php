@@ -53,6 +53,15 @@ $assert( null === $control->prevent_update_cron_reschedule( null, (object) array
 $assert( true === $control->prevent_update_cron_reschedule( true, (object) array( 'hook' => 'wp_update_plugins' ) ), 'preserve previous filter' );
 $control->prune_known_update_crons();
 $assert( array( 'wp_version_check', 'woocommerce_cleanup_sessions', 'andy_mail_outbox' ) === $GLOBALS['events'], 'exact cron cleanup' );
+$events_before_read = $GLOBALS['events'];
+$rows = $control->cron_diagnostic_rows();
+$assert( 4 === count( $rows ), 'read-only Cron audit includes four named update hooks only' );
+$assert( 'wp_version_check' === $rows[0]['hook'] && true === $rows[0]['pass'] && 'present' === $rows[0]['expected'], 'core schedule visible' );
+$assert( 'wp_update_plugins' === $rows[1]['hook'] && true === $rows[1]['pass'] && 'absent' === $rows[1]['expected'], 'plugin update Cron removed' );
+$assert( 'wp_update_themes' === $rows[2]['hook'] && true === $rows[2]['pass'], 'theme update Cron removed' );
+$assert( 'wp_maybe_auto_update' === $rows[3]['hook'] && true === $rows[3]['pass'], 'independent background auto update Cron removed' );
+$assert( $events_before_read === $GLOBALS['events'], 'audit is strictly read-only' );
+
 $updater->allowed = true;
 $assert( true === $control->guard_plugin_auto_updates( false, (object) array( 'plugin' => 'yby-core/yby-core.php' ) ), 'allow signed Andy opt-in' );
 $assert( false === $control->guard_plugin_auto_updates( true, (object) array( 'plugin' => 'other/other.php' ) ), 'other plugins still blocked' );
