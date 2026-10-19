@@ -83,6 +83,53 @@
 #wpbody-content .andy-core-shell-v22__body :where(table.widefat,.wp-list-table) {
 	max-width: 100%;
 }
+@media (max-width: 782px) {
+	#wpbody-content .andy-core-shell-v22 { margin: 10px 4px 14px; }
+	#wpbody-content .andy-core-shell-v22__columns { grid-template-columns: 120px minmax(0,1fr); }
+	#wpbody-content .andy-core-shell-v22__rail { padding: 8px 4px; }
+	#wpbody-content .andy-core-shell-v22__link { font-size: 12px; padding: 9px 6px; }
+	#wpbody-content .andy-core-shell-v22__body { padding: 12px 8px; }
+	#wpbody-content .andy-core-shell-v22__header { padding: 12px 14px; }
+}
+
+
+/* M6-D mobile UAT fix: full-width L3 navigation and accessible wide tables. */
+@media (max-width: 600px) {
+    #wpbody-content .andy-core-shell-v22__columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    #wpbody-content .andy-core-shell-v22__rail {
+        border-right: 0;
+        border-bottom: 1px solid var(--andy-border);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+        padding: 8px;
+    }
+    #wpbody-content .andy-core-shell-v22__rail-title {
+        flex: 0 0 100%;
+        margin: 0 0 4px;
+    }
+    #wpbody-content .andy-core-shell-v22__group {
+        flex: 0 0 100%;
+        width: 100%;
+        padding: 8px 4px 2px;
+        margin: 8px 0 2px;
+    }
+    #wpbody-content .andy-core-shell-v22__link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 6px 9px;
+        font-size: 12px;
+    }
+    #wpbody-content .andy-core-shell-v22__body {
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+}
 
 /* V3 native WordPress CPT list uses CSS Grid, never floated rail / table. */
 body.edit-php:is(.post-type-landing_page,.post-type-yby_project) #wpbody-content:has(> .andy-core-native-cpt-l3) {
