@@ -86,6 +86,9 @@
 /* Native edit.php landing_page workbench: layout only, no table duplication
    and no DOM mutation. Screen Options and notices retain core placement. */
 body.edit-php.post-type-landing_page #wpbody-content > .andy-core-native-cpt-l3 {
+    --andy-ink: #1f2823;
+    --andy-green: #006241;
+    --andy-border: #dfe6e1;
     float: left;
     width: 184px;
     box-sizing: border-box;

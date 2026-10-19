@@ -13,7 +13,7 @@ function composite_guard($pass, $what) {
 }
 $baseline = array(
     'yby-core.php' => 'f3e37513875b9c00ec67976d35d475693169df97',
-    'inc/class-yby-core.php' => 'b54ff6134297213378d0ac95d8009e890ce2ce6e',
+    'inc/class-yby-core.php' => '4dd827f9d8f813ffc86be6efc80286fcd6880900',
     'admin/class-yby-three-os-admin.php' => 'be712104ea6fd6970b669f0c9b9b751d98304f50',
     'admin/class-yby-mail-v2-p8-readonly.php' => 'ea587589f8d76d1a8d4e6d310fe5afcc04822956',
     'admin/class-yby-mail-v2-p6-dev-preview.php' => '463e352584ba956fc594b3bd63b16e33edd97ef2',
