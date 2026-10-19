@@ -139,6 +139,6 @@ must( ! isset( $validate->invoke( $rest, $legacy )['email'] ), 'legacy WhatsApp-
 $GLOBALS['yby_test_site'] = 'bottle';
 must( ! isset( ( new YBY_Inquiry_Field_Manager() )->get_fields()['site_farm_size'] ), 'site isolation: Bottle has no Farm Size' );
 must( null === ( new YBY_Inquiry_Preset_Manager() )->get_preset( 'site_us_wholesale' ), 'site isolation: Bottle has no Irrigation preset' );
-must( ( new YBY_Inquiry_Preset_Manager() )->get_preset( 'page_owned_inquiry' ) !== null, 'other site's original presets intact' );
+must( ( new YBY_Inquiry_Preset_Manager() )->get_preset( 'page_owned_inquiry' ) !== null, 'other site original presets intact' );
 
 echo "PASS Popup Field Studio V2: strict site isolation, field library, device matrix, REST and legacy\n";
