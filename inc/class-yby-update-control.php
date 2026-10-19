@@ -50,8 +50,8 @@ class YBY_Update_Control {
 	public function hide_plugin_update_rows() {
 		if ( ! self::settings()['hide_plugin_notices'] ) { return; }
 		echo '<style id="yby-update-control-plugin-notices">'
-			. '.plugins tr.plugin-update-tr,.plugins .update-message,.plugins .notice-warning.inline,'
-			. '.plugins .notice-error.inline,#update-plugins,.plugin-update-count,'
+			. '.plugins tr.plugin-update-tr,.plugins .update-message,'
+			. '#update-plugins,.plugin-update-count,'
 			. 'body.plugins-php .plugin-update-tr,body.update-core-php form#upgrade-plugins'
 			. '{display:none!important}</style>';
 	}
