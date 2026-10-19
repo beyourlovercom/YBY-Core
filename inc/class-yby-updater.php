@@ -46,6 +46,11 @@ class YBY_Updater {
 		return $this->allowed_release() && (bool) get_option( self::AUTO_OPTION, false );
 	}
 
+	/** Public, read-only policy accessor shared with Update Control. */
+	public function signed_background_auto_enabled() {
+		return $this->background_updates_opted_in();
+	}
+
 	/**
 	 * Hostinger Smart Auto Updates disables WordPress background updates using
 	 * automatic_updater_disabled. Re-enable only on a precisely opted-in host,
@@ -387,6 +392,7 @@ class YBY_Updater {
 		echo '<form method="post">';
 		wp_nonce_field( self::CHECK_NONCE, 'yby_core_check_updates_nonce' );
 		echo '<p><button class="button button-primary" type="submit" name="yby_core_check_updates" value="1">' . esc_html__( 'Check for Updates', 'yby-core' ) . '</button></p></form>';
+		( new YBY_Update_Control( $this ) )->render_settings();
 		echo '<hr><p>' . esc_html__( 'Rollback is code-only and restores the latest compatible updater backup. Database state is never rolled back by this tool.', 'yby-core' ) . '</p>';
 		echo '<form method="post">';
 		wp_nonce_field( self::ROLLBACK_NONCE, 'yby_core_rollback_nonce' );
