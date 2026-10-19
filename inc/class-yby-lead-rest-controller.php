@@ -161,24 +161,32 @@ class YBY_Lead_REST_Controller {
 		$email    = trim( (string) $lead['email'] );
 		$whatsapp = trim( (string) $lead['whatsapp'] );
 
-		// Server-side enforcement must match the preset's client-side requirement.
-		// A WhatsApp number must not satisfy an email-required US wholesale form.
+		// Resolve validation from the trusted site preset. Never trust a client
+		// supplied contact requirement to weaken backend validation.
 		$preset = class_exists( 'YBY_Inquiry_Preset_Manager' )
-			? ( new YBY_Inquiry_Preset_Manager() )->get_preset( $lead['source_preset'] )
+			? ( new YBY_Inquiry_Preset_Manager() )->get_preset( isset( $lead['source_preset'] ) ? $lead['source_preset'] : '' )
 			: null;
 		$contact_requirement = is_array( $preset ) && isset( $preset['validation']['contact_requirement'] )
 			? sanitize_key( $preset['validation']['contact_requirement'] )
 			: 'email_or_whatsapp';
+
 		if ( 'email' === $contact_requirement ) {
 			if ( '' === $email ) {
 				$errors['email'] = __( 'Email is required', 'yby-core' );
 			} elseif ( ! is_email( $email ) ) {
 				$errors['email'] = __( 'Invalid email', 'yby-core' );
 			}
-		} elseif ( '' === $email && '' === $whatsapp ) {
+		} elseif ( 'whatsapp' === $contact_requirement ) {
+			if ( '' === $whatsapp ) {
+				$errors['whatsapp'] = __( 'WhatsApp is required', 'yby-core' );
+			}
+		} elseif ( 'email_or_whatsapp' === $contact_requirement && '' === $email && '' === $whatsapp ) {
 			$errors['email']    = __( 'Email or WhatsApp is required', 'yby-core' );
 			$errors['whatsapp'] = __( 'Email or WhatsApp is required', 'yby-core' );
-		} elseif ( '' !== $email && ! is_email( $email ) ) {
+		}
+
+		// All modes validate any email that the visitor elects to provide.
+		if ( '' !== $email && ! is_email( $email ) ) {
 			$errors['email'] = __( 'Invalid email', 'yby-core' );
 		}
 

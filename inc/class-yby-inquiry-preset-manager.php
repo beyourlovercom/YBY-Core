@@ -76,17 +76,6 @@ class YBY_Inquiry_Preset_Manager {
 					),
 					'source_component' => 'inquiry_modal',
 				),
-				'irrigation_us_wholesale' => array(
-					'id'               => 'irrigation_us_wholesale',
-					'label'            => 'United States Irrigation Wholesale',
-					'enabled'          => true,
-					'version'          => '1.0',
-					'fields'           => array( 'name', 'company', 'email', 'whatsapp', 'country', 'product_interest', 'quantity', 'message' ),
-					'mobile_fields'    => array( 'name', 'email', 'whatsapp', 'country', 'product_interest', 'quantity', 'message' ),
-					'validation'       => array( 'contact_requirement' => 'email' ),
-					'source_component' => 'inquiry_modal',
-					'page_profiles'    => array( 'irrigation_wholesale' ),
-				),
 				'page_owned_inquiry' => array(
 					'id'               => 'page_owned_inquiry',
 					'label'            => 'Page-Owned Inquiry',
@@ -156,7 +145,7 @@ class YBY_Inquiry_Preset_Manager {
 		$presets  = is_array( $stored ) ? $stored : $defaults;
 
 		if ( is_array( $stored ) ) {
-			foreach ( array( 'page_owned_inquiry', 'used_forklift_inquiry', 'irrigation_us_wholesale' ) as $required_preset_id ) {
+			foreach ( array( 'page_owned_inquiry', 'used_forklift_inquiry' ) as $required_preset_id ) {
 				if ( ! isset( $presets[ $required_preset_id ] ) && isset( $defaults[ $required_preset_id ] ) ) {
 					$presets[ $required_preset_id ] = $defaults[ $required_preset_id ];
 				}
