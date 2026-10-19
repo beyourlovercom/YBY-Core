@@ -20,6 +20,12 @@ class YBY_Popup_Admin {
 	}
 
 	public function enqueue_assets( $hook ) {
+		$embedded_hook = class_exists( 'YBY_Inquiry_Admin' ) ? YBY_Inquiry_Admin::registered_page_hook() : '';
+		$is_popup = isset( $_GET['tab'] ) && is_scalar( $_GET['tab'] ) && in_array( sanitize_key( wp_unslash( $_GET['tab'] ) ), array( 'popup_inquiry', 'inquiry' ), true );
+		if ( $is_popup && ( $hook === $this->hook || ( $embedded_hook && $hook === $embedded_hook ) ) ) {
+			wp_enqueue_style( 'yby-popup-field-studio', YBY_CORE_PLUGIN_URL . 'assets/css/yby-popup-field-studio.css', array(), $this->version );
+			wp_enqueue_script( 'yby-popup-field-studio', YBY_CORE_PLUGIN_URL . 'assets/js/yby-popup-field-studio.js', array(), $this->version, true );
+		}
 		if ( $hook !== $this->hook ) { return; }
 		wp_enqueue_media();
 		wp_enqueue_style( 'yby-global-inquiry-dock-preview', YBY_CORE_PLUGIN_URL . 'public/css/yby-global-inquiry-dock.css', array(), $this->version );
