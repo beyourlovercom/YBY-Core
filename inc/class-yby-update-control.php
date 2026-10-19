@@ -109,6 +109,54 @@ class YBY_Update_Control {
 		exit;
 	}
 
+	/**
+	 * Read-only Cron inspection for the existing WordPress admin page.
+	 * This never executes, reschedules, or deletes an event.
+	 * Policy-blocked update hooks should be absent after cleanup.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function cron_diagnostic_rows() {
+		$blocked = $this->blocked_cron_hooks();
+		$rows = array();
+		foreach ( array( 'wp_version_check', 'wp_update_plugins', 'wp_update_themes', 'wp_maybe_auto_update' ) as $hook ) {
+			$next = wp_next_scheduled( $hook );
+			$scheduled = false !== $next;
+			$is_blocked = in_array( $hook, $blocked, true );
+			$expected = $is_blocked ? 'absent' : ( 'wp_version_check' === $hook ? 'present' : 'unrestricted' );
+			$pass = 'absent' === $expected ? ! $scheduled : ( 'present' === $expected ? $scheduled : null );
+			$rows[] = array(
+				'hook' => $hook,
+				'next' => $scheduled ? (int) $next : null,
+				'expected' => $expected,
+				'pass' => $pass,
+			);
+		}
+		return $rows;
+	}
+
+	/** Administrator-visible snapshot; does not run WP-Cron or test execution. */
+	public function render_cron_diagnostics() {
+		echo '<h3>' . esc_html__( 'Cron 状态（只读）', 'yby-core' ) . '</h3>';
+		echo '<p>' . esc_html__( '只检查四项 WordPress 更新任务的计划状态；不执行命令、不触发升级，也不修改任务。', 'yby-core' ) . '</p>';
+		echo '<table class="widefat striped" style="max-width:900px"><thead><tr>';
+		foreach ( array( 'Cron Hook', '检查结果', '下次计划运行', '规则' ) as $heading ) {
+			echo '<th scope="col">' . esc_html( $heading ) . '</th>';
+		}
+		echo '</tr></thead><tbody>';
+		foreach ( $this->cron_diagnostic_rows() as $row ) {
+			$state = null === $row['pass'] ? '未限制' : ( $row['pass'] ? '符合预期' : '需要复核' );
+			$next_label = null === $row['next'] ? '未计划' : wp_date( 'Y-m-d H:i:s T', $row['next'] );
+			$policy = 'absent' === $row['expected'] ? '应删除' : ( 'present' === $row['expected'] ? '应保留' : '由 WordPress / 主机管理' );
+			echo '<tr><td><code>' . esc_html( $row['hook'] ) . '</code></td>'
+				. '<td><strong>' . esc_html( $state ) . '</strong></td>'
+				. '<td>' . esc_html( $next_label ) . '</td>'
+				. '<td>' . esc_html( $policy ) . '</td></tr>';
+		}
+		echo '</tbody></table>';
+		echo '<p class="description">' . esc_html__( '此表仅证明 WordPress 计划记录的当前快照。不能单凭它证明 Cron 已执行、更新签名验证通过或系统安全更新已完成。', 'yby-core' ) . '</p>';
+	}
+
 	public function render_settings() {
 		if ( ! current_user_can( 'andy_core_settings_manage' ) || ! ( new YBY_Security() )->can_manage_settings() ) { return; }
 		$settings = self::settings();
@@ -128,5 +176,6 @@ class YBY_Update_Control {
 		}
 		echo '<p>' . esc_html__( 'Safety: wp_version_check and all non-update business Cron tasks are preserved. Signed Andy Core auto-update retains its own required WordPress discovery and runner events. Disabling this control restores native update-check schedules.', 'yby-core' ) . '</p>';
 		echo '<p><button class="button button-primary" type="submit" name="yby_core_update_control_save" value="1">' . esc_html__( 'Save Update Control', 'yby-core' ) . '</button></p></form>';
+		$this->render_cron_diagnostics();
 	}
 }
