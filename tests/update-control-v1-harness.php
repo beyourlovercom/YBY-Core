@@ -43,6 +43,7 @@ $assert( false === strpos( $hidden['title'], 'Plugin' ), 'remove plugin notifica
 $assert( false !== strpos( $hidden['title'], 'WordPress' ), 'keep WordPress title' );
 ob_start(); $control->hide_plugin_update_rows(); $css = ob_get_clean();
 $assert( false !== strpos( $css, '.plugin-update-tr' ) && false === strpos( $css, '.update-nag' ), 'plugin-only CSS' );
+$assert( false === strpos( $css, '.notice-error.inline' ) && false === strpos( $css, '.notice-warning.inline' ), 'never hide general plugin errors or warnings' );
 $assert( false === $control->guard_plugin_auto_updates( true, (object) array( 'plugin' => 'other/other.php' ) ), 'deny third party' );
 $assert( false === $control->guard_plugin_auto_updates( true, (object) array( 'plugin' => 'yby-core/yby-core.php' ) ), 'deny unapproved signed auto' );
 $assert( array( 'wp_update_themes', 'wp_update_plugins', 'wp_maybe_auto_update' ) === $control->blocked_cron_hooks(), 'exact cleanup whitelist' );
