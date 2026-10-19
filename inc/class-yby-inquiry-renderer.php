@@ -182,6 +182,13 @@ class YBY_Inquiry_Renderer {
 				$field['placeholder'] = $map[ $field_id ];
 			}
 		}
+		// Per-device required state is per-preset, not the shared field registry.
+		// array_key_exists is intentional: false explicitly clears a core default.
+		$required_key = $mobile ? 'mobile_field_required' : 'field_required';
+		if ( isset( $attributes[ $required_key ] ) && is_array( $attributes[ $required_key ] )
+			&& array_key_exists( $field_id, $attributes[ $required_key ] ) ) {
+			$field['required'] = ! empty( $attributes[ $required_key ][ $field_id ] );
+		}
 		return $field;
 	}
 
