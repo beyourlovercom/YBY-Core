@@ -163,7 +163,9 @@ class YBY_Lead_REST_Controller {
 
 		// Server-side enforcement must match the preset's client-side requirement.
 		// A WhatsApp number must not satisfy an email-required US wholesale form.
-		$preset = ( new YBY_Inquiry_Preset_Manager() )->get_preset( $lead['source_preset'] );
+		$preset = class_exists( 'YBY_Inquiry_Preset_Manager' )
+			? ( new YBY_Inquiry_Preset_Manager() )->get_preset( $lead['source_preset'] )
+			: null;
 		$contact_requirement = is_array( $preset ) && isset( $preset['validation']['contact_requirement'] )
 			? sanitize_key( $preset['validation']['contact_requirement'] )
 			: 'email_or_whatsapp';
