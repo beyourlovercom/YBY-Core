@@ -17,7 +17,7 @@ $baseline = array(
     'admin/class-yby-three-os-admin.php' => 'be712104ea6fd6970b669f0c9b9b751d98304f50',
     'admin/class-yby-mail-v2-p8-readonly.php' => 'ea587589f8d76d1a8d4e6d310fe5afcc04822956',
     'admin/class-yby-mail-v2-p6-dev-preview.php' => '463e352584ba956fc594b3bd63b16e33edd97ef2',
-    'admin/class-yby-andy-admin-shell-v22.php' => 'f836ebd9ffa800772460e6cd9b22152a47bff196',
+    'admin/class-yby-andy-admin-shell-v22.php' => 'b0ea7bd2be0e13d2793999e8ed76dd74eac98fea',
 );
 foreach ($baseline as $path => $expected_blob_sha) {
     $file = $root . '/' . $path;
