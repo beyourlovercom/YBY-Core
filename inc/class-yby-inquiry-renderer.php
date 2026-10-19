@@ -216,12 +216,15 @@ class YBY_Inquiry_Renderer {
 			case 'text':
 			case 'email':
 			case 'tel':
+			case 'number':
 				$control = $this->render_input_field( $field, $field_id, $error_id, $type );
 				break;
 			case 'textarea':
 				$control = $this->render_textarea_field( $field, $field_id, $error_id );
 				break;
 			case 'select':
+			case 'radio':
+			case 'multiselect':
 				$control = $this->render_select_field( $field, $field_id, $error_id );
 				break;
 			case 'checkbox':
@@ -389,6 +392,10 @@ class YBY_Inquiry_Renderer {
 			$attributes[] = 'aria-required="true"';
 		}
 
+		if ( isset( $field['type'] ) && 'multiselect' === $field['type'] ) {
+			$attributes[] = 'multiple';
+			$attributes[] = 'size="4"';
+		}
 		$output = '<select ' . implode( ' ', $attributes ) . '>';
 
 		foreach ( isset( $field['options'] ) && is_array( $field['options'] ) ? $field['options'] : array() as $option ) {
