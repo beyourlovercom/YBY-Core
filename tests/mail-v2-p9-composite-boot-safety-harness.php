@@ -13,11 +13,11 @@ function composite_guard($pass, $what) {
 }
 $baseline = array(
     'yby-core.php' => 'f3e37513875b9c00ec67976d35d475693169df97',
-    'inc/class-yby-core.php' => 'b54ff6134297213378d0ac95d8009e890ce2ce6e',
+    'inc/class-yby-core.php' => '3aefd261b2aff6168a2ff0f169063b7683de9ec9', // Update Control V1 reviewed registration.
     'admin/class-yby-three-os-admin.php' => 'be712104ea6fd6970b669f0c9b9b751d98304f50',
     'admin/class-yby-mail-v2-p8-readonly.php' => 'ea587589f8d76d1a8d4e6d310fe5afcc04822956',
     'admin/class-yby-mail-v2-p6-dev-preview.php' => '463e352584ba956fc594b3bd63b16e33edd97ef2',
-    'admin/class-yby-andy-admin-shell-v22.php' => 'f836ebd9ffa800772460e6cd9b22152a47bff196',
+    'admin/class-yby-andy-admin-shell-v22.php' => 'b0ea7bd2be0e13d2793999e8ed76dd74eac98fea',
 );
 foreach ($baseline as $path => $expected_blob_sha) {
     $file = $root . '/' . $path;
@@ -57,6 +57,7 @@ foreach ($names as $path) {
     composite_guard(!preg_match('/\\b(?:wp_mail|add_action|add_filter|as_enqueue_async_action|as_schedule_single_action|dbDelta)\\s*\\(/i', $raw),
         'mail_dependency_hook_' . $path);
 }
+composite_guard(strpos($core, "'inc/class-yby-update-control.php'") !== false && strpos($core, '( new YBY_Update_Control( $updater ) )->register_hooks( $this->loader );') !== false, 'approved_update_control_bootstrap');
 composite_guard(strpos($core, "'inc/class-yby-mail-transport.php'") !== false, 'newsletter_provider_preserved');
 composite_guard(strpos($core, "'admin/class-yby-three-os-admin.php'") !== false, 'v22_ui_preserved');
 composite_guard(strpos($core, "'admin/class-yby-mail-v2-p6-dev-preview.php'") !== false, 'p6_preview_preserved');

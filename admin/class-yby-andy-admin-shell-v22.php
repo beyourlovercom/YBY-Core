@@ -43,10 +43,16 @@ final class YBY_Andy_Admin_Shell_V22 {
 			echo '<div class="andy-core-shell-v22__columns">';
 			echo '<nav class="andy-core-shell-v22__rail" aria-label="' . esc_attr__( 'Current module functions', 'yby-core' ) . '">';
 			echo '<p class="andy-core-shell-v22__rail-title">' . esc_html__( '功能导航', 'yby-core' ) . '</p>';
+			$current_group = '';
 			foreach ( $items as $item ) {
 				$title = isset( $item['title'] ) ? (string) $item['title'] : '';
 				$url   = isset( $item['url'] ) ? (string) $item['url'] : '';
 				if ( '' === $title || '' === $url ) { continue; }
+				$group = isset( $item['group'] ) && is_string( $item['group'] ) ? $item['group'] : '';
+				if ( '' !== $group && $current_group !== $group ) {
+					echo '<p class="andy-core-shell-v22__group">' . esc_html( $group ) . '</p>';
+				}
+				$current_group = $group;
 				$active = self::is_active( $url );
 				echo '<a class="andy-core-shell-v22__link" href="' . esc_url( $url ) . '"';
 				if ( $active ) { echo ' aria-current="page"'; }

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "architecture": "Andy Core Admin V2.2",
-  "status": "draft-required-for-future-releases",
+  "status": "draft-owner-review-2026-10-19-grouped-L3-native-Landing-Pages-L2",
   "root": {
     "slug": "yby-os",
     "label": "Andy Core",
@@ -11,7 +11,12 @@
     "location": "right-page-inner-left",
     "rendering": "server-side-PHP-shell",
     "fallback": "original-page-if-adapter-unavailable",
-    "no_dom_mover": true
+    "no_dom_mover": true,
+    "group_order": [
+      "Andy Content",
+      "Andy Business",
+      "Landing Pages"
+    ]
   },
   "categories": [
     {
@@ -45,6 +50,15 @@
       "capability": "andy_core_settings_manage",
       "landing": "admin.php?page=andy-business",
       "module": "business_os"
+    },
+    {
+      "slug": "edit.php?post_type=landing_page",
+      "label": "Landing Pages",
+      "owner": "andy-core",
+      "capability": "edit_pages",
+      "landing": "edit.php?post_type=landing_page",
+      "module": "landing_pages",
+      "native_wp_cpt": true
     },
     {
       "slug": "andy-core-marketing",
