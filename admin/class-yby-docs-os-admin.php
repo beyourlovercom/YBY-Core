@@ -62,17 +62,37 @@ class YBY_Docs_OS_Admin {
 		wp_enqueue_script( 'yby-docs-os-admin', YBY_CORE_PLUGIN_URL . 'assets/js/yby-docs-os-admin.js', array(), is_file( $script_path ) ? YBY_CORE_VERSION . '.' . filemtime( $script_path ) : YBY_CORE_VERSION, true );
 	}
 
+	/**
+	 * Server-side L3 layout; preserve the original authorized workbench view
+	 * and its surrounding POST/nonce/redirect handlers exactly once.
+	 */
+	protected function render_workbench( $page, $heading, $view_name, $data ) {
+		$render = function () use ( $view_name, $data ) {
+			include YBY_CORE_PLUGIN_DIR . 'admin/views/' . $view_name;
+		};
+		if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
+			YBY_Andy_Admin_Shell_V22::render( $page, $heading, $render );
+		} else {
+			$render();
+		}
+	}
+
 	public function render_page() {
 		if ( ! current_user_can( 'andy_core_settings_manage' ) ) { wp_die( esc_html__( 'You do not have permission to access this page.', 'yby-core' ) ); }
 		$data = $this->dashboard_data();
-		include YBY_CORE_PLUGIN_DIR . 'admin/views/docs-os-dashboard.php';
+		$this->render_workbench( self::PAGE_SLUG, 'Docs OS', 'docs-os-dashboard.php', $data );
 	}
 
 	public function render_all_docs_page() {
 		if ( ! current_user_can( 'edit_posts' ) ) { wp_die( esc_html__( 'You do not have permission to access this page.', 'yby-core' ) ); }
 		if ( isset( $_POST['yby_docs_bulk_submit'] ) ) { $this->handle_all_docs_bulk(); }
 		$data = $this->all_docs_data();
-		include YBY_CORE_PLUGIN_DIR . 'admin/views/docs-os-all-docs.php';
+		$page = isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
+			? sanitize_key( wp_unslash( $_GET['page'] ) ) : self::ALL_PAGE_SLUG;
+		if ( ! in_array( $page, array( self::ALL_PAGE_SLUG, 'yby-docs-faq', 'yby-docs-tutorial' ), true ) ) {
+			$page = self::ALL_PAGE_SLUG;
+		}
+		$this->render_workbench( $page, 'Docs OS', 'docs-os-all-docs.php', $data );
 	}
 
 	protected function handle_all_docs_bulk() {
@@ -298,7 +318,7 @@ class YBY_Docs_OS_Admin {
 			$this->save_directory_request();
 		}
 		$data = $this->directory_data();
-		include YBY_CORE_PLUGIN_DIR . 'admin/views/docs-os-directory.php';
+		$this->render_workbench( self::DIRECTORY_PAGE_SLUG, 'Docs OS', 'docs-os-directory.php', $data );
 	}
 	protected function directory_data() {
 		$terms = get_terms( array(
@@ -398,7 +418,7 @@ class YBY_Docs_OS_Admin {
 			'canonical_enabled' => (bool) get_option( YBY_Docs_Runtime::CANONICAL_OPTION, false ),
 			'r2' => $r2,
 		);
-		include YBY_CORE_PLUGIN_DIR . 'admin/views/docs-os-settings.php';
+		$this->render_workbench( self::SETTINGS_PAGE_SLUG, 'Docs OS', 'docs-os-settings.php', $data );
 	}
 	protected function save_settings_request() {
 		check_admin_referer( 'yby_docs_settings_save', 'yby_docs_settings_nonce' );

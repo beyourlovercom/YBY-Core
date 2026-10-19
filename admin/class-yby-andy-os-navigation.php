@@ -74,8 +74,14 @@ final class YBY_Andy_OS_Navigation {
 		switch ( $slug ) {
 			case 'andy-core-content':
 				if ( current_user_can( 'andy_core_settings_manage' ) ) {
-					return YBY_Module_Registry::is_enabled( 'business_os' )
-						? 'admin.php?page=andy-business' : 'admin.php?page=yby-content';
+					if ( YBY_Module_Registry::is_enabled( 'business_os' ) ) {
+						return 'admin.php?page=andy-business';
+					}
+					// Content L2 must open a real enabled workbench, not a card-only hub.
+					if ( YBY_Module_Registry::is_enabled( 'docs_os' ) ) {
+						return 'admin.php?page=yby-docs-os';
+					}
+					return 'admin.php?page=yby-content';
 				}
 				if ( YBY_Module_Registry::is_enabled( 'landing_pages' ) && current_user_can( 'edit_pages' ) ) {
 					return 'edit.php?post_type=landing_page';
@@ -341,11 +347,17 @@ final class YBY_Andy_OS_Navigation {
 			$add( '落地页', 'edit.php?post_type=landing_page', 'edit_pages', 'landing_pages' );
 			$add( '项目', 'admin.php?page=yby-project-studio', 'manage_options', 'project_studio' );
 			if ( YBY_Module_Registry::is_enabled( 'docs_os' ) ) {
-				foreach ( array( 'yby-docs-os'=>'文档', 'yby-docs-all'=>'文档列表',
-					'yby-docs-directory'=>'分类', 'yby-docs-faq'=>'常见问题',
-					'yby-docs-tutorial'=>'教程', 'yby-docs-settings'=>'文档设置' ) as $slug=>$label ) {
-					$add( $label, 'admin.php?page='.$slug, 'andy_core_settings_manage', 'docs_os' );
+				foreach ( array(
+					'yby-docs-os' => array( '文档', 'andy_core_settings_manage' ),
+					'yby-docs-all' => array( '文档列表', 'edit_posts' ),
+					'yby-docs-directory' => array( '分类', 'manage_categories' ),
+					'yby-docs-faq' => array( '常见问题', 'edit_posts' ),
+					'yby-docs-tutorial' => array( '教程', 'edit_posts' ),
+					'yby-docs-settings' => array( '文档设置', 'andy_core_settings_manage' ),
+				) as $slug => $details ) {
+					$add( $details[0], 'admin.php?page='.$slug, $details[1], 'docs_os' );
 				}
+				$add( '标签', 'edit-tags.php?taxonomy=doc_tag&post_type=docs', 'manage_categories', 'docs_os' );
 			}
 		} elseif ( 'andy-commerce' === $page ) {
 			foreach ( array( 'overview'=>'总览', 'order-export'=>'订单导出',
