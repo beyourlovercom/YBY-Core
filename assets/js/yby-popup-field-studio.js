@@ -98,6 +98,18 @@
       var p=combined[id];return '<option value="'+escapeHTML(id)+'"'+(active===id?' selected':'')+'>'+escapeHTML((p.label||id)+(state.presets[id]?' · 本站方案':' · 原有只读'))+'</option>';
     }).join("");
     $("#yby-studio-activate").disabled=!isOwn();
+    var siteProfileInput=$("#yby-studio-page-profiles"),siteProfileHint=$("#yby-studio-profile-hint"),chosen=selectedPreset();
+    if(siteProfileInput){
+      siteProfileInput.disabled=!isOwn();
+      siteProfileInput.value=chosen&&Array.isArray(chosen.page_profiles)?chosen.page_profiles.join(", "):"";
+    }
+    if(siteProfileHint){
+      siteProfileHint.textContent=isOwn()?
+        (chosen.page_profiles&&chosen.page_profiles.length?
+          "仅匹配这些 Page Profile 的页面可显示该预设；其他国家/业务页面不会调用。":
+          "当前没有 Page Profile 限制，可能在全站显示。建议为国家落地页填写 Profile ID。"):
+        "原有预设只读；复制后可设置该本站方案适用的页面 Profile。";
+    }
     $("#yby-studio-note").textContent=isOwn()?
       '当前正在编辑本站独立预设。修改字段后点击页面底部原有「保存」按钮；不会自动影响已有落地页。':
       '原有预设只读。先「复制为本站预设」，再自由配置字段与文案；不会覆盖旧表单。';
@@ -230,6 +242,10 @@
   });
   root.addEventListener("input",function(event){
     var t=event.target;
+    if(t.id==="yby-studio-page-profiles"&&isOwn()){
+      state.presets[active].page_profiles=t.value.split(/[,，\s]+/).map(function(s){return s.toLowerCase().replace(/[^a-z0-9_-]/g,"").trim();}).filter(Boolean).slice(0,12);
+      dirty();return;
+    }
     if(t.dataset.ybyStudioEdit && isOwn()){
       var keys=t.dataset.ybyStudioEdit.split("."),c=configOf(selected)[keys[0]];
       c[keys[1]]=t.value;dirty();renderPreview();
