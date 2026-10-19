@@ -8,6 +8,7 @@
 if ( ! defined( 'ABSPATH' ) ) { define( 'ABSPATH', __DIR__ . '/' ); }
 function sanitize_key( $value ) { return preg_replace( '/[^a-z0-9_-]/', '', strtolower( (string) $value ) ); }
 function sanitize_text_field( $value ) { return trim( strip_tags( (string) $value ) ); }
+function absint( $value ) { return abs( (int) $value ); }
 function sanitize_textarea_field( $value ) { return trim( (string) $value ); }
 function get_option( $key, $default = null ) {
     return 'yby_inquiry_presets' === $key ? array() : $default;
@@ -17,6 +18,7 @@ function esc_attr( $value ) { return htmlspecialchars( (string) $value, ENT_QUOT
 function esc_html( $value ) { return htmlspecialchars( (string) $value, ENT_QUOTES ); }
 function esc_url( $value ) { return (string) $value; }
 function __( $value, $domain = '' ) { return $value; }
+function esc_attr__( $value, $domain = '' ) { return $value; }
 function is_email( $value ) { return (bool) filter_var( $value, FILTER_VALIDATE_EMAIL ); }
 function wp_json_encode( $value ) { return json_encode( $value ); }
 function must( $check, $message ) {
