@@ -774,3 +774,8 @@ body.yby-inquiry-modal-open {
     margin: 0 !important;
   }
 }
+
+/* Opt-in native radio groups for site-owned configurable business fields. */
+.yby-inquiry-field__radio-options{display:flex;flex-wrap:wrap;gap:10px 15px;margin-top:5px}
+.yby-inquiry-field__radio-label{display:flex!important;align-items:center;gap:6px;cursor:pointer;font-size:13px!important;font-weight:400!important}
+.yby-inquiry-field__radio-label input[type=radio]{width:auto!important;min-height:0!important;margin:0}
