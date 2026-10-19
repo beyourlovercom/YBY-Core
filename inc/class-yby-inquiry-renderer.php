@@ -223,9 +223,11 @@ class YBY_Inquiry_Renderer {
 				$control = $this->render_textarea_field( $field, $field_id, $error_id );
 				break;
 			case 'select':
-			case 'radio':
 			case 'multiselect':
 				$control = $this->render_select_field( $field, $field_id, $error_id );
+				break;
+			case 'radio':
+				$control = $this->render_radio_field( $field, $field_id, $error_id );
 				break;
 			case 'checkbox':
 				$control = $this->render_checkbox_field( $field, $field_id, $error_id );
@@ -415,6 +417,22 @@ class YBY_Inquiry_Renderer {
 		$output .= '</select>';
 
 		return $output;
+	}
+
+	/**
+	 * Render a native single-choice radio group. Existing inputs stay intact:
+	 * this type is only used by newly registered site fields.
+	 */
+	protected function render_radio_field( $field, $field_dom_id, $error_id ) {
+		$options = isset( $field['options'] ) && is_array( $field['options'] ) ? $field['options'] : array();
+		$output = '<div class="yby-inquiry-field__radio-options" role="radiogroup" aria-describedby="' . esc_attr( $error_id ) . '">';
+		foreach ( $options as $i => $option ) {
+			if ( ! is_array( $option ) || empty( $option['value'] ) ) { continue; }
+			$id = 0 === $i ? $field_dom_id : $field_dom_id . '-' . (int) $i;
+			$output .= '<label class="yby-inquiry-field__radio-label"><input id="' . esc_attr( $id ) . '" name="' . esc_attr( sanitize_key( $field['id'] ) ) . '" type="radio" value="' . esc_attr( $option['value'] ) . '" data-yby-field data-yby-field-id="' . esc_attr( $field['id'] ) . '"'
+				. ( ! empty( $field['required'] ) ? ' required aria-required="true"' : '' ) . '><span>' . esc_html( $option['label'] ) . '</span></label>';
+		}
+		return $output . '</div>';
 	}
 
 	/**
