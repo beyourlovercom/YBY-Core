@@ -349,12 +349,12 @@ final class YBY_Andy_OS_Navigation {
 
 			// V3 Owner-approved Content L3, existing WordPress controllers only.
 			if ( YBY_Module_Registry::is_enabled( 'docs_os' ) ) {
-				foreach ( array( 'yby-docs-os'=>array('文档总览','andy_core_settings_manage'),
-					'yby-docs-all'=>array('全部文档','edit_posts'),
-					'yby-docs-directory'=>array('文档分类','manage_categories'),
-					'yby-docs-faq'=>array('常见问题 FAQ','edit_posts'),
-					'yby-docs-tutorial'=>array('教程 Tutorial','edit_posts'),
-					'yby-docs-settings'=>array('文档设置','andy_core_settings_manage') ) as $slug=>$info ) {
+				foreach ( array( 'yby-docs-os' => array('文档总览','andy_core_settings_manage'),
+					'yby-docs-all' => array('全部文档','edit_posts'),
+					'yby-docs-directory' => array('文档分类','manage_categories'),
+					'yby-docs-faq' => array('常见问题 FAQ','edit_posts'),
+					'yby-docs-tutorial' => array('教程 Tutorial','edit_posts'),
+					'yby-docs-settings' => array('文档设置','andy_core_settings_manage') ) as $slug=>$info ) {
 					$add( $info[0], 'admin.php?page='.$slug, $info[1], 'docs_os', '文档' );
 				}
 				$add( '文档标签', 'edit-tags.php?taxonomy=doc_tag&post_type=docs', 'manage_categories', 'docs_os', '文档' );
