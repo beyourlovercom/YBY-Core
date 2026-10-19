@@ -345,7 +345,8 @@ final class YBY_Andy_OS_Navigation {
 		} elseif ( in_array( $page, array( 'andy-business', 'andy-business-programs',
 			'andy-business-applications', 'andy-business-settings', 'yby-content',
 			'yby-project-studio', 'yby-docs-os', 'yby-docs-all', 'yby-docs-directory',
-			'yby-docs-faq', 'yby-docs-tutorial', 'yby-docs-settings' ), true ) ) {
+			'yby-docs-faq', 'yby-docs-tutorial', 'yby-docs-settings',
+			'andy-landing-native-list' ), true ) ) {
 			// L3 grouped in Owner order; each link is an existing original controller.
 			$add( '内容总览', 'admin.php?page=yby-content', 'andy_core_settings_manage', '', 'Andy Content' );
 			if ( YBY_Module_Registry::is_enabled( 'docs_os' ) ) {

@@ -67,6 +67,44 @@ final class YBY_Andy_Admin_Shell_V22 {
 		}
 	}
 
+ 	/**
+	 * Native WordPress landing_page list integration.
+	 * The original edit.php content, pagination, filters and Screen Options stay
+	 * in their core location; this adds an accessible sibling navigation only.
+	 * Never runs for a different CPT, editor, frontend or unauthorized user.
+	 */
+	public static function render_native_landing_navigation() {
+		if ( ! is_admin() || ! current_user_can( 'edit_pages' ) ||
+			 ! class_exists( 'YBY_Module_Registry' ) ||
+			 ! YBY_Module_Registry::is_enabled( 'landing_pages' ) ) { return; }
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || 'edit-landing_page' !== $screen->id ||
+			 'landing_page' !== $screen->post_type ) { return; }
+		$items = self::safe_items( 'yby-docs-os' );
+		if ( ! $items ) { return; }
+		echo '<div class="andy-core-native-cpt-l3" data-andy-native-l3="landing_page">';
+		echo '<nav class="andy-core-shell-v22__rail" aria-label="' . esc_attr__( '内容功能导航', 'yby-core' ) . '">';
+		echo '<p class="andy-core-shell-v22__rail-title">内容管理</p>';
+		$last_group = '';
+		foreach ( $items as $item ) {
+			$url = isset( $item['url'] ) ? (string) $item['url'] : '';
+			$title = isset( $item['title'] ) ? (string) $item['title'] : '';
+			if ( '' === $url || '' === $title ) { continue; }
+			$group = isset( $item['group'] ) ? (string) $item['group'] : '';
+			if ( $group !== $last_group && '' !== $group ) {
+				echo '<p class="andy-core-shell-v22__group">' . esc_html( $group ) . '</p>';
+			}
+			$last_group = $group;
+			$is_active = strpos( $url, 'edit.php?post_type=landing_page' ) !== false &&
+				! isset( $_GET['post_status'] );
+			echo '<a class="andy-core-shell-v22__link" href="' . esc_url( $url ) . '"';
+			if ( $is_active ) { echo ' aria-current="page"'; }
+			echo '>' . esc_html( $title ) . '</a>';
+		}
+		echo '</nav>';
+		echo '</div>';
+	}
+
 	/** Capabilities and module gating are delegated to the existing registry. */
 	private static function safe_items( $page ) {
 		if ( ! is_admin() || ! is_string( $page ) ||
@@ -123,7 +161,12 @@ final class YBY_Andy_Admin_Shell_V22 {
 		if ( ! is_admin() ) { return; }
 		$page = isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
 			? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-		if ( ! self::safe_items( $page ) ) { return; }
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		$native_landing = $screen && 'edit-landing_page' === $screen->id &&
+			current_user_can( 'edit_pages' ) &&
+			class_exists( 'YBY_Module_Registry' ) &&
+			YBY_Module_Registry::is_enabled( 'landing_pages' );
+		if ( ! $native_landing && ! self::safe_items( $page ) ) { return; }
 		wp_enqueue_style(
 			'andy-core-admin-shell-v22',
 			YBY_CORE_PLUGIN_URL . 'assets/css/andy-core-admin-shell-v22.css',

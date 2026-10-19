@@ -223,6 +223,10 @@ $this->loader->add_action( 'andy_core_register_modules', 'YBY_Business_OS_Module
 		$this->loader->add_action( 'admin_init', new YBY_Andy_OS_Navigation(), 'redirect_entry', 9 );
 		// V2.2: prevent late DOM reparent and duplicate old/new navigation.
 		$this->loader->add_action( 'admin_enqueue_scripts', new YBY_Andy_Admin_Shell_V22(), 'enqueue_styles' );
+		// WordPress native Landing Pages list stays the original editor/list.
+		// Inject only a sibling tertiary menu after native notices/screen meta.
+		$this->loader->add_action( 'all_admin_notices', 'YBY_Andy_Admin_Shell_V22',
+			'render_native_landing_navigation', 20, 0 );
 		$this->loader->add_filter( 'parent_file', new YBY_Andy_OS_Navigation(), 'filter_parent_file', 1100 );
 		$this->loader->add_filter( 'submenu_file', new YBY_Andy_OS_Navigation(), 'filter_submenu_file', 1100 );
 		$this->loader->add_action( 'admin_menu', $three_os, 'hide_old_menu', 1000 );
