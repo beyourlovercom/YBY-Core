@@ -39,13 +39,13 @@ final class Andy_Commerce_Order_Coupon_Column {
 		$added  = false;
 		foreach ( $columns as $key => $label ) {
 			if ( ! $added && ( 'order_total' === $key || 'total' === $key ) ) {
-				$result[ self::COLUMN_KEY ] = __( 'Coupon(s) used', 'andy-commerce' );
+				$result[ self::COLUMN_KEY ] = __( '折扣码', 'andy-commerce' );
 				$added = true;
 			}
 			$result[ $key ] = $label;
 		}
 		if ( ! $added ) {
-			$result[ self::COLUMN_KEY ] = __( 'Coupon(s) used', 'andy-commerce' );
+			$result[ self::COLUMN_KEY ] = __( '折扣码', 'andy-commerce' );
 		}
 
 		// Native WordPress Screen Options lets admins show/hide the column.
