@@ -224,8 +224,6 @@ $this->loader->add_action( 'andy_core_register_modules', 'YBY_Business_OS_Module
 		$this->loader->add_action( 'admin_init', new YBY_Andy_OS_Navigation(), 'redirect_entry', 9 );
 		// V2.2: prevent late DOM reparent and duplicate old/new navigation.
 		$this->loader->add_action( 'admin_enqueue_scripts', new YBY_Andy_Admin_Shell_V22(), 'enqueue_styles' );
-		// V3: enqueue scoped tertiary rail assets on authorized legacy Studio screens.
-		$this->loader->add_action( 'admin_enqueue_scripts', new YBY_Andy_OS_Navigation(), 'enqueue_tertiary' );
 		// Native CPT screens retain original WordPress edit.php functionality.
 		$this->loader->add_action( 'all_admin_notices', 'YBY_Andy_Admin_Shell_V22',
 			'render_native_content_navigation', 20, 0 );
