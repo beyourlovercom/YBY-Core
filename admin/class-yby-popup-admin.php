@@ -24,7 +24,7 @@ class YBY_Popup_Admin {
 		$is_popup = isset( $_GET['tab'] ) && is_scalar( $_GET['tab'] ) && in_array( sanitize_key( wp_unslash( $_GET['tab'] ) ), array( 'popup_inquiry', 'inquiry' ), true );
 		if ( $is_popup && ( $hook === $this->hook || ( $embedded_hook && $hook === $embedded_hook ) ) ) {
 			wp_enqueue_style( 'yby-popup-field-studio', YBY_CORE_PLUGIN_URL . 'assets/css/yby-popup-field-studio.css', array(), $this->version );
-			wp_enqueue_script( 'yby-popup-field-studio', YBY_CORE_PLUGIN_URL . 'assets/js/yby-popup-field-studio.js', array(), $this->version, true );
+			wp_enqueue_script( 'yby-popup-field-studio', YBY_CORE_PLUGIN_URL . 'assets/js/yby-popup-field-studio.js', array(), (string) filemtime( YBY_CORE_PLUGIN_DIR . 'assets/js/yby-popup-field-studio.js' ), true );
 		}
 		if ( $hook !== $this->hook ) { return; }
 		wp_enqueue_media();
@@ -98,7 +98,7 @@ class YBY_Popup_Admin {
 		// and embedded Three OS routes, without registering an additional page.
 		if ( $inquiry_enabled && 'popup_inquiry' === $tab ) {
 			wp_enqueue_style( 'yby-popup-field-studio', YBY_CORE_PLUGIN_URL . 'assets/css/yby-popup-field-studio.css', array(), $this->version );
-			wp_enqueue_script( 'yby-popup-field-studio', YBY_CORE_PLUGIN_URL . 'assets/js/yby-popup-field-studio.js', array(), $this->version, true );
+			wp_enqueue_script( 'yby-popup-field-studio', YBY_CORE_PLUGIN_URL . 'assets/js/yby-popup-field-studio.js', array(), (string) filemtime( YBY_CORE_PLUGIN_DIR . 'assets/js/yby-popup-field-studio.js' ), true );
 		}
 
 		// Exactly the original nonce-protected settings and dock writes.
