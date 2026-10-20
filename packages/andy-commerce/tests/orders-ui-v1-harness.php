@@ -100,7 +100,7 @@ $ok( false !== strpos( $toolbar_js, 'andy-commerce-orders-native-bar' ), 'Orders
 $ok( false !== strpos( $toolbar_js, 'andy-commerce-orders-framework-bar' ), 'three layouts in separate framework row' );
 $ok( false !== strpos( $toolbar_js, "table.closest('form')" ), 'native WooCommerce search and bulk actions remain in form' );
 $ok( false !== strpos( $toolbar_js, "node.appendChild(" ) || false !== strpos( $toolbar_js, 'el.appendChild(node)' ), 'native controls are moved, not cloned' );
-$ok( false !== strpos( $toolbar_js, 'fetch(' ), 'layout does not fetch additional orders' );
+$ok( false === strpos( $toolbar_js, 'fetch(' ), 'layout does not fetch additional orders' );
 $ok( false !== strpos( $toolbar_css, '.andy-commerce-orders-floating-panel' ), 'column settings popover' );
 $bootstrap = file_get_contents( dirname( __DIR__ ) . '/includes/class-andy-commerce.php' );
 $ok( false !== strpos( $bootstrap, 'Andy_Commerce_Orders_UI::boot();' ), 'Commerce-only bootstrap' );
