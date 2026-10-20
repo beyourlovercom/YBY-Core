@@ -152,7 +152,9 @@
         ordersBar.appendChild(pagination);
       }
       // Place the full native band inside the existing form, before the list.
-      form.insertBefore(ordersBar, nativeTopNav || table);
+      const mountBefore = nativeTopNav || table;
+      // Support nested WooCommerce table wrappers: insert next to the actual node.
+      mountBefore.parentNode.insertBefore(ordersBar, mountBefore);
       if (nativeTopNav && !nativeTopNav.querySelector('a, button, input, select, .actions, .tablenav-pages')) {
         nativeTopNav.classList.add('andy-commerce-orders-empty-topnav');
       }
