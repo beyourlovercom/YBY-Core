@@ -35,6 +35,20 @@
 		heading.textContent = '功能导航';
 		rail.appendChild(heading);
 		const url = new URL(window.location.href);
+		// Match the four collapsible V3 Content groups on the legacy Project Studio screen.
+		const groupContainers = new Map();
+		if (isProjectStudio) {
+			for (const name of ['文档', '招商', '落地页', '项目']) {
+				const details = document.createElement('details');
+				details.className = 'andy-core-studio-v3-group';
+				details.open = name === '项目';
+				const summary = document.createElement('summary');
+				summary.textContent = name;
+				details.appendChild(summary);
+				rail.appendChild(details);
+				groupContainers.set(name, details);
+			}
+		}
 		for (const item of config.items) {
 			if (!item || typeof item.title !== 'string' || typeof item.url !== 'string') continue;
 			const link = document.createElement('a');
@@ -53,7 +67,13 @@
 				// A malformed route is never reconstructed from user data.
 				continue;
 			}
-			rail.appendChild(link);
+			const container = isProjectStudio && groupContainers.get(item.group);
+			(container || rail).appendChild(link);
+		}
+		if (isProjectStudio) {
+			for (const details of groupContainers.values()) {
+				if (!details.querySelector('a')) details.remove();
+			}
 		}
 		if (rail.querySelectorAll('a').length === 0) return;
 
