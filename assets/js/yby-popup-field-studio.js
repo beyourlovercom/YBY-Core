@@ -19,7 +19,7 @@
   var overlayMode = "field";
   var counter = 1;
   var $ = function (selector) { return root.querySelector(selector); };
-  var $ = function (selector) { return Array.prototype.slice.call(root.querySelectorAll(selector)); };
+  var $$ = function (selector) { return Array.prototype.slice.call(root.querySelectorAll(selector)); };
   // The existing Business Preset control belongs to the parent WordPress
   // settings form, not the nested Studio root. Never root.querySelector it.
   var globalPresetSelect = function () { return document.getElementById("andy-popup-business-preset"); };
