@@ -69,6 +69,9 @@ final class Andy_Commerce_Orders_UI {
 		$js = 'assets/js/orders-ui-v1.js';
 		wp_enqueue_style( 'andy-commerce-orders-ui-v1', ANDY_COMMERCE_PLUGIN_URL . $css, array(), ANDY_COMMERCE_VERSION );
 		wp_enqueue_script( 'andy-commerce-orders-ui-v1', ANDY_COMMERCE_PLUGIN_URL . $js, array(), ANDY_COMMERCE_VERSION, true );
+		// V1.1 presentation only. Depend on the accepted V1 DOM/layout handlers.
+		wp_enqueue_style( 'andy-commerce-orders-toolbar-v1-1', ANDY_COMMERCE_PLUGIN_URL . 'assets/css/orders-toolbar-v1-1.css', array( 'andy-commerce-orders-ui-v1' ), ANDY_COMMERCE_VERSION );
+		wp_enqueue_script( 'andy-commerce-orders-toolbar-v1-1', ANDY_COMMERCE_PLUGIN_URL . 'assets/js/orders-toolbar-v1-1.js', array( 'andy-commerce-orders-ui-v1' ), ANDY_COMMERCE_VERSION, true );
 		wp_localize_script(
 			'andy-commerce-orders-ui-v1',
 			'AndyCommerceOrdersUIV1',
