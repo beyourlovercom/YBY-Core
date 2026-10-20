@@ -19,7 +19,15 @@
   var overlayMode = "field";
   var counter = 1;
   var $ = function (selector) { return root.querySelector(selector); };
-  var $$ = function (selector) { return Array.prototype.slice.call(root.querySelectorAll(selector)); };
+  var $ = function (selector) { return Array.prototype.slice.call(root.querySelectorAll(selector)); };
+  // The existing Business Preset control belongs to the parent WordPress
+  // settings form, not the nested Studio root. Never root.querySelector it.
+  var globalPresetSelect = function () { return document.getElementById("andy-popup-business-preset"); };
+  var globalPresetLabel = function () {
+    var select = globalPresetSelect();
+    return select && select.selectedOptions && select.selectedOptions.length ?
+      String(select.selectedOptions[0].textContent || "").trim() || "Request a Quote" : "Request a Quote";
+  };
   var escapeHTML = function (v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); };
   var types = {text:"文本", email:"邮箱", tel:"电话", number:"数字", textarea:"多行文本", select:"下拉选择", radio:"单选", multiselect:"多选", checkbox:"勾选"};
   var templateList = {
@@ -149,7 +157,7 @@
     $("#yby-studio-preview").innerHTML='<div class="yby-studio-preview'+(device==="mobile"?" is-phone":"")+'">'+
       (withImage?'<div class="yby-studio-preview-photo">'+(image?'<img src="'+escapeHTML(image)+'" alt="" loading="lazy" style="max-width:100%;max-height:270px;object-fit:contain">':'<div class="ys-graphic"></div>')+'<p>当前站点产品图片区域</p></div>':'')+
       '<div class="yby-studio-preview-copy"'+(withImage?'':' style="grid-column:1/-1"')+'><div class="ys-eyebrow">'+escapeHTML(boot.site_name||"CURRENT SITE")+' · INQUIRY</div>'+
-      '<h4>'+escapeHTML(p.title||$("#andy-popup-business-preset").selectedOptions[0]?.textContent||"Request a Quote")+'</h4>'+
+      '<h4>'+escapeHTML(p.title||globalPresetLabel()||"Request a Quote")+'</h4>'+
       '<p>'+escapeHTML(p.subtitle||"Share your requirements and we will prepare a quotation.")+'</p>'+
       '<div class="yby-studio-preview-fields">'+ids.map(function(id){var f=fieldById(id),c=configOf(id)[device];return '<div'+(f.type==="textarea"?' class="ys-full"':'')+'><label>'+escapeHTML(c.label||f.label||id)+(c.required?' <b>*</b>':'')+'</label>'+previewInput(f,c)+'</div>';}).join("")+'</div>'+
       '<button type="button" class="ys-submit" id="yby-studio-try">测试必填字段 →</button><div class="ys-privacy">仅预览校验，不提交任何真实询盘</div><div class="ys-message" id="yby-studio-test-result" role="status"></div></div></div>';
@@ -205,7 +213,7 @@
     var cfg={};fieldNames().forEach(function(fid){cfg[fid]=JSON.parse(JSON.stringify(configOf(fid)));});
     state.presets[id]={
       id:id,label:name,enabled:true,layout:"split_visual",
-      title:old.title||$("#andy-popup-business-preset").selectedOptions[0]?.textContent||"Request a Quote",
+      title:old.title||globalPresetLabel()||"Request a Quote",
       subtitle:old.subtitle||"",
       image:old.image||"",
       page_profiles:Array.isArray(old.page_profiles)?old.page_profiles.slice(0,12):[],
@@ -270,7 +278,8 @@
       selected="email";dirty();renderAll();return;
     }
     if(t.id==="yby-studio-activate"&&isOwn()){
-      var global=$("#andy-popup-business-preset");
+      var global=globalPresetSelect();
+      if (!global) { changeNotice("无法找到原页面的业务预设下拉框，请刷新后重试。"); return; }
       if(!Array.prototype.some.call(global.options,function(o){return o.value===active;})){
         var option=document.createElement("option");option.value=active;option.textContent=state.presets[active].label+" · 本站方案";global.add(option);
       }
