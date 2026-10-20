@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "architecture": "Andy Core Admin V2.2",
-  "status": "draft-owner-review-2026-10-19-grouped-L3-native-Landing-Pages-L2",
+  "architecture": "Andy Core Admin V3",
+  "status": "Owner V3 prototype PASS — implementation pending Dev/UAT",
   "root": {
     "slug": "yby-os",
     "label": "Andy Core",
@@ -13,15 +13,18 @@
     "fallback": "original-page-if-adapter-unavailable",
     "no_dom_mover": true,
     "group_order": [
-      "Andy Content",
-      "Andy Business",
-      "Landing Pages"
-    ]
+      "文档",
+      "招商",
+      "落地页",
+      "项目"
+    ],
+    "collapsible": true,
+    "native_cpt_layout": "css-grid-no-float"
   },
   "categories": [
     {
       "slug": "andy-core-leads",
-      "label": "Inquiry OS",
+      "label": "询盘",
       "owner": "andy-core",
       "capability": "andy_core_leads_view",
       "landing": "admin.php?page=andy-core-leads&tab=leads",
@@ -29,7 +32,7 @@
     },
     {
       "slug": "andy-core-newsletter",
-      "label": "Newsletter OS",
+      "label": "订阅",
       "owner": "andy-core",
       "capability": "andy_core_newsletter_view",
       "landing": "admin.php?page=andy-core-newsletter&tab=subscribers",
@@ -37,7 +40,7 @@
     },
     {
       "slug": "andy-core-email",
-      "label": "Email OS",
+      "label": "邮件",
       "owner": "andy-core",
       "capability": "andy_core_mail_view",
       "landing": "admin.php?page=andy-core-email&tab=overview",
@@ -45,24 +48,15 @@
     },
     {
       "slug": "andy-core-content",
-      "label": "Content OS",
+      "label": "内容",
       "owner": "andy-core",
       "capability": "andy_core_settings_manage",
       "landing": "admin.php?page=andy-business",
       "module": "business_os"
     },
     {
-      "slug": "edit.php?post_type=landing_page",
-      "label": "Landing Pages",
-      "owner": "andy-core",
-      "capability": "edit_pages",
-      "landing": "edit.php?post_type=landing_page",
-      "module": "landing_pages",
-      "native_wp_cpt": true
-    },
-    {
       "slug": "andy-core-marketing",
-      "label": "Marketing OS",
+      "label": "营销",
       "owner": "andy-commerce",
       "capability": "manage_woocommerce",
       "landing": "admin.php?page=andy-commerce&tab=marketing-promotions",
@@ -70,7 +64,7 @@
     },
     {
       "slug": "andy-core-commerce",
-      "label": "Commerce OS",
+      "label": "交易",
       "owner": "andy-commerce",
       "capability": "manage_woocommerce",
       "landing": "admin.php?page=andy-commerce&tab=overview",
@@ -78,7 +72,7 @@
     },
     {
       "slug": "andy-core-system",
-      "label": "System & Connectors",
+      "label": "系统",
       "owner": "andy-core",
       "capability": "andy_core_settings_manage",
       "landing": "admin.php?page=yby-core&tab=modules",

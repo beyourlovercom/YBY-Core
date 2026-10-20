@@ -33,8 +33,8 @@ class YBY_Project_CPT {
 			self::post_type(),
 			array(
 				'labels'          => array(
-					'name'          => __( 'YBY Projects', 'yby-core' ),
-					'singular_name' => __( 'YBY Project', 'yby-core' ),
+					'name'          => __( '项目列表', 'yby-core' ),
+					'singular_name' => __( '项目', 'yby-core' ),
 				),
 				'public'          => false,
 				'show_ui'         => true,
