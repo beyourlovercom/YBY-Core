@@ -29,7 +29,7 @@ jobs:
           php packages/andy-commerce/tests/order-coupon-column-harness.php
           php -l packages/andy-commerce/includes/class-andy-commerce-orders-ui.php
           php -l packages/andy-commerce/includes/class-andy-commerce.php
-          node --check packages/andy-commerce/assets/js/orders-ui-v1.js
+          node --check packages/andy-commerce/assets/js/orders-ui-v1-2.js
       - name: Build standalone Dev-only WordPress plugin ZIP
         shell: bash
         run: bash scripts/build-orders-ui-dev-uat.sh
