@@ -6,7 +6,20 @@
 		if (!config || !Array.isArray(config.items) || !config.items.length) return;
 		const content = document.getElementById('wpbody-content');
 		if (!content || content.querySelector('.andy-core-l3-v2')) return;
-		const wrap = content.querySelector(':scope > .wrap');
+		const isProjectStudio = config.page === 'yby-project-studio';
+		let wrap = content.querySelector(':scope > .wrap');
+		// Project Studio can render through a legacy callback without a top-level .wrap.
+		// Wrap only the existing controller output; never duplicate or replace its handlers.
+		if (!wrap && isProjectStudio) {
+			const nodes = [...content.children].filter(el =>
+				!el.matches('#screen-meta, #screen-meta-links, .notice, .updated, .error'));
+			if (nodes.length) {
+				wrap = document.createElement('div');
+				wrap.className = 'wrap andy-core-studio-legacy-wrap';
+				content.insertBefore(wrap, nodes[0]);
+				for (const node of nodes) wrap.appendChild(node);
+			}
+		}
 		if (!wrap || !wrap.parentElement) return;
 		// Never move the WP block editor, payment forms or unknown screens.
 		if (document.body.classList.contains('block-editor-page') ||
@@ -22,6 +35,20 @@
 		heading.textContent = '功能导航';
 		rail.appendChild(heading);
 		const url = new URL(window.location.href);
+		// Match the four collapsible V3 Content groups on the legacy Project Studio screen.
+		const groupContainers = new Map();
+		if (isProjectStudio) {
+			for (const name of ['文档', '招商', '落地页', '项目']) {
+				const details = document.createElement('details');
+				details.className = 'andy-core-studio-v3-group';
+				details.open = name === '项目';
+				const summary = document.createElement('summary');
+				summary.textContent = name;
+				details.appendChild(summary);
+				rail.appendChild(details);
+				groupContainers.set(name, details);
+			}
+		}
 		for (const item of config.items) {
 			if (!item || typeof item.title !== 'string' || typeof item.url !== 'string') continue;
 			const link = document.createElement('a');
@@ -40,7 +67,13 @@
 				// A malformed route is never reconstructed from user data.
 				continue;
 			}
-			rail.appendChild(link);
+			const container = isProjectStudio && groupContainers.get(item.group);
+			(container || rail).appendChild(link);
+		}
+		if (isProjectStudio) {
+			for (const details of groupContainers.values()) {
+				if (!details.querySelector('a')) details.remove();
+			}
 		}
 		if (rail.querySelectorAll('a').length === 0) return;
 

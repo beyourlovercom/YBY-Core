@@ -71,3 +71,14 @@
 	#wpbody-content .andy-core-l3-v2__link { padding: 9px 6px; font-size: 12px; }
 	#wpbody-content .andy-core-l3-v2__view { padding: 0 6px 12px; }
 }
+
+/* Project Studio V3: preserve legacy controller, use the approved grouped Content rail. */
+#wpbody-content .andy-core-l3-v2__rail .andy-core-studio-v3-group { margin: 3px 0; }
+#wpbody-content .andy-core-studio-v3-group > summary { cursor: pointer; padding: 11px 10px; background: #fff; border: 1px solid #e5ebe5; border-radius: 6px; color: #15241a; font-weight: 600; list-style-position: inside; }
+#wpbody-content .andy-core-studio-v3-group[open] > summary { border-color: #cddfd3; }
+#wpbody-content .andy-core-studio-v3-group > .andy-core-l3-v2__link { margin-left: 4px; }
+#wpbody-content .andy-core-studio-legacy-wrap { min-width: 0; }
+@media (max-width: 782px) {
+  #wpbody-content .andy-core-l3-v2:has(.andy-core-studio-v3-group) { grid-template-columns: minmax(0, 1fr); }
+  #wpbody-content .andy-core-l3-v2:has(.andy-core-studio-v3-group) > .andy-core-l3-v2__rail { border-right: 0; border-bottom: 1px solid #e2e8e3; }
+}
