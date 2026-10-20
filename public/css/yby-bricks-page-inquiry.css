@@ -1,0 +1,63 @@
+/* Page-only modal: leave existing global popup untouched. */
+.yby-bricks-inquiry-config { display: block; height: 0; overflow: visible; }
+.yby-bricks-inquiry-preview {
+  display: inline-block; margin: 4px; padding: 10px 14px;
+  border: 1px dashed #2e7d32; background: #f3faf3;
+  border-radius: 8px; color: #1f2937; font-size: 13px;
+}
+@media (min-width: 860px) {
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-modal__dialog {
+    max-height: calc(100dvh - 40px); width: min(calc(100vw - 40px), var(--yby-inquiry-max-width, 960px));
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned:not(.yby-inquiry-modal--has-media) .yby-inquiry-modal__content {
+    width: 100%; max-width: 100%; box-sizing: border-box;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned:not(.yby-inquiry-modal--has-media) .yby-inquiry-form__fields {
+    display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px 18px;
+  }
+}
+@media (max-width: 859px) {
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-modal__dialog {
+    width: calc(100vw - 20px) !important; max-width: 460px !important;
+    max-height: min(88dvh, calc(100dvh - 20px)) !important;
+    height: min(88dvh, calc(100dvh - 20px));
+    margin: 0 auto 10px !important; align-self: end;
+    display: flex !important; flex-direction: column;
+    overflow: hidden !important;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-modal__content {
+    display: flex !important; flex-direction: column !important;
+    flex: 1 1 auto; min-height: 0 !important;
+    padding: 17px 17px 14px !important; overflow: hidden !important;
+    max-height: none !important;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-form {
+    display: flex !important; flex-direction: column !important;
+    flex: 1 1 auto; min-height: 0 !important; gap: 8px;
+    overflow: hidden !important;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-form__fields {
+    display: grid !important; grid-template-columns: 1fr !important;
+    flex: 1 1 auto; min-height: 0 !important;
+    overflow-x: hidden !important; overflow-y: auto !important;
+    align-content: start; gap: 10px; padding: 0 2px 16px 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-field[data-yby-responsive="desktop"] {
+    display: none !important;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-field[data-yby-responsive="mobile"]:not([hidden]) {
+    display: grid !important;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-form__submit {
+    position: static !important; flex: 0 0 auto;
+    z-index: 2; min-height: 50px; margin-top: 0;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-modal__media { display: none !important; }
+  .yby-inquiry-modal.yby-page-inquiry-owned.yby-page-inquiry-mobile-image .yby-inquiry-modal__media {
+    display: block !important; min-height: 0; height: 105px; flex: 0 0 auto;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned.yby-page-inquiry-mobile-image .yby-inquiry-modal__media img {
+    width: 100%; height: 105px; object-fit: cover;
+  }
+}
