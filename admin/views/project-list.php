@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="wrap">
 	<h1 class="wp-heading-inline"><?php esc_html_e( 'Project Studio', 'yby-core' ); ?></h1>
 	<a class="page-title-action" href="<?php echo esc_url( admin_url( 'post-new.php?post_type=' . YBY_Project_CPT::post_type() ) ); ?>"><?php esc_html_e( 'Add Project', 'yby-core' ); ?></a>
+	<a class="page-title-action" href="<?php echo esc_url( YBY_Project_Studio::studio_url( 'wholesale' ) ); ?>">Wholesale Country Clone V2</a>
 
 	<p><?php esc_html_e( 'Project Studio manages existing runtime and visualizes Project configuration through Andy Core.', 'yby-core' ); ?></p>
 
