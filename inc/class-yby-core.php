@@ -64,6 +64,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-lead-mapper.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-renderer.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-shortcodes.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-bricks-page-inquiry-bootstrap.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-newsletter-consent.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-newsletter-store.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-mail-transport.php';
@@ -292,6 +293,7 @@ $this->loader->add_action( 'andy_core_register_modules', 'YBY_Business_OS_Module
 			$inquiry_dock = new YBY_Global_Inquiry_Dock();
 			$this->loader->add_action( 'rest_api_init', $lead_rest_route, 'register_routes' );
 			$this->loader->add_action( 'init', $inquiry_shortcodes, 'register', 10, 0 );
+			$this->loader->add_action( 'init', 'YBY_Bricks_Page_Inquiry_Bootstrap', 'register', 11, 0 );
 			$this->loader->add_filter( 'the_content', $inquiry_shortcodes, 'capture_modal_shortcodes_in_content', 9, 1 );
 			$this->loader->add_action( 'wp_footer', $inquiry_shortcodes, 'render_deferred_modals', 100, 0 );
 			$this->loader->add_action( 'wp_footer', $global_popup, 'render', 110, 0 );
