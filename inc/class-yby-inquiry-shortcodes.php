@@ -71,12 +71,23 @@ class YBY_Inquiry_Shortcodes {
 			array( $this, 'render_modal_shortcode' )
 		);
 		add_shortcode( 'yby_inquiry', array( $this, 'render_inline_shortcode' ) );
+		// Optional Bricks page element; loaded at a later init priority only on Bricks sites.
+		if ( function_exists( 'add_action' ) ) {
+			add_action( 'init', array( $this, 'register_bricks_page_element' ), 11 );
+		}
 
 		add_shortcode(
 			'yby_sticky_cta',
 			array( $this, 'render_sticky_cta_shortcode' )
 		);
 	}
+	/** Register Bricks custom element without changing the pinned core bootstrap. */
+	public function register_bricks_page_element() {
+		if ( ! class_exists( '\Bricks\\Elements' ) || ! class_exists( '\Bricks\\Element' ) ) { return; }
+		require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-bricks-page-inquiry-bootstrap.php';
+		YBY_Bricks_Page_Inquiry_Bootstrap::register();
+	}
+
 	public function render_inline_shortcode( $attributes = array(), $content = null, $tag = '' ) {
 		unset( $content, $tag );
 		$attributes = $this->sanitize_shortcode_attributes( $attributes );
