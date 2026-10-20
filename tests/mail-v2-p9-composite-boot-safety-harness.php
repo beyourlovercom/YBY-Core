@@ -12,7 +12,7 @@ function composite_guard($pass, $what) {
     if (!$pass) { throw new RuntimeException('P9_COMPOSITE_BOOT_FAIL:' . $what); }
 }
 $baseline = array(
-    'yby-core.php' => 'f3e37513875b9c00ec67976d35d475693169df97',
+    'yby-core.php' => 'dc6fa5ad4342e190888d71c92b926cc5d53a43d1',
     'inc/class-yby-core.php' => '3bebb154188921f3e34367c20ced642a7dba60a1', // Update Control V1 reviewed registration.
     'admin/class-yby-three-os-admin.php' => 'be712104ea6fd6970b669f0c9b9b751d98304f50',
     'admin/class-yby-mail-v2-p8-readonly.php' => 'ea587589f8d76d1a8d4e6d310fe5afcc04822956',
