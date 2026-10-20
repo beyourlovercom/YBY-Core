@@ -93,6 +93,16 @@ $ok( false !== strpos( $js, "saveBtn.addEventListener" ), 'explicit save only' )
 $ok( false !== strpos( $css, '[data-andy-layout="cards"]' ), 'card view CSS' );
 $ok( false !== strpos( $css, '[data-andy-layout="compact"]' ), 'compact view CSS' );
 $ok( false === strpos( $js, 'wc_get_orders' ), 'no JS order queries' );
+$toolbar_js = file_get_contents( dirname( __DIR__ ) . '/assets/js/orders-toolbar-v1-1.js' );
+$toolbar_css = file_get_contents( dirname( __DIR__ ) . '/assets/css/orders-toolbar-v1-1.css' );
+$ok( false !== strpos( $toolbar_js, '#screen-meta-links' ), 'column config in top utility row' );
+$ok( false !== strpos( $toolbar_js, 'andy-commerce-orders-native-bar' ), 'Orders native operations grouped' );
+$ok( false !== strpos( $toolbar_js, 'andy-commerce-orders-framework-bar' ), 'three layouts in separate framework row' );
+$ok( false !== strpos( $toolbar_js, "table.closest('form')" ), 'native WooCommerce search and bulk actions remain in form' );
+$ok( false !== strpos( $toolbar_js, "node.appendChild(" ) || false !== strpos( $toolbar_js, 'el.appendChild(node)' ), 'native controls are moved, not cloned' );
+$ok( false !== strpos( $toolbar_js, 'more order requests' ), 'no new order fetches' );
+$ok( false !== strpos( $toolbar_js, 'fetch(' ), 'layout does not fetch additional orders' );
+$ok( false !== strpos( $toolbar_css, '.andy-commerce-orders-floating-panel' ), 'column settings popover' );
 $bootstrap = file_get_contents( dirname( __DIR__ ) . '/includes/class-andy-commerce.php' );
 $ok( false !== strpos( $bootstrap, 'Andy_Commerce_Orders_UI::boot();' ), 'Commerce-only bootstrap' );
 echo 'PASS orders-ui-v1-harness (HPOS, legacy, scoped assets, preference security, no query on switch)' . PHP_EOL;
