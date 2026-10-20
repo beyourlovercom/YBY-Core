@@ -68,10 +68,129 @@
       left.appendChild(button);
     }
 
-    toolbar.appendChild(left);
-    toolbar.appendChild(settingsBtn);
+    // V1.1: three separate horizontal bands. Move native controls ONLY inside
+    // their existing order form: search/filter/apply still submit normally.
+    const form = table.closest('form');
+    const wrap = table.closest('.wrap');
+    const heading = wrap && wrap.querySelector('h1.wp-heading-inline');
+    const addOrder = wrap && wrap.querySelector('.page-title-action');
+    const statusTabs = wrap && wrap.querySelector('.subsubsub');
+    const searchBox = form && form.querySelector('.search-box');
+    const nativeTopNav = form && form.querySelector('.tablenav.top');
+    const bulkActions = nativeTopNav && nativeTopNav.querySelector('.bulkactions');
+    const filterActions = nativeTopNav
+      ? Array.from(nativeTopNav.querySelectorAll('.actions')).filter(node =>
+        node !== bulkActions && !node.closest('.bulkactions')) : [];
+    const pagination = nativeTopNav && nativeTopNav.querySelector('.tablenav-pages');
+
+    const utilitySlot = document.createElement('div');
+    utilitySlot.className = 'andy-commerce-orders-utility-slot';
+    utilitySlot.appendChild(settingsBtn);
+    const screenMeta = document.querySelector('#screen-meta-links');
+    if (screenMeta) {
+      screenMeta.appendChild(utilitySlot); // The existing narrow top-right WordPress strip.
+    } else {
+      // Other admin skins: preserve a dedicated slim utility line above Orders.
+      const utilityRow = document.createElement('div');
+      utilityRow.className = 'andy-commerce-orders-utility-row';
+      utilityRow.appendChild(utilitySlot);
+      if (wrap) wrap.insertBefore(utilityRow, wrap.firstChild);
+      else table.parentNode.insertBefore(utilityRow, table);
+    }
+
+    const ordersBar = document.createElement('div');
+    ordersBar.className = 'andy-commerce-orders-native-bar';
+    ordersBar.setAttribute('aria-label', 'WooCommerce Orders 原生操作');
+    if (form && (heading || statusTabs || searchBox || nativeTopNav)) {
+      const titleGroup = document.createElement('div');
+      titleGroup.className = 'andy-commerce-orders-title-group';
+      if (heading) titleGroup.appendChild(heading);
+      if (addOrder) titleGroup.appendChild(addOrder);
+      if (titleGroup.childNodes.length) ordersBar.appendChild(titleGroup);
+
+      if (statusTabs) {
+        const statuses = document.createElement('div');
+        statuses.className = 'andy-commerce-orders-status-group';
+        statuses.appendChild(statusTabs);
+        ordersBar.appendChild(statuses);
+      }
+
+      if (bulkActions) {
+        const bulkGroup = document.createElement('div');
+        bulkGroup.className = 'andy-commerce-orders-bulk-group';
+        bulkGroup.appendChild(bulkActions);
+        ordersBar.appendChild(bulkGroup);
+      }
+      if (searchBox) {
+        const searchGroup = document.createElement('div');
+        searchGroup.className = 'andy-commerce-orders-search-group';
+        searchGroup.appendChild(searchBox);
+        ordersBar.appendChild(searchGroup);
+      }
+
+      if (filterActions.length) {
+        const filterButton = document.createElement('button');
+        filterButton.type = 'button';
+        filterButton.className = 'button andy-commerce-orders-filter-toggle';
+        filterButton.textContent = '更多筛选 ▾';
+        filterButton.setAttribute('aria-expanded', 'false');
+        const filterPanel = document.createElement('div');
+        filterPanel.className = 'andy-commerce-orders-extra-filters';
+        filterPanel.hidden = true;
+        filterPanel.id = 'andy-commerce-orders-extra-filters';
+        filterButton.setAttribute('aria-controls', filterPanel.id);
+        filterActions.forEach(node => filterPanel.appendChild(node));
+        filterButton.addEventListener('click', () => {
+          filterPanel.hidden = !filterPanel.hidden;
+          filterButton.setAttribute('aria-expanded', String(!filterPanel.hidden));
+        });
+        ordersBar.appendChild(filterButton);
+        ordersBar.appendChild(filterPanel);
+      }
+      if (pagination) {
+        pagination.classList.add('andy-commerce-orders-pages');
+        ordersBar.appendChild(pagination);
+      }
+      // Place the full native band inside the existing form, before the list.
+      form.insertBefore(ordersBar, nativeTopNav || table);
+      if (nativeTopNav && !nativeTopNav.querySelector('a, button, input, select, .actions, .tablenav-pages')) {
+        nativeTopNav.classList.add('andy-commerce-orders-empty-topnav');
+      }
+    }
+
+    toolbar.classList.add('andy-commerce-orders-framework-bar');
+    const layoutLabel = document.createElement('span');
+    layoutLabel.className = 'andy-commerce-orders-layout-label';
+    layoutLabel.textContent = '展示方式';
+    toolbar.append(layoutLabel, left);
     table.parentNode.insertBefore(toolbar, table);
-    toolbar.parentNode.insertBefore(panel, toolbar.nextSibling);
+
+    // A light popover anchored to the top-right utility button. This does not
+    // wrap the WooCommerce form or duplicate query/rendered order rows.
+    panel.classList.add('andy-commerce-orders-floating-panel');
+    document.body.appendChild(panel);
+    const positionPanel = () => {
+      if (panel.hidden) return;
+      const rect = settingsBtn.getBoundingClientRect();
+      const width = panel.offsetWidth;
+      const leftPx = Math.max(8, Math.min(window.innerWidth - width - 8, rect.right - width));
+      panel.style.left = leftPx + 'px';
+      panel.style.top = Math.max(8, rect.bottom + 6) + 'px';
+    };
+    window.addEventListener('resize', positionPanel, { passive: true });
+    window.addEventListener('scroll', positionPanel, { passive: true });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && !panel.hidden) {
+        panel.hidden = true;
+        settingsBtn.setAttribute('aria-expanded', 'false');
+        settingsBtn.focus();
+      }
+    });
+    document.addEventListener('click', event => {
+      if (panel.hidden || panel.contains(event.target) || utilitySlot.contains(event.target)) return;
+      panel.hidden = true;
+      settingsBtn.setAttribute('aria-expanded', 'false');
+    });
 
     function mergeOrder(preferred, known) {
       const ordered = [];
@@ -250,7 +369,7 @@
     settingsBtn.addEventListener('click', () => {
       panel.hidden = !panel.hidden;
       settingsBtn.setAttribute('aria-expanded', String(!panel.hidden));
-      if (!panel.hidden) renderPanel();
+      if (!panel.hidden) { renderPanel(); positionPanel(); }
     });
     applyView();
   }
