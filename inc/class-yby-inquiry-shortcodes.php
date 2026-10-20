@@ -83,7 +83,7 @@ class YBY_Inquiry_Shortcodes {
 	}
 	/** Register Bricks custom element without changing the pinned core bootstrap. */
 	public function register_bricks_page_element() {
-		if ( ! class_exists( '\Bricks\\Elements' ) || ! class_exists( '\Bricks\\Element' ) ) { return; }
+		if ( ! class_exists( '\Bricks\Elements' ) || ! class_exists( '\Bricks\Element' ) ) { return; }
 		require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-bricks-page-inquiry-bootstrap.php';
 		YBY_Bricks_Page_Inquiry_Bootstrap::register();
 	}
