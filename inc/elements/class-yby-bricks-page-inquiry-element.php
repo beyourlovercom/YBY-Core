@@ -44,6 +44,7 @@ class YBY_Bricks_Page_Inquiry_Element extends \Bricks\Element {
         $this->control( 'privacy_note', 'copy', 'Privacy message', 'textarea' );
         $this->control( 'image', 'media', 'Popup image', 'image' );
         $this->control( 'image_alt', 'media', 'Image alt text', 'text' );
+        $this->controls['mobile_image'] = array( 'tab' => 'content', 'group' => 'media', 'label' => 'Mobile image', 'type' => 'select', 'options' => array( 'hide' => 'Hide (recommended)', 'show' => 'Show' ), 'default' => 'hide' );
         $this->control( 'preset', 'fields', 'Server-side preset ID (site-specific)', 'text', 'page_owned_inquiry' );
         $this->control( 'desktop_fields', 'fields', 'Desktop field IDs, comma separated', 'text', 'name,email,whatsapp,country,product_interest,quantity,message' );
         $this->control( 'mobile_fields', 'fields', 'Mobile field IDs, comma separated (never empty)', 'text', 'name,email,whatsapp,country,product_interest,quantity,message' );
@@ -134,6 +135,8 @@ class YBY_Bricks_Page_Inquiry_Element extends \Bricks\Element {
         if ( ! $accent ) { $accent = '#2e7d32'; }
         $width = $this->get_value( 'dialog_width', '960' );
         if ( ! in_array( $width, array( '760', '900', '960', '1040' ), true ) ) { $width = '960'; }
+        $mobile_image = $this->get_value( 'mobile_image', 'hide' );
+        if ( ! in_array( $mobile_image, array( 'hide', 'show' ), true ) ) { $mobile_image = 'hide'; }
         $routing = $this->get_value( 'routing', 'page_all' );
         if ( ! in_array( $routing, array( 'page_all', 'explicit' ), true ) ) { $routing = 'page_all'; }
 
@@ -143,7 +146,8 @@ class YBY_Bricks_Page_Inquiry_Element extends \Bricks\Element {
         echo ' data-yby-modal-id="' . esc_attr( $id ) . '"';
         echo ' data-yby-cta-routing="' . esc_attr( $routing ) . '"';
         echo ' data-yby-modal-width="' . esc_attr( $width ) . '"';
-        echo ' data-yby-modal-accent="' . esc_attr( $accent ) . '">';
+        echo ' data-yby-modal-accent="' . esc_attr( $accent ) . '"';
+        echo ' data-yby-mobile-image="' . esc_attr( $mobile_image ) . '">';
         if ( function_exists( 'bricks_is_builder' ) && bricks_is_builder() ) {
             echo '<p class="yby-bricks-inquiry-preview">';
             echo esc_html__( 'Page-owned inquiry modal configured: ', 'yby-core' );
