@@ -224,17 +224,22 @@ class YBY_Project_Studio {
 			exit;
 		}
 
-		if ( 'runtime' === $view && $post_id ) {
-			$this->render_runtime_viewer( $post_id );
-			return;
+		// Use the existing server-rendered V2.2 Content shell. Controllers and
+		// authorization remain unchanged; render the selected view exactly once.
+		$render_view = function () use ( $view, $post_id ) {
+			if ( 'runtime' === $view && $post_id ) {
+				$this->render_runtime_viewer( $post_id );
+			} elseif ( 'overview' === $view && $post_id ) {
+				$this->render_project_overview( $post_id );
+			} else {
+				$this->render_project_list();
+			}
+		};
+		if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
+			YBY_Andy_Admin_Shell_V22::render( 'yby-project-studio', 'Project Studio', $render_view );
+		} else {
+			$render_view();
 		}
-
-		if ( 'overview' === $view && $post_id ) {
-			$this->render_project_overview( $post_id );
-			return;
-		}
-
-		$this->render_project_list();
 	}
 
 	/**
