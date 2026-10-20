@@ -6,7 +6,20 @@
 		if (!config || !Array.isArray(config.items) || !config.items.length) return;
 		const content = document.getElementById('wpbody-content');
 		if (!content || content.querySelector('.andy-core-l3-v2')) return;
-		const wrap = content.querySelector(':scope > .wrap');
+		const isProjectStudio = config.page === 'yby-project-studio';
+		let wrap = content.querySelector(':scope > .wrap');
+		// Project Studio can render through a legacy callback without a top-level .wrap.
+		// Wrap only the existing controller output; never duplicate or replace its handlers.
+		if (!wrap && isProjectStudio) {
+			const nodes = [...content.children].filter(el =>
+				!el.matches('#screen-meta, #screen-meta-links, .notice, .updated, .error'));
+			if (nodes.length) {
+				wrap = document.createElement('div');
+				wrap.className = 'wrap andy-core-studio-legacy-wrap';
+				content.insertBefore(wrap, nodes[0]);
+				for (const node of nodes) wrap.appendChild(node);
+			}
+		}
 		if (!wrap || !wrap.parentElement) return;
 		// Never move the WP block editor, payment forms or unknown screens.
 		if (document.body.classList.contains('block-editor-page') ||
