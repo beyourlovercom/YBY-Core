@@ -45,13 +45,13 @@ $assert( isset( $hooks['action']['manage_shop_order_posts_custom_column'] ), 'le
 $input = array( 'cb' => 'Select', 'order_number' => 'Order', 'order_status' => 'Status', 'order_total' => 'Total' );
 $with_column = Andy_Commerce_Order_Coupon_Column::add_column( $input );
 $assert( array_keys( $with_column ) === array( 'cb', 'order_number', 'order_status', Andy_Commerce_Order_Coupon_Column::COLUMN_KEY, 'order_total' ), 'column before Total' );
-$assert( $with_column[ Andy_Commerce_Order_Coupon_Column::COLUMN_KEY ] === 'Coupon(s) used', 'column heading' );
+$assert( $with_column[ Andy_Commerce_Order_Coupon_Column::COLUMN_KEY ] === '折扣码', 'column heading' );
 $assert( $input === array( 'cb' => 'Select', 'order_number' => 'Order', 'order_status' => 'Status', 'order_total' => 'Total' ), 'input not mutated' );
 $assert( Andy_Commerce_Order_Coupon_Column::add_column( $with_column ) === $with_column, 'idempotent' );
-$assert( Andy_Commerce_Order_Coupon_Column::add_column( array( 'status' => 'Status', 'total' => 'Total' ) ) === array( 'status' => 'Status', Andy_Commerce_Order_Coupon_Column::COLUMN_KEY => 'Coupon(s) used', 'total' => 'Total' ), 'fallback total placement' );
-$assert( Andy_Commerce_Order_Coupon_Column::add_column( array( 'status' => 'Status' ) ) === array( 'status' => 'Status', Andy_Commerce_Order_Coupon_Column::COLUMN_KEY => 'Coupon(s) used' ), 'fallback end placement' );
+$assert( Andy_Commerce_Order_Coupon_Column::add_column( array( 'status' => 'Status', 'total' => 'Total' ) ) === array( 'status' => 'Status', Andy_Commerce_Order_Coupon_Column::COLUMN_KEY => '折扣码', 'total' => 'Total' ), 'fallback total placement' );
+$assert( Andy_Commerce_Order_Coupon_Column::add_column( array( 'status' => 'Status' ) ) === array( 'status' => 'Status', Andy_Commerce_Order_Coupon_Column::COLUMN_KEY => '折扣码' ), 'fallback end placement' );
 $assert( Andy_Commerce_Order_Coupon_Column::add_column( 'invalid' ) === 'invalid', 'invalid columns fail closed' );
-$assert( Andy_Commerce_Order_Coupon_Column::add_column( array( 'smart_coupons' => 'Coupon(s) used', 'order_total' => 'Total' ) ) === array( 'smart_coupons' => 'Coupon(s) used', 'order_total' => 'Total' ), 'Smart Coupons coexistence avoids duplicate' );
+$assert( Andy_Commerce_Order_Coupon_Column::add_column( array( 'smart_coupons' => '折扣码', 'order_total' => 'Total' ) ) === array( 'smart_coupons' => '折扣码', 'order_total' => 'Total' ), 'Smart Coupons coexistence avoids duplicate' );
 $assert( Andy_Commerce_Order_Coupon_Column::add_column( array( 'coupon_used' => 'Discounts', 'order_total' => 'Total' ) ) === array( 'coupon_used' => 'Discounts', 'order_total' => 'Total' ), 'existing coupon key avoids duplicate' );
 
 $order = new WC_Order( array( 'greensoul', 'inkshrimp', '<script>alert("x")</script>' ) );
