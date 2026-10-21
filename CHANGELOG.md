@@ -1,3 +1,11 @@
+## v2.2.11 - 2026-10-19 (integrated V3 + Update Control candidate; NOT published)
+
+- Navigation V3 per Owner-approved interactive design: exactly seven Chinese left L2 entries, four collapsible right L3 groups (文档 / 招商 / 落地页 / 项目), and native WordPress landing/project edit controls. PR #173; Dev visual UAT remains independent and pending.
+- Update Control V1 from PR #165/#167: hide native plugin update alerts, block non-Andy plugin unattended upgrades, scoped WordPress update-Cron cleanup; manual updates remain available.
+- Cron Health V1 from PR #170: read-only scheduler diagnostics, overdue job alerts, no automatic catching up of business jobs.
+- Preserve signed GitHub Stable/Canary updater, SHA256 + Ed25519 checks, code-only rollback, hostname allowlists, and Andy self-update OFF by default.
+- No database version bump; no Stable/Latest publication or WWW/Bottle/Irrigation deployment authorized. Hostinger Dev WP-Cron runner remains tracked at Issue #171.
+
 ## v2.2.10 - 2026-10-17 (signed Stable release; production deployment Owner-gated)
 
 - Derived from latest integrated GitHub main after PR #159, the U3D-proven signed Hostinger native auto-updater and PR #157's exact PR merge-source CI provenance guard.
