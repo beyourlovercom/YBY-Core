@@ -26,6 +26,7 @@ function apply_filters( $hook, $value ) {
 	}
 	return $value;
 }
+function shortcode_atts( $pairs, $atts, $shortcode = '' ) { return array_merge( $pairs, is_array( $atts ) ? $atts : array() ); }
 function get_option( $key, $default = null ) {
 	return $GLOBALS['yby_test_options'][ $GLOBALS['yby_test_site'] ][ $key ] ?? $default;
 }
@@ -37,6 +38,7 @@ require_once $base . '/inc/class-yby-inquiry-field-manager.php';
 require_once $base . '/inc/class-yby-inquiry-preset-manager.php';
 require_once $base . '/inc/class-yby-inquiry-lead-mapper.php';
 require_once $base . '/inc/class-yby-inquiry-renderer.php';
+require_once $base . '/inc/class-yby-inquiry-shortcodes.php';
 require_once $base . '/inc/class-yby-popup-field-studio.php';
 require_once $base . '/inc/class-yby-lead-rest-controller.php';
 
@@ -111,6 +113,29 @@ must( false !== strpos( $html, 'yby-popup-field-studio' ), 'site Studio activate
 must( 2 === preg_match_all( '/<input[^>]+data-yby-field-id="email"[^>]+required\b/', $html ), 'Email required on both modes' );
 must( 1 === preg_match_all( '/data-yby-field-wrapper="site_farm_size"/', $html ), 'Farm Size desktop only' );
 must( false !== strpos( $html, 'Select farm size' ), 'custom field placeholder' );
+
+// Bricks inline must mirror desktop/mobile Studio rendering, not the legacy union.
+$inline_manager = new class( $pm, $fm ) {
+	private $presets; private $fields;
+	public function __construct( $pm, $fm ) { $this->presets = $pm; $this->fields = $fm; }
+	public function get_preset_manager() { return $this->presets; }
+	public function get_field_manager() { return $this->fields; }
+};
+$shortcodes = new YBY_Inquiry_Shortcodes( $inline_manager, $render );
+$inline = $shortcodes->render_inline_shortcode( array(
+	'id' => 'bricks-bottle-equivalent',
+	'preset' => 'site_us_wholesale',
+	'submit_label' => 'Submit Project',
+) );
+must( false !== strpos( $inline, 'yby-popup-field-studio' ), 'Studio inline emits special site class for device payload' );
+must( 1 === substr_count( $inline, 'data-yby-inquiry-form' ), 'Bricks inline uses one form and lead endpoint' );
+must( 1 === substr_count( $inline, 'data-yby-field-wrapper="site_farm_size"' ), 'desktop-only Farm Size appears once' );
+must( false === strpos( $inline, 'site_farm_size-mobile' ), 'mobile does not gain Farm Size' );
+must( 2 === substr_count( $inline, 'data-yby-field-wrapper="email"' ), 'Email appears once per device' );
+must( false !== strpos( $inline, 'data-yby-responsive="desktop"' ) && false !== strpos( $inline, 'data-yby-responsive="mobile"' ), 'both device variants are emitted' );
+must( false !== strpos( $inline, 'Email address' ) && false !== strpos( $inline, 'Business email' ), 'mobile/desktop placeholders are distinct' );
+must( false !== strpos( $inline, 'quantity-mobile' ), 'mobile-specific Quantity is rendered' );
+must( false !== strpos( $inline, 'data-yby-inquiry-submit disabled' ), 'preview/SDK gate stays on same submit control' );
 
 $rest = new YBY_Lead_REST_Controller();
 $validate = new ReflectionMethod( $rest, 'validate_lead' );
