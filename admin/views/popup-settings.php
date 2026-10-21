@@ -154,7 +154,13 @@ $dock_preview_settings['inquiry_text_color'] = $dock_inquiry_text;
 			<tr><th>Custom CSS</th><td><textarea class="large-text code" rows="10" name="yby_popup_settings[<?php echo esc_attr( $popup_css_key ); ?>]"><?php echo esc_textarea( $settings[ $popup_css_key ] ); ?></textarea></td></tr>
 		</tbody></table><p><button class="button button-primary" name="yby_popup_submit" value="1">保存</button></p>
 	</form>
-	<p><a class="button" href="<?php echo esc_url( add_query_arg( array( 'yby_popup_preview' => $popup_prefix ), home_url( '/' ) ) ); ?>" target="_blank" rel="noopener">Preview/Test</a></p>
+	<?php
+	$preview_args = array( 'yby_popup_preview' => $popup_prefix );
+	if ( 'inquiry' === $popup_prefix && current_user_can( 'manage_options' ) ) {
+		$preview_args['yby_studio_nonce'] = wp_create_nonce( 'yby_popup_studio_preview' );
+	}
+	?>
+	<p><a class="button" <?php if ( 'inquiry' === $popup_prefix ) : ?>id="yby-popup-live-preview"<?php endif; ?> href="<?php echo esc_url( add_query_arg( $preview_args, home_url( '/' ) ) ); ?>" target="_blank" rel="noopener">Preview/Test</a></p>
     <?php if ( 'inquiry' === $popup_prefix && current_user_can( 'manage_options' ) ) : ?>
     <p><a class="button" href="<?php echo esc_url( add_query_arg( array( 'yby_popup_preview' => 'inquiry', 'andy_oem_exact_preview' => '1' ), home_url( '/' ) ) ); ?>" target="_blank" rel="noopener">Preview Bottle OEM Original (Dev only · no submissions)</a></p>
     <?php endif; ?>
