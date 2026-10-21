@@ -350,6 +350,11 @@
     if (!submitButton) {
       return;
     }
+    if (form.hasAttribute("data-andy-preview-only")) {
+      submitButton.disabled = true;
+      setFormStatus(form, "Preview only — no inquiries will be submitted.");
+      return;
+    }
 
     if (isSdkAvailable()) {
       submitButton.disabled = false;
@@ -626,7 +631,7 @@
     var payload;
     var validation;
 
-    if (!form || form.getAttribute("data-yby-submitting") === "true") {
+    if (!form || form.hasAttribute("data-andy-preview-only") || form.getAttribute("data-yby-submitting") === "true") {
       return Promise.resolve(null);
     }
 
@@ -755,7 +760,7 @@
     var form = event.target.closest("[data-yby-inquiry-form]");
     var field = event.target.closest("[data-yby-field]");
 
-    if (!form || !field) {
+    if (!form || !field || form.hasAttribute("data-andy-preview-only")) {
       return;
     }
 
