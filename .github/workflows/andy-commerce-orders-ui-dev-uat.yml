@@ -1,0 +1,42 @@
+name: Andy Commerce Orders UI Dev UAT Package
+on:
+  pull_request:
+    paths:
+      - 'packages/andy-commerce/assets/**'
+      - 'packages/andy-commerce/includes/class-andy-commerce-orders-ui.php'
+      - 'scripts/build-orders-ui-dev-uat.sh'
+      - '.github/workflows/andy-commerce-orders-ui-dev-uat.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dev-uat:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Validate exact PR code
+        shell: bash
+        run: |
+          set -euo pipefail
+          php packages/andy-commerce/tests/orders-ui-v1-harness.php
+          php packages/andy-commerce/tests/order-coupon-column-harness.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-orders-ui.php
+          php -l packages/andy-commerce/includes/class-andy-commerce.php
+          node --check packages/andy-commerce/assets/js/orders-ui-v1-2.js
+      - name: Build standalone Dev-only WordPress plugin ZIP
+        shell: bash
+        run: bash scripts/build-orders-ui-dev-uat.sh
+      - name: Upload non-release UAT ZIP
+        uses: actions/upload-artifact@v4.4.3
+        with:
+          name: andy-commerce-orders-ui-dev-uat
+          path: dist/andy-commerce-orders-ui-dev-uat.zip
+          if-no-files-found: error
+          retention-days: 14
