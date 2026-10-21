@@ -86,6 +86,18 @@ class YBY_Inquiry_Preset_Manager {
 					'validation'       => array( 'contact_requirement' => 'email_or_whatsapp' ),
 					'source_component' => 'inquiry_modal',
 				),
+				// Safe opt-in default for page-owned Bricks inquiry dialogs.
+				// Existing global popups and other site presets remain unchanged.
+				'page_owned_email_required' => array(
+					'id'               => 'page_owned_email_required',
+					'label'            => 'Page Inquiry — Email Required',
+					'enabled'          => true,
+					'version'          => '1.0',
+					'fields'           => array( 'name', 'email', 'whatsapp', 'country', 'product_interest', 'quantity', 'message' ),
+					'mobile_fields'    => array( 'name', 'email', 'whatsapp', 'country', 'product_interest', 'quantity', 'message' ),
+					'validation'       => array( 'contact_requirement' => 'email' ),
+					'source_component' => 'inquiry_modal',
+				),
 				'used_forklift_inquiry' => array(
 					'id'               => 'used_forklift_inquiry',
 					'label'            => 'Used Forklift Inquiry',
@@ -145,7 +157,7 @@ class YBY_Inquiry_Preset_Manager {
 		$presets  = is_array( $stored ) ? $stored : $defaults;
 
 		if ( is_array( $stored ) ) {
-			foreach ( array( 'page_owned_inquiry', 'used_forklift_inquiry' ) as $required_preset_id ) {
+			foreach ( array( 'page_owned_inquiry', 'page_owned_email_required', 'used_forklift_inquiry' ) as $required_preset_id ) {
 				if ( ! isset( $presets[ $required_preset_id ] ) && isset( $defaults[ $required_preset_id ] ) ) {
 					$presets[ $required_preset_id ] = $defaults[ $required_preset_id ];
 				}
@@ -160,7 +172,13 @@ class YBY_Inquiry_Preset_Manager {
 		$presets = $this->sanitize_presets( $presets );
 		$presets = apply_filters( 'yby_inquiry_presets', $presets );
 
-		return $this->sanitize_presets( $presets );
+		$presets = $this->sanitize_presets( $presets );
+		// The dedicated Email-required preset cannot be downgraded by
+		// existing stored options or third-party presentation filters.
+		if ( isset( $presets['page_owned_email_required'] ) ) {
+			$presets['page_owned_email_required']['validation']['contact_requirement'] = 'email';
+		}
+		return $presets;
 	}
 
 	/**
