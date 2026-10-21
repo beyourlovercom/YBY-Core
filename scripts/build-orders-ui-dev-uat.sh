@@ -19,14 +19,14 @@ cat > "$plugin/andy-commerce-orders-ui-dev-uat.php" <<'PHP'
 <?php
 /**
  * Plugin Name: Andy Commerce Orders UI — DEV UAT Only
- * Description: Temporary standalone preview of native-rendered Orders UI V1.2 (standard/compact/cards). Remove after Commerce integration.
- * Version: 0.1.2
+ * Description: Temporary standalone preview of native-rendered Orders UI V1.3 (standard/compact/cards). Remove after Commerce integration.
+ * Version: 0.1.3
  * Requires Plugins: woocommerce
  * Author: BeYourLover Dev
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 define( 'AC_ORDERS_UI_UAT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'AC_ORDERS_UI_UAT_VERSION', '0.1.2' );
+define( 'AC_ORDERS_UI_UAT_VERSION', '0.1.3' );
 add_action( 'plugins_loaded', function () {
     if ( ! class_exists( 'WooCommerce' ) || class_exists( 'Andy_Commerce_Orders_UI' ) ) {
         return;
