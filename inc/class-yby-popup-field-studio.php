@@ -122,7 +122,7 @@ final class YBY_Popup_Field_Studio {
 				'layout' => $layout,
 				'title' => self::text( $preset['title'] ?? '', 160 ),
 				'subtitle' => self::text( $preset['subtitle'] ?? '', 300 ),
-				'image' => is_scalar( $preset['image'] ?? '' ) ? esc_url_raw( (string) $preset['image'] ) : '',
+				'image' => is_scalar( $preset['image'] ?? '' ) ? esc_url_raw( (string) ( $preset['image'] ?? '' ) ) : '',
 				'page_profiles' => array_values( $profiles ),
 				'configs' => $configs,
 			);
