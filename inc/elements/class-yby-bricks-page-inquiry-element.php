@@ -45,7 +45,7 @@ class YBY_Bricks_Page_Inquiry_Element extends \Bricks\Element {
         $this->control( 'image', 'media', 'Popup image', 'image' );
         $this->control( 'image_alt', 'media', 'Image alt text', 'text' );
         $this->controls['mobile_image'] = array( 'tab' => 'content', 'group' => 'media', 'label' => 'Mobile image', 'type' => 'select', 'options' => array( 'hide' => 'Hide (recommended)', 'show' => 'Show' ), 'default' => 'hide' );
-        $this->control( 'preset', 'fields', 'Server-side preset ID (site-specific)', 'text', 'page_owned_inquiry' );
+        $this->control( 'preset', 'fields', 'Server-side preset ID (default: Email required)', 'text', 'page_owned_email_required' );
         $this->control( 'desktop_fields', 'fields', 'Desktop field IDs, comma separated', 'text', 'name,email,whatsapp,country,product_interest,quantity,message' );
         $this->control( 'mobile_fields', 'fields', 'Mobile field IDs, comma separated (never empty)', 'text', 'name,email,whatsapp,country,product_interest,quantity,message' );
         $this->controls['dialog_width'] = array(
@@ -95,17 +95,37 @@ class YBY_Bricks_Page_Inquiry_Element extends \Bricks\Element {
             : $default;
     }
 
+    /**
+     * Always expose fields required by the trusted server preset.
+     * Page editors can still select optional fields per device.
+     */
+    private function ensure_required_fields( $value, $preset ) {
+        $tokens = preg_split( '/[\\s,|]+/', (string) $value, -1, PREG_SPLIT_NO_EMPTY );
+        $tokens = array_values( array_unique( array_filter( array_map( 'sanitize_key', (array) $tokens ) ) ) );
+        $required = array( 'name' );
+        if ( is_array( $preset ) && 'email' === sanitize_key( $preset['validation']['contact_requirement'] ?? '' ) ) {
+            $required[] = 'email';
+        }
+        return implode( ',', array_values( array_unique( array_merge( $required, $tokens ) ) ) );
+    }
+
     public function render() {
         if ( ! shortcode_exists( 'yby_inquiry_modal' ) ) { return; }
+        $preset_id = sanitize_key( $this->get_value( 'preset', 'page_owned_email_required' ) );
+        $preset = class_exists( 'YBY_Inquiry_Preset_Manager' )
+            ? ( new YBY_Inquiry_Preset_Manager() )->get_preset( $preset_id )
+            : null;
         $fields = $this->get_value( 'desktop_fields', 'name,email,whatsapp,country,product_interest,quantity,message' );
         $mobile = $this->get_value( 'mobile_fields', $fields );
         if ( '' === trim( $mobile ) ) { $mobile = $fields; }
+        $fields = $this->ensure_required_fields( $fields, $preset );
+        $mobile = $this->ensure_required_fields( $mobile, $preset );
         $page = absint( get_the_ID() );
         $id = 'yby-page-inquiry-' . $page . '-' . sanitize_html_class( (string) $this->id );
         $id = substr( $id, 0, 85 );
         $args = array(
             'id' => $id,
-            'preset' => sanitize_key( $this->get_value( 'preset', 'page_owned_inquiry' ) ),
+            'preset' => $preset_id,
             'layout' => 'split_visual',
             'desktop_fields' => $fields,
             'mobile_fields' => $mobile,
