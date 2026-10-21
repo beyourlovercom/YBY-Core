@@ -103,6 +103,9 @@ $ok( $GLOBALS['writes'] === 1, 'denied request writes nothing' );
 
 $js = file_get_contents( dirname( __DIR__ ) . '/assets/js/orders-ui-v1-2.js' );
 $css = file_get_contents( dirname( __DIR__ ) . '/assets/css/orders-ui-v1-2.css' );
+$ok( str_contains( $css, 'form:is(#posts-filter, #wc-orders-filter)' ), 'HPOS and legacy form selectors are both scoped before first paint' );
+$ok( str_contains( $css, 'grid-column:2;grid-row:1;justify-self:end;' ), 'search aligns right on desktop first row' );
+$ok( str_contains( $css, 'grid-column:1;grid-row:1;align-self:center;' ), 'native bulk and filters align left on same row' );
 $ok( str_contains( $css, '.tablenav.top .tablenav-pages' ), 'top pagination hidden at first paint' );
 $ok( str_contains( $css, '.tablenav.bottom .tablenav-pages' ), 'bottom native pagination kept' );
 $ok( str_contains( $css, 'body.ac-orders-layout-cards' ), 'card view server class' );
