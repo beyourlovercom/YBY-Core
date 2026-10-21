@@ -964,6 +964,14 @@ function testInquiryPageExclusion() {
   assert(runtime.dataLayer.length === 0, "Inquiry runtime must not emit Thank You tracking events on init.");
 }
 
+function testPopupOwnerPreviewCannotSubmit() {
+  const runtime = runInquiryRuntime();
+  const previewForm = new MockNode({ "data-andy-preview-only": "1" });
+  const task = runtime.YBYInquiry.submitForm(previewForm);
+  assert(task && typeof task.then === "function", "Preview returns no-network settled promise.");
+  assert(runtime.dataLayer.length === 0, "Preview does not emit inquiry conversion events.");
+}
+
 const tests = [
   ["test_helpers_hidden", testTestHelpersHiddenByDefault],
   ["test_helpers_enabled", testTestHelpersEnabledExplicitly],
@@ -997,7 +1005,8 @@ const tests = [
   ["thank_you_whatsapp_no_double", testThankYouWhatsAppNoDoubleCount],
   ["dock_marker_not_thank_you", testDockMarkerDoesNotMakeThankYouPage],
   ["non_thank_you", testNonThankYouExclusion],
-  ["inquiry_exclusion", testInquiryPageExclusion]
+  ["inquiry_exclusion", testInquiryPageExclusion],
+  ["popup_owner_preview_no_submit", testPopupOwnerPreviewCannotSubmit]
 ];
 
 tests.forEach(([name, test]) => {
