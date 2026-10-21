@@ -13,6 +13,7 @@ $studio_boot = array(
 	'fields' => $studio_fields,
 	'presets' => $studio_presets,
 	'global_preset' => isset( $settings['inquiry_preset'] ) ? $settings['inquiry_preset'] : '',
+	'last_preset' => sanitize_key( (string) get_option( 'yby_popup_studio_last_selected_preset', '' ) ),
 	'site_name' => get_bloginfo( 'name' ),
 );
 ?>
@@ -113,5 +114,6 @@ $studio_boot = array(
 		</div>
 	</div>
 	<input type="hidden" name="yby_popup_field_studio_payload" id="yby-studio-payload" value="<?php echo esc_attr( wp_json_encode( $studio_state ) ); ?>">
+	<input type="hidden" name="yby_popup_field_studio_active" id="yby-studio-selected" value="">
 	<script type="application/json" id="yby-studio-bootstrap"><?php echo wp_json_encode( $studio_boot, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></script>
 </div>
