@@ -13,16 +13,44 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Renders neutral inquiry modal markup.
  */
 class YBY_Inquiry_Renderer {
-	public function render_inline( $preset, $fields, $attributes = array() ) {
-		if ( ! is_array( $preset ) || empty( $preset['id'] ) ) { return ''; }
+	/**
+	 * Render a form inside a page-builder visual shell.
+	 *
+	 * When a site Studio preset is used, emit distinct desktop and mobile
+	 * controls just like render_modal(). Legacy inline forms remain unchanged.
+	 *
+	 * @param array $preset Preset definition.
+	 * @param array $fields Desktop fields.
+	 * @param array $attributes Sanitized shortcode attributes.
+	 * @param array $mobile_fields Mobile fields for site Studio presets.
+	 * @return string
+	 */
+	public function render_inline( $preset, $fields, $attributes = array(), $mobile_fields = array() ) {
+		if ( ! is_array( $preset ) || empty( $preset['id'] ) ) {
+			return '';
+		}
 		$id = $this->normalize_modal_id( isset( $attributes['id'] ) ? $attributes['id'] : 'yby-inquiry-' . $preset['id'] );
 		$title = isset( $attributes['title'] ) && '' !== $attributes['title'] ? $attributes['title'] : $preset['label'];
 		$submit = isset( $attributes['submit_label'] ) && '' !== $attributes['submit_label'] ? $attributes['submit_label'] : 'Submit Inquiry';
 		$classes = array_merge( array( 'yby-shortcode-inquiry' ), isset( $attributes['class'] ) && is_array( $attributes['class'] ) ? $attributes['class'] : array() );
+		$studio = in_array( 'yby-popup-field-studio', $classes, true );
 		$form = '';
-		foreach ( $fields as $field ) { $form .= $this->render_field( $field, array( 'modal_id' => $id ) ); }
+
+		foreach ( $fields as $field ) {
+			if ( $studio ) {
+				$field = $this->apply_contact_requirement( $this->apply_field_presentation_overrides( $field, $attributes, false ), $preset );
+			}
+			$form .= $this->render_field( $field, array( 'modal_id' => $id, 'responsive' => $studio ? 'desktop' : '' ) );
+		}
+		if ( $studio ) {
+			foreach ( $mobile_fields as $field ) {
+				$field = $this->apply_contact_requirement( $this->apply_field_presentation_overrides( $field, $attributes, true ), $preset );
+				$form .= $this->render_field( $field, array( 'modal_id' => $id, 'responsive' => 'mobile' ) );
+			}
+		}
+
 		$form .= $this->render_metadata_fields( array_merge( $preset, array( 'source_component' => 'inquiry_shortcode' ) ) );
-		$out  = '<div id="' . esc_attr( $id ) . '" class="' . esc_attr( implode( ' ', $classes ) ) . '" data-yby-inquiry-inline data-yby-preset="' . esc_attr( $preset['id'] ) . '" data-yby-source-component="inquiry_shortcode">';
+		$out = '<div id="' . esc_attr( $id ) . '" class="' . esc_attr( implode( ' ', array_unique( $classes ) ) ) . '" data-yby-inquiry-inline data-yby-preset="' . esc_attr( $preset['id'] ) . '" data-yby-source-component="inquiry_shortcode">';
 		$out .= '<h2>' . esc_html( $title ) . '</h2><form class="yby-inquiry-form" data-yby-inquiry-form data-yby-preset="' . esc_attr( $preset['id'] ) . '" data-yby-contact-requirement="' . esc_attr( $preset['validation']['contact_requirement'] ?? 'none' ) . '" data-yby-form-version="' . esc_attr( $preset['version'] ) . '" novalidate>' . $form . '<div class="yby-inquiry-form__status" data-yby-inquiry-status role="status"></div><div class="yby-inquiry-form__error" data-yby-inquiry-error role="alert" hidden></div><button type="submit" class="yby-inquiry-form__submit" data-yby-inquiry-submit disabled>' . esc_html( $submit ) . '</button></form></div>';
 		return $out;
 	}
