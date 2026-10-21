@@ -60,6 +60,10 @@ class MockNode {
     }
   }
 
+  hasAttribute(name) {
+    return Object.prototype.hasOwnProperty.call(this.attributes, name);
+  }
+
   getAttribute(name) {
     if (Object.prototype.hasOwnProperty.call(this.attributes, name)) {
       return this.attributes[name];
