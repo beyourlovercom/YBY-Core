@@ -134,8 +134,18 @@ $dock_preview_settings['inquiry_text_color'] = $dock_inquiry_text;
 					<option value="irrigation_quick_inquiry" <?php selected( $settings['inquiry_preset'], 'irrigation_quick_inquiry' ); ?>>Irrigation · 原默认</option>
 					<option value="bottle_oem_inquiry" <?php selected( $settings['inquiry_preset'], 'bottle_oem_inquiry' ); ?>>Bottle OEM</option>
 					<option value="bottle_wholesale_inquiry" <?php selected( $settings['inquiry_preset'], 'bottle_wholesale_inquiry' ); ?>>Bottle Wholesale</option>
+					<?php foreach ( YBY_Popup_Field_Studio::get_state()['presets'] as $site_preset ) : ?>
+						<?php if ( ! empty( $site_preset['enabled'] ) ) : ?>
+						<option value="<?php echo esc_attr( $site_preset['id'] ); ?>" <?php selected( $settings['inquiry_preset'], $site_preset['id'] ); ?>><?php echo esc_html( $site_preset['label'] ); ?> · 本站方案</option>
+						<?php endif; ?>
+					<?php endforeach; ?>
 				</select>
 				<p class="description">沿用现有 Inquiry OS 预设 ID、字段校验、来源追踪和提交接口。需先验证 Dev 预设存在且启用；不会自动切换现有广告落地页表单。</p>
+			</td></tr>
+			<?php endif; ?>
+			<?php if ( 'inquiry' === $popup_prefix ) : ?>
+			<tr><td colspan="2" style="padding:0"><!-- Existing settings form; no new route or menu -->
+				<?php include YBY_CORE_PLUGIN_DIR . 'admin/views/popup-field-studio.php'; ?>
 			</td></tr>
 			<?php endif; ?>
 			<tr><th>标题</th><td><input class="regular-text" name="yby_popup_settings[<?php echo esc_attr( $popup_prefix ); ?>_title]" value="<?php echo esc_attr( $settings[ $popup_prefix . '_title' ] ); ?>" type="text"></td></tr>
@@ -144,7 +154,13 @@ $dock_preview_settings['inquiry_text_color'] = $dock_inquiry_text;
 			<tr><th>Custom CSS</th><td><textarea class="large-text code" rows="10" name="yby_popup_settings[<?php echo esc_attr( $popup_css_key ); ?>]"><?php echo esc_textarea( $settings[ $popup_css_key ] ); ?></textarea></td></tr>
 		</tbody></table><p><button class="button button-primary" name="yby_popup_submit" value="1">保存</button></p>
 	</form>
-	<p><a class="button" href="<?php echo esc_url( add_query_arg( array( 'yby_popup_preview' => $popup_prefix ), home_url( '/' ) ) ); ?>" target="_blank" rel="noopener">Preview/Test</a></p>
+	<?php
+	$preview_args = array( 'yby_popup_preview' => $popup_prefix );
+	if ( 'inquiry' === $popup_prefix && current_user_can( 'manage_options' ) ) {
+		$preview_args['yby_studio_nonce'] = wp_create_nonce( 'yby_popup_studio_preview' );
+	}
+	?>
+	<p><a class="button" <?php if ( 'inquiry' === $popup_prefix ) : ?>id="yby-popup-live-preview"<?php endif; ?> href="<?php echo esc_url( add_query_arg( $preview_args, home_url( '/' ) ) ); ?>" target="_blank" rel="noopener">Preview/Test</a></p>
     <?php if ( 'inquiry' === $popup_prefix && current_user_can( 'manage_options' ) ) : ?>
     <p><a class="button" href="<?php echo esc_url( add_query_arg( array( 'yby_popup_preview' => 'inquiry', 'andy_oem_exact_preview' => '1' ), home_url( '/' ) ) ); ?>" target="_blank" rel="noopener">Preview Bottle OEM Original (Dev only · no submissions)</a></p>
     <?php endif; ?>

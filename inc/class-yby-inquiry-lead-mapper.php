@@ -244,8 +244,21 @@ class YBY_Inquiry_Lead_Mapper {
 				return ! empty( $raw_value ) && '0' !== (string) $raw_value ? '1' : '';
 
 			case 'select':
+			case 'radio':
 				$value = substr( sanitize_text_field( (string) $raw_value ), 0, 500 );
 				return $this->is_allowed_option_value( $value, $field ) ? $value : '';
+
+			case 'multiselect':
+				$items = array_filter( array_map( 'trim', explode( ',', (string) $raw_value ) ) );
+				$items = array_slice( array_unique( $items ), 0, 15 );
+				foreach ( $items as $item ) {
+					if ( ! $this->is_allowed_option_value( $item, $field ) ) { return ''; }
+				}
+				return implode( ',', $items );
+
+			case 'number':
+				$value = substr( sanitize_text_field( (string) $raw_value ), 0, 120 );
+				return is_numeric( $value ) ? $value : '';
 
 			case 'email':
 				return substr( sanitize_email( (string) $raw_value ), 0, 500 );

@@ -246,7 +246,9 @@
       var fieldId = safeString(field.getAttribute("data-yby-field-id"), 80);
 
       if (fieldId && !field.disabled && field.getAttribute("data-yby-active") !== "false") {
-        fields[fieldId] = field;
+        if (field.type !== "radio" || !fields[fieldId] || field.checked) {
+          fields[fieldId] = field;
+        }
       }
     });
 
@@ -348,6 +350,11 @@
     if (!submitButton) {
       return;
     }
+    if (form.hasAttribute("data-andy-preview-only")) {
+      submitButton.disabled = true;
+      setFormStatus(form, "Preview only — no inquiries will be submitted.");
+      return;
+    }
 
     if (isSdkAvailable()) {
       submitButton.disabled = false;
@@ -412,7 +419,7 @@
     Object.keys(fields).forEach(function (fieldId) {
       var field = fields[fieldId];
       var type = safeString(field.type || field.tagName.toLowerCase(), 40);
-      var value = type === "checkbox" ? (field.checked ? "1" : "") : safeString(field.value, 3000);
+      var value = type === "checkbox" ? (field.checked ? "1" : "") : type === "radio" ? (field.checked ? safeString(field.value, 3000) : "") : (field.multiple ? Array.prototype.map.call(field.selectedOptions || [], function (o) { return o.value; }).filter(Boolean).join(",") : safeString(field.value, 3000));
 
       if (field.required) {
         if (type === "checkbox" && !field.checked) {
@@ -488,7 +495,7 @@
     Object.keys(fields).forEach(function (fieldId) {
       var field = fields[fieldId];
       var type = safeString(field.type || field.tagName.toLowerCase(), 40);
-      var value = type === "checkbox" ? (field.checked ? "1" : "") : safeString(field.value, 3000);
+      var value = type === "checkbox" ? (field.checked ? "1" : "") : type === "radio" ? (field.checked ? safeString(field.value, 3000) : "") : (field.multiple ? Array.prototype.map.call(field.selectedOptions || [], function (o) { return o.value; }).filter(Boolean).join(",") : safeString(field.value, 3000));
 
       if (value && fieldId !== "contact") {
         payload[fieldId] = value;
@@ -522,6 +529,7 @@
     payload.source_preset = safeString(form.getAttribute("data-yby-preset"), 100);
     payload.source_page = getSourcePage(form, modal);
     payload.form_version = safeString(form.getAttribute("data-yby-form-version"), 30);
+    if (form.closest(".yby-popup-field-studio")) { payload.form_device = isMobileViewport() ? "mobile" : "desktop"; }
     payload.trigger_source = safeString(form.getAttribute("data-yby-trigger-source"), 120);
     payload.page_profile = getPageProfile(form);
     payload.utm_source = safeString(getQueryParam("utm_source"), 100);
@@ -623,7 +631,7 @@
     var payload;
     var validation;
 
-    if (!form || form.getAttribute("data-yby-submitting") === "true") {
+    if (!form || form.hasAttribute("data-andy-preview-only") || form.getAttribute("data-yby-submitting") === "true") {
       return Promise.resolve(null);
     }
 
@@ -752,7 +760,7 @@
     var form = event.target.closest("[data-yby-inquiry-form]");
     var field = event.target.closest("[data-yby-field]");
 
-    if (!form || !field) {
+    if (!form || !field || form.hasAttribute("data-andy-preview-only")) {
       return;
     }
 

@@ -20,6 +20,12 @@ class YBY_Popup_Admin {
 	}
 
 	public function enqueue_assets( $hook ) {
+		$embedded_hook = class_exists( 'YBY_Inquiry_Admin' ) ? YBY_Inquiry_Admin::registered_page_hook() : '';
+		$is_popup = isset( $_GET['tab'] ) && is_scalar( $_GET['tab'] ) && in_array( sanitize_key( wp_unslash( $_GET['tab'] ) ), array( 'popup_inquiry', 'inquiry' ), true );
+		if ( $is_popup && ( $hook === $this->hook || ( $embedded_hook && $hook === $embedded_hook ) ) ) {
+			wp_enqueue_style( 'yby-popup-field-studio', YBY_CORE_PLUGIN_URL . 'assets/css/yby-popup-field-studio.css', array(), $this->version );
+			wp_enqueue_script( 'yby-popup-field-studio', YBY_CORE_PLUGIN_URL . 'assets/js/yby-popup-field-studio.js', array(), (string) filemtime( YBY_CORE_PLUGIN_DIR . 'assets/js/yby-popup-field-studio.js' ), true );
+		}
 		if ( $hook !== $this->hook ) { return; }
 		wp_enqueue_media();
 		wp_enqueue_style( 'yby-global-inquiry-dock-preview', YBY_CORE_PLUGIN_URL . 'public/css/yby-global-inquiry-dock.css', array(), $this->version );
@@ -88,6 +94,13 @@ class YBY_Popup_Admin {
 			$tab = $inquiry_enabled ? 'floating_inquiry' : 'email_templates';
 		}
 
+		// The existing popup tab owns this editor; enqueue assets in both legacy
+		// and embedded Three OS routes, without registering an additional page.
+		if ( $inquiry_enabled && 'popup_inquiry' === $tab ) {
+			wp_enqueue_style( 'yby-popup-field-studio', YBY_CORE_PLUGIN_URL . 'assets/css/yby-popup-field-studio.css', array(), $this->version );
+			wp_enqueue_script( 'yby-popup-field-studio', YBY_CORE_PLUGIN_URL . 'assets/js/yby-popup-field-studio.js', array(), (string) filemtime( YBY_CORE_PLUGIN_DIR . 'assets/js/yby-popup-field-studio.js' ), true );
+		}
+
 		// Exactly the original nonce-protected settings and dock writes.
 		if ( $inquiry_enabled && 'floating_inquiry' === $tab && isset( $_POST['yby_inquiry_dock_submit'] ) ) {
 			check_admin_referer( 'yby_inquiry_dock_save', 'yby_inquiry_dock_nonce' );
@@ -97,10 +110,32 @@ class YBY_Popup_Admin {
 		}
 		if ( $inquiry_enabled && isset( $_POST['yby_popup_submit'] ) ) {
 			check_admin_referer( 'yby_popup_save', 'yby_popup_nonce' );
+			// Atomic opt-in settings save. The legacy form keeps its original nonce,
+			// permissions, and POST handler; no site config is changed by viewing.
+			if ( 'popup_inquiry' === $tab && isset( $_POST['yby_popup_field_studio_payload'] ) ) {
+				if ( ! current_user_can( 'andy_core_settings_manage' ) ) {
+					wp_die( esc_html__( 'Permission denied.', 'yby-core' ) );
+				}
+				$payload = wp_unslash( $_POST['yby_popup_field_studio_payload'] );
+				if ( ! is_string( $payload ) || strlen( $payload ) > 180000 ) {
+					wp_die( esc_html__( 'Invalid Popup Studio payload.', 'yby-core' ) );
+				}
+				$decoded = json_decode( $payload, true );
+				if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) ) {
+					wp_die( esc_html__( 'Invalid Popup Studio JSON.', 'yby-core' ) );
+				}
+				$clean = YBY_Popup_Field_Studio::sanitize( $decoded );
+				update_option( YBY_Popup_Field_Studio::OPTION, $clean, false );
+				$selected_preset = isset( $_POST['yby_popup_field_studio_active'] )
+					? sanitize_key( wp_unslash( (string) $_POST['yby_popup_field_studio_active'] ) ) : '';
+				if ( '' !== $selected_preset && isset( $clean['presets'][ $selected_preset ] ) ) {
+					update_option( 'yby_popup_studio_last_selected_preset', $selected_preset, false );
+				}
+			}
 			$existing = YBY_Global_Popup::settings();
 			$submitted = wp_unslash( $_POST['yby_popup_settings'] ?? array() );
 			update_option( YBY_Global_Popup::OPTION, YBY_Global_Popup::sanitize( array_merge( $existing, is_array( $submitted ) ? $submitted : array() ) ) );
-			echo '<div class="notice notice-success"><p>Email settings saved.</p></div>';
+			echo '<div class="notice notice-success"><p>Popup settings saved.</p></div>';
 		}
 		$settings = $inquiry_enabled ? YBY_Global_Popup::sanitize( YBY_Global_Popup::settings() ) : array();
 		$dock_settings = $inquiry_enabled ? YBY_Global_Inquiry_Dock::sanitize( YBY_Global_Inquiry_Dock::settings() ) : array();

@@ -131,6 +131,7 @@ class YBY_Lead_REST_Controller {
 				'quantity'         => $this->limit_text( $request->get_param( 'quantity' ), 100 ),
 				'project_details'  => $this->limit_textarea( $request->get_param( 'project_details' ), 3000 ),
 				'custom_fields'    => $custom_fields,
+				'form_device'      => 'mobile' === sanitize_key( (string) $request->get_param( 'form_device' ) ) ? 'mobile' : 'desktop',
 				'utm_source'       => $this->limit_text( $request->get_param( 'utm_source' ), 100 ),
 				'utm_medium'       => $this->limit_text( $request->get_param( 'utm_medium' ), 100 ),
 				'utm_campaign'     => $this->limit_text( $request->get_param( 'utm_campaign' ), 150 ),
@@ -154,7 +155,10 @@ class YBY_Lead_REST_Controller {
 			$errors = array_merge( $errors, $mapper->validate_submission_context( $lead['source_preset'], $lead['page_profile'] ) );
 		}
 
-		if ( '' === trim( (string) $lead['name'] ) ) {
+		// Legacy forms still require Name. Studio-managed presets honor their
+		// independently configured desktop/mobile required-state matrix instead.
+		$studio_preset = class_exists( 'YBY_Popup_Field_Studio' ) && YBY_Popup_Field_Studio::has_preset( isset( $lead['source_preset'] ) ? $lead['source_preset'] : '' );
+		if ( ! $studio_preset && '' === trim( (string) $lead['name'] ) ) {
 			$errors['name'] = __( 'Name is required', 'yby-core' );
 		}
 
@@ -194,6 +198,9 @@ class YBY_Lead_REST_Controller {
 			$errors['whatsapp'] = __( 'Invalid WhatsApp', 'yby-core' );
 		}
 
+		if ( class_exists( 'YBY_Popup_Field_Studio' ) ) {
+			$errors = array_merge( $errors, YBY_Popup_Field_Studio::required_errors( $lead ) );
+		}
 		return $errors;
 	}
 
