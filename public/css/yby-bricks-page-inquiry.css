@@ -42,6 +42,7 @@
     overflow-x: hidden !important; overflow-y: auto !important;
     align-content: start; gap: 10px; padding: 0 2px 16px 0;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
   }
   .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-field[data-yby-responsive="desktop"] {
     display: none !important;
@@ -52,6 +53,13 @@
   .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-form__submit {
     position: static !important; flex: 0 0 auto;
     z-index: 2; min-height: 50px; margin-top: 0;
+  }
+  /* M14 touch polish: leave desktop sizing, typography and form columns unchanged. */
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-modal__close {
+    min-width: 40px; min-height: 40px; touch-action: manipulation;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-form__submit {
+    touch-action: manipulation;
   }
   .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-modal__media { display: none !important; }
   .yby-inquiry-modal.yby-page-inquiry-owned.yby-page-inquiry-mobile-image .yby-inquiry-modal__media {
