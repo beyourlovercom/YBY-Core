@@ -42,6 +42,13 @@ class YBY_Content_Admin {
 			$modules[ $id ] = $module;
 		}
 
-		include YBY_CORE_PLUGIN_DIR . 'admin/views/content-overview.php';
+		$render = static function () use ( $modules ) {
+			include YBY_CORE_PLUGIN_DIR . 'admin/views/content-overview.php';
+		};
+		if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
+			YBY_Andy_Admin_Shell_V22::render( self::MENU_SLUG, 'Andy Content', $render );
+		} else {
+			$render();
+		}
 	}
 }

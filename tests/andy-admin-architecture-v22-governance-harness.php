@@ -9,13 +9,14 @@ $assert(($data['l3']['rendering']??'')==='server-side-PHP-shell' && !empty($data
 $categories=$data['categories']??array();
 $slugs=array_column($categories,'slug');
 $expected=array('andy-core-leads','andy-core-newsletter','andy-core-email','andy-core-content','andy-core-marketing','andy-core-commerce','andy-core-system');
-$assert($slugs===$expected,'seven owner-approved native L2 modules and order');
+$assert($slugs===$expected,'exact seven Chinese L2 modules; no duplicated Landing Pages');
 $assert(count(array_unique($slugs))===count($slugs),'L2 unique');
-$capabilities=array('andy_core_leads_view','andy_core_newsletter_view','andy_core_mail_view','andy_core_settings_manage','manage_woocommerce');
+$capabilities=array('andy_core_leads_view','andy_core_newsletter_view','andy_core_mail_view','andy_core_settings_manage','edit_pages','manage_woocommerce');
 foreach($categories as $group) {
 	$assert(in_array($group['capability']??'', $capabilities,true),'module capability allowlisted '.$group['slug']);
 	$assert(in_array($group['owner']??'',array('andy-core','andy-commerce'),true),'known plugin owner');
-	$assert(str_starts_with($group['landing']??'','admin.php?page='),'real WordPress admin default');
+	$assert(empty($group['native_wp_cpt']),'no eighth native Landing Pages L2');
+	$assert(str_starts_with($group['landing']??'','admin.php?page='),'native admin destination exists');
 }
 $shell=file_get_contents($root.'/admin/class-yby-andy-admin-shell-v22.php');
 $core=file_get_contents($root.'/inc/class-yby-core.php');
@@ -94,8 +95,17 @@ $GLOBALS['v22_role_caps']=array('edit_pages');
 $GLOBALS['v22_modules']=array('landing_pages'=>true);
 $groups=YBY_Andy_OS_Navigation::sections();
 $visible=array_filter($groups,static function($group){return current_user_can($group[1]);});
-$assert(array_keys($visible)===array('andy-core-content'),'M5 content-only visible L2 excludes Commerce, Inquiry and System');
+$assert(array_keys($visible)===array('andy-core-content'),
+    'V3 content-only editor sees one Chinese Content L2, no duplicate');
 $assert(YBY_Andy_OS_Navigation::destination('andy-core-content')==='edit.php?post_type=landing_page','M5 native editor not replaced');
+
+$assert( YBY_Andy_OS_Navigation::active_second_level() !== 'edit.php?post_type=landing_page',
+    'M5 non-Landing route cannot impersonate native Landing Pages L2' );
+$_GET=array('post_type'=>'landing_page');
+$assert( YBY_Andy_OS_Navigation::active_second_level()==='andy-core-content',
+    'V3 native Landing Pages list highlights Chinese Content L2' );
+unset($_GET['post_type']);
+
 $GLOBALS['v22_role_caps']=array('manage_woocommerce');
 $GLOBALS['v22_modules']=array();
 $assert(array_keys(YBY_Andy_OS_Navigation::sections())===array('andy-core-marketing','andy-core-commerce'),'M5 Woo manager only owns Commerce+Marketing L2');
