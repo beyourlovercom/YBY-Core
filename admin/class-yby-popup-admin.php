@@ -124,7 +124,13 @@ class YBY_Popup_Admin {
 				if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) ) {
 					wp_die( esc_html__( 'Invalid Popup Studio JSON.', 'yby-core' ) );
 				}
-				update_option( YBY_Popup_Field_Studio::OPTION, YBY_Popup_Field_Studio::sanitize( $decoded ), false );
+				$clean = YBY_Popup_Field_Studio::sanitize( $decoded );
+				update_option( YBY_Popup_Field_Studio::OPTION, $clean, false );
+				$selected_preset = isset( $_POST['yby_popup_field_studio_active'] )
+					? sanitize_key( wp_unslash( (string) $_POST['yby_popup_field_studio_active'] ) ) : '';
+				if ( '' !== $selected_preset && isset( $clean['presets'][ $selected_preset ] ) ) {
+					update_option( 'yby_popup_studio_last_selected_preset', $selected_preset, false );
+				}
 			}
 			$existing = YBY_Global_Popup::settings();
 			$submitted = wp_unslash( $_POST['yby_popup_settings'] ?? array() );
