@@ -6,13 +6,26 @@
   if (!root || !bootNode) return;
   var boot;
   try { boot = JSON.parse(bootNode.textContent); } catch (error) { return; }
-  var initial = JSON.parse(JSON.stringify(boot.state || { version: 2, fields: {}, presets: {} }));
-  var state = JSON.parse(JSON.stringify(initial));
-  if (!state.fields || typeof state.fields !== "object") state.fields = {};
-  if (!state.presets || typeof state.presets !== "object") state.presets = {};
+  // PHP encodes empty associative arrays as []. Converting to plain objects
+  // is vital: JSON.stringify([]) discards named keys such as site_bottle_quote.
+  var registry = function (v) { return v && typeof v === "object" && !Array.isArray(v) ? v : {}; };
+  var normalizeState = function (raw) {
+    var next = JSON.parse(JSON.stringify(raw || {}));
+    next.version = 2;
+    next.fields = registry(next.fields);
+    next.presets = registry(next.presets);
+    return next;
+  };
+  var initial = normalizeState(boot.state);
+  var state = normalizeState(initial);
   var shared = boot.fields || {};
   var legacy = boot.presets || {};
-  var active = state.presets[boot.global_preset] ? boot.global_preset : (boot.global_preset || Object.keys(legacy)[0] || "");
+  var choosePreset = function () {
+    return (boot.last_preset && state.presets[boot.last_preset] ? boot.last_preset : "") ||
+      (boot.global_preset && state.presets[boot.global_preset] ? boot.global_preset : "") ||
+      Object.keys(state.presets)[0] || boot.global_preset || Object.keys(legacy)[0] || "";
+  };
+  var active = choosePreset();
   var selected = "email";
   var device = "desktop";
   var values = {};
@@ -70,8 +83,10 @@
   };
   var countEnabled = function (mode) { return fieldNames().filter(function (id) { return configOf(id)[mode].enabled; }).length; };
   var sync = function () {
-    state.version = 2;
+    state = normalizeState(state);
     $("#yby-studio-payload").value = JSON.stringify(state);
+    var selectedInput = $("#yby-studio-selected");
+    if (selectedInput) selectedInput.value = active;
   };
   var dirty = function () {
     sync(); changeNotice();
@@ -304,11 +319,25 @@
       var p=$("#yby-studio-json");p.textContent=JSON.stringify({site:boot.site_name,selected_preset:active,state:state},null,2);p.hidden=!p.hidden;return;
     }
     if(t.id==="yby-studio-reset"){
-      state=JSON.parse(JSON.stringify(initial));active=boot.global_preset||Object.keys(legacy)[0]||"";
+      state=normalizeState(initial);active=choosePreset();
       selected="email";values={};renderAll();changeNotice("已撤销本次未保存修改；WordPress 保存内容未受影响。");return;
     }
   });
   root.addEventListener("keydown",function(event){if(event.key==="Escape")closeDialog();});
   root.closest("form")?.addEventListener("submit",sync);
+  // The existing Preview/Test link lives outside the form. Preview a SAVED
+  // selected Studio scheme without activating it as the site's Global Popup.
+  var livePreviewLink = document.getElementById("yby-popup-live-preview");
+  if (livePreviewLink) livePreviewLink.addEventListener("click", function (event) {
+    if (!isOwn()) return; // Legacy Preview/Test retains its old behavior.
+    if (!initial.presets[active]) {
+      event.preventDefault();
+      changeNotice("请先点击页面底部「保存」，再 Preview/Test。尚未保存的预设不能进行真实渲染。");
+      return;
+    }
+    var target = new URL(livePreviewLink.href, location.href);
+    target.searchParams.set("yby_studio_preview", active);
+    livePreviewLink.href = target.toString();
+  });
   renderAll();
 })();
