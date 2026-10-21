@@ -122,7 +122,9 @@ $assert(4===count($newsletter),'only operational newsletter tabs visible');
 $email = YBY_Andy_OS_Navigation::tertiary_items('andy-core-email');
 $assert(4===count($email),'email overview/templates/transport/health only; no phantom Worker');
 $content = YBY_Andy_OS_Navigation::tertiary_items('andy-business');
-$assert(4===count($content),'four actual Business configuration pages');
+$assert(4===count($content),'four real Business pages, no mandatory hub');
+$assert(array_column($content,'group')===array('招商','招商','招商','招商'),
+    'business L3 grouped under Chinese 招商');
 $assert(!str_contains(json_encode($content),'yby-docs'),'disabled Docs OS cannot appear');
 $commerce = YBY_Andy_OS_Navigation::tertiary_items('andy-commerce');
 $assert(5===count($commerce),'five original Commerce tabs retained');
@@ -146,7 +148,7 @@ $_GET=array('page'=>'andy-business');
 $assert('yby-os'===YBY_Andy_OS_Navigation::filter_parent_file('yby-content'),'Business stays inside Andy Core');
 $assert('andy-core-content'===YBY_Andy_OS_Navigation::filter_submenu_file('legacy'),'Business highlights Content L2');
 $_GET=array('post_type'=>'landing_page');
-$assert('andy-core-content'===YBY_Andy_OS_Navigation::active_second_level(),'WP native Landing Pages stays in Content L2');
+$assert('andy-core-content'===YBY_Andy_OS_Navigation::active_second_level(),'Landing CPT with module OFF preserves existing Content fallback');
 $_GET=array('page'=>'yby-core','tab'=>'modules');
 $assert('andy-core-system'===YBY_Andy_OS_Navigation::active_second_level(),'system modules highlight System L2');
 $setup(array('andy_core_leads_view'));
@@ -160,8 +162,13 @@ $assert('edit_pages'===YBY_Andy_OS_Navigation::root_capability(),'landing-only e
 $groups=YBY_Andy_OS_Navigation::sections();
 $assert('edit_pages'===$groups['andy-core-content'][1],'landing content route uses edit_pages, not manage_options');
 $assert('edit.php?post_type=landing_page'===YBY_Andy_OS_Navigation::destination('andy-core-content'),'landing editor defaults to actual CPT');
+$_GET=array('post_type'=>'landing_page');
+$assert('andy-core-content'===YBY_Andy_OS_Navigation::active_second_level(),
+    'native landing page selects original Chinese Content L2');
 $editor_links=YBY_Andy_OS_Navigation::tertiary_items('andy-business');
-$assert(1===count($editor_links),'landing-only editor sees only original Landing Pages');
+$assert(2===count($editor_links),'landing-only editor sees existing All and New Landing Pages CPT editors');
+$assert(array_column($editor_links,'group')===array('落地页','落地页'),
+    'landing-only editor group is Chinese, business hidden');
 $assert(!str_contains(json_encode($editor_links),'andy-business'),'landing editor cannot access Business settings');
 $GLOBALS['enabled_modules']=array('business_os','inquiry_os','newsletter_os','email_os');
 // Regression: WordPress menu-header's second parent resolver must not see
