@@ -1,7 +1,8 @@
 <?php
 /**
  * Marketing OS M9 — Dev-only USD-first multi-rule admin lab.
- * GET-only synthetic previews. No Woo DB, coupon, gift, shipping or payment write.
+ * GET-only synthetic previews plus native M7 nonce-guarded inactive draft creation.
+ * Never alters Woo coupons, gifts, shipping rates, checkout or payments.
  */
 if (!defined('ABSPATH')) { exit; }
 if (!current_user_can('manage_woocommerce')
