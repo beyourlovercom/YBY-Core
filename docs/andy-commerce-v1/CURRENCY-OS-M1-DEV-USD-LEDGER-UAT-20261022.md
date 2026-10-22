@@ -4,8 +4,8 @@
 - **Replace YayCurrency**, not renew or install a newer YayCurrency binary. Treat the uploaded third-party YayCurrency Pro ZIP as untrusted; never install/execute/derive code from it.
 - Scope **dev.beyourlover.com only**. Do not modify WWW or use WWW SSH; do not merge GitHub main, release Stable, restart READY devices, run real orders, take payments, or send real email.
 - Andy Core remains the generic foundation; **Andy Commerce owns WooCommerce Currency OS**. Continue the existing **two-plugin maximum** and preserve Marketing M4–M8 current Dev work.
-- The live Dev WordPress plugin inventory checked via China Mac formal OAuth DC shows **Andy Core 2.2.11**, **Andy Commerce 1.0.3**, **WooCommerce 11.2.1**, Stripe Gateway 11.1.0, WooPayments 11.2.0, PayPal 2.0.27; **YayCurrency is not installed on Dev**. No deactivation needed.
-- This branch stacks only on existing **Draft PR #191** exact head `cbe6532afb3872724a1429bc24a94cde727c821e` to avoid losing M8 source. Existing Dev marketing activities must stay OFF.
+- The live Dev WordPress plugin inventory checked via China Mac formal OAuth DC initially showed **Andy Core 2.2.11**, **Andy Commerce 1.0.3**, **WooCommerce 11.2.1**, Stripe Gateway 11.1.0, WooPayments 11.2.0, PayPal 2.0.27; **YayCurrency is not installed on Dev**. No deactivation needed.
+- This branch stacks only on existing **Draft PR #191** exact head `cbe6532afb3872724a1429bc24a94cde727c821e` to avoid losing M8 source. Existing Dev marketing activities must stay OFF. The concurrently updated Dev WP plugin editor now shows **Andy Commerce 1.0.4**, with the parent Draft PR #191 M7 nonce fix; this branch reconciles that exact head and increments its own Dev candidate to **1.0.5**.
 
 ## 1. Approved irreversible business semantics
 - USD is the **only canonical business accounting and campaign eligibility currency**. Use **discounted qualifying item subtotal USD minor units**, excluding tax, shipping, free gifts and specially excluded SKUs, to evaluate USD 69 / 99 / 129 / 169 or other *configured campaign* thresholds. The USD 99 example is illustrative; **not a change** to current region- or item-specific shipping policies.
@@ -18,7 +18,7 @@
 - New `includes/class-andy-commerce-currency-os-v1.php`: **pure PHP quote calculation** from prevalidated Woo-style discounted USD lines, strict rate snapshot metadata, controlled five-code allowlist, integer USD minor units and fixed-precision synthetic USD→local exchange rates, promotion eligibility and ledger reconciliation. Throws on missing currency/rate, underflow, overflow or malformed data. No WordPress hooks, DB, HTTP, checkout or payment writes.
 - New `admin/views/currency-os-v1-dev-lab.php`: Dev-only (`home_url` host strict check) **manage_woocommerce** GET-only shadow preview of synthetic USD 120 gross / 25 discount / 95 qualifying / 99 threshold / 10 shipping / 7 tax; five currency selector. **Sample rates are illustrative**, not a pricing provider. Checkout/paid order NOT connected.
 - Narrow add-only bootstrap require and Andy Commerce `?page=andy-commerce&tab=currency-os` route. Other Marketing M4–M8 preview code unchanged.
-- Version metadata bumped to **1.0.4** for any Dev-only plugin package; does not constitute Stable release.
+- Version metadata bumped to **1.0.5** for any Dev-only plugin package; does not constitute Stable release.
 - US Mac mini authenticated self-hosted DC: PHP lint PASS; **82 source-only currency tests PASS**; plugin version sync, Marketing M8, M7 draft security, legacy shipping coexistence, Native Order Detail regression all PASS.
 - This candidate **cannot yet replace YayCurrency in real checkout**. Preview subtotal tax line is an explicitly supplied Woo-style USD amount; actual tax must be recalculated/verified via Woo before payment integration.
 
@@ -30,7 +30,7 @@
 - M6: owner Dev desktop and 375×812 M14 UAT, shadow parity, shipping country matrix and controlled rollback; only after all checks can production launch be discussed separately.
 
 ## 4. Dev release and safety gate
-- Confirm currently installed Andy Commerce Dev source is equivalent to parent **#191** before overwriting; the plugin header version **alone** does NOT prove source equivalence. Back up current Dev state/package; demonstrate staged rollback.
-- Dev-only installation of reviewed **1.0.4** package via WordPress admin is authorized by owner; **no new plugin** and no YayCurrency reactivation.
+- Confirm currently installed Andy Commerce Dev source is equivalent to latest parent **#191** (v1.0.4 nonce-fix head) before overwriting; the plugin header version **alone** does NOT prove source equivalence. Back up current Dev state/package; demonstrate staged rollback.
+- Dev-only installation of reviewed **1.0.5** package via WordPress admin is authorized by owner; **no new plugin** and no YayCurrency reactivation.
 - If an exact source or safe rollback cannot be established, keep Dev package upload HOLD; source-only PR may still proceed.
 - No rate filters or payment hooks will be attached in M1. Currency OS remain SHADOW, with no write option or activation toggle.

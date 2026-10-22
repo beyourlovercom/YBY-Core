@@ -9,6 +9,9 @@ function home_url($path=''){global $host;return 'https://'.$host.'/'.$path;}
 function is_admin(){return true;}
 function add_action($k,$v){global $actions;$actions[$k]=$v;}
 function get_option($name,$fallback=[]){global $options;return $options[$name]??$fallback;}
+$nonceActions=[];
+function current_user_can($cap){return $cap==='manage_woocommerce';}
+function check_admin_referer($action){global $nonceActions;$nonceActions[]=$action;return 1;}
 require_once dirname(__DIR__).'/includes/class-andy-commerce-m7-draft-studio.php';
 $n=0;
 $ok=static function($cond,$label)use(&$n){if(!$cond)throw new RuntimeException("M7 FAIL: ".$label);$n++;};
@@ -39,4 +42,13 @@ $ok(!str_contains($entry,'woocommerce_cart_calculate_fees')&&!str_contains($entr
 $view=file_get_contents(dirname(__DIR__).'/admin/views/marketing-m7-dev-studio.php');
 $ok(str_contains($view,'wp_nonce_field')&&str_contains($view,'esc_attr'),'form CSRF and escaping');
 $ok(str_contains($view,'SIMULATION ONLY')&&str_contains($view,'Actual discount applied:'),'UAT clearly identifies simulation');
+// Execute the real handler permission/nonce guard in isolation without POST
+// or DB writes, then confirm both HTML nonce actions match exactly.
+$guard=new ReflectionMethod(Andy_Commerce_M7_Draft_Studio::class,'require_authority');
+$guard->invoke(null,'save');
+$guard->invoke(null,'archive');
+$ok($nonceActions===['andy_commerce_m7_save_draft','andy_commerce_m7_archive_draft'],'save and archive nonce actions match WordPress HTML form');
+$ok(str_contains($view,"wp_nonce_field('andy_commerce_m7_save_draft')"),'save HTML nonce action matches handler');
+$ok(str_contains($view,"wp_nonce_field('andy_commerce_m7_archive_draft')"),'archive HTML nonce action matches handler');
+$ok(substr_count($view,'wp_nonce_field(')===2,'exactly two nonce-protected forms');
 echo "M7_DEV_DRAFT_SECURITY_PASS=$n; WWW_WRITE_GATE=CLOSED; CAMPAIGNS=OFF\n";

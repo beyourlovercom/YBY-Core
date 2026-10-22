@@ -40,7 +40,10 @@ final class Andy_Commerce_M7_Draft_Studio {
         if (!self::dev_only()||!current_user_can('manage_woocommerce')) {
             wp_die(esc_html__('Draft management is Dev administrator only.','andy-commerce'),'',array('response'=>403));
         }
-        check_admin_referer('andy_commerce_m7_'.$action);
+        // The HTML forms use wp_nonce_field('andy_commerce_m7_<action>_draft').
+        // Match that EXACT action on save/edit and archive; a mismatch causes
+        // WordPress to show an incorrect “link expired” error on fresh forms.
+        check_admin_referer('andy_commerce_m7_'.$action.'_draft');
     }
 
     private static function go($result) {
