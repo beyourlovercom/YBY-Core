@@ -1,7 +1,7 @@
 === Andy Commerce ===
 Contributors: ybyglobal
 Requires PHP: 8.0
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 
 Reusable B2C / WooCommerce Addon for Andy Core.
 
@@ -13,6 +13,12 @@ Reusable B2C / WooCommerce Addon for Andy Core.
 The plugin fails closed with an admin notice when dependencies are missing or incompatible.
 
 == Changelog ==
+
+= 1.0.7 =
+* Dev-only M9 multi-rule USD marketing lab: independent gift/discount thresholds, discount-before-free-shipping policy projection and five-currency snapshots.
+* Preserve Currency OS M1/M2 source and Marketing M4–M8; all rewards, gifts, coupons, Woo rates and checkout runtime remain OFF.
+* No new live promotion write endpoint, no main/Stable/WWW release.
+
 
 = 1.0.6 =
 * Dev-only Currency OS M2 explicit read-only daily reference USD rates from fixed Frankfurter API endpoint, no keys or background polling.
