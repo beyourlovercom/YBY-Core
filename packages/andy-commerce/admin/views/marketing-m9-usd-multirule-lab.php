@@ -186,7 +186,7 @@ $builderUrl=add_query_arg(['page'=>'andy-commerce','tab'=>'marketing-promotions'
       </label>
       <label>USD threshold <input type="number" id="andy-m9-new-threshold" min="1" max="100000" step="1" required value="99"></label>
       <label>USD discount <input type="number" id="andy-m9-new-saving" min="1" max="100000" step="1" value="10"></label>
-      <label>Gift product ID <input type="number" id="andy-m9-new-gift" min="1" max="999999999" step="1" value="123"></label>
+      <label>Gift product ID <input type="number" id="andy-m9-new-gift" min="1" max="999999999" step="1" value=""></label>
       <label>Eligible country codes (ISO2) <input name="draft_countries" maxlength="100" required value="US"></label>
       <label>Priority <input type="number" name="draft_priority" min="0" max="1000" step="1" value="100"></label>
     </div>
@@ -212,6 +212,8 @@ $builderUrl=add_query_arg(['page'=>'andy-commerce','tab'=>'marketing-promotions'
     function update(){
       saving.disabled=type.value!=='spend_save';
       gift.disabled=type.value!=='free_gift';
+      gift.required=type.value==='free_gift';
+      saving.required=type.value==='spend_save';
       var valid=validInteger(threshold)&&
         (type.value==='spend_save'?validInteger(saving):validInteger(gift));
       if (!valid) {rule.value='';return false;}
