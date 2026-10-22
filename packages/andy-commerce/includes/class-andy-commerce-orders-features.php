@@ -28,8 +28,8 @@ final class Andy_Commerce_Orders_Features {
             'boot' => array( __CLASS__, 'boot_list' ),
         ) ) );
         YBY_Module_Registry::register( self::DETAIL_MODULE, array_merge( $common, array(
-            'name' => 'Andy Commerce — Order Detail Label',
-            'description' => '原生订单详情标题显示为「订单 39936」，不拼接 SKU。',
+            'name' => 'Andy Commerce — Order Detail UI',
+            'description' => 'Shopify 风格原生订单详情界面（双栏、顾客信息、付款与进度、原生操作）；标题「订单 39936」。',
             'boot' => array( __CLASS__, 'boot_detail' ),
         ) ) );
     }
@@ -49,7 +49,9 @@ final class Andy_Commerce_Orders_Features {
 
     public static function boot_detail( $module = array() ) {
         require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-order-labels.php';
+        require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-native-orders-detail.php';
         Andy_Commerce_Order_Labels::boot_detail();
+        Andy_Commerce_Native_Order_Detail_Skin::boot();
     }
 
     public static function statuses() {
