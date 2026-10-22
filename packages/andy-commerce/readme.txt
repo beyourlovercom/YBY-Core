@@ -1,7 +1,7 @@
 === Andy Commerce ===
 Contributors: ybyglobal
 Requires PHP: 8.0
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 
 Reusable B2C / WooCommerce Addon for Andy Core.
 
@@ -13,6 +13,11 @@ Reusable B2C / WooCommerce Addon for Andy Core.
 The plugin fails closed with an admin notice when dependencies are missing or incompatible.
 
 == Changelog ==
+
+= 1.0.4 =
+* Fix the M7 Dev draft Save/Edit/Archive nonce action mismatch that caused WordPress to reject fresh form submissions with "The link you followed has expired".
+* Preserve all marketing promotions OFF and legacy WooCommerce/BYL49 shipping authority; no live offer execution.
+
 
 = 1.0.3 =
 * Reuse the M4–M6 read-only shipping comparison, trusted Woo cart adapter and free-shipping projection from reviewed PR #187, without changing the authoritative legacy BYL49 shipping eligibility.
