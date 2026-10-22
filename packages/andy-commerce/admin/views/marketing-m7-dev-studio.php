@@ -76,6 +76,11 @@ $preview_id=isset($_GET['m7_preview'])?sanitize_key(wp_unslash($_GET['m7_preview
       <p><small>Preview only · Gift OFF · Award OFF · Woo selected rate never rewritten</small></p>
     </div>
   </div>
+  <div class="postbox" style="padding:16px;margin:14px 0;border-left:4px solid #176749">
+    <strong>M9 · Multi-Rule USD Qualification Lab</strong>
+    <p>Multiple independent USD thresholds for Gifts, fixed discounts and zone-specific ordinary free-shipping qualification. All awards and Woo mutations stay OFF. Currency OS owns exchange conversion only.</p>
+    <p><a class="button button-secondary" href="<?php echo esc_url(add_query_arg(['m9_preview'=>'1'],$view_url)); ?>">Open USD Multi-Rule Preview</a></p>
+  </div>
   <h3>Campaign drafts <small>(<?php echo esc_html((string)count($drafts)); ?> / 50 · ALL OFF)</small></h3>
   <div style="overflow-x:auto;">
     <table class="widefat striped">
