@@ -170,14 +170,14 @@ final class Andy_Commerce_Native_Order_Detail_Skin {
         $status_map = function_exists( 'wc_get_order_statuses' ) ? wc_get_order_statuses() : array();
         $current_status = $order && is_a( $order, 'WC_Order' ) ? 'wc-' . $order->get_status() : '';
         $current_status_label = isset( $status_map[ $current_status ] ) ? $status_map[ $current_status ] : 'Change status';
-        $primary_label = 'processing' === ( $order ? $order->get_status() : '' ) ? 'Mark as fulfilled' : $current_status_label;
+        $primary_label = 'processing' === ( $order ? $order->get_status() : '' ) ? 'Mark as Completed' : $current_status_label;
         $primary_status = 'processing' === ( $order ? $order->get_status() : '' ) && isset( $status_map['wc-completed'] ) ? 'completed' : '';
         echo '<div class="byl-native-toolbar" role="toolbar" aria-label="Order tools" data-order-id="' . esc_attr( self::$order_id ) . '">';
         echo '<div class="byl-native-crumb"><a href="' . esc_url( admin_url( 'admin.php?page=wc-orders' ) ) . '">Orders</a><span>/</span><strong>#' . esc_html( self::$order_id ) . '</strong></div>';
         echo '<div class="byl-native-actions">';
         echo '<div class="byl-native-status-wrap">';
         echo '<div class="byl-native-status-split">';
-        echo '<button type="button" class="byl-native-pill byl-native-pill-primary byl-native-status-primary" data-byl-action="status-primary" data-primary-status="' . esc_attr( $primary_status ) . '" title="选择状态后需明确保存，不会创建物流追踪号">' . esc_html( $primary_label ) . '</button>';
+        echo '<button type="button" class="byl-native-pill byl-native-pill-primary byl-native-status-primary" data-byl-action="status-primary" data-primary-status="' . esc_attr( $primary_status ) . '" title="通过 WooCommerce 原生 Update 将订单状态设置为 Completed">' . esc_html( $primary_label ) . '</button>';
         echo '<button type="button" class="byl-native-pill byl-native-pill-primary byl-native-status-chevron" data-byl-action="status" aria-expanded="false" aria-controls="byl-native-status-menu" aria-label="选择订单状态">⌄</button>';
         echo '</div>';
         echo '<div id="byl-native-status-menu" class="byl-native-more-menu byl-native-status-menu" hidden role="menu">';

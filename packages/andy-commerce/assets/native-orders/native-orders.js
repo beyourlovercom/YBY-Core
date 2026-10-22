@@ -46,23 +46,48 @@
     setStatusMenu(true);
     return true;
   }
-  function saveStatus(){
-    if(!dirtyStatus){warn('没有待保存的订单状态更改。');return;}
-    const save=existingNativeButton([
+  // Always submit through the *existing WooCommerce HPOS order form*.
+  // No custom status AJAX, shipping/tracking APIs, or duplicate order writes.
+  function nativeOrderUpdate(){
+    return existingNativeButton([
       '#woocommerce-order-actions button.save_order',
       '#woocommerce-order-actions input[name="save"]',
       '#woocommerce-order-actions button[name="save"]',
       'button.save_order',
       'input[name="save"]'
     ]);
+  }
+  function saveStatus(){
+    if(!dirtyStatus){warn('没有待保存的订单状态更改。');return;}
+    const save=nativeOrderUpdate();
     if(!save){
       warn('未找到 WooCommerce 原生 Update。请展开 Order actions，使用原生按钮保存。');
       revealNativeEditor('status');moveToBox('#woocommerce-order-actions');return;
     }
-    if(!window.confirm('确认保存订单状态？WooCommerce 可能发送邮件并触发其他插件联动。'))return;
     setStatusMenu(false);
     save.click();
-    // WooCommerce owns the form submission, success/error notices and database writes.
+    // WooCommerce owns all validation, email hooks and actual data persistence.
+  }
+  function completeOrderViaWoo(button){
+    const select=nativeStatus();
+    const save=nativeOrderUpdate();
+    // Fail closed: never change the visible native status without a native save control.
+    if(!select||!save){
+      warn('未找到 WooCommerce 原生订单状态或 Update。未修改订单。');
+      return;
+    }
+    const completed=Array.from(select.options).find(opt=>opt.value==='wc-completed');
+    if(!completed){
+      warn('当前 WooCommerce 订单不支持 Completed 状态。未修改订单。');
+      return;
+    }
+    // Already completed, or another click is in flight: do not resend status/emails.
+    if(select.value===completed.value||button?.disabled)return;
+    select.value=completed.value;
+    select.dispatchEvent(new Event('change',{bubbles:true}));
+    if(button)button.disabled=true;
+    setStatusMenu(false);
+    save.click();
   }
   function action(a,button){
     if(a!=='more')setMenu(false);
@@ -83,9 +108,8 @@
     }else if(a==='status')setStatusMenu(statusMenu?.hidden);
     else if(a==='status-primary'){
       const value=button?.dataset.primaryStatus||'';
-      if(value==='completed'){
-        if(window.confirm('Mark as fulfilled 对应 WooCommerce 的 Completed 状态，不会创建 AfterShip 运单或真实发货记录。是否先暂存此状态？'))stageStatus(value);
-      }else if(value)stageStatus(value);
+      if(value==='completed')completeOrderViaWoo(button);
+      else if(value)stageStatus(value);
       else setStatusMenu(statusMenu?.hidden);
     }else if(a==='set-status')stageStatus(button?.dataset.status||'');
     else if(a==='save-status')saveStatus();
