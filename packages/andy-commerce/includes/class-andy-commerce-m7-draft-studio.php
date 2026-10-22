@@ -66,9 +66,24 @@ final class Andy_Commerce_M7_Draft_Studio {
         $currency = strtoupper(sanitize_key(wp_unslash($_POST['draft_currency']??'USD')));
         $countries_input = sanitize_text_field(wp_unslash($_POST['draft_countries']??'US'));
         $priority = isset($_POST['draft_priority']) ? intval(wp_unslash($_POST['draft_priority'])) : 0;
-        $rawRule=wp_unslash($_POST['draft_rule_json']??'{}');
-        if (!is_string($rawRule)||strlen($rawRule)>3000) self::go('invalid');
-        $rule=json_decode($rawRule,true);
+        $editor = isset($_POST['draft_rule_editor']) ? sanitize_key(wp_unslash($_POST['draft_rule_editor'])) : 'advanced';
+        if ($editor === 'visual') {
+            $rawFields=isset($_POST['draft_rule_fields']) ? wp_unslash($_POST['draft_rule_fields']) : array();
+            if (!is_array($rawFields)) self::go('invalid');
+            try {
+                $rule=Andy_Commerce_Marketing_V2_Rule_Fields::normalize($type,$rawFields);
+            } catch (InvalidArgumentException $error) {
+                // Never store partial rule or fall back to less-restrictive JSON.
+                self::go('invalid');
+            }
+        } elseif ($editor === 'advanced') {
+            // Backwards compatibility: existing M7 drafts use JSON rule schema.
+            $rawRule=wp_unslash($_POST['draft_rule_json']??'{}');
+            if (!is_string($rawRule)||strlen($rawRule)>3000) self::go('invalid');
+            $rule=json_decode($rawRule,true);
+        } else {
+            self::go('invalid');
+        }
         $countries=array_values(array_unique(array_filter(array_map('trim',explode(',',$countries_input)))));
         $countries=array_map('strtoupper',$countries);
         if (!$name||strlen($name)>120||!in_array($type,self::TYPES,true)
