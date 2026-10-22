@@ -71,5 +71,8 @@ $GLOBALS['screen'] = (object) array( 'id' => 'woocommerce_page_wc-orders' );
 $GLOBALS['allowed'] = false;
 $ok( Andy_Commerce_Order_Labels::native_numeric_number( 'original', $order ) === 'original', 'capability guarded' );
 $bootstrap = file_get_contents( dirname( __DIR__ ) . '/includes/class-andy-commerce.php' );
-$ok( strpos( $bootstrap, 'Andy_Commerce_Order_Labels::boot();' ) !== false, 'boot integration' );
+$features = file_get_contents( dirname( __DIR__ ) . '/includes/class-andy-commerce-orders-features.php' );
+$ok( strpos( $features, 'Andy_Commerce_Order_Labels::boot_list();' ) !== false
+    && strpos( $features, 'Andy_Commerce_Order_Labels::boot_detail();' ) !== false, 'both Core module boot callbacks' );
+$ok( strpos( $bootstrap, 'Andy_Commerce_Order_Labels::boot();' ) === false, 'no unconditional labels boot' );
 echo "PASS Andy Commerce HPOS detail/order-list display-only labels\n";

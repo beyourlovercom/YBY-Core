@@ -113,5 +113,7 @@ $ok( str_contains( $js, 'ac-orders-native-options' ), 'only screen options inter
 $ok( ! str_contains( $js, 'appendChild(' ), 'no post-paint relocation' );
 $ok( ! str_contains( $js, 'wp-list-table' ), 'no table DOM mutation' );
 $bootstrap = file_get_contents( dirname( __DIR__ ) . '/includes/class-andy-commerce.php' );
-$ok( str_contains( $bootstrap, 'Andy_Commerce_Orders_UI::boot();' ), 'bootstrap intact' );
+$root = file_get_contents( dirname( __DIR__ ) . '/andy-commerce.php' );
+$ok( str_contains( $root, "Andy_Commerce_Orders_Features', 'register" ), 'Orders UI registered through Core Registry' );
+$ok( ! str_contains( $bootstrap, 'Andy_Commerce_Orders_UI::boot();' ), 'Orders UI no longer boots unconditionally' );
 echo 'PASS Orders UI V1.2 HPOS/legacy first paint, Screen Options, permissions and bottom pagination' . PHP_EOL;

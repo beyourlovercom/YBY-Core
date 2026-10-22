@@ -47,8 +47,10 @@ add_action( 'plugins_loaded', 'andy_commerce_register_migration_cli', 35 );
 
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-promotion-policy.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-promotion-runtime.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-orders-features.php';
 
 add_action( 'andy_core_register_modules', array( 'YBY_Woo_Order_Export_Module', 'register_module' ), 12, 0 );
+add_action( 'andy_core_register_modules', array( 'Andy_Commerce_Orders_Features', 'register' ), 14, 0 );
 
 function andy_commerce_dependency_status() {
 	$core_loaded = defined( 'YBY_CORE_VERSION' ) && class_exists( 'YBY_Addon_Registry' );
@@ -115,3 +117,6 @@ function andy_commerce_bootstrap() {
 	$plugin->run();
 }
 add_action( 'plugins_loaded', 'andy_commerce_bootstrap', 30 );
+if ( function_exists( 'is_admin' ) && is_admin() ) {
+	add_action( 'admin_post_andy_commerce_orders_modules_save', array( 'Andy_Commerce_Orders_Features', 'save' ) );
+}

@@ -8,11 +8,21 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class Andy_Commerce_Order_Labels {
+    /** Kept as a compatibility entry point for existing unit harnesses. */
     public static function boot() {
+        self::boot_list();
+        self::boot_detail();
+    }
+
+    public static function boot_list() {
         add_filter( 'woocommerce_admin_order_buyer_name', array( __CLASS__, 'list_skus' ), PHP_INT_MAX, 2 );
         add_filter( 'woocommerce_order_number', array( __CLASS__, 'native_numeric_number' ), PHP_INT_MAX, 2 );
-        add_filter( 'gettext', array( __CLASS__, 'detail_heading_format' ), PHP_INT_MAX, 3 );
         add_action( 'admin_enqueue_scripts', array( __CLASS__, 'list_script' ), 45 );
+    }
+
+    public static function boot_detail() {
+        add_filter( 'woocommerce_order_number', array( __CLASS__, 'native_numeric_number' ), PHP_INT_MAX, 2 );
+        add_filter( 'gettext', array( __CLASS__, 'detail_heading_format' ), PHP_INT_MAX, 3 );
     }
 
     /**
