@@ -46,7 +46,7 @@ ok(str_contains($view,'[andy_currency_switcher style="compact"'),'shortcode disp
 $php=file_get_contents(dirname(__DIR__).'/includes/class-andy-commerce-currency-v2-dev.php');
 ok(str_contains($php,'check_admin_referer'),'nonce checked server-side');
 ok(str_contains($php,'update_option(self::OPTION'),'isolated options storage');
-ok(str_contains($php,"if($section==='manage')"),'tab-isolated saving');
+ok(str_contains($php, 'if($section===\'manage\')'), 'tab-isolated saving');
 ok(!str_contains($php,'woocommerce_cart_calculate_fees'),'no Woo campaign writes');
 ok(!str_contains($php,'woocommerce_before_calculate_totals'),'no Woo product writes');
 ok(!str_contains($php,'setcookie('),'no shopper currency cookie');
