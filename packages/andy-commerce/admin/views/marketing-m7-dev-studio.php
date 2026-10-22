@@ -117,7 +117,7 @@ $preview_id=isset($_GET['m7_preview'])?sanitize_key(wp_unslash($_GET['m7_preview
   <?php endif; ?>
   <?php if($editable): ?>
     <h3><?php echo $chosen?'Edit inactive draft':'Create inactive draft'; ?></h3>
-    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="max-width:760px;">
+    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="max-width:980px;">
       <?php wp_nonce_field('andy_commerce_m7_save_draft'); ?>
       <input type="hidden" name="action" value="andy_commerce_m7_save_draft">
       <input type="hidden" name="draft_id" value="<?php echo esc_attr($chosen['id']??''); ?>">
@@ -132,7 +132,7 @@ $preview_id=isset($_GET['m7_preview'])?sanitize_key(wp_unslash($_GET['m7_preview
         <label>Countries (ISO, commas) <input class="regular-text" style="width:100%" name="draft_countries" value="<?php echo esc_attr(implode(',',$chosen['countries']??array('US'))); ?>"></label>
         <label>Priority (0–1000) <input type="number" min="0" max="1000" name="draft_priority" value="<?php echo esc_attr((string)($chosen['priority']??0)); ?>"></label>
       </div>
-      <label>Rule JSON (currency minor units)<textarea name="draft_rule_json" rows="4" maxlength="3000" style="display:block;width:100%;font-family:monospace"><?php echo esc_textarea(wp_json_encode($rule,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)); ?></textarea></label>
+      <?php include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-v2-rule-editor.php'; ?>
       <p class="description">Only drafts can be saved. Campaign activation, Store API discount execution, gift awards and real shipping changes have no write endpoints in this studio.</p>
       <?php submit_button($chosen?'Save inactive draft':'Create inactive draft'); ?>
     </form>
