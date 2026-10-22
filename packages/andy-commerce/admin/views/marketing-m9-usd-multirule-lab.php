@@ -162,6 +162,81 @@ $builderUrl=add_query_arg(['page'=>'andy-commerce','tab'=>'marketing-promotions'
   <p class="description">The USD gift threshold is evaluated on post-existing-discount merchandise before new campaign awards. Only ONE highest-benefit discount is projected. Native shipping is re-evaluated on the projected post-campaign discounted USD subtotal. All actual fulfillment remains disabled.</p>
 </div>
 <div class="ac-panel">
+  <h3>Create independent inactive campaign draft</h3>
+  <p class="description">Uses existing M7 Draft Studio's permission, nonce and optimistic-revision protections. This form only creates an OFF draft; no coupons, shipping or gifts can go live.</p>
+  <?php if (class_exists('Andy_Commerce_M7_Draft_Studio')
+      && Andy_Commerce_M7_Draft_Studio::dev_only()): ?>
+  <form id="andy-m9-new-draft" method="post"
+        action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
+        style="max-width:100%">
+    <?php wp_nonce_field('andy_commerce_m7_save_draft'); ?>
+    <input type="hidden" name="action" value="andy_commerce_m7_save_draft">
+    <input type="hidden" name="draft_id" value="">
+    <input type="hidden" name="draft_revision" value="0">
+    <input type="hidden" name="draft_currency" value="USD">
+    <input type="hidden" name="draft_rule_json" value="">
+    <div class="ac-fields">
+      <label>Campaign name <input name="draft_name" maxlength="120" required value="New USD promotion"></label>
+      <label>Reward type
+        <select name="draft_type" id="andy-m9-new-type">
+          <option value="spend_save">Spend &amp; Save · fixed USD discount</option>
+          <option value="free_gift">Gift · product ID</option>
+        </select>
+      </label>
+      <label>USD threshold <input type="number" id="andy-m9-new-threshold" min="1" max="100000" step="1" required value="99"></label>
+      <label>USD discount <input type="number" id="andy-m9-new-saving" min="1" max="100000" step="1" value="10"></label>
+      <label>Gift product ID <input type="number" id="andy-m9-new-gift" min="1" max="999999999" step="1" value="123"></label>
+      <label>Eligible country codes (ISO2) <input name="draft_countries" maxlength="100" required value="US"></label>
+      <label>Priority <input type="number" name="draft_priority" min="0" max="1000" step="1" value="100"></label>
+    </div>
+    <p class="description" id="andy-m9-new-feedback" role="status">The new campaign is saved as an inactive USD draft. No offer is activated automatically.</p>
+    <button class="button button-primary" type="submit">Save inactive draft</button>
+  </form>
+  <script>
+  (function () {
+    var form=document.getElementById('andy-m9-new-draft');
+    if (!form || form.dataset.initialized) return;
+    form.dataset.initialized='1';
+    var type=form.querySelector('#andy-m9-new-type');
+    var threshold=form.querySelector('#andy-m9-new-threshold');
+    var saving=form.querySelector('#andy-m9-new-saving');
+    var gift=form.querySelector('#andy-m9-new-gift');
+    var rule=form.querySelector('[name="draft_rule_json"]');
+    var status=form.querySelector('#andy-m9-new-feedback');
+    function validInteger(input) {
+      var value=Number(input.value);
+      return Number.isSafeInteger(value)&&value>=Number(input.min||1)&&
+        value<=Number(input.max||100000);
+    }
+    function update(){
+      saving.disabled=type.value!=='spend_save';
+      gift.disabled=type.value!=='free_gift';
+      var valid=validInteger(threshold)&&
+        (type.value==='spend_save'?validInteger(saving):validInteger(gift));
+      if (!valid) {rule.value='';return false;}
+      var value={threshold_minor:Number(threshold.value)*100};
+      if(type.value==='spend_save')value.discount_minor=Number(saving.value)*100;
+      else value.gift_product_id=Number(gift.value);
+      rule.value=JSON.stringify(value);
+      return true;
+    }
+    [type,threshold,saving,gift].forEach(function(field){
+      field.addEventListener('change',update);
+      field.addEventListener('input',update);
+    });
+    form.addEventListener('submit',function(event){
+      if(!update()){
+        event.preventDefault();
+        status.textContent='Please supply valid USD threshold and reward.';
+      }
+    });
+    update();
+  })();
+  </script>
+  <?php else: ?><p class="description">Native M7 Dev draft write permission unavailable. View is read-only.</p><?php endif; ?>
+</div>
+
+<div class="ac-panel">
   <h3>Currency OS handoff</h3>
   <p>Eligible USD merchandise <?php echo esc_html($usd($preview['qualifying_before_campaign_usd_minor'])); ?>
      → selected shadow discount <?php echo esc_html($usd($preview['projected_discount_usd_minor'])); ?>
