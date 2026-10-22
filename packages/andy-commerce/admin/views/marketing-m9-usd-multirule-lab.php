@@ -22,12 +22,12 @@ $giftThreshold = $intField('m9_gift_threshold',99);
 $discountThreshold = $intField('m9_discount_threshold',169);
 $bonusDiscount = $intField('m9_reward',20);
 $additionalThreshold = $intField('m9_extra_threshold',129);
-$additionalReward = $intField('m9_extra_reward',10);
+$additionalReward = max(1,$intField('m9_extra_reward',10));
+$bonusDiscount = max(1,$bonusDiscount);
 $currency = isset($_GET['m9_currency']) && is_string($_GET['m9_currency'])
     ? strtoupper(sanitize_key(wp_unslash($_GET['m9_currency']))) : 'EUR';
 if (!in_array($currency,Andy_Commerce_Currency_OS_V1::SUPPORTED,true)) $currency='EUR';
 $rates=['USD'=>1000000,'EUR'=>890000,'GBP'=>746500,'AUD'=>1421700,'CAD'=>1404200];
-$regions=['5'=>'US / some Asia','$4'=>'Alaska / Hawaii','3'=>'High-cost','0'=>'Rest of World','1'=>'Hong Kong'];
 $zone = isset($_GET['m9_zone']) && is_string($_GET['m9_zone']) ? $_GET['m9_zone']:'5';
 if (!in_array($zone,['0','1','3','4','5'],true)) $zone='5';
 $zoneDescriptions=['5'=>'US / some Asia · USD $69','4'=>'Alaska / Hawaii · USD $129',
