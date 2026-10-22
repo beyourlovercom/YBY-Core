@@ -46,17 +46,23 @@ final class Andy_Commerce_Currency_V2_Dev {
         check_admin_referer('andy_currency_v2_preview_save');
         $in=isset($_POST['ac_currency'])?wp_unslash($_POST['ac_currency']):[];
         if(!is_array($in)||count($in)>26)wp_die('Invalid preview config','',['response'=>400]);
-        $out=self::defaults();
-        foreach(self::CODES as $code) {
-            $out['enabled'][$code]=$code==='USD'||(($in['enabled'][$code]??'')==='1');
-            if($code!=='USD')$out['mode'][$code]=($in['mode'][$code]??'')==='fixed'?'fixed':'auto';
-        }
-        foreach(['flag','symbol','code','name','small','checkout_preview','force_payment','force_gateway',
-                  'product_switcher','auto_rate','country_detect','fixed_prices','product_notice',
-                  'approximate','cache_compatible','loading_mask','bot_country'] as $key)
-            $out[$key]=($in[$key]??'')==='1';
-        update_option(self::OPTION,$out,false);
         $section=isset($_POST['ac_section'])?sanitize_key(wp_unslash($_POST['ac_section'])):'manage';
+        $out=self::config();
+        // Save only the visible tab: switching tabs never resets other preferences.
+        if($section==='manage') {
+            foreach(self::CODES as $code) {
+                $out['enabled'][$code]=$code==='USD'||(($in['enabled'][$code]??'')==='1');
+                if($code!=='USD')$out['mode'][$code]=($in['mode'][$code]??'')==='fixed'?'fixed':'auto';
+            }
+        }
+        $per_tab=[
+            'checkout'=>['checkout_preview','force_payment','force_gateway'],
+            'display'=>['flag','name','symbol','code','small','product_switcher'],
+            'advanced'=>['auto_rate','country_detect','fixed_prices','product_notice',
+                         'approximate','cache_compatible','loading_mask','bot_country']
+        ];
+        foreach($per_tab[$section]??[] as $key)$out[$key]=($in[$key]??'')==='1';
+        update_option(self::OPTION,$out,false);
         if(!in_array($section,['manage','checkout','display','advanced','ledger'],true))$section='manage';
         wp_safe_redirect(add_query_arg(['page'=>'andy-commerce','tab'=>'currency-os','section'=>$section,'ac_saved'=>1],admin_url('admin.php')));
         exit;
