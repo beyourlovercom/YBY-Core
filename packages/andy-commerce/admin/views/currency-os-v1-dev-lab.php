@@ -96,7 +96,7 @@ $money = static function(int $minor, string $code) use ($symbols): string {
             <p>Product gross: <strong><?php echo esc_html($money($quote['gross_usd_minor'],'USD')); ?></strong></p>
             <p>Discount: <strong>−<?php echo esc_html($money($quote['discount_usd_minor'],'USD')); ?></strong></p>
             <p>Promotion-eligible net: <strong><?php echo esc_html($money($quote['eligible_subtotal_usd_minor'],'USD')); ?></strong></p>
-            <p>Example minimum: <strong>$99.00</strong></p>
+            <p>Example marketing threshold (simulation only): <strong>$99.00</strong></p>
             <p><strong><?php echo $quote['promotion_eligible'] ? 'Eligible' : 'Not eligible'; ?></strong>
                 (shipping and tax do not unlock USD campaign)</p>
             <p>USD reporting total: <strong><?php echo esc_html($money($quote['accounting_total_usd_minor'],'USD')); ?></strong></p>
@@ -125,4 +125,5 @@ $money = static function(int $minor, string $code) use ($symbols): string {
     rules remain unchanged. M1 only establishes the USD-ledger and FX quote contracts.
     Stripe/WooPayments/PayPal, Woo tax classes, countries, refunds and historical order FX
     require separate Dev runtime verification before enabling the Currency OS engine.</p>
+    <p><strong>Actual multiple marketing thresholds belong to Marketing OS, not this single-ledger example.</strong> <a href="<?php echo esc_url(add_query_arg(['page'=>'andy-commerce','tab'=>'marketing-promotions','m9_preview'=>'1'],admin_url('admin.php'))); ?>">Open multi-rule USD preview</a></p>
 </div>
