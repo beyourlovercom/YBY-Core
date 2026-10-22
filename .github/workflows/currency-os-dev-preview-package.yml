@@ -1,0 +1,40 @@
+name: Currency OS Dev Preview Package
+on:
+  pull_request:
+    paths:
+      - 'packages/andy-commerce/**'
+      - '.github/workflows/currency-os-dev-preview-package.yml'
+permissions:
+  contents: read
+jobs:
+  currency-dev-package:
+    if: github.event.pull_request.head.ref == 'feat/currency-os-v2-admin-shortcode-devonly-20261022'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Currency Dev preview source
+        run: |
+          find packages/andy-commerce -name '*.php' -print0 | xargs -0 -n1 php -l > /tmp/currency-php-lint.log
+          php packages/andy-commerce/tests/currency-os-v2-admin-shortcode-harness.php
+          php packages/andy-commerce/tests/currency-os-v1-shadow-harness.php
+          php packages/andy-commerce/tests/currency-os-m2-reference-fx-harness.php
+          php packages/andy-commerce/tests/version-sync-v102-harness.php
+      - name: Build Dev-only Andy Commerce WordPress ZIP
+        run: |
+          set -eu
+          mkdir -p /tmp/currency-preview/stage/andy-commerce
+          rsync -a --exclude 'tests/' --exclude '.DS_Store' packages/andy-commerce/ /tmp/currency-preview/stage/andy-commerce/
+          cd /tmp/currency-preview/stage
+          zip -qr ../andy-commerce-v1.0.8-currency-v2-dev-only.zip andy-commerce
+          cd ..
+          sha256sum andy-commerce-v1.0.8-currency-v2-dev-only.zip > SHA256SUMS.txt
+          unzip -t andy-commerce-v1.0.8-currency-v2-dev-only.zip | tail -1
+      - name: Upload Dev WordPress installer and hash
+        uses: actions/upload-artifact@v4
+        with:
+          name: andy-commerce-v1.0.8-currency-v2-dev-${{ github.event.pull_request.number }}
+          path: |
+            /tmp/currency-preview/andy-commerce-v1.0.8-currency-v2-dev-only.zip
+            /tmp/currency-preview/SHA256SUMS.txt
+          retention-days: 7
+          if-no-files-found: error
