@@ -1,7 +1,7 @@
 === Andy Commerce ===
 Contributors: ybyglobal
 Requires PHP: 8.0
-Stable tag: 1.0.2
+Stable tag: 1.0.4
 
 Reusable B2C / WooCommerce Addon for Andy Core.
 
@@ -13,6 +13,18 @@ Reusable B2C / WooCommerce Addon for Andy Core.
 The plugin fails closed with an admin notice when dependencies are missing or incompatible.
 
 == Changelog ==
+
+= 1.0.4 =
+* Fix the M7 Dev draft Save/Edit/Archive nonce action mismatch that caused WordPress to reject fresh form submissions with "The link you followed has expired".
+* Preserve all marketing promotions OFF and legacy WooCommerce/BYL49 shipping authority; no live offer execution.
+
+
+= 1.0.3 =
+* Reuse the M4–M6 read-only shipping comparison, trusted Woo cart adapter and free-shipping projection from reviewed PR #187, without changing the authoritative legacy BYL49 shipping eligibility.
+* Add a Dev-scoped Marketing Studio with non-active draft create/edit/archive, nonce and Woo administrator permissions, maximum draft limits and optimistic revisions.
+* Add M8 pure evaluator for BOGO, Bundles, Spend & Save and Tiered Discounts with deterministic non-stacking previews and strict fail-closed input validation. Free Gift remains OFF; no live cart/order discount hooks are registered.
+* Prepare bounded Dev PC/M14 Marketing Studio UAT; campaign publishing, scheduler, real gifts, actual shipping policy handoff and any production rollout remain separate approvals.
+
 
 = 1.0.2 =
 * Consolidate previously approved native WooCommerce Orders List and full HPOS Order Detail UI behind independent Andy Core site-level switches.

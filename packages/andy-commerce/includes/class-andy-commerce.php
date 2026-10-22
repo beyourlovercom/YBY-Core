@@ -9,6 +9,11 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'admin/class-andy-commerce-admin.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-order-coupon-column.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m4-shipping-shadow.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m5-progress-projection.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m5-woo-cart-adapter.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m7-draft-studio.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m8-promotion-evaluator.php';
 
 class Andy_Commerce {
 	public function run() {
@@ -21,6 +26,7 @@ class Andy_Commerce {
 			Andy_Commerce_Shipping_Promotion_Runtime::boot_default_shipping_preference();
 		}
 		if ( is_admin() ) {
+			Andy_Commerce_M7_Draft_Studio::boot();
 			$admin = new Andy_Commerce_Admin();
 			add_action( 'admin_menu', array( $admin, 'add_admin_menu' ), 35 );
 		}
