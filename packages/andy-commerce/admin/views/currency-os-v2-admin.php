@@ -2,10 +2,10 @@
 /** Currency OS V2 C1 Owner-approved layout; Dev-only draft settings. */
 if (!defined('ABSPATH')) exit;
 if (!Andy_Commerce_Currency_V2_Dev::access()){
-    echo '<div class="notice notice-error"><p>Currency OS V2 preview available only on authorized Dev.</p></div>';return;
+    echo '<div class="notice notice-error"><p>Currency OS V2 仅允许在授权的 Dev 测试站预览。</p></div>';return;
 }
 $cfg=Andy_Commerce_Currency_V2_Dev::config();
-$sections=['manage'=>'Manage Currency','checkout'=>'Checkout Options','display'=>'Display Options','advanced'=>'Advanced Settings','ledger'=>'USD Marketing Ledger'];
+$sections=['manage'=>'币种管理','checkout'=>'结账设置','display'=>'展示设置','advanced'=>'高级设置','ledger'=>'USD 营销核算'];
 $section=isset($_GET['section'])?sanitize_key(wp_unslash($_GET['section'])):'manage';
 if(!isset($sections[$section]))$section='manage';
 $root=add_query_arg(['page'=>'andy-commerce','tab'=>'currency-os'],admin_url('admin.php'));
@@ -44,13 +44,13 @@ $toggle=static function($key,$label,$value){
 @media(max-width:840px){.acv2{margin-right:8px}.acv2-card{padding:14px}.acv2-grid{grid-template-columns:1fr}.acv2-table{min-width:670px}.acv2-nav a{padding:11px 9px}}
 </style>
 <div class="acv2" id="andy-currency-v2-admin">
-  <header class="acv2-head"><div><h1>Currency OS <span class="tag">V2 · Dev Studio</span></h1>
-    <div class="muted">Store base: USD · 5 currencies · reference FX read-only</div></div>
-    <a class="button" href="<?php echo esc_url(add_query_arg(['currency_screen'=>'ledger'],$root)); ?>">Open FX Ledger V1</a>
+  <header class="acv2-head"><div><h1>Currency OS <span class="tag">V2 · Dev 测试后台</span></h1>
+    <div class="muted">店铺基础币种：USD · 五币种管理 · 参考汇率只读</div></div>
+    <a class="button" href="<?php echo esc_url(add_query_arg(['currency_screen'=>'ledger'],$root)); ?>">查看汇率核算 V1</a>
   </header>
   <?php if(isset($_GET['ac_saved'])&&$_GET['ac_saved']==='1'):?>
-  <div class="notice notice-success"><p>Dev display draft saved. Live Woo checkout, shipping and prices remain unchanged.</p></div><?php endif;?>
-  <nav class="acv2-nav" aria-label="Currency OS sections">
+  <div class="notice notice-success"><p>Dev 预览设置已保存。WooCommerce 实际结账、运费与商品价格均未修改。</p></div><?php endif;?>
+  <nav class="acv2-nav" aria-label="Currency OS 设置导航">
   <?php foreach($sections as $key=>$text): ?>
     <a class="<?php echo $key===$section?'active':'';?>" href="<?php echo esc_url(add_query_arg('section',$key,$root));?>"><?php echo esc_html($text);?></a>
   <?php endforeach;?></nav>
@@ -59,68 +59,69 @@ $toggle=static function($key,$label,$value){
     <input type="hidden" name="action" value="andy_currency_v2_save">
     <input type="hidden" name="ac_section" value="<?php echo esc_attr($section);?>">
 <?php if($section==='manage'):?>
+  <?php $currency_names=['USD'=>'美元','EUR'=>'欧元','GBP'=>'英镑','AUD'=>'澳元','CAD'=>'加元']; ?>
   <section class="acv2-card">
-    <div class="acv2-flex"><div><h2>Manage Currency</h2><div class="muted">Your default currency is United States dollar (USD). Base ledger is locked.</div></div><span class="tag">Migration preview</span></div>
+    <div class="acv2-flex"><div><h2>Manage Currency</h2><div class="muted">默认基础币种为美元（USD），财务核算基准已锁定。</div></div><span class="tag">迁移配置预览</span></div>
     <div class="acv2-table-scroll" style="margin-top:16px"><table class="acv2-table">
-    <thead><tr><th>Currency</th><th>Preview</th><th>Rate · historical snapshot</th><th>Mode</th><th>Display</th></tr></thead>
+    <thead><tr><th>币种</th><th>价格示例</th><th>汇率 · 历史快照</th><th>更新方式</th><th>显示状态</th></tr></thead>
     <tbody><?php foreach(Andy_Commerce_Currency_V2_Dev::CODES as $c):
       $flag=Andy_Commerce_Currency_V2_Dev::FLAGS[$c];
-      $name=Andy_Commerce_Currency_V2_Dev::NAMES[$c];
+      $name=$currency_names[$c];
       $rate=Andy_Commerce_Currency_V2_Dev::SNAPSHOT[$c];
       $symbol=Andy_Commerce_Currency_V2_Dev::SYMBOLS[$c];
     ?><tr>
       <td><strong><span class="flag"><?php echo esc_html($flag);?></span><?php echo esc_html($name);?></strong> <span class="muted">(<?php echo esc_html($c);?>)</span></td>
       <td><?php echo esc_html($symbol.number_format(1234.56*$rate,2,'.',','));?></td>
       <td><?php echo esc_html(number_format($rate,6,'.',','));?></td>
-      <td><?php if($c==='USD'):?>Base · Fixed<?php else:?><select aria-label="<?php echo esc_attr($c);?> rate mode" name="ac_currency[mode][<?php echo esc_attr($c);?>]"><option value="auto" <?php selected($cfg['mode'][$c],'auto');?>>Auto</option><option value="fixed" <?php selected($cfg['mode'][$c],'fixed');?>>Fixed draft</option></select><?php endif;?></td>
-      <td><?php if($c==='USD'):?>Always on<?php else:?>
+      <td><?php if($c==='USD'):?>基础币种 · 固定<?php else:?><select aria-label="<?php echo esc_attr($c);?> 汇率模式" name="ac_currency[mode][<?php echo esc_attr($c);?>]"><option value="auto" <?php selected($cfg['mode'][$c],'auto');?>>自动更新</option><option value="fixed" <?php selected($cfg['mode'][$c],'fixed');?>>固定汇率（草稿）</option></select><?php endif;?></td>
+      <td><?php if($c==='USD'):?>始终启用<?php else:?>
         <label class="acv2-toggle"><input type="checkbox" name="ac_currency[enabled][<?php echo esc_attr($c);?>]" value="1" <?php checked($cfg['enabled'][$c]);?>><i></i></label>
       <?php endif;?></td>
     </tr><?php endforeach;?></tbody></table></div>
-    <p class="warn">Exchange rates in this table are your approved YayCurrency screenshot baseline, not current market rates. No fee (0). Live FX reference comparison remains in FX Ledger V1.</p>
+    <p class="warn">此处汇率仅用于复刻已批准的 YayCurrency 历史设置，不代表实时市场汇率；附加费为 0。实时参考汇率请在「汇率核算 V1」中查看。</p>
   </section>
 <?php elseif($section==='checkout'):?>
-  <section class="acv2-card"><h2>Checkout Options</h2><p class="muted">Legacy settings for reference only. Real cross-currency checkout is not enabled by Currency OS V2.</p>
-    <div class="acv2-line"><?php $toggle('checkout_preview','Checkout in different currency — target configuration',$cfg['checkout_preview']);?></div>
-    <div class="acv2-table-scroll"><table class="acv2-table"><thead><tr><th>Currency</th><th>Legacy setting</th><th>Gateway test</th></tr></thead><tbody>
-      <?php foreach(Andy_Commerce_Currency_V2_Dev::CODES as $c):?><tr><td><?php echo esc_html(Andy_Commerce_Currency_V2_Dev::FLAGS[$c].' '.$c);?></td><td>All payment methods</td><td>Pending sandbox verification</td></tr><?php endforeach;?>
+  <section class="acv2-card"><h2>Checkout Options</h2><p class="muted">以下为 YayCurrency 原有设置的参考配置。Currency OS V2 尚未启用真实外币结账。</p>
+    <div class="acv2-line"><?php $toggle('checkout_preview','允许不同币种结账（目标配置）',$cfg['checkout_preview']);?></div>
+    <div class="acv2-table-scroll"><table class="acv2-table"><thead><tr><th>币种</th><th>原插件配置</th><th>支付网关验证</th></tr></thead><tbody>
+      <?php foreach(Andy_Commerce_Currency_V2_Dev::CODES as $c):?><tr><td><?php echo esc_html(Andy_Commerce_Currency_V2_Dev::FLAGS[$c].' '.$c);?></td><td>全部支付方式</td><td>待沙盒验证</td></tr><?php endforeach;?>
     </tbody></table></div>
-    <div class="acv2-line"><?php $toggle('force_payment','Force payment in a specific currency',$cfg['force_payment']);?></div>
-    <div class="acv2-line"><?php $toggle('force_gateway','Force currency for a specific payment method',$cfg['force_gateway']);?></div>
-    <p class="warn">These are editable Dev draft switches only. Stripe, WooPayments and PayPal operations are unchanged.</p>
+    <div class="acv2-line"><?php $toggle('force_payment','强制使用指定币种付款',$cfg['force_payment']);?></div>
+    <div class="acv2-line"><?php $toggle('force_gateway','为指定支付方式强制设置币种',$cfg['force_gateway']);?></div>
+    <p class="warn">以上开关仅保存 Dev 测试草稿，不会影响 Stripe、WooPayments、PayPal 的实际收款配置。</p>
   </section>
 <?php elseif($section==='display'):?>
   <div class="acv2-grid">
-    <section class="acv2-card"><h2>Switcher Location</h2><p class="muted">Use the existing WordPress shortcode interface for the new demo.</p>
-      <div class="acv2-line"><?php $toggle('product_switcher','Show automatically on product page',$cfg['product_switcher']);?></div>
-      <p>Default shortcode</p><code>[andy_currency_switcher]</code>
-      <p>Header / Bricks compact</p><code>[andy_currency_switcher style="compact" show_flag="yes" show_symbol="yes" show_code="yes"]</code>
-      <p><a target="_blank" rel="noopener" href="<?php echo esc_url(add_query_arg('ac_currency_preview','1',home_url('/')));?>">Open real Dev frontend shortcode preview ↗</a></p>
+    <section class="acv2-card"><h2>切换器位置</h2><p class="muted">通过 WordPress 短代码预览新版货币切换器。</p>
+      <div class="acv2-line"><?php $toggle('product_switcher','在商品详情页自动显示',$cfg['product_switcher']);?></div>
+      <p>默认短代码</p><code>[andy_currency_switcher]</code>
+      <p>Header / Bricks 紧凑样式</p><code>[andy_currency_switcher style="compact" show_flag="yes" show_symbol="yes" show_code="yes"]</code>
+      <p><a target="_blank" rel="noopener" href="<?php echo esc_url(add_query_arg('ac_currency_preview','1',home_url('/')));?>">打开 Dev 前台真实短代码预览 ↗</a></p>
     </section>
-    <section class="acv2-card"><h2>Switcher Customizer</h2><p class="muted">Owner-approved display defaults.</p>
-      <?php foreach(['flag'=>'Show flag','name'=>'Show currency name','symbol'=>'Show currency symbol','code'=>'Show currency code','small'=>'Small switcher size'] as $k=>$label):?><div class="acv2-line"><?php $toggle($k,$label,$cfg[$k]);?></div><?php endforeach;?>
-      <div class="acv2-demo"><p class="muted">Live registered shortcode in WP Admin</p><?php echo do_shortcode('[andy_currency_switcher style="compact"]');?></div>
+    <section class="acv2-card"><h2>切换器外观</h2><p class="muted">采用已审核通过的展示默认值。</p>
+      <?php foreach(['flag'=>'显示国旗','name'=>'显示货币名称','symbol'=>'显示货币符号','code'=>'显示币种代码','small'=>'使用 Small 小尺寸'] as $k=>$label):?><div class="acv2-line"><?php $toggle($k,$label,$cfg[$k]);?></div><?php endforeach;?>
+      <div class="acv2-demo"><p class="muted">后台短代码实际渲染预览</p><?php echo do_shortcode('[andy_currency_switcher style="compact"]');?></div>
     </section>
   </div>
 <?php elseif($section==='advanced'):?>
   <div class="acv2-grid">
-    <section class="acv2-card"><h2>Rate & Country Settings</h2>
-      <?php foreach(['fixed_prices'=>'Fixed product price for each currency','auto_rate'=>'Update exchange rate automatically · daily','country_detect'=>'Auto-select currency by countries','bot_country'=>'Apply country logic to crawlers (pending SEO verification)'] as $k=>$label):?><div class="acv2-line"><?php $toggle($k,$label,$cfg[$k]);?></div><?php endforeach;?>
-      <p class="muted">Reference provider: Frankfurter (USD base). Current FX reads are GET-only in Ledger V1.</p>
-      <div class="acv2-table-scroll"><table class="acv2-table"><thead><tr><th>Currency</th><th>Country defaults</th></tr></thead><tbody><tr><td>USD</td><td>United States / fallback</td></tr><tr><td>EUR</td><td>Eurozone · to validate</td></tr><tr><td>GBP</td><td>United Kingdom</td></tr><tr><td>AUD</td><td>Australia</td></tr><tr><td>CAD</td><td>Canada</td></tr></tbody></table></div>
+    <section class="acv2-card"><h2>汇率与国家设置</h2>
+      <?php foreach(['fixed_prices'=>'为每种币种设置固定商品价格','auto_rate'=>'自动更新汇率（每日一次）','country_detect'=>'根据国家自动选择币种','bot_country'=>'对搜索引擎爬虫应用国家识别（待 SEO 验证）'] as $k=>$label):?><div class="acv2-line"><?php $toggle($k,$label,$cfg[$k]);?></div><?php endforeach;?>
+      <p class="muted">参考汇率来源：Frankfurter（基准 USD）。「汇率核算 V1」仅执行只读获取。</p>
+      <div class="acv2-table-scroll"><table class="acv2-table"><thead><tr><th>币种</th><th>默认国家或地区</th></tr></thead><tbody><tr><td>USD</td><td>美国／默认回退</td></tr><tr><td>EUR</td><td>欧元区 · 待验证</td></tr><tr><td>GBP</td><td>英国</td></tr><tr><td>AUD</td><td>澳大利亚</td></tr><tr><td>CAD</td><td>加拿大</td></tr></tbody></table></div>
     </section>
-    <section class="acv2-card"><h2>Display Safety & Cache</h2>
-      <?php foreach(['product_notice'=>'Display currency notice on product page','approximate'=>'Show approximate price','cache_compatible'=>'Compatible with cache plugins','loading_mask'=>'Loading mask'] as $k=>$label):?><div class="acv2-line"><?php $toggle($k,$label,$cfg[$k]);?></div><?php endforeach;?>
-      <p class="warn">Country-aware cache and Google crawler behavior need dedicated UAT before enabling any real product price localization.</p>
+    <section class="acv2-card"><h2>展示安全与缓存</h2>
+      <?php foreach(['product_notice'=>'在商品页显示币种提示','approximate'=>'显示近似价格','cache_compatible'=>'兼容缓存插件','loading_mask'=>'加载遮罩'] as $k=>$label):?><div class="acv2-line"><?php $toggle($k,$label,$cfg[$k]);?></div><?php endforeach;?>
+      <p class="warn">按国家显示价格、缓存及 Google 爬虫规则须完成独立 UAT，之后才能用于真实商品价格。</p>
     </section>
   </div>
 <?php else:?>
-  <section class="acv2-card"><h2>USD Marketing Ledger</h2><p class="muted">USD is authoritative; conversion never unlocks a shipping discount.</p>
-    <div class="acv2-grid"><div class="acv2-card">Accounting basis<h2>USD</h2></div><div class="acv2-card">Example eligible merchandise<h2>$95.00</h2></div><div class="acv2-card">Example threshold (not a rule)<h2>$99.00</h2></div><div class="acv2-card">Real payment / refunds<h2>Not connected</h2></div></div>
-    <p class="warn">Marketing V2 owns actual campaign execution. WooCommerce owns real selected shipping rates. This page is explanatory only.</p>
+  <section class="acv2-card"><h2>USD Marketing Ledger</h2><p class="muted">USD 是唯一核算基准，汇率转换不会改变免邮或优惠资格。</p>
+    <div class="acv2-grid"><div class="acv2-card">财务核算基准<h2>USD</h2></div><div class="acv2-card">符合资格的商品小计（示例）<h2>$95.00</h2></div><div class="acv2-card">门槛示例（非实际规则）<h2>$99.00</h2></div><div class="acv2-card">实际收款与退款<h2>尚未接入</h2></div></div>
+    <p class="warn">真实营销活动由 Marketing V2 执行，实际运费以 WooCommerce 所选方式为准。本页仅用于说明和预览。</p>
   </section>
 <?php endif;?>
-    <footer class="acv2-footer"><span class="muted">Dev UI Draft · no WWW/YayCurrency, checkout, order or price changes</span>
-    <?php if($section!=='ledger'):?><button type="submit" class="button button-primary">Save Dev Draft</button><?php endif;?></footer>
+    <footer class="acv2-footer"><span class="muted">仅保存 Dev 预览草稿 · 不修改 WWW/YayCurrency、实际结账、订单或价格</span>
+    <?php if($section!=='ledger'):?><button type="submit" class="button button-primary">保存 Dev 预览设置</button><?php endif;?></footer>
   </form>
 </div>
