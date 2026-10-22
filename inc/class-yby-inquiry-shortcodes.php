@@ -71,21 +71,63 @@ class YBY_Inquiry_Shortcodes {
 			array( $this, 'render_modal_shortcode' )
 		);
 		add_shortcode( 'yby_inquiry', array( $this, 'render_inline_shortcode' ) );
+		// Optional Bricks page element; loaded at a later init priority only on Bricks sites.
+		if ( function_exists( 'add_action' ) ) {
+			add_action( 'init', array( $this, 'register_bricks_page_element' ), 11 );
+		}
 
 		add_shortcode(
 			'yby_sticky_cta',
 			array( $this, 'render_sticky_cta_shortcode' )
 		);
 	}
+	/** Register Bricks custom element without changing the pinned core bootstrap. */
+	public function register_bricks_page_element() {
+		if ( ! class_exists( '\Bricks\Elements' ) || ! class_exists( '\Bricks\Element' ) ) { return; }
+		require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-bricks-page-inquiry-bootstrap.php';
+		YBY_Bricks_Page_Inquiry_Bootstrap::register();
+	}
+
 	public function render_inline_shortcode( $attributes = array(), $content = null, $tag = '' ) {
 		unset( $content, $tag );
 		$attributes = $this->sanitize_shortcode_attributes( $attributes );
-		if ( '' === $attributes['preset'] ) { $attributes['preset'] = $this->get_default_modal_preset( $attributes ); }
+		if ( '' === $attributes['preset'] ) {
+			$attributes['preset'] = $this->get_default_modal_preset( $attributes );
+		}
 		$preset = $this->inquiry_manager->get_preset_manager()->get_preset( $attributes['preset'] );
-		if ( ! is_array( $preset ) || empty( $preset['enabled'] ) ) { return ''; }
-		$fields = $this->resolve_preset_fields( $preset );
-		$attributes['id'] = $this->generate_unique_modal_id( '' !== $attributes['id'] ? $attributes['id'] : 'yby-inquiry-' . $preset['id'] );
-		return $this->renderer->render_inline( $preset, $fields, $attributes );
+		if ( ! is_array( $preset ) || empty( $preset['enabled'] ) ) {
+			return '';
+		}
+
+		$site_studio = class_exists( 'YBY_Popup_Field_Studio' )
+			&& YBY_Popup_Field_Studio::has_preset( $preset['id'] );
+
+		if ( $site_studio ) {
+			// The Bricks-owned visual shell shares the modal's device-specific
+			// field contract, including labels, required state and site fields.
+			foreach ( YBY_Popup_Field_Studio::render_attributes( $preset['id'] ) as $key => $value ) {
+				if ( ! isset( $attributes[ $key ] ) || '' === $attributes[ $key ] || ( is_array( $attributes[ $key ] ) && empty( $attributes[ $key ] ) ) ) {
+					$attributes[ $key ] = $value;
+				}
+			}
+			$fields = ! empty( $attributes['desktop_fields'] )
+				? $this->resolve_field_ids( $attributes['desktop_fields'] )
+				: $this->resolve_field_ids( YBY_Popup_Field_Studio::desktop_fields( $preset['id'] ) );
+			$mobile_fields = ! empty( $attributes['mobile_fields'] )
+				? $this->resolve_field_ids( $attributes['mobile_fields'] )
+				: $this->resolve_preset_fields( $preset, 'mobile_fields' );
+		} else {
+			$fields = $this->resolve_preset_fields( $preset );
+			$mobile_fields = array();
+		}
+
+		if ( empty( $fields ) && empty( $mobile_fields ) ) {
+			return '';
+		}
+		$attributes['id'] = $this->generate_unique_modal_id(
+			'' !== $attributes['id'] ? $attributes['id'] : 'yby-inquiry-' . $preset['id']
+		);
+		return $this->renderer->render_inline( $preset, $fields, $attributes, $mobile_fields );
 	}
 
 	/**
@@ -113,9 +155,22 @@ class YBY_Inquiry_Shortcodes {
 			return '';
 		}
 
+		// Site-local presets own their labels, requirements and visual defaults.
+		// Explicit shortcode copy/fields always takes precedence.
+		if ( class_exists( 'YBY_Popup_Field_Studio' ) && YBY_Popup_Field_Studio::has_preset( $preset['id'] ) ) {
+			$site = YBY_Popup_Field_Studio::render_attributes( $preset['id'] );
+			foreach ( $site as $key => $value ) {
+				if ( ! isset( $attributes[ $key ] ) || '' === $attributes[ $key ] || ( is_array( $attributes[ $key ] ) && empty( $attributes[ $key ] ) ) ) {
+					$attributes[ $key ] = $value;
+				}
+			}
+		}
+
 		$fields = ! empty( $attributes['desktop_fields'] )
 			? $this->resolve_field_ids( $attributes['desktop_fields'] )
-			: $this->resolve_preset_fields( $preset );
+			: ( class_exists( 'YBY_Popup_Field_Studio' ) && YBY_Popup_Field_Studio::has_preset( $preset['id'] )
+				? $this->resolve_field_ids( implode( ',', YBY_Popup_Field_Studio::desktop_fields( $preset['id'] ) ) )
+				: $this->resolve_preset_fields( $preset ) );
 		$mobile_fields = ! empty( $attributes['mobile_fields'] )
 			? $this->resolve_field_ids( $attributes['mobile_fields'] )
 			: $this->resolve_preset_fields( $preset, 'mobile_fields' );

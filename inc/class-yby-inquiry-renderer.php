@@ -13,16 +13,44 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Renders neutral inquiry modal markup.
  */
 class YBY_Inquiry_Renderer {
-	public function render_inline( $preset, $fields, $attributes = array() ) {
-		if ( ! is_array( $preset ) || empty( $preset['id'] ) ) { return ''; }
+	/**
+	 * Render a form inside a page-builder visual shell.
+	 *
+	 * When a site Studio preset is used, emit distinct desktop and mobile
+	 * controls just like render_modal(). Legacy inline forms remain unchanged.
+	 *
+	 * @param array $preset Preset definition.
+	 * @param array $fields Desktop fields.
+	 * @param array $attributes Sanitized shortcode attributes.
+	 * @param array $mobile_fields Mobile fields for site Studio presets.
+	 * @return string
+	 */
+	public function render_inline( $preset, $fields, $attributes = array(), $mobile_fields = array() ) {
+		if ( ! is_array( $preset ) || empty( $preset['id'] ) ) {
+			return '';
+		}
 		$id = $this->normalize_modal_id( isset( $attributes['id'] ) ? $attributes['id'] : 'yby-inquiry-' . $preset['id'] );
 		$title = isset( $attributes['title'] ) && '' !== $attributes['title'] ? $attributes['title'] : $preset['label'];
 		$submit = isset( $attributes['submit_label'] ) && '' !== $attributes['submit_label'] ? $attributes['submit_label'] : 'Submit Inquiry';
 		$classes = array_merge( array( 'yby-shortcode-inquiry' ), isset( $attributes['class'] ) && is_array( $attributes['class'] ) ? $attributes['class'] : array() );
+		$studio = in_array( 'yby-popup-field-studio', $classes, true );
 		$form = '';
-		foreach ( $fields as $field ) { $form .= $this->render_field( $field, array( 'modal_id' => $id ) ); }
+
+		foreach ( $fields as $field ) {
+			if ( $studio ) {
+				$field = $this->apply_contact_requirement( $this->apply_field_presentation_overrides( $field, $attributes, false ), $preset );
+			}
+			$form .= $this->render_field( $field, array( 'modal_id' => $id, 'responsive' => $studio ? 'desktop' : '' ) );
+		}
+		if ( $studio ) {
+			foreach ( $mobile_fields as $field ) {
+				$field = $this->apply_contact_requirement( $this->apply_field_presentation_overrides( $field, $attributes, true ), $preset );
+				$form .= $this->render_field( $field, array( 'modal_id' => $id, 'responsive' => 'mobile' ) );
+			}
+		}
+
 		$form .= $this->render_metadata_fields( array_merge( $preset, array( 'source_component' => 'inquiry_shortcode' ) ) );
-		$out  = '<div id="' . esc_attr( $id ) . '" class="' . esc_attr( implode( ' ', $classes ) ) . '" data-yby-inquiry-inline data-yby-preset="' . esc_attr( $preset['id'] ) . '" data-yby-source-component="inquiry_shortcode">';
+		$out = '<div id="' . esc_attr( $id ) . '" class="' . esc_attr( implode( ' ', array_unique( $classes ) ) ) . '" data-yby-inquiry-inline data-yby-preset="' . esc_attr( $preset['id'] ) . '" data-yby-source-component="inquiry_shortcode">';
 		$out .= '<h2>' . esc_html( $title ) . '</h2><form class="yby-inquiry-form" data-yby-inquiry-form data-yby-preset="' . esc_attr( $preset['id'] ) . '" data-yby-contact-requirement="' . esc_attr( $preset['validation']['contact_requirement'] ?? 'none' ) . '" data-yby-form-version="' . esc_attr( $preset['version'] ) . '" novalidate>' . $form . '<div class="yby-inquiry-form__status" data-yby-inquiry-status role="status"></div><div class="yby-inquiry-form__error" data-yby-inquiry-error role="alert" hidden></div><button type="submit" class="yby-inquiry-form__submit" data-yby-inquiry-submit disabled>' . esc_html( $submit ) . '</button></form></div>';
 		return $out;
 	}
@@ -182,6 +210,13 @@ class YBY_Inquiry_Renderer {
 				$field['placeholder'] = $map[ $field_id ];
 			}
 		}
+		// Per-device required state is per-preset, not the shared field registry.
+		// array_key_exists is intentional: false explicitly clears a core default.
+		$required_key = $mobile ? 'mobile_field_required' : 'field_required';
+		if ( isset( $attributes[ $required_key ] ) && is_array( $attributes[ $required_key ] )
+			&& array_key_exists( $field_id, $attributes[ $required_key ] ) ) {
+			$field['required'] = ! empty( $attributes[ $required_key ][ $field_id ] );
+		}
 		return $field;
 	}
 
@@ -209,13 +244,18 @@ class YBY_Inquiry_Renderer {
 			case 'text':
 			case 'email':
 			case 'tel':
+			case 'number':
 				$control = $this->render_input_field( $field, $field_id, $error_id, $type );
 				break;
 			case 'textarea':
 				$control = $this->render_textarea_field( $field, $field_id, $error_id );
 				break;
 			case 'select':
+			case 'multiselect':
 				$control = $this->render_select_field( $field, $field_id, $error_id );
+				break;
+			case 'radio':
+				$control = $this->render_radio_field( $field, $field_id, $error_id );
 				break;
 			case 'checkbox':
 				$control = $this->render_checkbox_field( $field, $field_id, $error_id );
@@ -382,7 +422,17 @@ class YBY_Inquiry_Renderer {
 			$attributes[] = 'aria-required="true"';
 		}
 
+		if ( isset( $field['type'] ) && 'multiselect' === $field['type'] ) {
+			$attributes[] = 'multiple';
+			$attributes[] = 'size="4"';
+		}
 		$output = '<select ' . implode( ' ', $attributes ) . '>';
+		// Site-defined choice fields start empty; never treat the first real
+		// option as a completed answer to a required B2B inquiry question.
+		if ( isset( $field['id'], $field['placeholder'] )
+			&& 0 === strpos( $field['id'], 'site_' ) && '' !== $field['placeholder'] ) {
+			$output .= '<option value="">' . esc_html( $field['placeholder'] ) . '</option>';
+		}
 
 		foreach ( isset( $field['options'] ) && is_array( $field['options'] ) ? $field['options'] : array() as $option ) {
 			if ( ! is_array( $option ) ) {
@@ -395,6 +445,22 @@ class YBY_Inquiry_Renderer {
 		$output .= '</select>';
 
 		return $output;
+	}
+
+	/**
+	 * Render a native single-choice radio group. Existing inputs stay intact:
+	 * this type is only used by newly registered site fields.
+	 */
+	protected function render_radio_field( $field, $field_dom_id, $error_id ) {
+		$options = isset( $field['options'] ) && is_array( $field['options'] ) ? $field['options'] : array();
+		$output = '<div class="yby-inquiry-field__radio-options" role="radiogroup" aria-describedby="' . esc_attr( $error_id ) . '">';
+		foreach ( $options as $i => $option ) {
+			if ( ! is_array( $option ) || empty( $option['value'] ) ) { continue; }
+			$id = 0 === $i ? $field_dom_id : $field_dom_id . '-' . (int) $i;
+			$output .= '<label class="yby-inquiry-field__radio-label"><input id="' . esc_attr( $id ) . '" name="' . esc_attr( sanitize_key( $field['id'] ) ) . '" type="radio" value="' . esc_attr( $option['value'] ) . '" data-yby-field data-yby-field-id="' . esc_attr( $field['id'] ) . '"'
+				. ( ! empty( $field['required'] ) ? ' required aria-required="true"' : '' ) . '><span>' . esc_html( $option['label'] ) . '</span></label>';
+		}
+		return $output . '</div>';
 	}
 
 	/**

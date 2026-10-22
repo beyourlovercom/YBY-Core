@@ -30,7 +30,7 @@ class YBY_Global_Popup {
 		$out['inquiry_template'] = in_array( $template, array( 'classic', 'premium_v22', 'oem_original' ), true ) ? $template : 'classic';
 		$preset_raw = $raw['inquiry_preset'] ?? 'irrigation_quick_inquiry';
 		$preset_id = is_scalar( $preset_raw ) ? sanitize_key( (string) $preset_raw ) : 'irrigation_quick_inquiry';
-		$out['inquiry_preset'] = in_array( $preset_id, array( 'irrigation_quick_inquiry', 'bottle_oem_inquiry', 'bottle_wholesale_inquiry' ), true ) ? $preset_id : 'irrigation_quick_inquiry';
+		$out['inquiry_preset'] = in_array( $preset_id, array( 'irrigation_quick_inquiry', 'bottle_oem_inquiry', 'bottle_wholesale_inquiry' ), true ) || ( class_exists( 'YBY_Popup_Field_Studio' ) && YBY_Popup_Field_Studio::has_preset( $preset_id ) ) ? $preset_id : 'irrigation_quick_inquiry';
 		foreach ( array( 'subscribe_shortcode_show_title', 'subscribe_shortcode_show_subtitle', 'subscribe_shortcode_show_image' ) as $key ) { $out[ $key ] = empty( $raw[ $key ] ) ? 0 : 1; }
 		foreach ( array( 'inquiry_custom_css', 'subscribe_custom_css', 'inquiry_shortcode_custom_css', 'subscribe_shortcode_custom_css' ) as $key ) { $out[ $key ] = self::sanitize_custom_css( $raw[ $key ] ?? '' ); }
 		return wp_parse_args( $out, self::defaults() );
@@ -66,9 +66,31 @@ class YBY_Global_Popup {
             && 'dev.beyourlover.com' === strtolower( (string) wp_unslash( $_SERVER['HTTP_HOST'] ) );
     }
 
+    /**
+     * Read-only native preview of a SAVED site preset. Authenticated owners
+     * can preview a page-scoped form without changing Global Popup settings.
+     * The nonce and capability are checked again on the frontend request.
+     */
+    public static function studio_preview_preset_id() {
+        if ( ! isset( $_GET['yby_popup_preview'], $_GET['yby_studio_preview'], $_GET['yby_studio_nonce'] ) ) { return ''; }
+        if ( ! is_scalar( $_GET['yby_popup_preview'] ) || 'inquiry' !== sanitize_key( wp_unslash( (string) $_GET['yby_popup_preview'] ) ) ) { return ''; }
+        if ( ! is_user_logged_in() || ! current_user_can( 'manage_options' ) ) { return ''; }
+        $nonce = is_scalar( $_GET['yby_studio_nonce'] ) ? sanitize_text_field( wp_unslash( (string) $_GET['yby_studio_nonce'] ) ) : '';
+        if ( ! wp_verify_nonce( $nonce, 'yby_popup_studio_preview' ) ) { return ''; }
+        $raw_id = $_GET['yby_studio_preview'];
+        $id = is_scalar( $raw_id ) ? sanitize_key( wp_unslash( (string) $raw_id ) ) : '';
+        return class_exists( 'YBY_Popup_Field_Studio' ) && YBY_Popup_Field_Studio::has_preset( $id ) ? $id : '';
+    }
+
     public function render() {
         $settings = self::sanitize( self::settings() );
         $oem_preview = self::is_oem_exact_preview();
+        $studio_preview = self::studio_preview_preset_id();
+        if ( '' !== $studio_preview ) {
+            // Display this test scheme only for this authenticated view.
+            // Nothing here updates the site's active Global Popup preset.
+            $settings['inquiry_preset'] = $studio_preview;
+        }
         if ( $oem_preview ) {
             // Deliberate visual-only preview, never persist options or change ads.
             $settings['inquiry_template'] = 'oem_original';
@@ -81,10 +103,11 @@ class YBY_Global_Popup {
         }
         if ( ! is_array( $preset ) || empty( $preset['enabled'] ) ) { return; }
         if ( $oem_preview ) { $preset['page_profiles'] = array(); }
+		$studio_preset = class_exists( 'YBY_Popup_Field_Studio' ) && YBY_Popup_Field_Studio::has_preset( $settings['inquiry_preset'] );
 		$inquiry = '';
-		if ( self::preset_allowed_on_page( $preset ) ) {
+		if ( '' !== $studio_preview || self::preset_allowed_on_page( $preset ) ) {
 		$fields = $this->manager->get_field_manager()->get_fields(); $ordered = array();
-		foreach ( $preset['fields'] as $id ) { if ( isset( $fields[ $id ] ) && ! empty( $fields[ $id ]['enabled'] ) ) { $ordered[] = $fields[ $id ]; } }
+		foreach ( $studio_preset ? YBY_Popup_Field_Studio::desktop_fields( $preset['id'] ) : $preset['fields'] as $id ) { if ( isset( $fields[ $id ] ) && ! empty( $fields[ $id ]['enabled'] ) ) { $ordered[] = $fields[ $id ]; } }
         $exact_oem = 'oem_original' === $settings['inquiry_template'] && 'bottle_oem_inquiry' === $settings['inquiry_preset'];
         $premium = 'premium_v22' === $settings['inquiry_template'];
         if ( $exact_oem ) {
@@ -105,8 +128,26 @@ class YBY_Global_Popup {
 			$attributes['layout'] = 'premium_split';
 			$attributes['mobile_layout'] = 'premium_stack';
 		}
+		if ( $studio_preset ) {
+			$site_attrs = YBY_Popup_Field_Studio::render_attributes( $preset['id'] );
+			// Business fields and appearance are independent selections: never
+			// discard the current Classic/Premium visual template class or layout
+			// while merging this site's data-driven field overrides.
+			$current_classes = $attributes['class'];
+			$current_layout = isset( $attributes['layout'] ) ? $attributes['layout'] : '';
+			$current_mobile_layout = isset( $attributes['mobile_layout'] ) ? $attributes['mobile_layout'] : '';
+			$attributes = array_merge( $attributes, $site_attrs );
+			$attributes['class'] = array_values( array_unique( array_merge( $current_classes, $site_attrs['class'] ) ) );
+			if ( $premium ) {
+				$attributes['layout'] = $current_layout;
+				$attributes['mobile_layout'] = $current_mobile_layout;
+			}
+			$attributes['title'] = '' !== $settings['inquiry_title'] ? $settings['inquiry_title'] : $site_attrs['title'];
+			$attributes['subtitle'] = '' !== $settings['inquiry_subtitle'] ? $settings['inquiry_subtitle'] : $site_attrs['subtitle'];
+			$attributes['image'] = '' !== $settings['inquiry_image'] ? $settings['inquiry_image'] : $site_attrs['image'];
+		}
 		$mobile_fields = array();
-        if ( $premium ) {
+        if ( $premium || $studio_preset ) {
             // The existing renderer owns mobile field validation; keep the original field registry and JS.
 			foreach ( $preset['mobile_fields'] ?? array() as $id ) {
 				if ( isset( $fields[ $id ] ) && ! empty( $fields[ $id ]['enabled'] ) ) { $mobile_fields[] = $fields[ $id ]; }
@@ -121,8 +162,9 @@ class YBY_Global_Popup {
             $inquiry = str_replace( 'glass-bottle-oem</span>', 'Start Your Bottle Project</span>', $inquiry );
             $inquiry = str_replace( '<form class="yby-inquiry-form"', '<p class="andy-oem-subtitle">Tell us about your bottle requirements and our team will follow up with you.</p><form class="yby-inquiry-form"', $inquiry );
         }
-        if ( $oem_preview ) {
-            // Visual UAT only. Prevent POST through the browser without changing real form runtime.
+        if ( $oem_preview || '' !== $studio_preview ) {
+            // Owner preview is visual-only: disallow real inquiries and keep
+            // Page Profile validation unchanged for normal frontend visits.
             $inquiry = str_replace( 'class="yby-inquiry-form"', 'class="yby-inquiry-form" data-andy-preview-only="1" onsubmit="return false"', $inquiry );
             $inquiry = str_replace( 'type="submit" class="yby-inquiry-form__submit"', 'type="button" class="yby-inquiry-form__submit" disabled', $inquiry );
         }

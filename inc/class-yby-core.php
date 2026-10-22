@@ -61,6 +61,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-lead-email.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-field-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-preset-manager.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-manager.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-popup-field-studio.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-lead-mapper.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-renderer.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-shortcodes.php';
@@ -120,6 +121,7 @@ class YBY_Core {
 	 */
 	public function __construct() {
 		$this->loader = new YBY_Loader();
+		YBY_Popup_Field_Studio::boot();
 
 		YBY_Module_Registry::adopt_default_modules_once( 'v170_landing_pages', array( 'landing_pages' ) );
 		YBY_Module_Registry::adopt_default_modules_once( 'v1_three_os_newsletter_menu', array( 'newsletter_os' ) );

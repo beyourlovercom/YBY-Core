@@ -113,10 +113,33 @@ $expected_paths = array(
     'admin/views/popup-settings.php'
 );
 $assert( count( $listed ) === 4 && array_column( $listed, 'path' ) === $expected_paths, 'Only four allowlisted Dev files, no ZIP' );
+// This legacy manifest is a **frozen** October Dev deployment candidate.
+ // The original four file hashes must never be rewritten to match a later
+ // feature. Two live files now legitimately evolve for Field Studio V2: verify
+ // historical bytes from explicit immutable test fixtures, while the present
+ // PHP renderer is exercised by this harness and the new Studio contract.
+$frozen_paths = array(
+    'inc/class-yby-global-popup.php' => 'tests/fixtures/premium-v22-frozen/inc/class-yby-global-popup.php',
+    'admin/views/popup-settings.php' => 'tests/fixtures/premium-v22-frozen/admin/views/popup-settings.php',
+);
 foreach ( $listed as $file ) {
-    $data = file_get_contents( dirname( __DIR__ ) . '/' . $file['path'] );
+    $legacy_path = isset( $frozen_paths[ $file['path'] ] ) ? $frozen_paths[ $file['path'] ] : $file['path'];
+    $full_path = dirname( __DIR__ ) . '/' . $legacy_path;
+    $assert( is_file( $full_path ), 'Legacy candidate snapshot exists: ' . $legacy_path );
+    $data = file_get_contents( $full_path );
+    // Git blob OIDs are based on LF source bytes. Windows working trees may
+    // check out CRLF; normalize that transport difference before comparison.
+    $data = str_replace( "\r\n", "\n", $data );
     $sha = sha1( 'blob ' . strlen( $data ) . "\0" . $data );
-    $assert( hash_equals( $file['source_git_blob_sha1'], $sha ), 'Exact source blob hash for ' . $file['path'] );
+    $assert( hash_equals( $file['source_git_blob_sha1'], $sha ), 'Frozen original blob unchanged: ' . $file['path'] );
     $assert( ( $file['current_dev_blob_sha1'] ?? null ) === null && $file['verified_backup'] === false, 'No fabricated Dev hash or backup proof' );
 }
+// The current code must still retain legacy Premium class/markup guards.
+$current_global = file_get_contents( dirname( __DIR__ ) . '/inc/class-yby-global-popup.php' );
+$current_view = file_get_contents( dirname( __DIR__ ) . '/admin/views/popup-settings.php' );
+$assert( strpos( $current_global, "'premium_v22' === \$settings['inquiry_template']" ) !== false, 'Current Premium opt-in preserved' );
+$assert( strpos( $current_global, "if ( \$premium )" ) !== false, 'Current Premium layout branch preserved' );
+$assert( strpos( $current_view, 'id="andy-popup-template"' ) !== false, 'Current visual template selector preserved' );
+$assert( strpos( $current_view, 'name="yby_popup_settings[inquiry_preset]"' ) !== false, 'Current business preset selector preserved' );
+$assert( strpos( $current_view, "include YBY_CORE_PLUGIN_DIR . 'admin/views/popup-field-studio.php'" ) !== false, 'Studio embedded without replacing legacy popup settings' );
 echo "PASS andy-premium-popup-v22-harness\n";

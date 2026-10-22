@@ -30,8 +30,11 @@ class YBY_Inquiry_Field_Manager {
 		'text',
 		'email',
 		'tel',
+		'number',
 		'textarea',
 		'select',
+		'radio',
+		'multiselect',
 		'checkbox',
 		'hidden',
 	);
