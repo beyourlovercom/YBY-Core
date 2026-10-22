@@ -55,8 +55,8 @@ foreach($codes as $code) {
             'm9_extra_threshold'=>'129','m9_extra_reward'=>'10']);
         m9pageCheck(str_contains($html,'Marketing OS · USD Multi-Rule Studio'),
             "$code/$zone M9 WordPress admin view renders");
-        m9pageCheck(str_contains($html,'$165.00') && str_contains($html,'$155.00'),
-            "$code/$zone discounted and selected campaign USD totals rendered");
+        m9pageCheck(str_contains($html,'$165.00') && str_contains($html,'$153.00'),
+            "$code/$zone inactive USD M7 draft $12 beats built-in $10: final USD153");
         m9pageCheck(str_contains($html,'OFF · never award'),
             "$code/$zone awards remain off");
         m9pageCheck(str_contains($html,'draft_id_123') && !str_contains($html,'EUR draft excluded'),
