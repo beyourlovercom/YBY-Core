@@ -46,10 +46,10 @@ final class Andy_Commerce_Currency_V2_Dev {
     }
     static function save(): void {
         if (!self::access() || ($_SERVER['REQUEST_METHOD']??'')!=='POST')
-            wp_die('Only authorized Dev admin may edit this preview.','',['response'=>403]);
+            wp_die('仅授权的 Dev 测试站管理员可以修改预览设置。','',['response'=>403]);
         check_admin_referer('andy_currency_v2_preview_save');
         $in=isset($_POST['ac_currency'])?wp_unslash($_POST['ac_currency']):[];
-        if(!is_array($in)||count($in)>26)wp_die('Invalid preview config','',['response'=>400]);
+        if(!is_array($in)||count($in)>26)wp_die('无效的预览配置','',['response'=>400]);
         $section=isset($_POST['ac_section'])?sanitize_key(wp_unslash($_POST['ac_section'])):'manage';
         $out=self::config();
         // Save only the visible tab: switching tabs never resets other preferences.
@@ -79,6 +79,7 @@ final class Andy_Commerce_Currency_V2_Dev {
         $atts=shortcode_atts(['style'=>'default','show_flag'=>'yes','show_symbol'=>'yes','show_code'=>'yes'],(array)$atts,'andy_currency_switcher');
         $cfg=self::config();$id='ac-currency-demo-'.wp_unique_id();
         $compact=$atts['style']==='compact';$display=[];
+        $admin_labels=function_exists('is_admin')&&is_admin();
         foreach(self::CODES as $c)if(!empty($cfg['enabled'][$c])){
             $name=($cfg['flag']&&$atts['show_flag']==='yes'?self::FLAGS[$c].' ':'')
                .($cfg['symbol']&&$atts['show_symbol']==='yes'?self::SYMBOLS[$c].' ':'')
@@ -89,11 +90,11 @@ final class Andy_Commerce_Currency_V2_Dev {
         ob_start();
         if(!self::$css_sent){self::$css_sent=true;echo self::widget_css();}
         echo '<div class="ac-demo-switcher'.($compact?' ac-compact':'').'" id="'.esc_attr($id).'">';
-        echo '<label for="'.esc_attr($id.'-select').'">Currency Switcher · Dev</label>';
+        echo '<label for="'.esc_attr($id.'-select').'">'.esc_html($admin_labels?'货币切换器 · Dev 预览':'Currency Switcher · Dev').'</label>';
         echo '<select id="'.esc_attr($id.'-select').'" aria-label="Preview currency selection">';
         foreach($display as $code=>$v)echo '<option value="'.esc_attr($code).'">'.esc_html($v['label']).'</option>';
         echo '</select><strong class="ac-preview-amount" aria-live="polite">$1,234.56</strong>';
-        echo '<small>Sample USD $1,234.56 · display only. No Woo prices, cart, shipping or checkout change.</small></div>';
+        echo '<small>'.esc_html($admin_labels?'模拟基准 USD $1,234.56 · 仅展示效果，不修改真实商品价格、购物车、运费或结账。':'Sample USD $1,234.56 · display only. No Woo prices, cart, shipping or checkout change.').'</small></div>';
         echo '<script>(function(){var el=document.getElementById('.wp_json_encode($id).');if(!el)return;var a='.wp_json_encode($display).';var s=el.querySelector("select");s.addEventListener("change",function(){if(a[s.value])el.querySelector(".ac-preview-amount").textContent=a[s.value].amount;});})();</script>';
         return (string)ob_get_clean();
     }
