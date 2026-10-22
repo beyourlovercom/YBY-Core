@@ -6,7 +6,6 @@ $preset = Andy_Commerce_Shipping_Promotion_Policy::preset();
 $legacy_owned = 'byl-platform-legacy' === Andy_Commerce_Shipping_Promotion_Policy::settings_source();
 ?>
 <div class="wrap">
-<?php if ( ! class_exists( 'YBY_Andy_Admin_Shell_V22' ) || ! YBY_Andy_Admin_Shell_V22::suppress_legacy_tabs( Andy_Commerce_Admin::PAGE_SLUG ) ) : ?>
 <h1>Andy Commerce</h1>
 <nav class="nav-tab-wrapper">
 <a class="nav-tab" href="<?php echo esc_url( add_query_arg( array( 'page' => Andy_Commerce_Admin::PAGE_SLUG, 'tab' => 'overview' ), admin_url( 'admin.php' ) ) ); ?>">Overview</a>
@@ -14,7 +13,6 @@ $legacy_owned = 'byl-platform-legacy' === Andy_Commerce_Shipping_Promotion_Polic
 <a class="nav-tab nav-tab-active" href="<?php echo esc_url( add_query_arg( array( 'page' => Andy_Commerce_Admin::PAGE_SLUG, 'tab' => 'checkout-shipping' ), admin_url( 'admin.php' ) ) ); ?>">Checkout / Shipping</a>
 <a class="nav-tab" href="<?php echo esc_url( add_query_arg( array( 'page' => Andy_Commerce_Admin::PAGE_SLUG, 'tab' => 'settings' ), admin_url( 'admin.php' ) ) ); ?>">Settings</a>
 </nav>
-<?php endif; ?>
 <p><strong>Preset:</strong> <?php echo esc_html( strtoupper( (string) $preset['id'] ) ); ?>. Policy settings only; existing WooCommerce free-shipping method settings are never written by this page.</p>
 <?php if ( $legacy_owned ) : ?>
 <div class="notice notice-warning inline"><p><strong>Read-only migration mode:</strong> this BYL site still uses its validated historical BYL49 settings as the effective shipping policy. Andy Commerce does not change these values until a separately authorized configuration handoff. No promotion settings are written by this page.</p></div>
