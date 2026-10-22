@@ -87,7 +87,7 @@ final class Andy_Commerce_Currency_Reference_FX_V1 {
             throw new RuntimeException('Reference FX response exceeds allowed size');
         }
         $data = json_decode($raw, true, 20);
-        if (!is_array($data) || !array_is_list($data)) {
+        if (!is_array($data) || array_values($data) !== $data) {
             throw new RuntimeException('Unexpected reference FX response shape');
         }
         return self::parse($data,$retrievedAt);
