@@ -1,0 +1,150 @@
+/*
+ * Andy Commerce Orders UI V1 — only .andy-commerce-orders-table and toolbar.
+ * Does not style global WordPress admin tables or alter WooCommerce order data.
+ */
+.andy-commerce-orders-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #e3e5e8;
+  border-radius: 11px 11px 0 0;
+  padding: 10px 14px;
+  margin-top: 14px;
+  box-shadow: 0 1px 2px rgba(21, 21, 21, .025);
+}
+.andy-commerce-layout-switch { display: inline-flex; gap: 3px; padding: 3px; background: #f4f5f6; border-radius: 8px; }
+.andy-commerce-layout-choice {
+  appearance: none; border: 1px solid transparent; background: transparent;
+  padding: 7px 13px; border-radius: 6px; color: #4a4e54;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+}
+.andy-commerce-layout-choice.is-active {
+  color: #181b20; background: #fff; border-color: #e5e7ea;
+  box-shadow: 0 1px 3px rgba(0,0,0,.07);
+}
+.andy-commerce-layout-choice:focus-visible, .andy-commerce-orders-config-button:focus-visible {
+  outline: 2px solid #72273c; outline-offset: 2px;
+}
+.andy-commerce-orders-config-button { white-space: nowrap; }
+.andy-commerce-orders-panel {
+  background: #fff; border: 1px solid #e3e5e8; border-top: 0;
+  padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,.04);
+}
+.andy-commerce-orders-panel[hidden] { display: none !important; }
+.andy-commerce-orders-panel-heading { font-size: 14px; font-weight: 650; color: #181b20; }
+.andy-commerce-orders-panel .description { margin: 6px 0 12px; }
+.andy-commerce-orders-column-list {
+  list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 6px; max-width: 880px; margin: 0 0 12px; padding: 0;
+}
+.andy-commerce-orders-column-item {
+  display: flex; align-items: center; gap: 7px; background: #f9fafb;
+  border: 1px solid #e5e7eb; border-radius: 7px; margin: 0; padding: 7px 9px;
+}
+.andy-commerce-orders-drag { color: #8a8f97; cursor: grab; font-size: 16px; user-select: none; }
+.andy-commerce-orders-column-label { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
+.andy-commerce-orders-column-item .button { min-width: 26px; line-height: 24px; padding: 0 5px; }
+.andy-commerce-orders-panel-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.andy-commerce-orders-save-status { font-size: 12px; color: #626b73; }
+table.andy-commerce-orders-table {
+  margin-top: 0; background: #fff; border: 1px solid #e3e5e8;
+  border-top: 0; border-radius: 0 0 11px 11px; border-collapse: separate;
+  border-spacing: 0; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,.025);
+}
+table.andy-commerce-orders-table thead th, table.andy-commerce-orders-table tfoot th {
+  background: #f9fafb; color: #4b5563; font-size: 12px; font-weight: 600;
+  border-bottom: 1px solid #e9eaed;
+}
+table.andy-commerce-orders-table tbody tr:not(.no-items) { background: #fff; }
+table.andy-commerce-orders-table tbody tr:not(.no-items):hover { background: #faf8f9; }
+table.andy-commerce-orders-table tbody td,
+table.andy-commerce-orders-table tbody th { border-bottom: 1px solid #f0f0f2; vertical-align: middle; }
+table.andy-commerce-orders-table tbody tr:last-child td,
+table.andy-commerce-orders-table tbody tr:last-child th { border-bottom: 0; }
+table.andy-commerce-orders-table tbody td a:not(.button),
+table.andy-commerce-orders-table tbody th a:not(.button) { color: #72273c; text-decoration: none; }
+table.andy-commerce-orders-table tbody td a:hover,
+table.andy-commerce-orders-table tbody th a:hover { text-decoration: underline; }
+table.andy-commerce-orders-table .andy-commerce-order-coupon {
+  display: inline-block; max-width: 180px; padding: 3px 7px;
+  border: 1px solid #e1e4e8 !important; border-radius: 5px !important;
+  background: #f3f4f6 !important; color: #3f454b;
+  font-size: 12px; font-weight: 500; overflow-wrap: anywhere;
+  white-space: normal;
+}
+table.andy-commerce-orders-table mark.order-status {
+  border-radius: 5px; padding: 3px 8px; font-weight: 550;
+}
+table.andy-commerce-orders-table[data-andy-layout="standard"] tbody tr > td,
+table.andy-commerce-orders-table[data-andy-layout="standard"] tbody tr > th { padding-top: 12px; padding-bottom: 12px; }
+table.andy-commerce-orders-table[data-andy-layout="compact"] thead th,
+table.andy-commerce-orders-table[data-andy-layout="compact"] tfoot th { padding-top: 7px; padding-bottom: 7px; }
+table.andy-commerce-orders-table[data-andy-layout="compact"] tbody tr > td,
+table.andy-commerce-orders-table[data-andy-layout="compact"] tbody tr > th {
+  padding-top: 6px; padding-bottom: 6px; font-size: 12px;
+}
+table.andy-commerce-orders-table[data-andy-layout="compact"] .row-actions { font-size: 11px; }
+table.andy-commerce-orders-table[data-andy-layout="compact"] .andy-commerce-order-coupon { padding: 1px 5px; font-size: 11px; }
+/* Cards: the exact same existing TR/TD nodes, including their native actions. */
+table.andy-commerce-orders-table[data-andy-layout="cards"] { display: block; border: 0; background: transparent; box-shadow: none; overflow: visible; }
+table.andy-commerce-orders-table[data-andy-layout="cards"] > thead,
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tfoot { display: none; }
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
+  gap: 12px; width: 100%;
+}
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 12px; row-gap: 6px; background: #fff !important;
+  border: 1px solid #e3e5e8; border-radius: 10px; padding: 14px;
+  align-content: start;
+}
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr:not(.no-items):hover {
+  border-color: #d0c0c5; box-shadow: 0 2px 8px rgba(54, 24, 34, .06);
+}
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr > td,
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr > th {
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: 4px; padding: 4px 0; margin: 0; min-width: 0; width: auto;
+  border: 0; box-shadow: none; font-size: 12px;
+  overflow-wrap: anywhere; text-align: left;
+}
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr > td::before {
+  content: attr(data-andy-label); display: block; color: #707780; font-size: 11px;
+  font-weight: 500; line-height: 1.3;
+}
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr > .check-column {
+  grid-column: 1 / -1; display: block; order: -2;
+}
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr > .check-column::before { display: none; }
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr > .column-order_number,
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr > .column-order_title {
+  grid-column: 1 / -1; order: -1; font-size: 14px; font-weight: 600;
+}
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr > .column-order_number::before,
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr > .column-order_title::before { display: none; }
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr > .column-wc_actions,
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr > .column-order_actions {
+  grid-column: 1 / -1; border-top: 1px solid #eee; padding-top: 10px; margin-top: 4px;
+}
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr > .hidden {
+  display: none !important; /* Respect WordPress Screen Options. */
+}
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr.no-items {
+  display: block; grid-column: 1 / -1;
+}
+table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr.no-items td { display: block; }
+@media (max-width: 782px) {
+  .andy-commerce-orders-toolbar { padding: 8px; gap: 8px; }
+  .andy-commerce-layout-switch { width: 100%; justify-content: space-between; }
+  .andy-commerce-layout-choice { flex: 1; padding: 9px 6px; }
+  .andy-commerce-orders-config-button { margin-left: auto !important; }
+  table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody { grid-template-columns: 1fr; }
+  table.andy-commerce-orders-table[data-andy-layout="cards"] > tbody > tr { padding: 12px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .andy-commerce-layout-choice, .andy-commerce-orders-column-item { transition: background-color .14s, border-color .14s; }
+}
