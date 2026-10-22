@@ -20,6 +20,7 @@ function wp_enqueue_style( $h, $url, $dep = array(), $ver = '' ) { $GLOBALS['sty
 function wp_enqueue_script( $h, $url, $dep = array(), $ver = '', $footer = true ) { $GLOBALS['scripts'][$h] = $url; }
 function wp_localize_script( $handle, $name, $payload ) { $GLOBALS['local'][$name] = $payload; }
 function wp_create_nonce( $nonce ) { return 'nonce_test'; }
+function admin_url( $path = '' ) { return 'https://dev.example.test/wp-admin/' . $path; }
 function get_user_meta( $id, $key, $single ) { return array(); }
 function get_current_user_id() { return 1; }
 function get_userdata( $id ) { return null; }
