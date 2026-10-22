@@ -69,3 +69,36 @@
     width: 100%; height: 105px; object-fit: cover;
   }
 }
+
+/* Page-owned compact mobile fields: 390px M14 visual/scroll UAT. */
+/* Limited to native Bricks page inquiry; never affects Global Popup or #759. */
+@media (max-width: 859px) {
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-modal__dialog {
+    height: auto !important;
+    max-height: min(88dvh, calc(100dvh - 20px)) !important;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-form__fields {
+    grid-auto-rows: max-content !important;
+    align-content: start !important;
+    gap: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-field { gap: 4px !important; }
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-field label {
+    font-size: 12px !important; line-height: 1.3 !important; margin: 0 !important;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-field input:not([type=checkbox]):not([type=radio]),
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-field select {
+    box-sizing: border-box !important;
+    height: 44px !important; min-height: 44px !important; max-height: 44px !important;
+    padding: 0 11px !important; border-radius: 8px !important; font-size: 14px !important;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-field textarea {
+    box-sizing: border-box !important;
+    height: 78px !important; min-height: 78px !important; padding: 9px 11px !important;
+  }
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-field__error:empty,
+  .yby-inquiry-modal.yby-page-inquiry-owned .yby-inquiry-form__status:empty {
+    display: none !important;
+  }
+}

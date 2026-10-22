@@ -59,3 +59,18 @@ assert.equal(run({ routing: "explicit" }).defaultCta.getAttribute("data-yby-moda
 assert.equal(run({ noModule: true }).defaultCta.getAttribute("data-yby-modal-open"), null);
 assert(run({ mobileImage: "show" }).modal.classes.includes("yby-page-inquiry-mobile-image"));
 console.log("BRICKS_PAGE_INQUIRY_V1_ROUTING_PASS tests=10 no_leads=1 cross_page_mutation=0");
+
+// Native Bricks mobile layout must not inherit oversized inputs or force an
+// 88dvh sheet for a two-field form. Keep global popups out of this rule.
+const nativeCss = fs.readFileSync(path.join(__dirname, "../public/css/yby-bricks-page-inquiry.css"), "utf8");
+const compactBlock = nativeCss.split("/* Page-owned compact mobile fields:")[1];
+assert(compactBlock, "scoped native mobile layout contract missing");
+assert(compactBlock.includes(".yby-inquiry-modal.yby-page-inquiry-owned"), "must stay native-only");
+assert(compactBlock.includes("height: auto !important"), "short forms must not fill 88dvh");
+assert(compactBlock.includes("max-height: min(88dvh"), "long forms must cap screen height");
+assert(compactBlock.includes("grid-auto-rows: max-content !important"), "grid rows must not stretch");
+assert(compactBlock.includes("height: 44px !important"), "mobile input touch size contract");
+assert(compactBlock.includes("min-height: 44px !important"), "mobile input min contract");
+assert(compactBlock.includes(".yby-inquiry-field__error:empty"), "empty errors must not reserve space");
+assert(compactBlock.includes(".yby-inquiry-form__status:empty"), "empty status must not reserve space");
+console.log("BRICKS_M14_COMPACT_CSS_PASS scoped=native_only input=44px natural_height=1 scroll=existing");
