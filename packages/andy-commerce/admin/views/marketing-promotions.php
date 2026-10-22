@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 	<?php endif; ?>
 
 	<div class="notice notice-info inline"><p><strong><?php esc_html_e( 'Design preview only — all new promotions are OFF.', 'andy-commerce' ); ?></strong>
-		<?php esc_html_e( 'The existing shipping and coupon policy is unchanged. Draft editing, scheduling and publishing are not available in this phase.', 'andy-commerce' ); ?></p></div>
+		<?php esc_html_e( 'The existing shipping and coupon policy is unchanged. Scheduling and publishing remain unavailable. Dev-only inactive draft editing appears below when permitted.', 'andy-commerce' ); ?></p></div>
 
 	<h2><?php esc_html_e( 'Marketing / Promotions', 'andy-commerce' ); ?></h2>
 	<p><?php esc_html_e( 'Operators plan campaigns here. Andy Commerce will be the only server-side discount and eligibility engine; WooCommerce retains authority for cart, shipping, tax, coupons and orders.', 'andy-commerce' ); ?></p>
@@ -43,6 +43,8 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 			<tr><th scope="row">Free Shipping Progress</th><td>Read Woo selected rate and Andy Commerce's effective policy only</td><td><strong>OFF</strong> — Pending legacy eligibility migration</td></tr>
 		</tbody>
 	</table>
+
+	<?php if ( class_exists('Andy_Commerce_M7_Draft_Studio') && class_exists('Andy_Commerce_M8_Promotion_Evaluator') ) include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-m7-dev-studio.php'; ?>
 
 	<h2><?php esc_html_e( 'Eligibility policy — proposed V2', 'andy-commerce' ); ?></h2>
 	<p><code>post_discount_merchandise_subtotal_excluding_tax_and_shipping</code></p>
