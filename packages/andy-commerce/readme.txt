@@ -1,7 +1,7 @@
 === Andy Commerce ===
 Contributors: ybyglobal
 Requires PHP: 8.0
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 
 Reusable B2C / WooCommerce Addon for Andy Core.
 
@@ -13,6 +13,12 @@ Reusable B2C / WooCommerce Addon for Andy Core.
 The plugin fails closed with an admin notice when dependencies are missing or incompatible.
 
 == Changelog ==
+
+= 1.0.5 =
+* Dev-only Currency OS M1 USD-first source evaluator and five-currency synthetic shadow admin page; no Woo or payment hooks.
+* Preserve v1.0.4 M7 exact-name nonce security fix and inactive Marketing M4-M8 Studio.
+* Preview and tests only; no Stable/main/WWW release.
+
 
 = 1.0.4 =
 * Fix the M7 Dev draft Save/Edit/Archive nonce action mismatch that caused WordPress to reject fresh form submissions with "The link you followed has expired".

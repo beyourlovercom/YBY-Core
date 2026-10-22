@@ -49,7 +49,7 @@ class Andy_Commerce_Admin {
 		}
 
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
-		if ( ! in_array( $tab, array( 'overview', 'order-export', 'checkout-shipping', 'marketing-promotions', 'settings' ), true ) ) { $tab = 'overview'; }
+		if ( ! in_array( $tab, array( 'overview', 'order-export', 'checkout-shipping', 'marketing-promotions', 'currency-os', 'settings' ), true ) ) { $tab = 'overview'; }
 
 		if ( 'marketing-promotions' === $tab ) {
 			if ($this->m3_bridge && Andy_Commerce_M3_Dev_Bridge::enabled()) {
@@ -109,6 +109,12 @@ class Andy_Commerce_Admin {
 				// Original M1 read-only design shell when M3 is disabled.
 				include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-promotions.php';
 			}
+			return;
+		}
+
+		// Dev-only standalone USD-first ledger preview, never a live Woo price hook.
+		if ( 'currency-os' === $tab ) {
+			include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/currency-os-v1-dev-lab.php';
 			return;
 		}
 
