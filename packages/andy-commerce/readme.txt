@@ -1,7 +1,7 @@
 === Andy Commerce ===
 Contributors: ybyglobal
 Requires PHP: 8.0
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 
 Reusable B2C / WooCommerce Addon for Andy Core.
 
@@ -14,10 +14,10 @@ The plugin fails closed with an admin notice when dependencies are missing or in
 
 == Changelog ==
 
-= 1.0.6 =
+= 1.0.7 =
 * Marketing V2-M1 Dev-only typed draft-rule form for Spend & Save, BOGO, Bundles, Tiered Discount and disabled Free Gift with M8-compatible fixed/percent/quantity fields.
 * Validate minor-unit and percentage conversions server-side; preserve existing M7 JSON drafts through explicit Advanced mode. Keep nonce, capability, revision guards, all drafts OFF and no runtime Woo discount/checkout hooks.
-* Preserve 1.0.5 Currency OS synthetic preview, 1.0.4 Marketing Studio, BYL49 policies and native Woo Orders UI untouched.
+* Reserve version 1.0.6 for Currency OS M2 development; preserve 1.0.5 Currency OS M1 preview, 1.0.4 Marketing Studio, BYL49 policies and native Woo Orders UI untouched.
 
 
 = 1.0.5 =
