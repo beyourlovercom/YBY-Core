@@ -49,13 +49,13 @@
                         </td>
                     </tr>
                     <tr>
-                        <td><strong>Order Detail Label</strong></td>
-                        <td>订单详情页仅显示 <code>订单 39936</code>；不改变订单数据库与交易信息</td>
+                        <td><strong>Order Detail UI</strong></td>
+                        <td>Shopify 风格原生订单详情（双栏布局、顾客卡片、订单操作、原生付款与时间线），标题 <code>订单 39936</code>；不改变订单数据库与交易信息</td>
                         <td>
                             <label class="ac-orders-feature-switch">
                                 <input type="checkbox" name="andy_commerce_orders_modules[]" value="<?php echo esc_attr( Andy_Commerce_Orders_Features::DETAIL_MODULE ); ?>" <?php checked( $orders_module_states[ Andy_Commerce_Orders_Features::DETAIL_MODULE ] ); ?> <?php disabled( ! $can_toggle_orders ); ?>>
                                 <span class="ac-orders-feature-switch__track" aria-hidden="true"></span>
-                                <span class="screen-reader-text">Order Detail Label</span>
+                                <span class="screen-reader-text">Order Detail UI</span>
                             </label>
                         </td>
                     </tr>
