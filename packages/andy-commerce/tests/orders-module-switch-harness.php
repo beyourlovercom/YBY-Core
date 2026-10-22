@@ -47,6 +47,7 @@ $a( isset( $GLOBALS['hooks']['screen_settings'] ), 'list enabled installs native
 $a( isset( $GLOBALS['hooks']['woocommerce_admin_order_buyer_name'] ), 'list enabled installs SKU buyer display hook' );
 $a( isset( $GLOBALS['hooks']['manage_woocommerce_page_wc-orders_custom_column'] ), 'list enabled installs existing coupon column' );
 $a( ! isset( $GLOBALS['hooks']['gettext'] ), 'detail OFF excludes title filter' );
+$a( ! isset( $GLOBALS['hooks']['woocommerce_admin_order_data_header_right'] ), 'detail OFF excludes complete native detail UI and toolbar' );
 YBY_Module_Registry::save( array( 'email_os', $d ) );
 $GLOBALS['hooks'] = array();
 $runtime2 = new YBY_Module_Runtime();
@@ -55,6 +56,9 @@ $a( ! isset( $GLOBALS['hooks']['screen_settings'] ), 'list OFF stops list enhanc
 $a( ! isset( $GLOBALS['hooks']['woocommerce_admin_order_buyer_name'] ), 'list OFF removes SKU display hook' );
 $a( ! isset( $GLOBALS['hooks']['manage_woocommerce_page_wc-orders_custom_column'] ), 'list OFF removes coupon enhancement' );
 $a( isset( $GLOBALS['hooks']['gettext'] ), 'detail ON enables native translated heading' );
+$a( isset( $GLOBALS['hooks']['woocommerce_admin_order_data_header_right'] ), 'detail ON injects native Shopify-style action bar' );
+$a( isset( $GLOBALS['hooks']['woocommerce_admin_order_data_after_payment_info'] ), 'detail ON keeps advanced native editor' );
+$a( isset( $GLOBALS['hooks']['add_meta_boxes_woocommerce_page_wc-orders'] ), 'detail ON adds sidebar customer/Timeline preserving Woo boxes' );
 $a( YBY_Module_Registry::module( $d )['settings']['page'] === 'andy-commerce', 'Commerce settings route' );
 $bootstrap = file_get_contents( dirname( __DIR__ ) . '/andy-commerce.php' );
 $a( str_contains( $bootstrap, "Andy_Commerce_Orders_Features', 'register" ), 'feature registered at core window' );
