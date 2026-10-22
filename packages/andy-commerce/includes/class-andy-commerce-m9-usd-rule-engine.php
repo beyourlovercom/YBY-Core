@@ -10,7 +10,7 @@ declare(strict_types=1);
 if (!defined('ABSPATH')) { exit; }
 
 final class Andy_Commerce_M9_USD_Rule_Engine {
-    private const TYPES = ['gift', 'discount', 'shipping'];
+    private const TYPES = ['gift', 'discount']; // Shipping owned only by verified native Woo zone.
     private const LIMIT = 10000000000; // USD 100 million in minor units.
     private const MAX_RULES = 100;
 
@@ -49,12 +49,6 @@ final class Andy_Commerce_M9_USD_Rule_Engine {
                 if (!is_int($rule['gift_product_id'] ?? null)
                     || $rule['gift_product_id'] <= 0) {
                     throw new InvalidArgumentException('Gift requires a valid SKU product ID');
-                }
-            } else {
-                // Native shipping-zone rules are owned by Woo; accepting a
-                // merchant-supplied shipping rule here would cause authority drift.
-                if (($rule['source'] ?? '') !== 'native_woo_zone_shadow') {
-                    throw new InvalidArgumentException('Shipping rule must be native-zone shadow');
                 }
             }
             $ids[$rule['id']] = true;
