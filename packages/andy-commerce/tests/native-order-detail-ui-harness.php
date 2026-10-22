@@ -53,6 +53,10 @@ $js  = file_get_contents( dirname( __DIR__ ) . '/assets/native-orders/native-ord
 $check( str_contains( $css, 'grid-template-columns:minmax(0,1fr) max-content!important' ), 'action bar pinned beside title' );
 $check( str_contains( $css, 'grid-row:2!important' ), 'Woo payment summary in second row' );
 $check( str_contains( $css, '@media(max-width:900px)' ), 'mobile stylesheet responsive' );
+$check( str_contains( $css, 'M14: preserve native Order Data before right-hand metaboxes' ), 'narrow-screen native order-first layout marker' );
+$check( str_contains( $css, 'flex-direction:column;' ), 'mobile native detail wraps stacked' );
+$check( str_contains( $css, '#postbox-container-2 { order:0; }' ), 'native order header first on mobile' );
+$check( str_contains( $css, '#postbox-container-1 { order:1; }' ), 'Customer and other plugin metaboxes after Order Data on mobile' );
 $check( str_contains( $js, "action:'andy_commerce_native_orders_save_pin'" ), 'AJAX pin action Commerce-scoped' );
 $source = file_get_contents( dirname( __DIR__ ) . '/includes/class-andy-commerce-native-orders-detail.php' );
 $check( ! str_contains( $source, 'register_activation_hook(' ), 'does not manage other plugin activations' );
