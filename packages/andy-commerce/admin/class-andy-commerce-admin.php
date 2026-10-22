@@ -51,6 +51,12 @@ class Andy_Commerce_Admin {
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
 		if ( ! in_array( $tab, array( 'overview', 'order-export', 'checkout-shipping', 'marketing-promotions', 'currency-os', 'settings' ), true ) ) { $tab = 'overview'; }
 
+		// Dev-only M9: read-only multi-rule USD eligibility workbench.
+		if ('marketing-promotions' === $tab && isset($_GET['m9_preview']) && $_GET['m9_preview'] === '1') {
+			include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-m9-usd-multirule-lab.php';
+			return;
+		}
+
 		if ( 'marketing-promotions' === $tab ) {
 			if ($this->m3_bridge && Andy_Commerce_M3_Dev_Bridge::enabled()) {
 				if ( ! class_exists( 'YBY_Andy_Admin_Shell_V22' ) ||

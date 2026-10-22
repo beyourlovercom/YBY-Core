@@ -18,6 +18,8 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m5-progres
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m5-woo-cart-adapter.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m7-draft-studio.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m8-promotion-evaluator.php';
+// M9 pure multi-rule USD shadow evaluator; no Woo pricing/payment hooks.
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m9-usd-rule-engine.php';
 
 class Andy_Commerce {
 	public function run() {
