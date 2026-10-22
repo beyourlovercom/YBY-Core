@@ -24,7 +24,7 @@ final class Andy_Commerce_Orders_Features {
         );
         YBY_Module_Registry::register( self::LIST_MODULE, array_merge( $common, array(
             'name' => 'Andy Commerce — Orders List UI',
-            'description' => '原生订单列表：标准 / 紧凑 / 卡片、列管理及 ID + 商品 SKU。',
+            'description' => '原生订单列表：标准 / 紧凑 / 卡片、列管理、折扣码列及 ID + 商品 SKU。',
             'boot' => array( __CLASS__, 'boot_list' ),
         ) ) );
         YBY_Module_Registry::register( self::DETAIL_MODULE, array_merge( $common, array(
@@ -41,6 +41,8 @@ final class Andy_Commerce_Orders_Features {
     public static function boot_list( $module = array() ) {
         require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-orders-ui.php';
         require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-order-labels.php';
+        require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-order-coupon-column.php';
+        Andy_Commerce_Order_Coupon_Column::boot();
         Andy_Commerce_Orders_UI::boot();
         Andy_Commerce_Order_Labels::boot_list();
     }
