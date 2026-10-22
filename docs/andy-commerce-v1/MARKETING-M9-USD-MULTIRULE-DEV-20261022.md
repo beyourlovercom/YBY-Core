@@ -1,0 +1,28 @@
+# Andy Commerce Marketing OS M9 — USD-first multi-rule Dev handoff (2026-10-22)
+
+## 0. Owner-authorized scope and canonical source
+- Owner **PASS** on interactive Multi-Rule Marketing OS mockup and instructed proceeding. Scope **Dev-only**; do not change WWW, main, Stable, genuine Woo customer orders, payment, coupon, shipping rate, tax or physical gift inventory. No WWW SSH, paid plugin, or third-party proprietary source copying.
+- Existing Marketing OS M4–M8, including its M7 nonce-fix, is **already merged main** via PR #191. Reuse it. Existing Currency OS M1 Draft PR #192, M2 Draft PR #193 are source dependencies; this M9 branch stacks on M2 HEAD `dabf94a960b2ea6f9a181f956bb0ef0537861473`. Exact versioned candidate is **Andy Commerce 1.0.7**, not intended as Stable.
+- The approved Currency OS semantics: USD is the only canonical business/marketing threshold ledger; customer USD/EUR/GBP/AUD/CAD amount is derived after rewards via ONE reviewed FX snapshot. No condition uses a locally rounded amount to alter USD eligibility.
+
+## 1. Implemented code (shadow-only, no Woo hooks)
+- `includes/class-andy-commerce-m9-usd-rule-engine.php` — strict, pure USD-rule preview evaluator. Validates Currency OS V1 `mode=DEV_SHADOW_NO_PAYMENT`, base USD, supported currency and Woo zone 0/1/3/4/5. Rejects invalid/reused IDs, money fields, bad types/priority and unapproved active rules. Evaluates up to 100 independent eligible gift, fixed-amount discount and (strictly native-zone sourced) shipping templates. All awards remain OFF.
+- **Qualification** uses `eligible_subtotal_usd_minor` from the already discount-reduced Currency OS ledger; excludes tax/shipping/noneligible products and gifts. All qualifying gifts can be listed but **never awarded**. Discounts choose **one** highest-benefit projection; tie by priority then rule ID. No automatic stacking. Recompute ordinary shipping policy using **further reduced qualifying USD subtotal**. For zone 1 HK, native no-threshold free method is NOT assumed present unless independently verified. `charge_waived=false` unconditionally, even if shadow qualification is true. Special $30/parcel and PILLOW $30/item fees never waived.
+- `admin/views/marketing-m9-usd-multirule-lab.php` — protected Dev-only (`home_url` exact hostname and `manage_woocommerce`) read-only GET studio. Five currency choices and five Woo zone choices; freely test gross, prior discounts, Gift USD threshold, first discount USD threshold/reward, second discount threshold/reward. Shows all independently evaluated rules, single projected discount and after-award free shipping qualification. Uses fixed **synthetic** historic FX fixtures **only**. Also maps compatible inactive USD `M7 Draft Studio` Spend & Save and free_gift records to preview-only rules (up to 40), no edits. All mismatched/unsafe M7 drafts skipped.
+- URL: `https://dev.beyourlover.com/wp-admin/admin.php?page=andy-commerce&tab=marketing-promotions&m9_preview=1` **after Dev deployment and safe readback**. Linked from existing Marketing Studio page. Currency OS lab adds a link to Marketing OS Multi-Rule; its former **single $99 figure is only a ledger demo**, no global setting.
+- No automatic coupons, gifts, discounts or real shipping manipulation. No frontend Store API and no third-party ZIP required.
+
+## 2. Testing & examples
+- M9 offline harness `php packages/andy-commerce/tests/marketing-m9-usd-multirule-harness.php` — **250 assertions PASS** over 5 customer currencies × Woo zones 0/1/3/4/5, sample $99 gift, $129/$169 fixed discounts, zone-specific ordinary free-shipping thresholds, historical already-applied discount, correct post-campaign USD recomputation, no currency drift and no actual order/stock/rate writes.
+- Example gross $180, existing $15 discount => initial USD $165: gift $99 eligible; $169 off $20 NOT eligible; second $129 off $10 eligible; after proposed $10 savings => USD $155; local amount derived from one FX snapshot, NOT used in qualification. High-cost zone $169 free shipping still NOT qualified.
+- Example gross $180, existing $5 discount => USD $175: $169 off $20 eligible; final USD $155; high-cost shipping threshold $169 NOT qualified post-award. This prevents the known order-of-operations issue.
+- Complete PHP harness regression, editor PHP lint, native Completed JS, Version sync and GitHub CI must PASS for final M9 gate. Do not count hypothetical payment/FX integration as PASS.
+
+## 3. Deferred capabilities/ownership
+- **M10:** user-friendly persisted multi-rule CRUD atop safe existing inactive M7 Draft schema, explicit scope/stacking/priority policy, gift SKU validation and safe activation workflow. Do NOT introduce new plugin or duplicate Currency OS exchange settings.
+- **M11:** actual Woo Post-discount eligible lines & shipping recalculation, Checkout Blocks/classic, real country/zone and coupon truth, tax correctness; still Dev-only and payment test-mode only.
+- **M12:** selected currency/order/Stripe/WooPayments/PayPal payment contract, refunds and historical ledger verification; Owner M14 375×812 plus desktop UAT; production cutover requires entirely separate approval.
+
+## 4. Release boundary
+- Main, Stable, WWW untouched. Installed Dev package is a separate evidence gate; **do not claim deployed** from source/CI alone.
+- If Dev changes concurrently, **read exact current version, hashes, M7/M8 and source provenance before replacing**; retain a verified Dev rollback package and do not bypass upload security policy. If blocked by safety platform, stop rather than using an alternate route to evade the blocker.
