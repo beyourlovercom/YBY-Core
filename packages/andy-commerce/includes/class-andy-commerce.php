@@ -21,7 +21,6 @@ class Andy_Commerce {
 			Andy_Commerce_Shipping_Promotion_Runtime::boot_default_shipping_preference();
 		}
 		if ( is_admin() ) {
-			Andy_Commerce_Order_Coupon_Column::boot();
 			$admin = new Andy_Commerce_Admin();
 			add_action( 'admin_menu', array( $admin, 'add_admin_menu' ), 35 );
 		}
