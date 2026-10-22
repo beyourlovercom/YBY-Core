@@ -16,14 +16,35 @@ if ( ! in_array($currency, Andy_Commerce_Currency_OS_V1::SUPPORTED, true) ) {
     $currency = 'USD';
 }
 $fixtures = ['USD'=>1000000,'EUR'=>900000,'GBP'=>780000,'AUD'=>1500000,'CAD'=>1350000];
+
+$fxMode = isset($_GET['fx_source']) ? sanitize_key(wp_unslash($_GET['fx_source'])) : 'synthetic';
+$fxMode = $fxMode === 'reference' ? 'reference' : 'synthetic';
+$referenceDate = '';
+$referenceError = '';
+$referenceSnapshot = null;
+if ($fxMode === 'reference') {
+    // Explicit, credentialed administrator GET on Dev only; never silent
+    // requests from cart, checkout, frontend traffic or background CRON.
+    try {
+        $referenceSnapshot = Andy_Commerce_Currency_Reference_FX_V1::fetch_readonly(time());
+        $fixtures = $referenceSnapshot['rate_micros'];
+        $referenceDate = $currency==='USD' ? 'USD base' : ($referenceSnapshot['quote_dates'][$currency] ?? '');
+    } catch (Throwable $error) {
+        $referenceError = 'Reference FX unavailable or stale; no quote produced. Source error remains private.';
+    }
+}
 $ratesLabel = [
     'USD'=>'1.00', 'EUR'=>'0.90', 'GBP'=>'0.78', 'AUD'=>'1.50', 'CAD'=>'1.35'
 ];
+if ($referenceError !== '') {
+    echo '<div class="notice notice-error"><p>' . esc_html($referenceError) . '</p></div>';
+    return;
+}
 $example = [
     'currency'=>$currency,
     'rate_micros'=>$fixtures[$currency],
-    'rate_source'=>'DEV_SYNTHETIC',
-    'rate_timestamp'=>1792600000,
+    'rate_source'=>$referenceSnapshot ? $referenceSnapshot['rate_source'] : 'DEV_SYNTHETIC',
+    'rate_timestamp'=>$referenceSnapshot ? $referenceSnapshot['retrieved_at_utc'] : 1792600000,
     'threshold_usd_minor'=>9900,
     'shipping_usd_minor'=>1000,
     'tax_usd_minor'=>700,
@@ -58,8 +79,16 @@ $money = static function(int $minor, string $code) use ($symbols): string {
               </option>
             <?php endforeach; ?>
         </select>
+        <label for="byl-currency-fx-mode">FX source</label>
+        <select id="byl-currency-fx-mode" name="fx_source">
+            <option value="synthetic" <?php selected('synthetic',$fxMode); ?>>Synthetic example</option>
+            <option value="reference" <?php selected('reference',$fxMode); ?>>Daily reference (read-only)</option>
+        </select>
         <button class="button button-primary" type="submit">Preview exchange</button>
-        <span>1 USD = <?php echo esc_html($ratesLabel[$currency] . ' ' . $currency); ?> (sample only)</span>
+        <span>1 USD = <?php echo esc_html($referenceSnapshot
+            ? number_format($fixtures[$currency]/1000000,6,'.','')
+            : $ratesLabel[$currency]); ?> <?php echo esc_html($currency); ?>
+            (<?php echo $referenceSnapshot ? 'reference only, observed '.esc_html($referenceDate) : 'sample only'; ?>)</span>
     </form>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:18px">
         <div class="postbox" style="padding:18px;margin:0">
@@ -82,6 +111,15 @@ $money = static function(int $minor, string $code) use ($symbols): string {
             <p>Total: <strong style="font-size:21px"><?php echo esc_html($money($quote['payable_local_minor'],$currency)); ?></strong></p>
         </div>
     </div>
+    <p class="description"><strong>Not for real orders or payment capture.</strong>
+    Synthetic rates are illustrative. Daily reference observations are for
+    independent FX reconciliation, not Stripe/WooPayments/PayPal settlement.
+    No exchange rates are saved or applied to cart prices.
+    <?php if ($referenceSnapshot): ?>
+      FX source <?php echo esc_html($referenceSnapshot['rate_source']); ?>,
+      fetched <?php echo esc_html(gmdate('Y-m-d H:i', $referenceSnapshot['retrieved_at_utc'])); ?> UTC.
+    <?php endif; ?>
+    </p>
     <p class="description"><strong>Do not use these sample rates or numbers for real orders.</strong>
     Current $69 regional/free-shipping contracts and special $30/parcel or $30/pillow-item
     rules remain unchanged. M1 only establishes the USD-ledger and FX quote contracts.
