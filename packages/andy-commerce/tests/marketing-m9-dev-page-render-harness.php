@@ -14,7 +14,9 @@ function esc_attr($text){return htmlspecialchars((string)$text,ENT_QUOTES);}
 function sanitize_key($key){return preg_replace('/[^a-z0-9_-]/','',strtolower($key));}
 function wp_unslash($data){return $data;}
 function selected($current,$value){if((string)$current===(string)$value)echo 'selected="selected"';}
+function wp_nonce_field($action){echo '<input type="hidden" name="_wpnonce" data-action="'.htmlspecialchars((string)$action,ENT_QUOTES).'" value="dev-placeholder">';}
 final class Andy_Commerce_M7_Draft_Studio {
+    public static function dev_only():bool {return $GLOBALS['testHost']==='dev.beyourlover.com';}
     public static function rows():array {
         return [
           'id_123'=>[
@@ -63,8 +65,11 @@ foreach($codes as $code) {
             "$code/$zone compatible inactive USD M7 draft projection");
         m9pageCheck(str_contains($html,'No Woo rate changed'),
             "$code/$zone native shipping fee untouched");
-        m9pageCheck(str_contains($html,'name="m9_currency"'),
-            "$code/$zone GET-only and no admin-post write form");
+        m9pageCheck(str_contains($html,'name="m9_currency"')
+            && str_contains($html,'name="action" value="andy_commerce_m7_save_draft"'),
+            "$code/$zone simulation GET plus separately guarded M7 inactive-draft form");
+        m9pageCheck(str_contains($html,'data-action="andy_commerce_m7_save_draft"'),
+            "$code/$zone form reuses exact canonical M7 save nonce");
     }
 }
 $html=renderM9(['m9_currency'=>'USD','m9_zone'=>'3','m9_gross'=>'180','m9_discount'=>'5']);
