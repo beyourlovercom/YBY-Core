@@ -71,7 +71,7 @@ $toggle=static function($key,$label,$value){
     ?><tr>
       <td><strong><span class="flag"><?php echo esc_html($flag);?></span><?php echo esc_html($name);?></strong> <span class="muted">(<?php echo esc_html($c);?>)</span></td>
       <td><?php echo esc_html($symbol.number_format(1234.56*$rate,2,'.',','));?></td>
-      <td><?php echo esc_html(number_format($rate,6,'.','));?></td>
+      <td><?php echo esc_html(number_format($rate,6,'.',','));?></td>
       <td><?php if($c==='USD'):?>Base · Fixed<?php else:?><select aria-label="<?php echo esc_attr($c);?> rate mode" name="ac_currency[mode][<?php echo esc_attr($c);?>]"><option value="auto" <?php selected($cfg['mode'][$c],'auto');?>>Auto</option><option value="fixed" <?php selected($cfg['mode'][$c],'fixed');?>>Fixed draft</option></select><?php endif;?></td>
       <td><?php if($c==='USD'):?>Always on<?php else:?>
         <label class="acv2-toggle"><input type="checkbox" name="ac_currency[enabled][<?php echo esc_attr($c);?>]" value="1" <?php checked($cfg['enabled'][$c]);?>><i></i></label>
