@@ -39,7 +39,7 @@
                 <tbody>
                     <tr>
                         <td><strong>Orders List UI</strong></td>
-                        <td>标准 / 紧凑 / 卡片模式、列排序及 <code>39936 bear</code> 这样的真实 SKU 显示</td>
+                        <td>标准 / 紧凑 / 卡片模式、列排序、折扣码列及 <code>39936 bear</code> 这样的真实 SKU 显示</td>
                         <td>
                             <label class="ac-orders-feature-switch">
                                 <input type="checkbox" name="andy_commerce_orders_modules[]" value="<?php echo esc_attr( Andy_Commerce_Orders_Features::LIST_MODULE ); ?>" <?php checked( $orders_module_states[ Andy_Commerce_Orders_Features::LIST_MODULE ] ); ?> <?php disabled( ! $can_toggle_orders ); ?>>
