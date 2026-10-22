@@ -98,7 +98,8 @@ denied(fn()=>Andy_Commerce_Currency_OS_V1::quote([...$r,'tax_usd_minor'=>-1]), '
 denied(fn()=>Andy_Commerce_Currency_OS_V1::quote([...$r,'lines'=>[
     ['qty'=>1000,'unit_usd_minor'=>10000000000,'discount_usd_minor'=>0]
 ]]), 'Line overflow fails');
-denied(fn()=>Andy_Commerce_Currency_OS_V1::convert_usd_minor(10000000000,10000000), 'PHP integer FX overflow fails');
+currency_check(Andy_Commerce_Currency_OS_V1::convert_usd_minor(10000000000,10000000)===100000000000,
+    'Bounded maximum cart supports large FX conversion without overflow');
 currency_check(Andy_Commerce_Currency_OS_V1::convert_usd_minor(1,500000)===1,
     'Half-up rounding tiny USD minor');
 currency_check(Andy_Commerce_Currency_OS_V1::convert_usd_minor(1,100000)===0,
