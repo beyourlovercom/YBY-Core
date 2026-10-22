@@ -86,7 +86,9 @@ Andy_Commerce_Order_Coupon_Column::render_legacy( Andy_Commerce_Order_Coupon_Col
 $assert( '&mdash;' === ob_get_clean() && $GLOBALS['coupon_test_legacy_reads'] === 1, 'bad order ID no query' );
 
 $bootstrap = file_get_contents( dirname( __DIR__ ) . '/includes/class-andy-commerce.php' );
-$assert( false !== strpos( $bootstrap, 'Andy_Commerce_Order_Coupon_Column::boot()' ), 'Commerce-only admin bootstrap' );
+$features = file_get_contents( dirname( __DIR__ ) . '/includes/class-andy-commerce-orders-features.php' );
+$assert( false !== strpos( $features, 'Andy_Commerce_Order_Coupon_Column::boot()' ), 'Coupon column boot lives in Orders List UI Core module gate' );
+$assert( false === strpos( $bootstrap, 'Andy_Commerce_Order_Coupon_Column::boot()' ), 'OFF must not inject coupon column' );
 $source = file_get_contents( dirname( __DIR__ ) . '/includes/class-andy-commerce-order-coupon-column.php' );
 foreach ( array( 'update_post_meta(', 'update_option(', 'save(', 'set_coupon', 'wp_insert_post(', '$wpdb' ) as $forbidden ) {
 	$assert( false === strpos( $source, $forbidden ), 'read-only source excludes writes: ' . $forbidden );
