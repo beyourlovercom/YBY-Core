@@ -36,9 +36,13 @@ final class Andy_Commerce_Currency_V2_Dev {
         return is_array($option)?array_replace_recursive($default,$option):$default;
     }
     static function boot(): void {
-        add_shortcode('andy_currency_switcher',[__CLASS__,'shortcode']);
-        add_action('wp_footer',[__CLASS__,'dev_frontend_preview'],99);
-        if(is_admin())add_action('admin_post_andy_currency_v2_save',[__CLASS__,'save']);
+        // WP harnesses sometimes omit optional hook APIs; full WP always has them.
+        if(function_exists('add_shortcode'))add_shortcode('andy_currency_switcher',[__CLASS__,'shortcode']);
+        if(function_exists('add_action')){
+            add_action('wp_footer',[__CLASS__,'dev_frontend_preview'],99);
+            if(function_exists('is_admin')&&is_admin())
+                add_action('admin_post_andy_currency_v2_save',[__CLASS__,'save']);
+        }
     }
     static function save(): void {
         if (!self::access() || ($_SERVER['REQUEST_METHOD']??'')!=='POST')
