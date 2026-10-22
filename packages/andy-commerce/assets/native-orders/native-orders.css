@@ -1,0 +1,659 @@
+/* DEV-only overlay: native WooCommerce forms/metaboxes keep their own markup and behavior. */
+body.byl-native-orders-shopify-v1 { --byl-ink:#242729; --byl-line:#e1e2e4; --byl-muted:#686d72; --byl-canvas:#f7f7f8; --byl-radius:15px; }
+body.byl-native-orders-shopify-v1 #wpbody-content { background:var(--byl-canvas); }
+body.byl-native-orders-shopify-v1 #wpbody-content > .wrap,
+body.byl-native-orders-shopify-v1 .woocommerce-layout__main { max-width:1220px; margin-left:auto; margin-right:auto; }
+body.byl-native-orders-shopify-v1 .wrap { padding:0 15px 30px; }
+body.byl-native-orders-shopify-v1 .byl-native-toolbar { max-width:1160px;margin:6px auto 22px;display:flex;gap:15px;align-items:center;justify-content:space-between;min-height:50px;background:#fff;border:1px solid #e7e7e7;border-radius:13px;padding:8px 14px;position:relative;z-index:12;box-shadow:0 2px 7px #00000006; }
+body.byl-native-orders-shopify-v1 .byl-native-crumb { display:flex;align-items:center;gap:9px;white-space:nowrap;font-size:13px; }
+body.byl-native-orders-shopify-v1 .byl-native-crumb a { text-decoration:none;color:#696d71; }
+body.byl-native-orders-shopify-v1 .byl-native-actions { display:flex;justify-content:flex-end;align-items:center;gap:8px; }
+body.byl-native-orders-shopify-v1 .byl-native-pill {background:#fff;border:1px solid #dfe1e3;border-radius:25px;padding:7px 14px;line-height:1.35;min-height:34px;box-shadow:0 1px 2px #00000005;color:#282828;font-weight:520;cursor:pointer;white-space:nowrap;}
+body.byl-native-orders-shopify-v1 .byl-native-pill:hover {background:#f5f5f5;border-color:#cfd0d2;}
+body.byl-native-orders-shopify-v1 .byl-native-more-wrap {position:relative;}
+body.byl-native-orders-shopify-v1 .byl-native-more-menu {position:absolute;right:0;top:calc(100% + 7px);min-width:242px;padding:6px 8px;background:#fff;border:1px solid #dedfe0;border-radius:18px;box-shadow:0 9px 26px #0002;z-index:110;max-height:75vh;overflow:auto;}
+body.byl-native-orders-shopify-v1 .byl-native-more-menu[hidden] {display:none!important;}
+body.byl-native-orders-shopify-v1 .byl-native-more-menu button,
+body.byl-native-orders-shopify-v1 .byl-native-more-menu a {display:block;width:100%;border:0;border-radius:9px;background:none;padding:10px 12px;text-align:left;line-height:1.4;color:#202223;font-size:13px;text-decoration:none;cursor:pointer;}
+body.byl-native-orders-shopify-v1 .byl-native-more-menu button:hover:not(:disabled),
+body.byl-native-orders-shopify-v1 .byl-native-more-menu a:hover {background:#f4f4f4;}
+body.byl-native-orders-shopify-v1 .byl-native-more-menu button:disabled {color:#9b9b9b;cursor:not-allowed;}
+body.byl-native-orders-shopify-v1 .byl-native-menu-section {border-top:1px solid #eee;margin:10px 8px 0;padding:13px 4px 4px;color:#777;font-size:12px;}
+body.byl-native-orders-shopify-v1 .byl-native-navigate {margin-left:8px;display:flex;border:1px solid #e0e0e0;border-radius:24px;overflow:hidden;background:#fff;}
+body.byl-native-orders-shopify-v1 .byl-native-navigate button {min-width:38px;min-height:34px;border:0;background:#fff;font-size:23px;line-height:1;color:#222;cursor:pointer;}
+body.byl-native-orders-shopify-v1 .byl-native-navigate button:hover {background:#f4f4f4;}
+body.byl-native-orders-shopify-v1 .byl-native-navigate button + button {border-left:1px solid #eee;}
+/* Desktop content uses the *existing* WordPress metabox containers: no JS moving/cloning. */
+@media (min-width:1000px) {
+  /* Both live HPOS metabox columns start on the SAME grid row. The old
+     #post-body-content row is absent in the native editor; reserving row 1
+     used to leave a ~121px blank area above the left order header. */
+  body.byl-native-orders-shopify-v1 #poststuff #post-body.columns-2 {display:grid;grid-template-columns:minmax(0, 1.95fr) minmax(245px, .83fr);grid-template-rows:auto;column-gap:24px;row-gap:0;align-items:start;max-width:1160px;margin:auto;}
+  body.byl-native-orders-shopify-v1 #poststuff #post-body.columns-2 #post-body-content {grid-column:1;grid-row:1;float:none;width:auto;min-width:0;margin:0;}
+  body.byl-native-orders-shopify-v1 #poststuff #post-body.columns-2 #postbox-container-2 {grid-column:1;grid-row:1;align-self:start;float:none;width:auto;min-width:0;margin:0;}
+  body.byl-native-orders-shopify-v1 #poststuff #post-body.columns-2 #postbox-container-1 {grid-column:2;grid-row:1;align-self:start;float:none;width:auto;min-width:0;margin:0;}
+  body.byl-native-orders-shopify-v1 #poststuff #post-body.columns-2 #post-body-content,
+  body.byl-native-orders-shopify-v1 #poststuff #post-body.columns-2 #postbox-container-2 .meta-box-sortables,
+  body.byl-native-orders-shopify-v1 #poststuff #post-body.columns-2 #postbox-container-1 .meta-box-sortables {width:100%;}
+}
+body.byl-native-orders-shopify-v1 #poststuff .postbox {border:1px solid var(--byl-line);border-radius:var(--byl-radius);box-shadow:0 2px 7px #00000007;overflow:visible;margin-bottom:18px;background:#fff;}
+body.byl-native-orders-shopify-v1 #poststuff .postbox .postbox-header {border-bottom:1px solid #ebebec;min-height:48px;border-radius:var(--byl-radius) var(--byl-radius) 0 0;position:relative;}
+body.byl-native-orders-shopify-v1 #poststuff .postbox.closed .postbox-header {border-bottom-color:transparent;border-radius:var(--byl-radius);}
+body.byl-native-orders-shopify-v1 #poststuff .postbox .hndle {font-weight:650;font-size:13px;color:#303337;padding:13px 14px;}
+body.byl-native-orders-shopify-v1 #poststuff .postbox .inside {padding:12px 15px 16px;margin-top:0;}
+body.byl-native-orders-shopify-v1 #poststuff .postbox .handle-actions {margin-right:7px;}
+body.byl-native-orders-shopify-v1 #poststuff .postbox .handle-actions .handlediv,
+body.byl-native-orders-shopify-v1 #poststuff .postbox .handle-actions .postbox-header .handlediv {border-radius:7px;}
+body.byl-native-orders-shopify-v1 #poststuff .postbox .handle-actions .byl-native-pin {display:inline-flex;vertical-align:middle;align-items:center;justify-content:center;width:27px;height:27px;margin-right:2px;padding:0;border:0;background:transparent;cursor:pointer;border-radius:7px;font-size:14px;opacity:.65;}
+body.byl-native-orders-shopify-v1 #poststuff .postbox .handle-actions .byl-native-pin:hover {background:#f0f0f1;opacity:1;}
+body.byl-native-orders-shopify-v1 #poststuff .postbox .handle-actions .byl-native-pin.is-pinned {opacity:1;color:#762b42;}
+body.byl-native-orders-shopify-v1 #poststuff .postbox.closed .byl-native-pin {display:none;}
+body.byl-native-orders-shopify-v1 .byl-native-shipcol {position:relative;}
+body.byl-native-orders-shopify-v1 .byl-native-copy {position:absolute;right:4px;top:0;width:32px;height:32px;border:0;border-radius:50%;background:#eeeeef;color:#464646;display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .12s ease;}
+body.byl-native-orders-shopify-v1 .byl-native-copy svg {width:17px;height:17px;}
+body.byl-native-orders-shopify-v1 .byl-native-shipcol:hover .byl-native-copy,
+body.byl-native-orders-shopify-v1 .byl-native-copy:focus-visible {opacity:1;pointer-events:auto;}
+body.byl-native-orders-shopify-v1 .byl-native-copy .byl-native-tooltip {position:absolute;right:0;bottom:calc(100% + 8px);background:#191919;color:#fff;border-radius:11px;padding:7px 10px;white-space:nowrap;font-size:11px;display:none;box-shadow:0 5px 14px #0002;}
+body.byl-native-orders-shopify-v1 .byl-native-copy:hover .byl-native-tooltip,
+body.byl-native-orders-shopify-v1 .byl-native-copy:focus-visible .byl-native-tooltip {display:block;}
+body.byl-native-orders-shopify-v1 .byl-native-copy-status {font-size:11px;color:#28734e;}
+@media (hover:none), (pointer:coarse){body.byl-native-orders-shopify-v1 .byl-native-copy {opacity:1;pointer-events:auto;}}
+@media (max-width:999px){body.byl-native-orders-shopify-v1 #poststuff #post-body.columns-2 {display:block;}body.byl-native-orders-shopify-v1 #poststuff #post-body.columns-2 #postbox-container-1,body.byl-native-orders-shopify-v1 #poststuff #post-body.columns-2 #postbox-container-2 {float:none!important;width:100%!important;margin:0!important;}body.byl-native-orders-shopify-v1 .byl-native-toolbar{margin:8px 10px 15px;}}
+@media (max-width:650px){body.byl-native-orders-shopify-v1 .byl-native-toolbar {flex-wrap:wrap;gap:8px;padding:10px;}body.byl-native-orders-shopify-v1 .byl-native-actions {width:100%;justify-content:flex-start;gap:5px;flex-wrap:wrap;}body.byl-native-orders-shopify-v1 .byl-native-pill {padding:6px 10px;min-height:32px;}body.byl-native-orders-shopify-v1 .byl-native-navigate {margin-left:0;}body.byl-native-orders-shopify-v1 .byl-native-more-menu {left:0;right:auto;}body.byl-native-orders-shopify-v1 #poststuff .postbox .inside {padding:10px;}}
+@media print{body.byl-native-orders-shopify-v1 #adminmenuwrap,body.byl-native-orders-shopify-v1 #adminmenuback,body.byl-native-orders-shopify-v1 #wpadminbar,body.byl-native-orders-shopify-v1 .byl-native-toolbar {display:none!important;}body.byl-native-orders-shopify-v1 #wpcontent {margin:0!important;}body.byl-native-orders-shopify-v1 #poststuff #post-body.columns-2 {display:block!important;}}
+
+/* Neutralize native two-column margin reservation when CSS grid is enabled. */
+@media (min-width:1000px){body.byl-native-orders-shopify-v1 #poststuff #post-body.columns-2 {margin-right:0!important;}body.byl-native-orders-shopify-v1 #poststuff #post-body.columns-2 #postbox-container-1{margin-right:0!important;}}
+body.byl-native-orders-shopify-v1 .byl-native-conversion-coupons {border-bottom:1px solid #ededed;margin:0 0 11px;padding:2px 0 10px;font-size:12px;color:#484b50;}
+body.byl-native-orders-shopify-v1 .byl-native-conversion-coupons a {color:#762b42;font-weight:600;text-decoration:underline;text-underline-offset:2px;}
+
+/* V0.2.0 — native HPOS information hierarchy. Native Woo controls remain in original form. */
+body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-data .woocommerce-order-data__meta {display:none;}
+body.byl-native-orders-shopify-v2:has(.byl-native-toolbar) .wrap > h1.wp-heading-inline {font-size:0!important;line-height:0;margin:0;padding:0;height:0;overflow:hidden;}
+body.byl-native-orders-shopify-v2:has(.byl-native-toolbar) .wrap > a.page-title-action {display:none;}
+body.byl-native-orders-shopify-v2 #poststuff #post-body #post-body-content {min-height:0!important;}
+body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-data .order_data_column_container{display:block;min-height:0!important;}
+body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-data .order_data_column_general{float:none;width:100%;padding:0;margin:0;min-height:0;}
+body.byl-native-orders-shopify-v2.byl-native-ready #woocommerce-order-data .order_data_column_general h3{font-size:0;line-height:1.3}
+body.byl-native-orders-shopify-v2.byl-native-ready #woocommerce-order-data .order_data_column_general h3:after{content:'Order status';font-size:13px;font-weight:650}
+body.byl-native-orders-shopify-v2.byl-native-ready:not(.byl-native-advanced-open) #woocommerce-order-data .order_data_column_general p:has([name="order_date"]),
+body.byl-native-orders-shopify-v2.byl-native-ready:not(.byl-native-advanced-open) #woocommerce-order-data .order_data_column_general p:has([name="customer_user"]),
+body.byl-native-orders-shopify-v2.byl-native-ready:not(.byl-native-advanced-open) #woocommerce-order-data .order_data_column_billing,
+body.byl-native-orders-shopify-v2.byl-native-ready:not(.byl-native-advanced-open) #woocommerce-order-data .order_data_column_shipping {display:none!important;}
+body.byl-native-orders-shopify-v2.byl-native-advanced-open #woocommerce-order-data .order_data_column_container {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}
+body.byl-native-orders-shopify-v2.byl-native-advanced-open #woocommerce-order-data .order_data_column_billing,
+body.byl-native-orders-shopify-v2.byl-native-advanced-open #woocommerce-order-data .order_data_column_shipping {display:block!important;float:none!important;width:auto!important;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .inside{padding:18px 20px 12px;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data #order_data{padding:0;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .woocommerce-order-data__heading{font-size:20px;font-weight:720;margin:0;line-height:1.3;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_header_column{float:none;width:auto;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_header_column:last-child{margin-left:auto;}
+body.byl-native-orders-shopify-v2 .byl-native-toolbar{background:transparent;border:0;padding:0;margin:0;box-shadow:none;max-width:none;min-height:0;}
+body.byl-native-orders-shopify-v2 .byl-native-toolbar .byl-native-crumb{display:none;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .byl-native-actions{gap:5px;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .byl-native-pill{padding:6px 11px;min-height:32px;font-size:12px;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .byl-native-navigate{margin-left:4px;}
+body.byl-native-orders-shopify-v2 .byl-native-advanced-btn{background:#fff;border:1px solid #dedfe0;border-radius:9px;padding:7px 10px;color:#474747;cursor:pointer;margin:4px 0 0;display:inline-flex;align-items:center;gap:7px;}
+body.byl-native-orders-shopify-v2 .byl-native-advanced-btn:hover{background:#f7f7f7;}
+body.byl-native-orders-shopify-v2 #poststuff #byl-native-customer .inside{padding:0 15px;}
+
+
+body.byl-native-orders-shopify-v2 #postbox-container-1 .meta-box-sortables > #woocommerce-order-attribution,
+body.byl-native-orders-shopify-v2 .byl-native-customer-body{font-size:12px;line-height:1.65;}
+body.byl-native-orders-shopify-v2 .byl-native-customer-row{padding:13px 0;border-top:1px solid #ededed;position:relative;}
+body.byl-native-orders-shopify-v2 .byl-native-customer-row:first-child{border-top:0;}
+body.byl-native-orders-shopify-v2 .byl-native-customer-row strong{font-size:12px;font-weight:650;}
+body.byl-native-orders-shopify-v2 .byl-native-customer-row a{color:#60404c;text-decoration:none;}
+body.byl-native-orders-shopify-v2 .byl-native-rowhead{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+body.byl-native-orders-shopify-v2 .byl-native-textbtn{padding:3px 0;border:0;background:transparent;color:#762b42;cursor:pointer;font-size:11px;text-decoration:underline;text-underline-offset:2px;}
+body.byl-native-orders-shopify-v2 .byl-native-address-lines{margin:7px 0;overflow-wrap:anywhere;}
+body.byl-native-orders-shopify-v2 .byl-native-billing-row summary{font-weight:650;list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+body.byl-native-orders-shopify-v2 .byl-native-billing-row summary:after{content:'⌄';font-size:16px;font-weight:400;}
+body.byl-native-orders-shopify-v2 .byl-native-billing-row details[open] summary:after{content:'⌃';}
+body.byl-native-orders-shopify-v2 .byl-native-billing-body{padding-top:10px;}
+body.byl-native-orders-shopify-v2 .byl-native-shipcol .byl-native-copy{right:0;top:-4px;z-index:1;}
+body.byl-native-orders-shopify-v2 .byl-native-timeline-events{margin:3px 0 16px;padding:5px 0 3px 18px;border-left:2px solid #e6e6e6;}
+body.byl-native-orders-shopify-v2 .byl-native-event{display:flex;flex-wrap:wrap;justify-content:space-between;gap:5px;font-size:12px;padding:0 0 16px;position:relative;}
+body.byl-native-orders-shopify-v2 .byl-native-event:before{content:'';position:absolute;left:-23px;top:6px;background:#777;width:7px;height:7px;border-radius:3px;}
+body.byl-native-orders-shopify-v2 .byl-native-event span{font-size:11px;color:#777;}
+body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-notes{margin-top:0;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items{border:0;background:transparent;box-shadow:none;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items > .postbox-header{display:none;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items > .inside{padding:0;background:transparent;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .woocommerce_order_items_wrapper{background:#fff;border:1px solid var(--byl-line);border-radius:15px;padding:16px;margin-bottom:18px;box-shadow:0 2px 7px #00000008;overflow-x:auto;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .woocommerce_order_items_wrapper:before{content:'Fulfillment';font-size:14px;font-weight:700;display:block;margin-bottom:14px;color:#252729;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .wc-order-totals-items{background:#fff!important;border:1px solid var(--byl-line);border-radius:15px;padding:16px!important;margin:0 0 12px;box-shadow:0 2px 7px #00000008;box-sizing:border-box;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .wc-order-totals-items:before{content:'Payment';font-size:14px;font-weight:700;display:block;margin-bottom:14px;color:#252729;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .wc-order-totals-items .wc-order-totals{max-width:100%;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .wc-order-totals-items .wc-order-totals tr td.label{text-align:left;}
+/* Payment method has a dedicated Woo hook-backed row; created/paid time lives in the native notes Timeline. */
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .wc-order-totals-items > table.wc-order-totals:nth-of-type(2) tr:nth-child(2) .description{display:none;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .wc-order-bulk-actions{background:#fff;border:1px solid #e5e5e5;border-radius:12px;margin-bottom:14px;}
+
+body.byl-native-orders-shopify-v2 #poststuff .postbox .handle-actions .byl-native-pin{font-size:13px;}
+body.byl-native-orders-shopify-v2 .byl-native-copy:focus-visible{opacity:1;pointer-events:auto;}
+body.byl-native-orders-shopify-v2 .byl-native-toolbar .byl-native-more-menu{font-weight:400;}
+@media(max-width:1100px){body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_header{align-items:flex-start;}}
+@media(max-width:900px){body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_header_column:last-child{margin-left:0;}body.byl-native-orders-shopify-v2.byl-native-advanced-open #woocommerce-order-data .order_data_column_container{grid-template-columns:1fr;}}
+@media(max-width:650px){body.byl-native-orders-shopify-v2 .byl-native-toolbar .byl-native-actions{flex-wrap:wrap;}body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-data .inside{padding:12px;}}
+
+
+/* V0.3.0 — closer to approved mock */
+body.byl-native-orders-shopify-v2 .wrap{padding-top:0!important;}
+body.byl-native-orders-shopify-v2 #wpbody-content > .wrap{margin-top:0!important;}
+body.byl-native-orders-shopify-v2 #poststuff{padding-top:0!important;}
+body.byl-native-orders-shopify-v2 #poststuff #post-body.columns-2{margin-top:0!important;}
+body.byl-native-orders-shopify-v2 .woocommerce-layout__header, body.byl-native-orders-shopify-v2 .woocommerce-layout__activity-panel{display:none!important;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_header{margin-bottom:8px;}
+body.byl-native-orders-shopify-v2 .byl-native-pill-primary{background:#111827;color:#fff;border-color:#111827;box-shadow:0 6px 18px rgba(0,0,0,.18);padding:8px 16px;}
+body.byl-native-orders-shopify-v2 .byl-native-pill-primary:hover{background:#1a2433;border-color:#1a2433;color:#fff;}
+body.byl-native-orders-shopify-v2 .byl-native-status-wrap{position:relative;}
+body.byl-native-orders-shopify-v2 .byl-native-status-menu{min-width:220px;left:0;right:auto;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .byl-native-actions{align-items:center;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .woocommerce-order-data__heading{font-size:32px;font-weight:760;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .woocommerce-order-data__heading::before{content:'Order ';}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_column_general h3,
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_column_general > p,
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_column_billing,
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_column_shipping{display:none!important;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .inside{padding-bottom:16px;}
+body.byl-native-orders-shopify-v2 .byl-native-advanced-btn{display:flex;width:100%;justify-content:space-between;border-radius:14px;padding:12px 18px;margin-top:8px;font-weight:600;}
+body.byl-native-orders-shopify-v2 .byl-native-advanced-btn::after{content:'⌄';font-size:16px;}
+body.byl-native-orders-shopify-v2.byl-native-advanced-open .byl-native-advanced-btn::after{content:'⌃';}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_column_container{display:none;}
+body.byl-native-orders-shopify-v2.byl-native-advanced-open #woocommerce-order-data .order_data_column_container{display:grid;grid-template-columns:1fr;gap:14px;}
+body.byl-native-orders-shopify-v2.byl-native-advanced-open #woocommerce-order-data .order_data_column_general > p:has([name="order_date"]),
+body.byl-native-orders-shopify-v2.byl-native-advanced-open #woocommerce-order-data .order_data_column_general > p:has([name="customer_user"]){display:block!important;}
+body.byl-native-orders-shopify-v2.byl-native-advanced-open #woocommerce-order-data .order_data_column_billing,
+body.byl-native-orders-shopify-v2.byl-native-advanced-open #woocommerce-order-data .order_data_column_shipping{display:block!important;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .wc-order-bulk-actions{display:none!important;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .wc-order-totals-items{margin-top:0;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .woocommerce_order_items_wrapper{margin-bottom:18px;}
+body.byl-native-orders-shopify-v2 #postbox-container-2 > #postcustom{order:99;}
+body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-notes .inside{padding-left:26px;padding-right:26px;padding-bottom:22px;}
+body.byl-native-orders-shopify-v2 .byl-native-timeline-events{margin:8px 12px 20px;padding:0 14px 0 30px;border-left:2px solid #e6e6e6;}
+body.byl-native-orders-shopify-v2 .byl-native-event{padding:0 8px 18px 0;}
+body.byl-native-orders-shopify-v2 .byl-native-event:before{left:-35px;top:8px;width:10px;height:10px;border-radius:50%;}
+body.byl-native-orders-shopify-v2 .byl-native-event span{padding-left:20px;}
+body.byl-native-orders-shopify-v2 .byl-native-copy{top:30px;}
+/* Billing <details> owns the [open] state (not the outer .byl-native-billing-row).
+   Do not unconditionally hide the body: it must become visible on expansion. */
+body.byl-native-orders-shopify-v2 .byl-native-billing-row details:not([open]) .byl-native-billing-body{display:none;}
+body.byl-native-orders-shopify-v2 .byl-native-billing-row details[open] .byl-native-billing-body{display:block;}
+body.byl-native-orders-shopify-v2 #postbox-container-1 .postbox .postbox-header{min-height:54px;}
+body.byl-native-orders-shopify-v2 #postbox-container-1 .postbox .hndle{font-size:15px;font-weight:700;padding:15px 18px;}
+body.byl-native-orders-shopify-v2 #poststuff #byl-native-customer .inside{padding:0 18px 16px;}
+body.byl-native-orders-shopify-v2 .byl-native-customer-row{padding:18px 0;}
+body.byl-native-orders-shopify-v2 .byl-native-customer-row strong{font-size:14px;}
+body.byl-native-orders-shopify-v2 .byl-native-customer-body{font-size:13px;line-height:1.65;}
+@media(max-width:650px){body.byl-native-orders-shopify-v2 .byl-native-status-menu{left:0;right:auto;min-width:200px;}body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-notes .inside{padding-left:14px;padding-right:14px;}}
+
+/* V0.4.0 — safety-first native WP/WooCommerce polish. */
+/* Fix duplicate "Order Order" prefix from v0.3. */
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .woocommerce-order-data__heading::before{content:none!important;}
+body.byl-native-orders-shopify-v2 .byl-native-status-split{display:flex;align-items:stretch;overflow:hidden;border-radius:21px;box-shadow:0 4px 14px #00000020;}
+body.byl-native-orders-shopify-v2 .byl-native-status-split .byl-native-pill-primary{border-radius:0;margin:0;min-height:35px;box-shadow:none;}
+body.byl-native-orders-shopify-v2 .byl-native-status-split .byl-native-status-primary{padding-left:14px;padding-right:13px;}
+body.byl-native-orders-shopify-v2 .byl-native-status-split .byl-native-status-chevron{padding:5px 12px;border-left:1px solid #424242;min-width:34px;font-size:15px;}
+body.byl-native-orders-shopify-v2 .byl-native-status-menu{z-index:99999;top:calc(100% + 8px);width:265px;max-width:calc(100vw - 36px);max-height:66vh;overflow:auto;}
+body.byl-native-orders-shopify-v2 .byl-native-status-help{font-size:11px;color:#6c7075;padding:10px 12px 8px;line-height:1.55;border-top:1px solid #efefef;}
+body.byl-native-orders-shopify-v2 .byl-native-status-save{width:calc(100% - 14px);margin:0 7px 8px;border:1px solid #202223;background:#202223;color:#fff;border-radius:9px;padding:10px;font-size:12px;cursor:pointer;text-align:center;}
+body.byl-native-orders-shopify-v2 .byl-native-status-save:hover{background:#383838;}
+body.byl-native-orders-shopify-v2 .byl-native-status-save[hidden]{display:none!important;}
+body.byl-native-orders-shopify-v2 .byl-native-navigate .byl-native-order-neighbor{display:grid;place-items:center;min-width:37px;min-height:34px;color:#252729;background:white;font-size:20px;text-decoration:none;line-height:1;}
+body.byl-native-orders-shopify-v2 .byl-native-navigate .byl-native-order-neighbor + .byl-native-order-neighbor{border-left:1px solid #ececec;}
+body.byl-native-orders-shopify-v2 .byl-native-navigate .byl-native-order-neighbor:hover:not(.is-disabled){background:#f2f2f3;}
+body.byl-native-orders-shopify-v2 .byl-native-navigate .byl-native-order-neighbor.is-disabled{color:#aaa;cursor:not-allowed;background:#fafafa;}
+
+/* Failsafe: if script or Woo hook differs, the native editor MUST stay accessible. */
+body.byl-native-orders-shopify-v2:not(.byl-native-ready) #woocommerce-order-data .order_data_column_container{display:block!important;}
+body.byl-native-orders-shopify-v2:not(.byl-native-ready) #woocommerce-order-data .order_data_column_general > p,
+body.byl-native-orders-shopify-v2:not(.byl-native-ready) #woocommerce-order-data .order_data_column_general h3{display:block!important;}
+body.byl-native-orders-shopify-v2:not(.byl-native-ready) #woocommerce-order-data .order_data_column_billing,
+body.byl-native-orders-shopify-v2:not(.byl-native-ready) #woocommerce-order-data .order_data_column_shipping{display:block!important;float:left;width:33.333%;}
+body.byl-native-orders-shopify-v2.byl-native-ready:not(.byl-native-advanced-open) #woocommerce-order-data .order_data_column_container{display:none!important;}
+body.byl-native-orders-shopify-v2.byl-native-ready.byl-native-advanced-open #woocommerce-order-data .order_data_column_container{display:grid!important;grid-template-columns:minmax(0,1fr);gap:12px;}
+body.byl-native-orders-shopify-v2.byl-native-ready.byl-native-advanced-open #woocommerce-order-data .order_data_column_general > p,
+body.byl-native-orders-shopify-v2.byl-native-ready.byl-native-advanced-open #woocommerce-order-data .order_data_column_general h3,
+body.byl-native-orders-shopify-v2.byl-native-ready.byl-native-advanced-open #woocommerce-order-data .order_data_column_billing,
+body.byl-native-orders-shopify-v2.byl-native-ready.byl-native-advanced-open #woocommerce-order-data .order_data_column_shipping{display:block!important;float:none!important;width:100%!important;}
+body.byl-native-orders-shopify-v2 .byl-native-advanced-btn{display:none;}
+body.byl-native-orders-shopify-v2.byl-native-ready #woocommerce-order-data .byl-native-advanced-btn{display:flex!important;width:100%;margin:7px 0 0;padding:12px 16px;border-radius:13px;align-items:center;justify-content:space-between;box-shadow:0 1px 3px #00000008;}
+body.byl-native-orders-shopify-v2.byl-native-ready #woocommerce-order-data .byl-native-advanced-btn::after{content:'⌄';}
+body.byl-native-orders-shopify-v2.byl-native-ready.byl-native-advanced-open #woocommerce-order-data .byl-native-advanced-btn::after{content:'⌃';}
+/* Keep native status selector usable in Advanced editing, but use header action for daily tasks. */
+body.byl-native-orders-shopify-v2.byl-native-ready #woocommerce-order-data .order_data_column_general h3:after{content:none!important;}
+
+/* Timeline remains complete; its oldest notes are only visually condensed on request. */
+body.byl-native-orders-shopify-v2.byl-native-activity-condensed #woocommerce-order-notes ul.order_notes>li:nth-child(n+4){display:none!important;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes .byl-native-view-all-activity{display:block;margin:6px auto 15px;padding:8px 15px;background:#f7f7f7;border:1px solid #e1e1e1;border-radius:10px;color:#353535;font-size:12px;cursor:pointer;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes .byl-native-view-all-activity:hover{background:#efefef;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes .inside{padding:16px 24px 26px!important;}
+body.byl-native-orders-shopify-v2 .byl-native-timeline-events{padding-left:32px;padding-right:18px;margin:0 10px 16px;}
+body.byl-native-orders-shopify-v2 .byl-native-event{padding-left:9px;padding-right:9px;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes ul.order_notes{margin-left:8px;margin-right:8px;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes ul.order_notes li .note_content{padding:10px 13px;line-height:1.5;font-size:12px;border-radius:10px;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes ul.order_notes li p.meta{font-size:11px;}
+
+/* Keep original order-item edit/refund controls; improve visual balance without hiding them. */
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .wc-order-totals-items{padding:17px 20px!important;text-align:left!important;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .wc-order-totals-items::before{text-align:left!important;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .wc-order-totals-items table.wc-order-totals{float:none!important;width:100%!important;max-width:540px!important;margin-left:auto!important;margin-right:0!important;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .woocommerce_order_items_wrapper{border-radius:15px;}
+
+
+/* Attribution visually opens by default; native script removes the closed class. */
+body.byl-native-orders-shopify-v2 #woocommerce-order-attribution.closed > .inside,
+body.byl-native-orders-shopify-v2 #order_attribution.closed > .inside{display:block!important;}
+
+@media(max-width:700px){
+ body.byl-native-orders-shopify-v2 #woocommerce-order-data .woocommerce-order-data__heading{font-size:22px!important;}
+ body.byl-native-orders-shopify-v2 .byl-native-status-menu{right:auto;left:0;}
+ body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-notes .inside{padding-left:14px!important;padding-right:14px!important;}
+ body.byl-native-orders-shopify-v2 #woocommerce-order-items .wc-order-totals-items table.wc-order-totals{max-width:100%!important;}
+}
+
+/* Native line-item Edit and Refund actions are never suppressed by a presentation skin. */
+body.byl-native-orders-shopify-v2 #woocommerce-order-items .wc-order-bulk-actions{display:block!important;}
+body.byl-native-orders-shopify-v2 .byl-native-status-menu button.byl-native-status-save{display:block;width:calc(100% - 14px);margin:0 7px 8px;border:1px solid #202223;background:#202223;color:#fff;text-align:center;font-weight:650;}
+body.byl-native-orders-shopify-v2 .byl-native-status-menu button.byl-native-status-save:hover{background:#383838;color:#fff;}
+body.byl-native-orders-shopify-v2 .byl-native-status-menu button.byl-native-status-save[hidden]{display:none!important;}
+body.byl-native-orders-shopify-v2.byl-native-advanced-open #woocommerce-order-data .order_data_column_general h3{font-size:14px!important;line-height:1.4!important;}
+
+/* V0.4.1 regression repair: a server-rendered native checkbox+label is the source of truth.
+   No JavaScript-generated control is needed to expand the existing Woo editor. */
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .byl-native-advanced-host{
+  width:100%;margin:9px 0 12px;min-width:0;
+}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .byl-native-advanced-check{
+  position:absolute;opacity:0;width:1px;height:1px;pointer-events:none;
+}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .byl-native-advanced-host .byl-native-advanced-btn{
+  display:flex!important;align-items:center;justify-content:space-between;width:100%;box-sizing:border-box;
+  font-size:12px;font-weight:650;line-height:1.4;border:1px solid #e1e2e4;
+  border-radius:12px;background:#fff;color:#26292c;padding:11px 15px;margin:0;
+  cursor:pointer;text-decoration:none;box-shadow:0 1px 4px #00000007;
+}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .byl-native-advanced-host .byl-native-advanced-btn:hover{background:#f9f9fa;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .byl-native-advanced-check:focus-visible + .byl-native-advanced-btn{outline:2px solid #4871df;outline-offset:2px;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .byl-native-advanced-host .byl-native-advanced-btn::after{content:none!important;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .byl-native-advanced-arrow{transform:rotate(180deg);}
+/* Suppress duplicate Woo columns only when the real server-side control is present and unchecked. */
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:not(:checked)) .order_data_column_container,
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:not(:checked)) .order_data_column{display:none!important;}
+/* Explicitly win against CSS from previous versions when the owner opens Advanced editing. */
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_container{display:block!important;min-height:0!important;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column{display:block!important;float:none!important;width:100%!important;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_general > p,
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_general h3,
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_billing,
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_shipping{
+  display:block!important;float:none!important;width:100%!important;
+}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_general h3{font-size:14px!important;}
+/* If Woo changes its column markup completely, keep all original fields visible. */
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(.byl-native-advanced-unsupported) .order_data_column_container,
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(.byl-native-advanced-unsupported) .order_data_column{display:block!important;}
+
+/* Native Timeline note history: CSS-only fallback; no rows removed from WP markup. */
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes:has(#byl-native-activity-expanded:not(:checked)) ul.order_notes > li:nth-child(n+4){display:none!important;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes .byl-native-activity-control{margin:8px 6px 17px;text-align:center;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes .byl-native-activity-checkbox{position:absolute;opacity:0;width:1px;height:1px;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes .byl-native-activity-control label{
+  display:inline-block;border:1px solid #dedfe0;border-radius:10px;background:#fff;color:#333;
+  padding:8px 15px;cursor:pointer;font-size:12px;
+}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes .byl-native-activity-control label:hover{background:#f5f5f6;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes .byl-native-activity-checkbox:focus-visible + label{outline:2px solid #4871df;outline-offset:2px;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes .byl-native-activity-less{display:none;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes:has(#byl-native-activity-expanded:checked) .byl-native-activity-more{display:none;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes:has(#byl-native-activity-expanded:checked) .byl-native-activity-less{display:inline;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-notes:not(:has(ul.order_notes > li:nth-child(4))) .byl-native-activity-control{display:none!important;}
+/* Known default-off / default-on sections. Native WP postbox JS still handles click. */
+body.byl-native-orders-shopify-v2 #postcustom.closed > .inside{display:none!important;}
+body.byl-native-orders-shopify-v2 #woocommerce-order-attribution > .inside,
+body.byl-native-orders-shopify-v2 #order_attribution > .inside{display:block;}
+
+
+/* V0.4.2 — one consistent chevron system. Only the artwork/hit-box changes;
+   WordPress/WooCommerce native clicks, aria state and saving are untouched. */
+body.byl-native-orders-shopify-v2 {
+  --byl-chevron-target: 32px;
+  --byl-chevron-stroke: 1.8px;
+  --byl-chevron-size: 8px;
+}
+/* WordPress metabox fold arrows: hide the original Dashicon glyph, not its button. */
+body.byl-native-orders-shopify-v2 #poststuff .postbox .postbox-header .handle-actions {
+  display:flex; align-items:center; justify-content:flex-end; gap:3px;
+  padding:0; margin:0 10px 0 auto; min-height:36px;
+}
+body.byl-native-orders-shopify-v2 #poststuff .postbox .postbox-header .handle-actions > button.handlediv,
+body.byl-native-orders-shopify-v2 #poststuff .postbox .postbox-header .handle-actions > .handlediv {
+  position:relative; flex:0 0 var(--byl-chevron-target);
+  display:inline-flex; align-items:center; justify-content:center;
+  box-sizing:border-box; width:var(--byl-chevron-target)!important;
+  min-width:var(--byl-chevron-target)!important;
+  max-width:var(--byl-chevron-target)!important;
+  height:var(--byl-chevron-target)!important;
+  min-height:var(--byl-chevron-target)!important;
+  margin:0!important; padding:0!important;
+  border:1px solid transparent; border-radius:9px;
+  background:transparent; box-shadow:none;
+  color:#34383d; cursor:pointer;
+}
+body.byl-native-orders-shopify-v2 #poststuff .postbox .postbox-header .handle-actions > button.handlediv .toggle-indicator,
+body.byl-native-orders-shopify-v2 #poststuff .postbox .postbox-header .handle-actions > .handlediv .toggle-indicator {
+  display:none!important;
+}
+body.byl-native-orders-shopify-v2 #poststuff .postbox .postbox-header .handle-actions > button.handlediv::after,
+body.byl-native-orders-shopify-v2 #poststuff .postbox .postbox-header .handle-actions > .handlediv::after {
+  content:""; position:absolute; width:var(--byl-chevron-size); height:var(--byl-chevron-size);
+  left:50%; top:50%; margin-left:-4px; margin-top:-2px;
+  border-right:var(--byl-chevron-stroke) solid currentColor;
+  border-bottom:var(--byl-chevron-stroke) solid currentColor;
+  transform:rotate(225deg); pointer-events:none;
+}
+body.byl-native-orders-shopify-v2 #poststuff .postbox.closed .postbox-header .handle-actions > button.handlediv::after,
+body.byl-native-orders-shopify-v2 #poststuff .postbox.closed .postbox-header .handle-actions > .handlediv::after {
+  transform:rotate(45deg); margin-top:-6px;
+}
+body.byl-native-orders-shopify-v2 #poststuff .postbox .postbox-header .handle-actions > .handlediv:hover,
+body.byl-native-orders-shopify-v2 #poststuff .postbox .postbox-header .handle-actions > .handlediv:focus-visible {
+  background:#f3f3f4; border-color:#e3e4e5;
+}
+/* The 📌 sits to the LEFT of the chevron; only a live expanded metabox shows it. */
+body.byl-native-orders-shopify-v2 #poststuff .postbox .handle-actions > .byl-native-pin {
+  flex:0 0 var(--byl-chevron-target);
+  width:var(--byl-chevron-target)!important; height:var(--byl-chevron-target)!important;
+  margin:0!important; padding:0!important; border-radius:9px;
+}
+body.byl-native-orders-shopify-v2 #poststuff .postbox.closed .handle-actions > .byl-native-pin {
+  display:none!important;
+}
+/* PHP-rendered Advanced editing: same 32px control at the right edge. */
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .byl-native-advanced-host .byl-native-advanced-btn {
+  gap:12px;
+}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .byl-native-advanced-host .byl-native-advanced-arrow {
+  position:relative; display:inline-flex; flex:0 0 var(--byl-chevron-target);
+  box-sizing:border-box; width:var(--byl-chevron-target)!important;
+  height:var(--byl-chevron-target)!important; align-items:center;justify-content:center;
+  font-size:0!important; line-height:0!important; color:transparent;
+  border:1px solid transparent; border-radius:9px;
+  background:transparent; transform:none!important;
+}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .byl-native-advanced-host .byl-native-advanced-arrow::after {
+  content:""; position:absolute; width:var(--byl-chevron-size);height:var(--byl-chevron-size);
+  top:50%;left:50%;margin-left:-4px;margin-top:-6px;
+  border-right:var(--byl-chevron-stroke) solid #34383d;
+  border-bottom:var(--byl-chevron-stroke) solid #34383d;
+  transform:rotate(45deg);pointer-events:none;
+}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .byl-native-advanced-host .byl-native-advanced-arrow::after {
+  transform:rotate(225deg);margin-top:-2px;
+}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .byl-native-advanced-host .byl-native-advanced-btn:hover .byl-native-advanced-arrow {
+  background:#f3f3f4;border-color:#e3e4e5;
+}
+/* Customer billing details — identical square hit target and glyph. */
+body.byl-native-orders-shopify-v2 .byl-native-billing-row summary { min-height:36px; }
+body.byl-native-orders-shopify-v2 .byl-native-billing-row summary::after {
+  content:""!important; position:relative; flex:0 0 var(--byl-chevron-target);
+  box-sizing:border-box; width:var(--byl-chevron-target)!important;
+  height:var(--byl-chevron-target)!important; border:1px solid transparent;
+  border-radius:9px; margin:0; background-color:transparent;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3.5 6 4.5 4.5L12.5 6' fill='none' stroke='%2334383d' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size:16px 16px;
+  background-position:center;
+  background-repeat:no-repeat;
+  transform:none;
+}
+body.byl-native-orders-shopify-v2 .byl-native-billing-row details[open] summary::after {
+  transform:rotate(180deg);
+}
+body.byl-native-orders-shopify-v2 .byl-native-billing-row summary:hover::after { background-color:#f3f3f4;border-color:#e3e4e5; }
+/* Black Shopify split status selector: same sized glyph, same hit area. */
+body.byl-native-orders-shopify-v2 .byl-native-status-split .byl-native-status-chevron {
+  position:relative; display:inline-flex; align-items:center;justify-content:center;
+  box-sizing:border-box; flex:0 0 34px; width:34px!important; height:34px!important;
+  min-height:34px!important; min-width:34px!important;
+  margin:0!important; padding:0!important; font-size:0!important;
+  line-height:0!important; color:transparent; border-left:1px solid #474747!important;
+}
+body.byl-native-orders-shopify-v2 .byl-native-status-split .byl-native-status-chevron::after {
+  content:""; width:var(--byl-chevron-size); height:var(--byl-chevron-size);
+  position:absolute; top:50%;left:50%; margin-left:-4px; margin-top:-6px;
+  border-right:var(--byl-chevron-stroke) solid #fff;
+  border-bottom:var(--byl-chevron-stroke) solid #fff;
+  transform:rotate(45deg);pointer-events:none;
+}
+body.byl-native-orders-shopify-v2 .byl-native-status-split .byl-native-status-chevron[aria-expanded="true"]::after {
+  transform:rotate(225deg); margin-top:-2px;
+}
+/* Prev / Next are navigation, not metabox toggles; same arrow artwork and 34px targets. */
+body.byl-native-orders-shopify-v2 .byl-native-navigate {
+  flex:0 0 auto; align-items:stretch; height:36px; border-radius:20px;
+}
+body.byl-native-orders-shopify-v2 .byl-native-navigate .byl-native-order-neighbor {
+  position:relative; flex:0 0 36px;
+  box-sizing:border-box; width:36px!important;min-width:36px!important;
+  max-width:36px!important;height:36px!important;min-height:36px!important;
+  padding:0!important;margin:0!important;font-size:0!important;
+  display:inline-flex;align-items:center;justify-content:center;line-height:0!important;
+}
+body.byl-native-orders-shopify-v2 .byl-native-navigate .byl-native-order-neighbor::after {
+  content:"";position:absolute;width:var(--byl-chevron-size);height:var(--byl-chevron-size);
+  left:50%;top:50%;margin-left:-4px;margin-top:-2px;
+  border-right:var(--byl-chevron-stroke) solid currentColor;
+  border-bottom:var(--byl-chevron-stroke) solid currentColor;
+  transform:rotate(225deg); pointer-events:none;
+}
+body.byl-native-orders-shopify-v2 .byl-native-navigate .byl-native-order-neighbor:nth-child(2)::after {
+  transform:rotate(45deg);margin-top:-6px;
+}
+/* Existing More actions caret stays subordinate to its button, same glyph size. */
+body.byl-native-orders-shopify-v2 .byl-native-more-wrap [data-byl-action="more"] > span {
+  position:relative;display:inline-block;vertical-align:middle;
+  box-sizing:border-box;width:16px;height:16px;margin-left:2px;
+  font-size:0!important;line-height:0!important;color:transparent;
+}
+body.byl-native-orders-shopify-v2 .byl-native-more-wrap [data-byl-action="more"] > span::after {
+  content:"";position:absolute;width:var(--byl-chevron-size);height:var(--byl-chevron-size);
+  left:50%;top:50%;margin-left:-4px;margin-top:-6px;
+  border-right:var(--byl-chevron-stroke) solid #444;
+  border-bottom:var(--byl-chevron-stroke) solid #444;
+  transform:rotate(45deg);
+}
+body.byl-native-orders-shopify-v2 .byl-native-more-wrap [data-byl-action="more"][aria-expanded="true"] > span::after {transform:rotate(225deg);margin-top:-2px;}
+/* Do not affect standard Woo/select option arrows or third-party popup forms. */
+@media (max-width:700px) {
+ body.byl-native-orders-shopify-v2{--byl-chevron-target:30px;}
+ body.byl-native-orders-shopify-v2 .byl-native-navigate .byl-native-order-neighbor{width:34px!important;min-width:34px!important;max-width:34px!important;height:34px!important;min-height:34px!important;flex-basis:34px;}
+}
+/* Top action controls share a stable 36px high row; chevrons stay 8px glyphs. */
+body.byl-native-orders-shopify-v2 .byl-native-actions > .byl-native-pill,
+body.byl-native-orders-shopify-v2 .byl-native-more-wrap > .byl-native-pill,
+body.byl-native-orders-shopify-v2 .byl-native-status-split .byl-native-status-primary,
+body.byl-native-orders-shopify-v2 .byl-native-status-split .byl-native-status-chevron {
+  box-sizing:border-box;height:36px!important;min-height:36px!important;
+}
+
+
+/* V0.4.3 — unified collapsed Custom Fields / Timeline; two-column Advanced editing.
+   Keep Woo native postboxes, notes callback, labels and form submission as-is. */
+body.byl-native-orders-shopify-v2 #postbox-container-2 .meta-box-sortables > #postcustom,
+body.byl-native-orders-shopify-v2 #postbox-container-2 .meta-box-sortables > #woocommerce-order-notes {
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  margin:0 0 16px!important;
+  border:1px solid var(--byl-line)!important;
+  border-radius:var(--byl-radius)!important;
+  background:#fff!important;
+  box-shadow:0 2px 7px #00000007!important;
+  overflow:visible;
+}
+body.byl-native-orders-shopify-v2 #postbox-container-2 .meta-box-sortables > #postcustom .postbox-header,
+body.byl-native-orders-shopify-v2 #postbox-container-2 .meta-box-sortables > #woocommerce-order-notes .postbox-header {
+  box-sizing:border-box;
+  min-height:52px;
+  border-radius:var(--byl-radius) var(--byl-radius) 0 0;
+  background:#fff;
+}
+body.byl-native-orders-shopify-v2 #postbox-container-2 .meta-box-sortables > #postcustom.closed > .postbox-header,
+body.byl-native-orders-shopify-v2 #postbox-container-2 .meta-box-sortables > #woocommerce-order-notes.closed > .postbox-header {
+  border-bottom:0!important;
+  border-radius:var(--byl-radius)!important;
+}
+body.byl-native-orders-shopify-v2 #postbox-container-2 .meta-box-sortables > #postcustom.closed > .inside,
+body.byl-native-orders-shopify-v2 #postbox-container-2 .meta-box-sortables > #woocommerce-order-notes.closed > .inside {
+  display:none!important;
+}
+/* Preserve the admin's explicit pin preference: pinUI removes .closed; no hidden native editing. */
+body.byl-native-orders-shopify-v2 #postbox-container-2 .meta-box-sortables > #postcustom > .postbox-header .hndle,
+body.byl-native-orders-shopify-v2 #postbox-container-2 .meta-box-sortables > #woocommerce-order-notes > .postbox-header .hndle {
+  padding:14px 18px!important;
+  font-size:13px!important;
+  font-weight:650!important;
+  line-height:1.45;
+  color:#303337;
+}
+/* Exact WooCommerce markup remains in-place: General left, Billing and Shipping stacked right. */
+@media (min-width:900px) {
+  body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_container {
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    grid-auto-flow:row;
+    column-gap:24px;
+    row-gap:18px;
+    width:100%;
+    min-height:0!important;
+    align-items:start;
+  }
+  body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_general {
+    grid-column:1;grid-row:1 / span 2;
+    align-self:start;
+  }
+  body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_billing {
+    grid-column:2;grid-row:1;
+  }
+  body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_shipping {
+    grid-column:2;grid-row:2;
+  }
+}
+/* Prevent Woo's 33% float layout from overriding two equal columns. */
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_general,
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_billing,
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_shipping {
+  box-sizing:border-box;
+  float:none!important;
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0;
+  margin:0!important;
+  padding:0!important;
+}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_container :is(input, select, textarea) {
+  max-width:100%;
+}
+/* Single column on narrower devices. The native input labels/actions are unchanged. */
+@media (max-width:899px) {
+  body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) .order_data_column_container {
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    row-gap:20px;
+    align-items:start;
+  }
+  body.byl-native-orders-shopify-v2 #woocommerce-order-data:has(#byl-native-advanced-check:checked) :is(.order_data_column_general, .order_data_column_billing, .order_data_column_shipping) {
+    grid-column:auto!important;
+    grid-row:auto!important;
+  }
+}
+
+
+
+/* V0.4.7 — native WP sortable restore after fixing unbalanced PHP toolbar markup.
+ * Do not wrap footer modules or replace native Metabox headers/drag and collapse controls.
+ */
+body.byl-native-orders-shopify-v2 #postbox-container-1 .meta-box-sortables,
+body.byl-native-orders-shopify-v2 #postbox-container-2 .meta-box-sortables {
+  display:block!important;min-height:12px;
+}
+body.byl-native-orders-shopify-v2 #poststuff #order_custom,
+body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-notes,
+body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-actions {
+  background:transparent!important;
+  box-shadow:none!important;
+  border-radius:13px!important;
+  margin:0 0 12px!important;
+  overflow:visible;
+}
+body.byl-native-orders-shopify-v2 #poststuff #order_custom .postbox-header,
+body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-notes .postbox-header,
+body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-actions .postbox-header {
+  display:flex!important;
+  min-height:45px;
+  background:transparent!important;
+}
+body.byl-native-orders-shopify-v2 #poststuff #order_custom .inside,
+body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-notes .inside,
+body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-actions .inside {
+  background:transparent!important;
+}
+body.byl-native-orders-shopify-v2 #poststuff #order_custom.closed > .inside,
+body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-notes.closed > .inside,
+body.byl-native-orders-shopify-v2 #poststuff #woocommerce-order-actions.closed > .inside {
+  display:none!important;
+}
+/* Keep original WP drag/order controls and original postbox handles operational. */
+body.byl-native-orders-shopify-v2 #poststuff .postbox .handle-actions .handle-order-higher,
+body.byl-native-orders-shopify-v2 #poststuff .postbox .handle-actions .handle-order-lower {display:inline-flex!important;}
+body.byl-native-orders-shopify-v2 #postbox-container-1 #order_custom #postcustomstuff {
+  max-width:100%;overflow:hidden;
+}
+body.byl-native-orders-shopify-v2 #postbox-container-1 #order_custom #postcustomstuff table {width:100%;}
+body.byl-native-orders-shopify-v2 #postbox-container-1 #order_custom #postcustomstuff tr,
+body.byl-native-orders-shopify-v2 #postbox-container-1 #order_custom #postcustomstuff td {
+  display:block;max-width:100%;width:100%!important;box-sizing:border-box;
+}
+body.byl-native-orders-shopify-v2 #postbox-container-1 #order_custom #postcustomstuff :is(input,select,textarea) {
+  max-width:100%;width:100%!important;box-sizing:border-box;
+}
+
+/* Andy Commerce Native Orders: compact two-row header; fixed action area on desktop.
+   The native payment link remains on its own row; does not affect order data. */
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_header{
+  display:grid!important;grid-template-columns:minmax(0,1fr) max-content!important;
+  grid-template-rows:auto auto!important;gap:8px 14px!important;align-items:start!important;
+}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_header>.order_data_header_column:first-child{display:contents!important}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .woocommerce-order-data__heading{
+  grid-column:1!important;grid-row:1!important;white-space:normal;overflow-wrap:anywhere;font-size:22px!important;
+}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_header>.order_data_header_column:nth-child(2){
+  grid-column:2!important;grid-row:1!important;min-width:0!important;align-self:start!important;margin-left:0!important;
+}
+body.byl-native-orders-shopify-v2 #woocommerce-order-data .woocommerce-order-data__meta.order_number{
+  display:block!important;grid-column:1/-1!important;grid-row:2!important;
+  width:100%!important;max-width:100%!important;font-size:12px!important;
+  line-height:1.45!important;margin:0!important;color:#616774!important;
+}
+@media(max-width:900px){
+  body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_header{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto auto!important}
+  body.byl-native-orders-shopify-v2 #woocommerce-order-data .order_data_header>.order_data_header_column:nth-child(2){grid-column:1!important;grid-row:2!important;max-width:100%!important}
+  body.byl-native-orders-shopify-v2 #woocommerce-order-data .woocommerce-order-data__meta.order_number{grid-column:1!important;grid-row:3!important;overflow-wrap:anywhere}
+}
+
+
+/* Andy Commerce M14: preserve native Order Data before right-hand metaboxes on narrow screens. */
+@media (max-width:999px) {
+  body.byl-native-orders-shopify-v2 #poststuff #post-body.columns-2 {
+    display:flex!important;
+    flex-direction:column;
+    align-items:stretch;
+  }
+  body.byl-native-orders-shopify-v2 #poststuff #post-body.columns-2 #postbox-container-2 { order:0; }
+  body.byl-native-orders-shopify-v2 #poststuff #post-body.columns-2 #postbox-container-1 { order:1; }
+}

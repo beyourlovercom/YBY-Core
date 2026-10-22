@@ -8,6 +8,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'admin/class-andy-commerce-admin.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-order-coupon-column.php';
 
 class Andy_Commerce {
 	public function run() {
