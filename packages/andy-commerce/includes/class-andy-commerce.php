@@ -9,8 +9,6 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'admin/class-andy-commerce-admin.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-order-coupon-column.php';
-require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-orders-ui.php';
-require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-order-labels.php';
 
 class Andy_Commerce {
 	public function run() {
@@ -24,8 +22,6 @@ class Andy_Commerce {
 		}
 		if ( is_admin() ) {
 			Andy_Commerce_Order_Coupon_Column::boot();
-			Andy_Commerce_Orders_UI::boot();
-			Andy_Commerce_Order_Labels::boot();
 			$admin = new Andy_Commerce_Admin();
 			add_action( 'admin_menu', array( $admin, 'add_admin_menu' ), 35 );
 		}
