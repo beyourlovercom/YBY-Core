@@ -47,7 +47,7 @@ $handler=file_get_contents(dirname(__DIR__).'/includes/class-andy-commerce-m7-dr
 $studio=file_get_contents(dirname(__DIR__).'/admin/views/marketing-m7-dev-studio.php');
 $ok(str_contains($view,'draft_rule_editor')&&str_contains($view,'value="advanced"'),'advanced JSON fallback available');
 $ok(str_contains($view,'data-rule-type="spend_save"')&&str_contains($view,'data-rule-type="bogo"')&&str_contains($view,'data-rule-type="bundles"')&&str_contains($view,'data-rule-type="tiered"'),'all four runtime draft types have visual controls');
-$ok(str_contains($view,'Gift delivery remains disabled.'),'gift disabled visible');
+$ok(str_contains($view,'赠品发放仍未启用。'),'gift disabled visible');
 $ok(str_contains($handler,'Andy_Commerce_Marketing_V2_Rule_Fields::normalize')&&str_contains($handler,'check_admin_referer'),'server normalizer + nonce gate');
 $ok(str_contains($handler,"'advanced'")&&str_contains($handler,'json_decode'),'old JSON contracts retained');
 $ok(str_contains($studio,"marketing-v2-rule-editor.php")&&str_contains($studio,"m7_preview"),'integrated with existing Studio and preview');
