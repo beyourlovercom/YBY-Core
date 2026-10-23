@@ -1,0 +1,29 @@
+name: Andy Commerce Dev ZIP Contract
+on:
+  pull_request:
+    paths:
+      - 'packages/andy-commerce/**'
+      - 'scripts/*andy-commerce*.sh'
+      - '.github/workflows/andy-commerce-dev-zip-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-zip:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Actual ZIP and negative mutation
+        run: |
+          bash scripts/build-andy-commerce-dev-candidate.sh "$RUNNER_TEMP/commerce.zip"
+          python3 - "$RUNNER_TEMP/commerce.zip" "$RUNNER_TEMP/bad.zip" <<'PY'
+          import sys,zipfile
+          with zipfile.ZipFile(sys.argv[1]) as z,zipfile.ZipFile(sys.argv[2],'w',zipfile.ZIP_DEFLATED) as out:
+            for item in z.infolist():
+              data=z.read(item.filename)
+              if item.filename=='andy-commerce/admin/class-andy-commerce-admin.php':
+                data=data.replace(b"'andy_core_l3_external_items'",b"'removed_l3_hook'")
+              out.writestr(item.filename,data)
+          PY
+          if bash scripts/check-andy-commerce-zip-contract.sh "$RUNNER_TEMP/bad.zip";then exit 1;fi
+          echo NEGATIVE_ZIP_REJECTION_PASS
