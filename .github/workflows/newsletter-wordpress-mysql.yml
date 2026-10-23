@@ -68,3 +68,9 @@ jobs:
           set -euo pipefail
           wp eval-file "$GITHUB_WORKSPACE/tests/newsletter-m3-single-recipient-wordpress-mysql.php" --path="$RUNNER_TEMP/wordpress"
           echo "NEWSLETTER_M3_SINGLE_RECIPIENT_ISOLATED_ONLY=PASS"
+      - name: Controlled L3 native WordPress role and permission negative UAT
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/tests/andy-core-l3-wordpress-real-roles.php" --path="$RUNNER_TEMP/wordpress"
+          echo "ANDY_L3_DISPOSABLE_WP_REAL_ROLE=PASS"
