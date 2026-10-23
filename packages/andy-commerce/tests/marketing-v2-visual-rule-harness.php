@@ -1,0 +1,55 @@
+<?php
+/** Safe V2-M1 normalized rule tests, without WP DB or WooCommerce writes. */
+declare(strict_types=1);
+define('ABSPATH','/test/');
+require_once dirname(__DIR__).'/includes/class-andy-commerce-marketing-v2-rule-fields.php';
+$n=0;
+$ok=static function($check,$message)use(&$n){if(!$check)throw new RuntimeException('V2 M1 '.$message);$n++;};
+$checkFail=static function(callable $fn,$message)use($ok){
+    try{$fn();$ok(false,$message);}catch(InvalidArgumentException $e){$ok(true,$message);}
+};
+$rule=static fn($type,$fields):array=>Andy_Commerce_Marketing_V2_Rule_Fields::normalize($type,[$type=>$fields]);
+$spend=['threshold'=>'69.00','discount_mode'=>'fixed','fixed'=>'5.00','percent'=>'10.00'];
+$a=$rule('spend_save',$spend);
+$ok($a===['threshold_minor'=>6900,'discount_minor'=>500],'spend minor units');
+$spend['discount_mode']='percent';$spend['percent']='12.50';
+$ok($rule('spend_save',$spend)===['threshold_minor'=>6900,'percent_bp'=>1250],'spend percentage');
+$spend['discount_mode']='fixed';$spend['fixed']='0.09';$spend['threshold']='0.01';
+$ok($rule('spend_save',$spend)===['threshold_minor'=>1,'discount_minor'=>9],'cents exactness');
+$spend['fixed']='5.001';$checkFail(fn()=> $rule('spend_save',$spend),'too many decimal places rejected');
+$spend['fixed']='-3';$checkFail(fn()=> $rule('spend_save',$spend),'negative amount rejected');
+$spend['fixed']='1000001';$checkFail(fn()=> $rule('spend_save',$spend),'max minor rejected');
+$spend['fixed']='10';$spend['threshold']='x';$checkFail(fn()=> $rule('spend_save',$spend),'malformed amount rejected');
+$spend['threshold']='69';$spend['discount_mode']='percent';$spend['percent']='100.01';
+$checkFail(fn()=> $rule('spend_save',$spend),'percent overflow rejected');
+$spend['percent']='100.00';$ok($rule('spend_save',$spend)['percent_bp']===10000,'100pct supported');
+$bogo=['buy_product_id'=>'101','buy_qty'=>'2','get_product_id'=>'202','get_qty'=>'1','discount_mode'=>'percent','percent'=>'50'];
+$ok($rule('bogo',$bogo)===['buy_product_id'=>101,'buy_qty'=>2,'get_product_id'=>202,'get_qty'=>1,'percent_bp'=>5000],'BOGO typed mapping');
+$bogo['get_product_id']='101';$checkFail(fn()=> $rule('bogo',$bogo),'BOGO self-reward denied');
+$bogo['get_product_id']='202';$bogo['buy_qty']='1001';$checkFail(fn()=> $rule('bogo',$bogo),'BOGO oversized quantity denied');
+$bundle=['product_ids'=>'101, 202','discount_mode'=>'fixed','fixed'=>'8.00'];
+$ok($rule('bundles',$bundle)===['product_ids'=>[101,202],'discount_minor'=>800],'bundle typed mapping');
+$bundle['product_ids']='101,101';$checkFail(fn()=> $rule('bundles',$bundle),'duplicate bundle denied');
+$bundle['product_ids']='101';$checkFail(fn()=> $rule('bundles',$bundle),'one-product bundle denied');
+$bundle['product_ids']='101,202';$bundle['discount_mode']='percent';$bundle['percent']='17.75';
+$ok($rule('bundles',$bundle)===['product_ids'=>[101,202],'percent_bp'=>1775],'bundle percent');
+$tier=['minimum_qty_1'=>'2','percent_1'=>'10.00','minimum_qty_2'=>'3','percent_2'=>'20.00','minimum_qty_3'=>'','percent_3'=>''];
+$ok($rule('tiered',$tier)===['tiers'=>[['minimum_qty'=>2,'percent_bp'=>1000],['minimum_qty'=>3,'percent_bp'=>2000]]],'tier mappings');
+$tier['minimum_qty_2']='2';$checkFail(fn()=> $rule('tiered',$tier),'tier nonascending denied');
+$ok($rule('free_gift',['product_id'=>'999'])===['product_id'=>999],'disabled free-gift draft only');
+$checkFail(fn()=> $rule('free_gift',['product_id'=>'999.0']),'gift ID integer only');
+$checkFail(fn()=> $rule('broken',['x'=>'1']),'unsupported type denied');
+$checkFail(fn()=>Andy_Commerce_Marketing_V2_Rule_Fields::normalize('spend_save',[]),'missing form fields denied');
+$ok(Andy_Commerce_Marketing_V2_Rule_Fields::major(6900)==='69.00','old draft amounts presentable');
+$ok(Andy_Commerce_Marketing_V2_Rule_Fields::percentage(1250)==='12.50','old draft percentage presentable');
+$view=file_get_contents(dirname(__DIR__).'/admin/views/marketing-v2-rule-editor.php');
+$handler=file_get_contents(dirname(__DIR__).'/includes/class-andy-commerce-m7-draft-studio.php');
+$studio=file_get_contents(dirname(__DIR__).'/admin/views/marketing-m7-dev-studio.php');
+$ok(str_contains($view,'draft_rule_editor')&&str_contains($view,'value="advanced"'),'advanced JSON fallback available');
+$ok(str_contains($view,'data-rule-type="spend_save"')&&str_contains($view,'data-rule-type="bogo"')&&str_contains($view,'data-rule-type="bundles"')&&str_contains($view,'data-rule-type="tiered"'),'all four runtime draft types have visual controls');
+$ok(str_contains($view,'Gift delivery remains disabled.'),'gift disabled visible');
+$ok(str_contains($handler,'Andy_Commerce_Marketing_V2_Rule_Fields::normalize')&&str_contains($handler,'check_admin_referer'),'server normalizer + nonce gate');
+$ok(str_contains($handler,"'advanced'")&&str_contains($handler,'json_decode'),'old JSON contracts retained');
+$ok(str_contains($studio,"marketing-v2-rule-editor.php")&&str_contains($studio,"m7_preview"),'integrated with existing Studio and preview');
+$ok(!str_contains($view,'woocommerce_cart_calculate_fees')&&!str_contains($view,'woocommerce_package_rates'),'no live Woo mutations');
+echo "MARKETING_V2_M1_TYPED_UI_ASSERTIONS=$n PASS; STORE_RULES_DRAFT_ONLY\n";

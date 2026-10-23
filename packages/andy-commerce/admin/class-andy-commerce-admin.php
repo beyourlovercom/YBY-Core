@@ -120,7 +120,11 @@ class Andy_Commerce_Admin {
 
 		// Dev-only standalone USD-first ledger preview, never a live Woo price hook.
 		if ( 'currency-os' === $tab ) {
-			include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/currency-os-v1-dev-lab.php';
+			// One Currency OS workbench with six tabs. Older ledger deep links
+			// map to the sixth tab instead of opening a second admin layout.
+			$currency_os_legacy_ledger = isset($_GET['currency_screen']) &&
+				sanitize_key(wp_unslash($_GET['currency_screen'])) === 'ledger';
+			include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/currency-os-v2-admin.php';
 			return;
 		}
 
