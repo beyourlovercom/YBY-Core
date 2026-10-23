@@ -190,7 +190,23 @@ echo esc_html($operationResults[$operationKey]??'未确认操作'); ?>。所有�
  <label>优先级（0–1000）<input name="draft_priority" type="number" min="0" max="1000" value="<?php echo esc_attr((string)($chosen['priority']??100)); ?>"></label>
  <label>状态<input value="未启用草稿（OFF）" disabled></label>
  </div></div>
- <div class="ac-card"><h2>4. 其他选项</h2><p class="ac-muted">开始／结束日期、用户分群、排除商品、真正的优惠叠加策略尚未接入现有 M7 数据契约，暂不提供会被忽略的输入框。</p><div class="ac-warning">保存前请确认：此处只会写入 Dev 的 inactive draft。规则不会在真实 WooCommerce 购物车或订单中执行。</div></div>
+ <div class="ac-card"><h2>4. 生效日期、商品限制及叠加策略（仅保存 OFF 配置）</h2>
+ <?php $policy=$chosen['policy']??array(); ?>
+ <div class="ac-grid">
+ <label>开始日期（UTC）<input name="draft_policy[start_date]" type="date" value="<?php echo esc_attr($policy['start_date']??''); ?>"></label>
+ <label>结束日期（UTC）<input name="draft_policy[end_date]" type="date" value="<?php echo esc_attr($policy['end_date']??''); ?>"></label>
+ <label>商品范围<select name="draft_policy[product_scope]">
+ <option value="all" <?php selected($policy['product_scope']??'all','all'); ?>>所有商品</option>
+ <option value="selected" <?php selected($policy['product_scope']??'all','selected'); ?>>指定商品（实际资格待验证）</option>
+ </select></label>
+ <label>指定 Woo 商品 ID（逗号分隔）<input name="draft_policy[product_ids]" value="<?php echo esc_attr(implode(',',(array)($policy['product_ids']??array()))); ?>" placeholder="例如：101,202"></label>
+ <label>优惠叠加策略<select name="draft_policy[stack_policy]">
+ <option value="best_single" <?php selected($policy['stack_policy']??'best_single','best_single'); ?>>单一最高优惠</option>
+ <option value="coupon_exclusive" <?php selected($policy['stack_policy']??'best_single','coupon_exclusive'); ?>>与优惠券互斥</option>
+ </select></label>
+ </div>
+ <p class="ac-muted">日期采用 UTC；商品 ID 仅写入草稿，尚未对 Woo 商品、客户及库存做真实资格核验。任何奖励仍未启用。</p>
+ <div class="ac-warning">保存前请确认：此处只会写入 Dev 的 inactive draft。规则不会在真实 WooCommerce 购物车或订单中执行。</div></div>
  <div style="display:flex;gap:9px;justify-content:flex-end">
   <a class="button" href="<?php echo esc_url($base('marketing-promotions')); ?>">取消</a>
   <button type="submit" class="button button-primary">保存未启用草稿</button>

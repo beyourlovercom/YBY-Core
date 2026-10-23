@@ -4,6 +4,7 @@
  * public pricing hooks, no shipping settings or Woo order writes.
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
+require_once __DIR__.'/class-andy-commerce-m10-policy-fields.php';
 
 final class Andy_Commerce_M7_Draft_Studio {
     const OPTION = 'andy_commerce_m7_inactive_drafts_v1';
@@ -84,6 +85,16 @@ final class Andy_Commerce_M7_Draft_Studio {
         } else {
             self::go('invalid');
         }
+        // Optional M10 typed policy metadata: only stores OFF draft constraints.
+        // Unsupported or malformed metadata must fail closed; never silently drop it.
+        try {
+            $policy = Andy_Commerce_M10_Policy_Fields::normalize(
+                isset($_POST['draft_policy']) && is_array($_POST['draft_policy'])
+                    ? wp_unslash($_POST['draft_policy']) : array()
+            );
+        } catch (InvalidArgumentException $error) {
+            self::go('invalid');
+        }
         $countries=array_values(array_unique(array_filter(array_map('trim',explode(',',$countries_input)))));
         $countries=array_map('strtoupper',$countries);
         if (!$name||strlen($name)>120||!in_array($type,self::TYPES,true)
@@ -104,7 +115,7 @@ final class Andy_Commerce_M7_Draft_Studio {
         $rows[$id]=array(
             'id'=>$id,'revision'=>$revision+1,'name'=>$name,
             'type'=>$type,'currency'=>$currency,'countries'=>$countries,
-            'priority'=>$priority,'rule'=>$rule,'status'=>'draft',
+            'priority'=>$priority,'rule'=>$rule,'policy'=>$policy,'status'=>'draft',
             'active'=>false,'stack_with_coupon'=>false,
             'edited_utc'=>gmdate('c'),
         );
