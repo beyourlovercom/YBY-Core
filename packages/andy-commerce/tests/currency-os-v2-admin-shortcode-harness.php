@@ -76,7 +76,7 @@ ok(!str_contains($php,'function dev_frontend_preview'),'old injected preview rem
 ok(!str_contains($php,'position:fixed'),'no floating overlay CSS');
 ok(!str_contains($php,'ac-currency-front-test'),'no floating host markup');
 ok(!str_contains($php,'ac_currency_preview'),'old auto-preview GET trigger removed');
-ok(str_contains($view,'Bricks Footer') && str_contains($view,'Shortcode'),'Dev admin explains manual Footer shortcode placement');
+ok(str_contains($view,'Footer 底部') && str_contains($view,'实际使用的 Footer 模板'),'Dev admin explains template-based Footer shortcode placement');
 ok(substr_count($compact,'<select')===1,'one native select for template placement');
 ok(str_contains($php,'margin:0!important')&&str_contains($php,'padding:0!important'),'zero outer-spacing CSS');
 
