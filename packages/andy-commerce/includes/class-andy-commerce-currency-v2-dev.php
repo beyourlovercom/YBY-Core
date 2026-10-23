@@ -1,7 +1,7 @@
 <?php
 /**
  * Currency OS V2 C1: Dev-only visual administration and explicit shortcode.
- * Footer/Bricks templates control placement; no automatic wp_footer injection.
+ * The Footer template controls shortcode placement; no automatic injection.
  * Not a real WooCommerce multi-currency checkout, pricing, or settlement engine.
  */
 if (!defined('ABSPATH')) exit;
