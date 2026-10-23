@@ -10,6 +10,7 @@ if ( ! current_user_can('manage_woocommerce')
     echo '<div class="notice notice-error"><p>Currency OS preview is available on authorized Dev only.</p></div>';
     return;
 }
+$currency_os_v2_embedded = !empty($currency_os_v2_embedded);
 $currency = isset($_GET['currency']) ? sanitize_key(wp_unslash($_GET['currency'])) : 'usd';
 $currency = strtoupper($currency);
 if ( ! in_array($currency, Andy_Commerce_Currency_OS_V1::SUPPORTED, true) ) {
@@ -64,14 +65,19 @@ $money = static function(int $minor, string $code) use ($symbols): string {
     return $symbols[$code] . number_format($minor / 100, 2, '.', ',');
 };
 ?>
-<div class="wrap" style="max-width:1100px">
+<div class="<?php echo $currency_os_v2_embedded ? 'acv2-fx-content' : 'wrap'; ?>" style="max-width:1100px">
+    <?php if (!$currency_os_v2_embedded): ?>
     <h1>Currency OS <span style="font-size:14px;font-weight:400;color:#777">· Dev Preview V1</span></h1>
+    <?php endif; ?>
     <p><strong>Shadow-only / No Checkout hooks / No Woo writes / No payments.</strong>
        This is a synthetic FX preview. It does not replace actual Woo tax, shipping, gateway or settlement logic.</p>
     <form action="<?php echo esc_url(admin_url('admin.php')); ?>" method="get" style="display:flex;align-items:center;gap:10px;margin:18px 0">
         <input type="hidden" name="page" value="andy-commerce"/>
         <input type="hidden" name="tab" value="currency-os"/>
-        <label for="byl-currency-os-demo">Customer currency</label>
+        <?php if ($currency_os_v2_embedded): ?>
+        <input type="hidden" name="section" value="fx"/>
+        <?php endif; ?>
+        <label for="byl-currency-os-demo"><?php echo $currency_os_v2_embedded?'选择币种':'Customer currency'; ?></label>
         <select id="byl-currency-os-demo" name="currency">
             <?php foreach (Andy_Commerce_Currency_OS_V1::SUPPORTED as $code): ?>
               <option value="<?php echo esc_attr($code); ?>" <?php selected($code,$currency); ?>>
@@ -79,12 +85,12 @@ $money = static function(int $minor, string $code) use ($symbols): string {
               </option>
             <?php endforeach; ?>
         </select>
-        <label for="byl-currency-fx-mode">FX source</label>
+        <label for="byl-currency-fx-mode"><?php echo $currency_os_v2_embedded?'汇率来源':'FX source'; ?></label>
         <select id="byl-currency-fx-mode" name="fx_source">
-            <option value="synthetic" <?php selected('synthetic',$fxMode); ?>>Synthetic example</option>
-            <option value="reference" <?php selected('reference',$fxMode); ?>>Daily reference (read-only)</option>
+            <option value="synthetic" <?php selected('synthetic',$fxMode); ?>><?php echo $currency_os_v2_embedded?'模拟汇率':'Synthetic example'; ?></option>
+            <option value="reference" <?php selected('reference',$fxMode); ?>><?php echo $currency_os_v2_embedded?'每日参考汇率（只读）':'Daily reference (read-only)'; ?></option>
         </select>
-        <button class="button button-primary" type="submit">Preview exchange</button>
+        <button class="button button-primary" type="submit"><?php echo $currency_os_v2_embedded?'预览汇率':'Preview exchange'; ?></button>
         <span>1 USD = <?php echo esc_html($referenceSnapshot
             ? number_format($fixtures[$currency]/1000000,6,'.','')
             : $ratesLabel[$currency]); ?> <?php echo esc_html($currency); ?>
@@ -92,7 +98,7 @@ $money = static function(int $minor, string $code) use ($symbols): string {
     </form>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:18px">
         <div class="postbox" style="padding:18px;margin:0">
-            <h2 style="margin-top:0">Business ledger · USD</h2>
+            <h2 style="margin-top:0"><?php echo $currency_os_v2_embedded?'USD 财务核算':'Business ledger · USD'; ?></h2>
             <p>Product gross: <strong><?php echo esc_html($money($quote['gross_usd_minor'],'USD')); ?></strong></p>
             <p>Discount: <strong>−<?php echo esc_html($money($quote['discount_usd_minor'],'USD')); ?></strong></p>
             <p>Promotion-eligible net: <strong><?php echo esc_html($money($quote['eligible_subtotal_usd_minor'],'USD')); ?></strong></p>
@@ -102,7 +108,7 @@ $money = static function(int $minor, string $code) use ($symbols): string {
             <p>USD reporting total: <strong><?php echo esc_html($money($quote['accounting_total_usd_minor'],'USD')); ?></strong></p>
         </div>
         <div class="postbox" style="padding:18px;margin:0">
-            <h2 style="margin-top:0">Customer-facing · <?php echo esc_html($currency); ?></h2>
+            <h2 style="margin-top:0"><?php echo $currency_os_v2_embedded?'展示币种':'Customer-facing'; ?> · <?php echo esc_html($currency); ?></h2>
             <p>Product gross: <strong><?php echo esc_html($money($quote['gross_local_minor'],$currency)); ?></strong></p>
             <p>Discount: <strong>−<?php echo esc_html($money($quote['discount_local_minor'],$currency)); ?></strong></p>
             <p>Discounted merchandise: <strong><?php echo esc_html($money($quote['merchandise_net_local_minor'],$currency)); ?></strong></p>

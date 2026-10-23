@@ -5,8 +5,8 @@ if (!Andy_Commerce_Currency_V2_Dev::access()){
     echo '<div class="notice notice-error"><p>Currency OS V2 仅允许在授权的 Dev 测试站预览。</p></div>';return;
 }
 $cfg=Andy_Commerce_Currency_V2_Dev::config();
-$sections=['manage'=>'币种管理','checkout'=>'结账设置','display'=>'展示设置','advanced'=>'高级设置','ledger'=>'USD 营销核算'];
-$section=isset($_GET['section'])?sanitize_key(wp_unslash($_GET['section'])):'manage';
+$sections=['manage'=>'币种管理','checkout'=>'结账设置','display'=>'展示设置','advanced'=>'高级设置','ledger'=>'USD 营销核算','fx'=>'汇率核算'];
+$section=!empty($currency_os_legacy_ledger)?'fx':(isset($_GET['section'])?sanitize_key(wp_unslash($_GET['section'])):'manage');
 if(!isset($sections[$section]))$section='manage';
 $root=add_query_arg(['page'=>'andy-commerce','tab'=>'currency-os'],admin_url('admin.php'));
 $toggle=static function($key,$label,$value){
@@ -46,7 +46,7 @@ $toggle=static function($key,$label,$value){
 <div class="acv2" id="andy-currency-v2-admin">
   <header class="acv2-head"><div><h1>Currency OS <span class="tag">V2 · Dev 测试后台</span></h1>
     <div class="muted">店铺基础币种：USD · 五币种管理 · 参考汇率只读</div></div>
-    <a class="button" href="<?php echo esc_url(add_query_arg(['currency_screen'=>'ledger'],$root)); ?>">查看汇率核算 V1</a>
+    <span class="tag">设置与汇率核算一体化</span>
   </header>
   <?php if(isset($_GET['ac_saved'])&&$_GET['ac_saved']==='1'):?>
   <div class="notice notice-success"><p>Dev 预览设置已保存。WooCommerce 实际结账、运费与商品价格均未修改。</p></div><?php endif;?>
@@ -54,14 +54,22 @@ $toggle=static function($key,$label,$value){
   <?php foreach($sections as $key=>$text): ?>
     <a class="<?php echo $key===$section?'active':'';?>" href="<?php echo esc_url(add_query_arg('section',$key,$root));?>"><?php echo esc_html($text);?></a>
   <?php endforeach;?></nav>
+  <?php if($section!=='fx'): ?>
   <form action="<?php echo esc_url(admin_url('admin-post.php'));?>" method="post">
     <?php wp_nonce_field('andy_currency_v2_preview_save');?>
     <input type="hidden" name="action" value="andy_currency_v2_save">
     <input type="hidden" name="ac_section" value="<?php echo esc_attr($section);?>">
-<?php if($section==='manage'):?>
+  <?php endif; ?>
+<?php if($section==='fx'):?>
+  <section class="acv2-card" aria-label="汇率核算">
+    <h2>汇率核算</h2>
+    <p class="muted">五币种参考汇率及 USD 财务核算只读预览；不会变更真实商品价格、运费或支付金额。</p>
+    <?php $currency_os_v2_embedded=true; include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/currency-os-v1-dev-lab.php'; ?>
+  </section>
+<?php elseif($section==='manage'):?>
   <?php $currency_names=['USD'=>'美元','EUR'=>'欧元','GBP'=>'英镑','AUD'=>'澳元','CAD'=>'加元']; ?>
   <section class="acv2-card">
-    <div class="acv2-flex"><div><h2>Manage Currency</h2><div class="muted">默认基础币种为美元（USD），财务核算基准已锁定。</div></div><span class="tag">迁移配置预览</span></div>
+    <div class="acv2-flex"><div><h2>币种管理</h2><div class="muted">默认基础币种为美元（USD），财务核算基准已锁定。</div></div><span class="tag">迁移配置预览</span></div>
     <div class="acv2-table-scroll" style="margin-top:16px"><table class="acv2-table">
     <thead><tr><th>币种</th><th>价格示例</th><th>汇率 · 历史快照</th><th>更新方式</th><th>显示状态</th></tr></thead>
     <tbody><?php foreach(Andy_Commerce_Currency_V2_Dev::CODES as $c):
@@ -81,7 +89,7 @@ $toggle=static function($key,$label,$value){
     <p class="warn">此处汇率仅用于复刻已批准的 YayCurrency 历史设置，不代表实时市场汇率；附加费为 0。实时参考汇率请在「汇率核算 V1」中查看。</p>
   </section>
 <?php elseif($section==='checkout'):?>
-  <section class="acv2-card"><h2>Checkout Options</h2><p class="muted">以下为 YayCurrency 原有设置的参考配置。Currency OS V2 尚未启用真实外币结账。</p>
+  <section class="acv2-card"><h2>结账设置</h2><p class="muted">以下为 YayCurrency 原有设置的参考配置。Currency OS V2 尚未启用真实外币结账。</p>
     <div class="acv2-line"><?php $toggle('checkout_preview','允许不同币种结账（目标配置）',$cfg['checkout_preview']);?></div>
     <div class="acv2-table-scroll"><table class="acv2-table"><thead><tr><th>币种</th><th>原插件配置</th><th>支付网关验证</th></tr></thead><tbody>
       <?php foreach(Andy_Commerce_Currency_V2_Dev::CODES as $c):?><tr><td><?php echo esc_html(Andy_Commerce_Currency_V2_Dev::FLAGS[$c].' '.$c);?></td><td>全部支付方式</td><td>待沙盒验证</td></tr><?php endforeach;?>
@@ -116,12 +124,14 @@ $toggle=static function($key,$label,$value){
     </section>
   </div>
 <?php else:?>
-  <section class="acv2-card"><h2>USD Marketing Ledger</h2><p class="muted">USD 是唯一核算基准，汇率转换不会改变免邮或优惠资格。</p>
+  <section class="acv2-card"><h2>USD 营销核算</h2><p class="muted">USD 是唯一核算基准，汇率转换不会改变免邮或优惠资格。</p>
     <div class="acv2-grid"><div class="acv2-card">财务核算基准<h2>USD</h2></div><div class="acv2-card">符合资格的商品小计（示例）<h2>$95.00</h2></div><div class="acv2-card">门槛示例（非实际规则）<h2>$99.00</h2></div><div class="acv2-card">实际收款与退款<h2>尚未接入</h2></div></div>
     <p class="warn">真实营销活动由 Marketing V2 执行，实际运费以 WooCommerce 所选方式为准。本页仅用于说明和预览。</p>
   </section>
 <?php endif;?>
+  <?php if($section!=='fx'): ?>
     <footer class="acv2-footer"><span class="muted">仅保存 Dev 预览草稿 · 不修改 WWW/YayCurrency、实际结账、订单或价格</span>
     <?php if($section!=='ledger'):?><button type="submit" class="button button-primary">保存 Dev 预览设置</button><?php endif;?></footer>
   </form>
+  <?php endif; ?>
 </div>

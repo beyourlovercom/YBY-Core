@@ -56,7 +56,7 @@ foreach(['币种管理','结账设置','展示设置','高级设置','USD 营销
 ok(str_contains($view,'andy_currency_v2_preview_save'),'Dev nonce');
 ok(str_contains($view,'保存 Dev 预览设置'),'localized save action');
 ok(str_contains($view,'已保存'),'localized save feedback');
-ok(str_contains($view,'查看汇率核算 V1'),'localized ledger navigation');
+ok(str_contains($view,"'fx'=>'汇率核算'") && str_contains($view,'currency_os_v2_embedded=true'),'sixth inline FX tab navigation');
 ok(str_contains($view,'固定汇率（草稿）') && str_contains($view,'自动更新'),'localized FX modes');
 ok(str_contains($view,'默认国家或地区'),'localized country labels');
 ok(str_contains($view,'显示货币符号') && str_contains($view,'显示国旗'),'localized switcher controls');
