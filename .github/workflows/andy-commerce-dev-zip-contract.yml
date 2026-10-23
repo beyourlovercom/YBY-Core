@@ -43,6 +43,7 @@ jobs:
           php packages/andy-commerce/tests/marketing-m11-real-woo-readonly-harness.php
           php packages/andy-commerce/tests/marketing-m12-real-woo-six-shadow-harness.php
           php -l packages/andy-commerce/tests/sandbox/p5-m13-local-execution-proof.php
+          php -l packages/andy-commerce/tests/sandbox/p6-hpos-native-refund.php
           # The executable local Woo DB test driver MUST NEVER be shipped.
           grep -Fq -- '--exclude tests/' scripts/build-andy-commerce-dev-candidate.sh
           test ! -e packages/andy-commerce/includes/p5-m13-local-execution-proof.php
@@ -51,7 +52,7 @@ jobs:
       - name: Actual ZIP and negative mutation
         run: |
           bash scripts/build-andy-commerce-dev-candidate.sh "$RUNNER_TEMP/commerce.zip"
-          if unzip -Z1 "$RUNNER_TEMP/commerce.zip" | grep -q 'p5-m13-local-execution-proof.php'; then
+          if unzip -Z1 "$RUNNER_TEMP/commerce.zip" | grep -E 'p5-m13-local-execution-proof.php|p6-hpos-native-refund.php'; then
             echo M13_SANDBOX_TEST_DRIVER_LEAKED_IN_INSTALLABLE_ZIP
             exit 1
           fi
