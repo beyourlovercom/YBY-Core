@@ -13,6 +13,15 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4.2.2
+      - name: Marketing M7–M10 pure simulations, lifecycle and Dev rendering
+        run: |
+          php packages/andy-commerce/tests/marketing-m7-draft-security-harness.php
+          php packages/andy-commerce/tests/marketing-m8-engine-harness.php
+          php packages/andy-commerce/tests/marketing-m10-policy-evaluator-harness.php
+          php packages/andy-commerce/tests/marketing-m10-six-type-matrix-harness.php
+          php packages/andy-commerce/tests/marketing-m10-lifecycle-harness.php
+          php packages/andy-commerce/tests/marketing-m9-dev-page-render-harness.php
+          php packages/andy-commerce/tests/marketing-m10-page-render-harness.php
       - name: Actual ZIP and negative mutation
         run: |
           bash scripts/build-andy-commerce-dev-candidate.sh "$RUNNER_TEMP/commerce.zip"

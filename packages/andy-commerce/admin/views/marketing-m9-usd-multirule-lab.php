@@ -207,6 +207,15 @@ $builderUrl=add_query_arg(['page'=>'andy-commerce','tab'=>$marketingTab,
       <label>第二档满减门槛（USD） <input type="number" min="0" max="100000" name="m9_extra_threshold" value="<?php echo esc_attr((string)$additionalThreshold); ?>"></label>
       <label>第二档固定减免（USD） <input type="number" min="1" max="100000" name="m9_extra_reward" value="<?php echo esc_attr((string)$additionalReward); ?>"></label>
     </div>
+    <h4 class="ac-subheading">六类型合成购物车 · 商品 ID 101 / 202 / 303</h4>
+    <div class="ac-fields">
+      <label>101 数量 <input type="number" name="m10_qty_101" min="0" max="1000" value="<?php echo esc_attr((string)($_GET['m10_qty_101']??'2')); ?>"></label>
+      <label>101 折扣后行合计 USD <input type="number" name="m10_amount_101" min="0" max="100000" value="<?php echo esc_attr((string)($_GET['m10_amount_101']??'80')); ?>"></label>
+      <label>202 数量 <input type="number" name="m10_qty_202" min="0" max="1000" value="<?php echo esc_attr((string)($_GET['m10_qty_202']??'1')); ?>"></label>
+      <label>202 折扣后行合计 USD <input type="number" name="m10_amount_202" min="0" max="100000" value="<?php echo esc_attr((string)($_GET['m10_amount_202']??'45')); ?>"></label>
+      <label>303 数量 <input type="number" name="m10_qty_303" min="0" max="1000" value="<?php echo esc_attr((string)($_GET['m10_qty_303']??'1')); ?>"></label>
+      <label>303 折扣后行合计 USD <input type="number" name="m10_amount_303" min="0" max="100000" value="<?php echo esc_attr((string)($_GET['m10_amount_303']??'60')); ?>"></label>
+    </div>
     <p><button type="submit" class="button button-primary">重新计算规则</button></p>
   </form>
   <div class="ac-metrics">
@@ -323,4 +332,5 @@ $builderUrl=add_query_arg(['page'=>'andy-commerce','tab'=>$marketingTab,
   <p class="description">本页面使用非实时模拟汇率，不接入实际结账、支付、税费、Woo 运费修改或订单写入。</p>
 </div>
 <p><a href="<?php echo esc_url(add_query_arg(['page'=>'andy-commerce','tab'=>'marketing-promotions'],admin_url('admin.php'))); ?>">← 返回营销工作台</a></p>
+<?php include __DIR__.'/marketing-m10-six-preview.php'; ?>
 </section>

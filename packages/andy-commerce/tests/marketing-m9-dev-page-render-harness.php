@@ -113,6 +113,20 @@ foreach ([
   m9pageCheck(!str_contains($html,'draft_id_policy'),
     'policy rejects invalid synthetic scope, time, coupon or country');
 }
+$sixHtml=renderM9(['m9_currency'=>'USD','m9_country'=>'US','m9_date'=>'2026-11-15']);
+foreach(['demo_fixed','demo_percent','demo_gift','demo_bogo','demo_bundle','demo_tier'] as $name) {
+ m9pageCheck(str_contains($sixHtml,$name),'six-type Dev preview includes '.$name);
+}
+m9pageCheck(str_contains($sixHtml,'$185.00')&&str_contains($sixHtml,'$37.00')
+    &&str_contains($sixHtml,'$148.00'),'six synthetic rules USD-first select tier');
+m9pageCheck(str_contains($sixHtml,'库存未验证')&&str_contains($sixHtml,'未添加商品'),
+    'gift preview qualification only');
+$badSix=renderM9(['m9_country'=>'US','m10_qty_101'=>'-5']);
+m9pageCheck(str_contains($badSix,'模拟已拒绝'),'malformed six-type qty fails closed');
+$badSix=renderM9(['m9_country'=>'XX']);
+m9pageCheck(str_contains($badSix,'模拟已拒绝'),'malformed synthetic country fails closed');
+$badSix=renderM9(['m9_date'=>'2026-02-30']);
+m9pageCheck(str_contains($badSix,'模拟已拒绝'),'invalid UTC calendar day fails closed');
 $GLOBALS['testPermission']=false;
 $html=renderM9(['m9_currency'=>'USD']);
 m9pageCheck(str_contains($html,'多规则预览仅限获得授权的 Dev 管理员使用。')
