@@ -36,8 +36,13 @@ $ok($rule('bundles',$bundle)===['product_ids'=>[101,202],'percent_bp'=>1775],'bu
 $tier=['minimum_qty_1'=>'2','percent_1'=>'10.00','minimum_qty_2'=>'3','percent_2'=>'20.00','minimum_qty_3'=>'','percent_3'=>''];
 $ok($rule('tiered',$tier)===['tiers'=>[['minimum_qty'=>2,'percent_bp'=>1000],['minimum_qty'=>3,'percent_bp'=>2000]]],'tier mappings');
 $tier['minimum_qty_2']='2';$checkFail(fn()=> $rule('tiered',$tier),'tier nonascending denied');
-$ok($rule('free_gift',['product_id'=>'999'])===['product_id'=>999],'disabled free-gift draft only');
-$checkFail(fn()=> $rule('free_gift',['product_id'=>'999.0']),'gift ID integer only');
+$ok($rule('free_gift',['product_id'=>'999','threshold'=>'99.00'])===
+    ['threshold_minor'=>9900,'product_id'=>999],'gift threshold and product ID saved OFF');
+$checkFail(fn()=> $rule('free_gift',['product_id'=>'999']),
+    'legacy gift without threshold cannot be newly saved');
+$checkFail(fn()=> $rule('free_gift',['product_id'=>'999','threshold'=>'0']),
+    'gift requires positive threshold');
+$checkFail(fn()=> $rule('free_gift',['product_id'=>'999.0','threshold'=>'99']),'gift ID integer only');
 $checkFail(fn()=> $rule('broken',['x'=>'1']),'unsupported type denied');
 $checkFail(fn()=>Andy_Commerce_Marketing_V2_Rule_Fields::normalize('spend_save',[]),'missing form fields denied');
 $ok(Andy_Commerce_Marketing_V2_Rule_Fields::major(6900)==='69.00','old draft amounts presentable');
@@ -47,7 +52,7 @@ $handler=file_get_contents(dirname(__DIR__).'/includes/class-andy-commerce-m7-dr
 $studio=file_get_contents(dirname(__DIR__).'/admin/views/marketing-m7-dev-studio.php');
 $ok(str_contains($view,'draft_rule_editor')&&str_contains($view,'value="advanced"'),'advanced JSON fallback available');
 $ok(str_contains($view,'data-rule-type="spend_save"')&&str_contains($view,'data-rule-type="bogo"')&&str_contains($view,'data-rule-type="bundles"')&&str_contains($view,'data-rule-type="tiered"'),'all four runtime draft types have visual controls');
-$ok(str_contains($view,'Gift delivery remains disabled.'),'gift disabled visible');
+$ok(str_contains($view,'赠品发放仍未启用。'),'gift disabled visible');
 $ok(str_contains($handler,'Andy_Commerce_Marketing_V2_Rule_Fields::normalize')&&str_contains($handler,'check_admin_referer'),'server normalizer + nonce gate');
 $ok(str_contains($handler,"'advanced'")&&str_contains($handler,'json_decode'),'old JSON contracts retained');
 $ok(str_contains($studio,"marketing-v2-rule-editor.php")&&str_contains($studio,"m7_preview"),'integrated with existing Studio and preview');

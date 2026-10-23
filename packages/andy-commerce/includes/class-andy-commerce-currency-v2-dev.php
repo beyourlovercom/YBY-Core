@@ -1,6 +1,7 @@
 <?php
 /**
- * Currency OS V2 C1: Dev-only visual administration & demo shortcode.
+ * Currency OS V2 C1: Dev-only visual administration and explicit shortcode.
+ * The Footer template controls shortcode placement; no automatic injection.
  * Not a real WooCommerce multi-currency checkout, pricing, or settlement engine.
  */
 if (!defined('ABSPATH')) exit;
@@ -38,10 +39,8 @@ final class Andy_Commerce_Currency_V2_Dev {
     static function boot(): void {
         // WP harnesses sometimes omit optional hook APIs; full WP always has them.
         if(function_exists('add_shortcode'))add_shortcode('andy_currency_switcher',[__CLASS__,'shortcode']);
-        if(function_exists('add_action')){
-            add_action('wp_footer',[__CLASS__,'dev_frontend_preview'],99);
-            if(function_exists('is_admin')&&is_admin())
-                add_action('admin_post_andy_currency_v2_save',[__CLASS__,'save']);
+        if(function_exists('add_action') && function_exists('is_admin') && is_admin()){
+            add_action('admin_post_andy_currency_v2_save',[__CLASS__,'save']);
         }
     }
     static function save(): void {
@@ -92,12 +91,7 @@ final class Andy_Commerce_Currency_V2_Dev {
             .'font-size:11px!important;font-weight:400!important;line-height:20px!important;'
             .'color:#353135!important;vertical-align:middle!important}'
             .'.ac-demo-switcher select:focus-visible{outline:2px solid #96394b;outline-offset:1px}'
-            .'.ac-currency-front-test{position:fixed;right:12px;bottom:12px;z-index:99999999;'
-            .'display:inline-flex!important;align-items:center;width:max-content;max-width:calc(100vw - 24px);'
-            .'height:auto;margin:0!important;padding:0!important;border:0!important;'
-            .'background:transparent!important;box-shadow:none!important;'
-            .'border-radius:0!important;gap:0!important}'
-            .'@media(max-width:640px){.ac-currency-front-test{right:8px;bottom:8px;max-width:calc(100vw - 16px)}}'
+
             .'</style>';
     }
     static function shortcode($atts=[]): string {
@@ -125,14 +119,5 @@ final class Andy_Commerce_Currency_V2_Dev {
             echo '<option value="'.esc_attr($code).'">'.esc_html($label).'</option>';
         echo '</select></span>';
         return (string)ob_get_clean();
-    }
-    static function dev_frontend_preview(): void {
-        if(!self::access() || !isset($_GET['ac_currency_preview'])
-            || sanitize_key(wp_unslash($_GET['ac_currency_preview']))!=='1')return;
-        // A single content-sized, approximately 69–77 x 26px control on Dev Chrome; no surrounding card or text. The
-        // preview stays admin-only on Dev and never touches real Woo prices.
-        echo '<span class="ac-currency-front-test" aria-label="Currency OS Dev-only selector preview">';
-        echo do_shortcode('[andy_currency_switcher style="compact" show_flag="yes" show_symbol="yes" show_code="yes"]');
-        echo '</span>';
     }
 }

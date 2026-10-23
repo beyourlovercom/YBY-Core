@@ -24,7 +24,7 @@ $n=0;
 function ok($value,$label){global $n;$n++;if(!$value)throw new RuntimeException('Currency V2 failed: '.$label);}
 Andy_Commerce_Currency_V2_Dev::boot();
 ok(isset($GLOBALS['shortcodes']['andy_currency_switcher']),'registered shortcode');
-ok(isset($GLOBALS['hooks']['wp_footer']),'frontend test hook');
+ok(!isset($GLOBALS['hooks']['wp_footer']),'no automatic footer hook');
 ok(Andy_Commerce_Currency_V2_Dev::access(),'authorized Dev admin');
 $basic=Andy_Commerce_Currency_V2_Dev::shortcode([]);
 foreach(['USD','EUR','GBP','AUD','CAD'] as $c)ok(str_contains($basic,$c),'currency '.$c);
@@ -70,16 +70,14 @@ ok(str_contains($php, 'if($section===\'manage\')'), 'tab-isolated saving');
 ok(!str_contains($php,'woocommerce_cart_calculate_fees'),'no Woo campaign writes');
 ok(!str_contains($php,'woocommerce_before_calculate_totals'),'no Woo product writes');
 ok(!str_contains($php,'setcookie('),'no shopper currency cookie');
-$_GET['ac_currency_preview']='1';
-ob_start();
-Andy_Commerce_Currency_V2_Dev::dev_frontend_preview();
-$rendered=ob_get_clean();
-ok(str_contains($rendered,'ac-currency-front-test'),'real storefront preview wrapper');
-ok(substr_count($rendered,'<select')===1,'single currency selector only');
-ok(!str_contains($rendered,'<h3') && !str_contains($rendered,'<p>'),'no overlay heading or paragraph');
-ok(!str_contains($rendered,'<strong') && !str_contains($rendered,'<small>'),'no sample price or notes');
-ok(!str_contains($rendered,'Shortcode UAT'),'old expanded UAT title removed');
+// Footer-only contract: no implicit rendering on any wp_footer invocation.
+ok(!str_contains($php,"add_action('wp_footer'"),'not hooked into wp_footer');
+ok(!str_contains($php,'function dev_frontend_preview'),'old injected preview removed');
+ok(!str_contains($php,'position:fixed'),'no floating overlay CSS');
+ok(!str_contains($php,'ac-currency-front-test'),'no floating host markup');
+ok(!str_contains($php,'ac_currency_preview'),'old auto-preview GET trigger removed');
+ok(str_contains($view,'Footer 底部') && str_contains($view,'实际使用的 Footer 模板'),'Dev admin explains template-based Footer shortcode placement');
+ok(substr_count($compact,'<select')===1,'one native select for template placement');
 ok(str_contains($php,'margin:0!important')&&str_contains($php,'padding:0!important'),'zero outer-spacing CSS');
-unset($_GET['ac_currency_preview']);
 
 echo "PASS Currency V2 Dev-only Admin & Shortcode: {$n} assertions\n";

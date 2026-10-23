@@ -41,7 +41,7 @@ $ok(str_contains($source,"'active'=>false")&&!str_contains($source,"'active'=>tr
 $ok(!str_contains($entry,'woocommerce_cart_calculate_fees')&&!str_contains($entry,'woocommerce_package_rates'),'no double discount/shipping runtime hooks');
 $view=file_get_contents(dirname(__DIR__).'/admin/views/marketing-m7-dev-studio.php');
 $ok(str_contains($view,'wp_nonce_field')&&str_contains($view,'esc_attr'),'form CSRF and escaping');
-$ok(str_contains($view,'SIMULATION ONLY')&&str_contains($view,'Actual discount applied:'),'UAT clearly identifies simulation');
+$ok(str_contains($view,'仅模拟：')&&str_contains($view,'实际优惠已执行：'),'UAT clearly identifies simulation');
 // Execute the real handler permission/nonce guard in isolation without POST
 // or DB writes, then confirm both HTML nonce actions match exactly.
 $guard=new ReflectionMethod(Andy_Commerce_M7_Draft_Studio::class,'require_authority');

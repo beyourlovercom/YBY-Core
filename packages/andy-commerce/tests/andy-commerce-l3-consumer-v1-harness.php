@@ -20,7 +20,7 @@ $admin = new Andy_Commerce_Admin();
 $admin->add_admin_menu();
 $check( $GLOBALS['currency_l3_filter'][0] === 'andy_core_l3_external_items'
     && $GLOBALS['currency_l3_filter'][3] === 2, 'consumer hook declared during native admin_menu' );
-$check( count( Andy_Commerce_Admin::supported_tabs() ) === 6, 'controller-owned real tab allowlist' );
+$check( count( Andy_Commerce_Admin::supported_tabs() ) === 10, 'controller-owned real tab allowlist' );
 $items = Andy_Commerce_Admin::register_l3_items( array(), 'andy-commerce' );
 $check( count( $items ) === 1 && $items[0]['title'] === '多币种'
     && $items[0]['after'] === 'settings', 'Commerce declares Currency after Settings' );

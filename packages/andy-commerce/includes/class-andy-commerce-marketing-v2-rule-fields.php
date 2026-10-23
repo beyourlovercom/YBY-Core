@@ -80,7 +80,12 @@ final class Andy_Commerce_Marketing_V2_Rule_Fields {
             return ['tiers'=>$tiers];
         case 'free_gift':
             // Stored as a draft only. Existing M8 evaluator never awards a gift.
-            return ['product_id'=>self::positive($fields['product_id']??null,2147483647)];
+            $threshold=self::minor($fields['threshold']??null);
+            if ($threshold<=0) throw new InvalidArgumentException('Gift threshold must be positive USD.');
+            return [
+                'threshold_minor'=>$threshold,
+                'product_id'=>self::positive($fields['product_id']??null,2147483647),
+            ];
         }
         throw new InvalidArgumentException('Unsupported marketing rule.');
     }
