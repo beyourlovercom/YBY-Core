@@ -1,7 +1,7 @@
 # Andy Core — Controlled L3 Menu Registry V1 (Dev-first contract)
 
 **Scope:** one-time foundation for existing Andy Core WordPress L1/L2 navigation.
-**Status:** Source Draft; not merged, not installed on Dev, not released.
+**Status (2026-10-23):** Draft GitHub PR #206, Dev-only installed and functionally verified, Owner desktop visual PASS. Not merged to main, not released as Stable, not deployed on WWW. Restricted-role Dev login UAT remains pending.
 **API:** `andy_core_l3_external_items` filter, collected at native L3 rendering. No Core business tabs need to be hardcoded for future supported extensions.
 
 ## Contract for a business plugin
@@ -47,11 +47,11 @@ Core only ever builds `admin_url('admin.php?page=andy-commerce&tab=currency-os')
 - Roles restricted to Newsletter/Mail/Inquiry cannot use the Woo host. Page owners MUST retain their existing endpoint cap/nonces, module gates and valid-tab allowlist.
 - This is a contract between **trusted installed WordPress PHP plugins**. A malicious PHP plugin has full WordPress execution privileges, so no filter can provide cryptographic plugin-origin isolation. V1 protects declarative mistakes/overreach; it does not sandbox untrusted PHP.
 
-## Integration with Currency PR #199 (not yet applied)
+## Integration with Currency PR #199 (Dev-only applied; source merge pending)
 
-PR #199 is stacked on an independent Marketing branch. Do **not** merge its entire tree into Core V1 or hand-edit its branch in parallel.
+PR #199 is stacked on an independent Marketing branch. PR #206 (based on Currency/Footer-only head `c1ec48c2f715d4e34c807c5d303e0f03bf86ec65`) already reconciles the Core and Commerce adapters for Dev. Keep future Commerce builds based on the latest PR #199 + PR #206 adapter; deploying a Currency-only ZIP without the adapter will erase the registered menu. Do **not** merge PR #199's business tree into the Core V1 foundation or hand-edit the active Currency branch in parallel.
 
-Integration commit on the Currency side must:
+Integration contract currently implemented in Draft PR #206:
 1. Register the sample declaration above in the Commerce plugin.
 2. Have `route_check` use the genuine Commerce currency tab controller and existing Dev-only `access()` gate.
 3. Remove the transient `Andy_Commerce_Currency_V2_Dev` branch hardcoded in `admin/class-yby-andy-os-navigation.php` from PR #199 during eventual composite reconciliation.
@@ -62,4 +62,6 @@ Integration commit on the Currency side must:
 
 `php tests/andy-core-l3-registry-v1-harness.php` checks permissions, real WP page registration, deterministic order, invalid URL/HTML, cross-page claims, missing routes, deactivation, and Commerce-only new-tab declarations. Existing `tests/*-harness.php` and Andy Commerce harnesses run in the Core Regression workflow.
 
-**DoD still pending** until real Dev WordPress (PC/Desktop only) UAT, actual Core/Commerce installed-file SHA checks, negative user-role tests, rollback rehearsal, and Issue #196 closure notes. No main merge / Stable / WWW / real order or payment actions are authorized.
+**Current verified evidence:** Dev WordPress Core 2.2.11 + Commerce 1.0.8 active, exact installed source fingerprints: Core nav `8a34d409`, Core L3 registry `6bdf01fc`, Commerce admin `c4ae412c` (FNV-1a-32; do not confuse with SHA256). Real authenticated Dev HTTP 200 on Commerce overview, Currency, FX, legacy Ledger, and Marketing; exactly one Currency L3 item; six Currency tabs. Owner explicitly approved desktop visual UAT on 2026-10-23. Rollback plugin ZIP hashes and Dev candidate manifest were preserved on the China Mac (see Issue #196). No real order/payment/Cron/email tests were run.
+
+**Remaining gates:** isolated genuine WordPress/MySQL restricted-role CI (subscriber/editor), then any required final Dev non-admin login/direct-route negative UAT using only authorized disposable test accounts; no customer-account reuse. The test accounts in GitHub Actions disposable WordPress are **not Dev accounts**. Only close the final security gate when evidence supports it. Before any merge, reconcile current exact heads and record a fresh review. Main merge, Stable release and WWW deployment each require independent Owner approval.
