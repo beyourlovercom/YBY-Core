@@ -9,6 +9,10 @@ if (getenv('AICC_ALLOW_SANDBOX_WOO_WRITES') !== '1'
     || !defined('WP_HTTP_BLOCK_EXTERNAL') || !WP_HTTP_BLOCK_EXTERNAL) {
     throw new RuntimeException('HARD_STOP_NOT_EPHEMERAL_LOCAL_SANDBOX');
 }
+$outputDir=dirname(__DIR__).'/logs';
+if(!is_dir($outputDir)||!is_writable($outputDir)) {
+    throw new RuntimeException('M13_REPORT_PATH_MISSING_COPY_TO_ISOLATED_TOOLS_DIR');
+}
 require_once WP_PLUGIN_DIR.'/andy-commerce/includes/class-andy-commerce-m12-woo-six-shadow.php';
 $gatewayKeys=array_keys(WC()->payment_gateways()->payment_gateways());
 if ($gatewayKeys !== ['cod']) {

@@ -26,3 +26,14 @@ All `WC_Order` amounts reconcile to the respective native cart totals, remain US
 
 ## Remaining P5/P6
 P5 true Woo plugin-managed six-rule runtime must be explicitly designed and separately sandbox-gated, including Woo coupon/line allocation, usage limits, collisions, gift inventory and refunds; Checkout Blocks/classic, HPOS and zones require more evidence. P6 test gateway credentials, payment modes, 3DS failures, FX settlement snapshots, provider refund and isolated webhook callbacks remain unverified. Do not mark P5/P6 fully PASS or change WWW/main/Stable. Test user #208 remains untouched due 88 associated posts.
+
+## Reproduction (explicit isolated test only)
+On the **dedicated** U.S. Mac mini local sandbox, copy the test driver to the isolated tools directory, ensure the isolated logs directory exists, and run WP-CLI with the opt-in environment variable:
+
+```bash
+base="$HOME/AI/uat/andy-commerce-p5p6-20261023"
+cp packages/andy-commerce/tests/sandbox/p5-m13-local-execution-proof.php "$base/tools/p5-m13-local-execution-proof.php"
+AICC_ALLOW_SANDBOX_WOO_WRITES=1 php "$base/tools/wp-cli.phar" eval-file "$base/tools/p5-m13-local-execution-proof.php" --path="$base/site"
+```
+
+Requires a genuine isolated dataset and should **not** be invoked on Dev/WWW. The driver verifies local database, URL, environment, gateway isolation and report path before creating fixtures. The GitHub ZIP contract explicitly asserts this file is **absent** from the distributable ZIP.
