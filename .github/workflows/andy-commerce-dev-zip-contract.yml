@@ -13,6 +13,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4.2.2
+      - name: Sole Commerce Dev publisher contract
+        run: |
+          bash -n scripts/prepare-andy-commerce-dev-release.sh
+          test -s packages/andy-commerce/AGENTS.md
+          grep -Fq 'feat/marketing-m10-policy-m9-bridge-dev-20261023' scripts/prepare-andy-commerce-dev-release.sh
+          grep -Fq 'feat/currency-c2-c3-shadow-preview-20261023' scripts/prepare-andy-commerce-dev-release.sh
+          grep -Fq 'RELEASE_DENIED:' scripts/prepare-andy-commerce-dev-release.sh
       - name: Marketing M7–M10 pure simulations, lifecycle and Dev rendering
         run: |
           php packages/andy-commerce/tests/marketing-m7-draft-security-harness.php
