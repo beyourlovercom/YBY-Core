@@ -21,6 +21,7 @@ jobs:
           php packages/andy-commerce/tests/currency-c2c3-reconcile-harness.php
           php packages/andy-commerce/tests/currency-c3-cart-snapshot-harness.php
           php packages/andy-commerce/tests/currency-c3-dev-zone-evidence-harness.php
+          php packages/andy-commerce/tests/currency-c3-coupon-boundary-harness.php
           php packages/andy-commerce/tests/currency-os-v1-shadow-harness.php
           php packages/andy-commerce/tests/currency-os-m2-reference-fx-harness.php
           php packages/andy-commerce/tests/version-sync-v102-harness.php
