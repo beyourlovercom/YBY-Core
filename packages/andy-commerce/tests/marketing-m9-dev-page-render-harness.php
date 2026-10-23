@@ -55,15 +55,15 @@ foreach($codes as $code) {
             'm9_discount'=>'15','m9_gift_threshold'=>'99',
             'm9_discount_threshold'=>'169','m9_reward'=>'20',
             'm9_extra_threshold'=>'129','m9_extra_reward'=>'10']);
-        m9pageCheck(str_contains($html,'Marketing OS · USD Multi-Rule Studio'),
+        m9pageCheck(str_contains($html,'营销 OS · 美元多规则工作台'),
             "$code/$zone M9 WordPress admin view renders");
         m9pageCheck(str_contains($html,'$165.00') && str_contains($html,'$153.00'),
             "$code/$zone inactive USD M7 draft $12 beats built-in $10: final USD153");
-        m9pageCheck(str_contains($html,'OFF · never award'),
+        m9pageCheck(str_contains($html,'未启用 · 不发放'),
             "$code/$zone awards remain off");
         m9pageCheck(str_contains($html,'draft_id_123') && !str_contains($html,'EUR draft excluded'),
             "$code/$zone compatible inactive USD M7 draft projection");
-        m9pageCheck(str_contains($html,'No Woo rate changed'),
+        m9pageCheck(str_contains($html,'未修改 Woo 运费'),
             "$code/$zone native shipping fee untouched");
         m9pageCheck(str_contains($html,'name="m9_currency"')
             && str_contains($html,'name="action" value="andy_commerce_m7_save_draft"'),
@@ -75,22 +75,22 @@ foreach($codes as $code) {
 $html=renderM9(['m9_currency'=>'USD','m9_zone'=>'3','m9_gross'=>'180','m9_discount'=>'5']);
 m9pageCheck(str_contains($html,'$175.00') && str_contains($html,'$155.00'),
     'USD175 before M9 off20 means USD155 after');
-m9pageCheck(str_contains($html,'Not qualified / unverified'),
+m9pageCheck(str_contains($html,'未达标或待验证'),
     'Zone3 native free shipping is not unlocked after USD20 award');
 $html=renderM9(['m9_currency'=>'<script>','m9_zone'=>'999',
     'm9_gross'=>['array'=>'attack'],'m9_reward'=>'0']);
-m9pageCheck(str_contains($html,'Marketing OS · USD Multi-Rule Studio'),
+m9pageCheck(str_contains($html,'营销 OS · 美元多规则工作台'),
     'Malformed GET parameters safely fallback without runtime crash');
 $GLOBALS['testPermission']=false;
 $html=renderM9(['m9_currency'=>'USD']);
-m9pageCheck(str_contains($html,'restricted to authorized Dev administrators')
-    && !str_contains($html,'Independent Marketing OS rules'),
+m9pageCheck(str_contains($html,'多规则预览仅限获得授权的 Dev 管理员使用。')
+    && !str_contains($html,'独立营销规则'),
     'non-admin cannot see currency/marketing preview');
 $GLOBALS['testPermission']=true;
 $GLOBALS['testHost']='www.beyourlover.com';
 $html=renderM9(['m9_currency'=>'USD']);
-m9pageCheck(str_contains($html,'restricted to authorized Dev administrators')
-    && !str_contains($html,'Independent Marketing OS rules'),
+m9pageCheck(str_contains($html,'多规则预览仅限获得授权的 Dev 管理员使用。')
+    && !str_contains($html,'独立营销规则'),
     'WWW always refuses M9 view');
 restore_error_handler();
 echo "PASS Marketing M9 Dev page: {$count} render assertions (5 currencies x 5 Woo zones), no WordPress writes\n";
