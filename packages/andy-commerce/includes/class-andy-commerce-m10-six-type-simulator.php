@@ -54,7 +54,12 @@ final class Andy_Commerce_M10_Six_Type_Simulator {
             'qualified_gifts'=>[],'evaluations'=>[],'reason'=>'no_qualifying_draft'];
         $country=$s['country']??null;$currency=$s['currency']??null;
         $coupon=$s['manual_coupon']??null;$rate=$s['fx_rate_micros']??null;$items=$s['items']??null;
-        if(($s['source']??null)!=='DEV_SYNTHETIC'||($s['trusted']??null)!==true
+        $inputSource=$s['source']??null;
+        $isNative=($inputSource==='WOO_NATIVE_READ_ONLY');
+        if(!in_array($inputSource,['DEV_SYNTHETIC','WOO_NATIVE_READ_ONLY'],true)
+            ||($isNative&&(($s['verified_native_woo']??null)!==true
+                ||!is_int($s['verified_eligible_usd_minor']??null)))
+            ||($s['trusted']??null)!==true
             ||!self::date($s['date_utc']??null)
             ||!in_array($currency,['USD','EUR','GBP','AUD','CAD'],true)
             ||!is_string($country)||!preg_match('/^[A-Z]{2}$/D',$country)
@@ -76,6 +81,10 @@ final class Andy_Commerce_M10_Six_Type_Simulator {
             $ids[$line['product_id']]=true;$total+=$line['discounted_line_minor'];
             if($total>1000000000){$out['reason']='invalid_cart_total';return $out;}
         }
+        if($isNative && $total !== $s['verified_eligible_usd_minor']){
+            $out['reason']='native_woo_mismatch';return $out;
+        }
+        $out['input_provenance']=$inputSource;
         $out['qualified_before_campaign_usd_minor']=$total;$candidates=[];
         foreach($drafts as $d){
             $id=is_array($d)?($d['id']??''):'';$type=is_array($d)?($d['type']??''):'';

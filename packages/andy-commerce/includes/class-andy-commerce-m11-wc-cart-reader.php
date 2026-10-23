@@ -42,6 +42,7 @@ final class Andy_Commerce_M11_WC_Cart_Reader {
             return (int) round(((float) $value) * 100);
         };
         $verifiedLines = [];
+        $catalogLines = [];
         $totalNet = 0;
         foreach ($items as $key => $item) {
             if (!is_array($item) || !isset($classificationByCartKey[$key])
@@ -58,6 +59,12 @@ final class Andy_Commerce_M11_WC_Cart_Reader {
             if (!is_int($qty) || $qty < 1 || $qty > 100) {
                 throw new InvalidArgumentException('Invalid Woo quantity');
             }
+            $productId = $item['product_id'] ?? null;
+            $product = $item['data'] ?? null;
+            if (!is_int($productId) || $productId < 1
+                || !($product instanceof WC_Product) || !$product->exists()) {
+                throw new InvalidArgumentException('Unverified native Woo catalog product');
+            }
             $subtotal = $minor($item['line_subtotal'] ?? null);
             $net = $minor($item['line_total'] ?? null);
             if ($subtotal < $net || $subtotal % $qty !== 0) {
@@ -70,6 +77,14 @@ final class Andy_Commerce_M11_WC_Cart_Reader {
                 'eligible_for_promotion' => $policy['eligible_for_promotion'],
                 'special_shipping' => $policy['special_shipping'],
                 'free_gift' => $policy['free_gift'],
+            ];
+            $catalogLines[] = [
+                'product_id' => $productId,
+                'quantity' => $qty,
+                'discounted_line_minor' => $net,
+                'catalog_present' => true,
+                'eligible_for_promotion' => $policy['eligible_for_promotion']
+                    && !$policy['special_shipping'] && !$policy['free_gift'],
             ];
             $totalNet += $net;
         }
@@ -105,6 +120,7 @@ final class Andy_Commerce_M11_WC_Cart_Reader {
                 'tax_usd_minor' => $tax,
                 'lines' => $verifiedLines,
             ],
+            'catalog_lines' => $catalogLines,
             'shipping_zone_id' => $zoneId,
             'applied_native_coupon_codes' => array_values($applied),
             'native_merchandise_net_usd_minor' => $merchandiseNet,

@@ -5,6 +5,7 @@ $GLOBALS['m11_currency']='USD';
 $GLOBALS['m11_decimals']=2;
 function get_woocommerce_currency(): string {return $GLOBALS['m11_currency'];}
 function wc_get_price_decimals(): int {return $GLOBALS['m11_decimals'];}
+class WC_Product { public function exists(): bool {return true;} }
 class WC_Cart {
     public function __construct(public array $fixture) {}
     public function get_cart(): array {return $this->fixture['cart'];}
@@ -30,7 +31,7 @@ $n=0;
 function passed(bool $v,string $name): void {global $n;$n++;if(!$v)throw new RuntimeException('FAIL '.$name);}
 function rejects(callable $callback,string $name): void {try {$callback();throw new RuntimeException('unexpected PASS '.$name);}catch(InvalidArgumentException $e) {passed(true,$name);}}
 $fixture=[
-'cart'=>['abc'=>['quantity'=>1,'line_subtotal'=>120,'line_total'=>95]],
+'cart'=>['abc'=>['quantity'=>1,'line_subtotal'=>120,'line_total'=>95,'product_id'=>101,'data'=>new WC_Product()]],
 'coupons'=>['aicc-p5-only-25'],'fee'=>0,'net'=>95,'shipping'=>10,'tax'=>8.4,'total'=>113.4,
 'packages'=>[['destination'=>['country'=>'US']]]
 ];
