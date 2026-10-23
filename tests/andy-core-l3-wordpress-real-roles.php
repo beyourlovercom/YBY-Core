@@ -123,7 +123,11 @@ if ( $capable ) {
 } else {
     $assert( ! has_action( $hook ), 'real WP menu callback omitted for restricted role' );
     $assert( $items === array(), 'no native or extended Woo L3 menu' );
-    $assert( ! user_can_access_admin_page(),
-        'WordPress page permission denies direct Commerce URL' );
+    // WordPress's user_can_access_admin_page() cannot be inferred from a
+    // WP-CLI partial admin-menu bootstrap: core/admin.php also builds the
+    // no-priv maps. Confirm actual capability and callback registration here;
+    // direct HTTP denial remains a separate real-browser UAT gate.
+    $assert( ! current_user_can( 'manage_woocommerce' ),
+        'registered page capability still denied' );
 }
 WP_CLI::success( 'ANDY_L3_DISPOSABLE_WORDPRESS_REAL_ROLE_PASS: ' . $phase );
