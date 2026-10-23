@@ -765,8 +765,9 @@ function testSessionStorageHydrationAndTracking() {
 
   runtime.window.YBYThankYou.init();
 
-  assert(runtime.dataLayer.length === 3, "Second Thank You init may add one page_view only.");
-  assert(runtime.dataLayer[2].event === "thank_you_page_view", "Second init must add only thank_you_page_view.");
+  assert(runtime.dataLayer.length === 2, "Second Thank You init must not add any duplicate page_view.");
+  assert(runtime.dataLayer.filter((x) => x.event === "generate_lead").length === 1,
+    "Repeated init must preserve exactly one confirmed Lead conversion.");
 }
 
 function testBottleThankYouVerifiedExactlyOnce() {
