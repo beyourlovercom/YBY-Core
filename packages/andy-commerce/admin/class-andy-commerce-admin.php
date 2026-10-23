@@ -104,7 +104,11 @@ class Andy_Commerce_Admin {
 	public function render_page() {
 		// Andy Core shell is optional: Commerce remains an independent plugin.
 		if ( class_exists( 'YBY_Andy_Admin_Shell_V22' ) ) {
-			YBY_Andy_Admin_Shell_V22::render( self::PAGE_SLUG, 'Commerce OS',
+			$activeTab = isset($_GET['tab']) && is_scalar($_GET['tab'])
+				? sanitize_key(wp_unslash($_GET['tab'])) : 'overview';
+			$heading = 'marketing-promotions' === $activeTab ||
+				0 === strpos($activeTab,'marketing-') ? '营销 OS' : 'Commerce OS';
+			YBY_Andy_Admin_Shell_V22::render( self::PAGE_SLUG, $heading,
 				function () { $this->render_page_original(); } );
 			return;
 		}

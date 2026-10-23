@@ -57,6 +57,8 @@ $chosenId=$chosen && !$copySource ? ($chosen['id']??'') : '';
 $revision=$chosen && !$copySource ? (int)($chosen['revision']??0) : 0;
 $labelTypes=array('spend_save'=>'满额优惠','free_gift'=>'满额赠品',
     'bogo'=>'买赠活动','bundles'=>'组合优惠','tiered'=>'阶梯优惠');
+$operationResults=array('saved'=>'已保存','archived'=>'已归档',
+    'invalid'=>'输入数据无效','conflict'=>'草稿版本冲突','limit'=>'草稿数量达到上限');
 ?>
 <?php
 // Native Core Shell owns the .wrap when active; otherwise WordPress needs
@@ -112,12 +114,13 @@ $heading=array('marketing-promotions'=>'活动列表','marketing-create'=>'新�
     'marketing-templates'=>'活动模板','marketing-simulate'=>'规则模拟','marketing-logs'=>'执行记录')[$tab];
 ?>
 <div class="ac-head">
- <div><h1><?php echo esc_html($heading); ?></h1><p class="ac-muted">Andy Core → 营销 · Dev-only 草稿工作台；所有活动均未启用，规则模拟不影响真实订单。</p></div>
+ <div><h1><?php echo esc_html($heading); ?></h1><p class="ac-muted">Andy Core → 营销 · 开发环境草稿工作台；所有活动均未启用，规则模拟不影响真实订单。</p></div>
  <span class="ac-badge">开发环境 · 未启用</span>
 </div>
 <?php if ($tab==='marketing-promotions'): ?>
 <?php if(isset($_GET['m7_result'])): ?>
- <div class="notice notice-info inline"><p>草稿操作完成：<?php echo esc_html(sanitize_key(wp_unslash($_GET['m7_result']))); ?>。所有活动保持未启用。</p></div>
+ <div class="notice notice-info inline"><p>草稿操作完成：<?php $operationKey=sanitize_key(wp_unslash($_GET['m7_result']));
+echo esc_html($operationResults[$operationKey]??'未确认操作'); ?>。所有活动保持未启用。</p></div>
 <?php endif; ?>
 <div class="ac-grid" style="margin-bottom:16px">
  <div class="ac-stat"><span>草稿数量</span><strong><?php echo esc_html((string)count($all)); ?></strong></div>
@@ -203,7 +206,7 @@ $heading=array('marketing-promotions'=>'活动列表','marketing-create'=>'新�
  <div class="ac-preview-row"><span>核算基础</span><b>折扣后 USD 合格商品金额</b></div>
  <div class="ac-preview-row"><span>实际订单</span><b>未接线</b></div>
  <div class="ac-preview-row"><span>货币显示</span><b>Currency OS 负责</b></div>
- <p class="ac-muted">规则详细金额及区域资格请打开「规则模拟」查看。百分比与赠品统一模拟须等待 B3–B4 代码集成。</p>
+ <p class="ac-muted">前往「规则模拟」查看固定金额、百分比折扣与赠品资格；模拟不会修改实际优惠、库存或运费。</p>
  <a class="button" href="<?php echo esc_url($base('marketing-simulate')); ?>">打开规则模拟</a>
  </div></aside></div>
 
