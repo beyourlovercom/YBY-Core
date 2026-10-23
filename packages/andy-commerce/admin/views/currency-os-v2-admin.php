@@ -104,7 +104,7 @@ $toggle=static function($key,$label,$value){
       <div class="acv2-line"><?php $toggle('product_switcher','在商品详情页自动显示',$cfg['product_switcher']);?></div>
       <p>默认短代码</p><code>[andy_currency_switcher]</code>
       <p>Header / Bricks 紧凑样式</p><code>[andy_currency_switcher style="compact" show_flag="yes" show_symbol="yes" show_code="yes"]</code>
-      <p><a target="_blank" rel="noopener" href="<?php echo esc_url(add_query_arg('ac_currency_preview','1',home_url('/')));?>">打开 Dev 前台真实短代码预览 ↗</a></p>
+      <p class="muted">使用 Bricks Footer 模板的「Shortcode」元素放入上方短代码。控件只在设置了短代码的位置显示，不再通过 wp_footer 注入右下角悬浮入口。Dev 测试期间仅有已登录管理员可见。</p>
     </section>
     <section class="acv2-card"><h2>切换器外观</h2><p class="muted">采用已审核通过的展示默认值。</p>
       <?php foreach(['flag'=>'显示国旗','name'=>'显示货币名称','symbol'=>'显示货币符号','code'=>'显示币种代码','small'=>'使用 Small 小尺寸'] as $k=>$label):?><div class="acv2-line"><?php $toggle($k,$label,$cfg[$k]);?></div><?php endforeach;?>
