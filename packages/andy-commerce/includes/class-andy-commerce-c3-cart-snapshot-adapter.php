@@ -9,6 +9,9 @@ declare(strict_types=1);
 if (!defined('ABSPATH')) { exit; }
 final class Andy_Commerce_C3_Cart_Snapshot_Adapter {
     public static function quote_request(array $snapshot, string $currency, int $fxMicro, string $source, int $timestamp): array {
+        if (($snapshot['cart_empty'] ?? false) === true || ($snapshot['verified_woo_data'] ?? false) !== true) {
+            throw new InvalidArgumentException('Empty or unverified Woo cart snapshot');
+        }
         if (($snapshot['base_currency'] ?? null)!=='USD'
             || !is_array($snapshot['lines'] ?? null)
             || count($snapshot['lines'])<1 || count($snapshot['lines'])>100

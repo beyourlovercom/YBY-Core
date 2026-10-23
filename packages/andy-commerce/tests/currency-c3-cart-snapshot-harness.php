@@ -8,7 +8,7 @@ require dirname(__DIR__).'/includes/class-andy-commerce-c3-cart-snapshot-adapter
 $n=0;
 $ok=static function(bool $value,string $label) use (&$n):void{$n++;if(!$value)throw new RuntimeException($label);};
 $cart=[
- 'base_currency'=>'USD','threshold_usd_minor'=>6900,'shipping_usd_minor'=>3000,'tax_usd_minor'=>0,
+ 'base_currency'=>'USD','verified_woo_data'=>true,'threshold_usd_minor'=>6900,'shipping_usd_minor'=>3000,'tax_usd_minor'=>0,
  'lines'=>[
   ['quantity'=>1,'unit_usd_minor'=>9900,'applied_discount_usd_minor'=>1000,'eligible_for_promotion'=>true,'free_gift'=>false,'special_shipping'=>false],
   ['quantity'=>1,'unit_usd_minor'=>4000,'applied_discount_usd_minor'=>0,'eligible_for_promotion'=>true,'free_gift'=>false,'special_shipping'=>true],
@@ -27,6 +27,8 @@ foreach(['USD'=>1000000,'EUR'=>900000,'GBP'=>780000,'AUD'=>1500000,'CAD'=>135000
 }
 foreach([
  ['base_currency'=>'EUR'],
+ ['verified_woo_data'=>false],
+ ['cart_empty'=>true],
  ['lines'=>[['quantity'=>1]]],
  ['lines'=>[]],
  ['lines'=>array_fill(0,101,$cart['lines'][0])],
