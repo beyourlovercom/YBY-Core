@@ -12,14 +12,14 @@ $label = static function(string $title,string $field,string $value,string $hint=
 };
 ?>
 <style>
-#andy-commerce-m7-studio .ac-v2-form{border:1px solid #dbe6de;border-radius:10px;padding:16px;margin:14px 0;background:#fff;max-width:1280px;box-shadow:0 1px 3px rgba(25,60,32,.05)}
-#andy-commerce-m7-studio .ac-v2-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:12px 0}
-#andy-commerce-m7-studio .ac-v2-field{display:grid;gap:5px;min-width:0}
-#andy-commerce-m7-studio .ac-v2-field input,#andy-commerce-m7-studio .ac-v2-field select{box-sizing:border-box;width:100%;min-width:0;max-width:none;height:37px}
-#andy-commerce-m7-studio .ac-v2-field small{color:#646970;font-size:12px}
-#andy-commerce-m7-studio .ac-v2-note{color:#646970;font-size:12px;margin:6px 0}
-#andy-commerce-m7-studio .ac-v2-section[hidden],#andy-commerce-m7-studio .ac-v2-advanced[hidden]{display:none!important}
-@media(max-width:700px){#andy-commerce-m7-studio .ac-v2-form{padding:12px}#andy-commerce-m7-studio .ac-v2-fields{grid-template-columns:1fr}}
+:is(#andy-commerce-m7-studio,#andy-commerce-m10-workbench) .ac-v2-form{border:1px solid #dbe6de;border-radius:10px;padding:16px;margin:14px 0;background:#fff;max-width:1280px;box-shadow:0 1px 3px rgba(25,60,32,.05)}
+:is(#andy-commerce-m7-studio,#andy-commerce-m10-workbench) .ac-v2-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:12px 0}
+:is(#andy-commerce-m7-studio,#andy-commerce-m10-workbench) .ac-v2-field{display:grid;gap:5px;min-width:0}
+:is(#andy-commerce-m7-studio,#andy-commerce-m10-workbench) .ac-v2-field input,:is(#andy-commerce-m7-studio,#andy-commerce-m10-workbench) .ac-v2-field select{box-sizing:border-box;width:100%;min-width:0;max-width:none;height:37px}
+:is(#andy-commerce-m7-studio,#andy-commerce-m10-workbench) .ac-v2-field small{color:#646970;font-size:12px}
+:is(#andy-commerce-m7-studio,#andy-commerce-m10-workbench) .ac-v2-note{color:#646970;font-size:12px;margin:6px 0}
+:is(#andy-commerce-m7-studio,#andy-commerce-m10-workbench) .ac-v2-section[hidden],:is(#andy-commerce-m7-studio,#andy-commerce-m10-workbench) .ac-v2-advanced[hidden]{display:none!important}
+@media(max-width:700px){:is(#andy-commerce-m7-studio,#andy-commerce-m10-workbench) .ac-v2-form{padding:12px}:is(#andy-commerce-m7-studio,#andy-commerce-m10-workbench) .ac-v2-fields{grid-template-columns:1fr}}
 </style>
 <section class="ac-v2-form" id="andy-commerce-v2-rule-editor" aria-label="活动规则可视化编辑器">
     <h4 style="margin:0 0 10px;font-size:16px;color:#1e5437">活动规则 <small style="font-weight:400;color:#646970">· 营销 V2 预览</small></h4>
@@ -81,7 +81,14 @@ $label = static function(string $title,string $field,string $value,string $hint=
         </section>
         <section class="ac-v2-section" data-rule-type="free_gift" <?php if($rule_type!=='free_gift')echo 'hidden'; ?>>
             <p><strong>赠品发放仍未启用。</strong> 当前仅保存供后续审核的草稿，不会实际赠送商品。</p>
-            <div class="ac-v2-fields"><?php $label('未来赠品商品 ID','draft_rule_fields[free_gift][product_id]',(string)($rule_type==='free_gift'?($rule['product_id']??999):999)); ?></div>
+            <div class="ac-v2-fields">
+                <?php $label('赠品门槛（USD）','draft_rule_fields[free_gift][threshold]',
+                    $money($rule_type==='free_gift'?($rule['threshold_minor']??9900):9900),
+                    '只模拟资格；不会向 Woo 购物车添加赠品'); ?>
+                <?php $label('赠品商品 ID','draft_rule_fields[free_gift][product_id]',
+                    (string)($rule_type==='free_gift'?($rule['product_id']??''):''),
+                    '实际发布前需验证商品库存'); ?>
+            </div>
         </section>
     </div>
     <div class="ac-v2-advanced" hidden>
@@ -95,7 +102,7 @@ $label = static function(string $title,string $field,string $value,string $hint=
 <script>
 (function(){
     'use strict';
-    var root=document.getElementById('andy-commerce-m7-studio');
+    var root=document.getElementById('andy-commerce-m7-studio')||document.getElementById('andy-commerce-m10-workbench');
     var panel=document.getElementById('andy-commerce-v2-rule-editor');
     if(!root||!panel)return;
     var form=panel.closest('form');

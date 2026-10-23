@@ -21,11 +21,11 @@ final class Andy_Commerce_M7_Draft_Studio {
         return [
           'id_123'=>[
              'id'=>'id_123','name'=>'Dev inactive $139 discount','currency'=>'USD',
-             'active'=>false,'status'=>'draft','type'=>'spend_save','priority'=>10,
+             'active'=>false,'status'=>'draft','type'=>'spend_save','priority'=>10,'countries'=>['US'],
              'rule'=>['threshold_minor'=>13900,'discount_minor'=>1200]
           ],
           'id_456'=>[
-             'id'=>'id_456','name'=>'EUR draft excluded','currency'=>'EUR',
+             'id'=>'id_456','name'=>'EUR draft excluded','currency'=>'EUR','countries'=>['DE'],
              'active'=>false,'status'=>'draft','type'=>'spend_save','priority'=>10,
              'rule'=>['threshold_minor'=>13900,'discount_minor'=>800]
           ],
@@ -81,6 +81,10 @@ $html=renderM9(['m9_currency'=>'<script>','m9_zone'=>'999',
     'm9_gross'=>['array'=>'attack'],'m9_reward'=>'0']);
 m9pageCheck(str_contains($html,'营销 OS · 美元多规则工作台'),
     'Malformed GET parameters safely fallback without runtime crash');
+$html=renderM9(['m9_currency'=>'USD','m9_zone'=>'5',
+    'm9_country'=>'GB','m9_gross'=>'180','m9_discount'=>'15']);
+m9pageCheck(!str_contains($html,'draft_id_123') && str_contains($html,'$155.00'),
+    'US-only draft must not qualify simulated GB shopper');
 $GLOBALS['testPermission']=false;
 $html=renderM9(['m9_currency'=>'USD']);
 m9pageCheck(str_contains($html,'多规则预览仅限获得授权的 Dev 管理员使用。')

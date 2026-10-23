@@ -386,7 +386,47 @@ final class YBY_Andy_OS_Navigation {
 			$add( '品牌', 'admin.php?page=yby-brand-os', 'manage_options' );
 			$add( '社交登录', 'admin.php?page=yby-social-login', 'manage_options', 'social_login' );
 		}
-		return YBY_Andy_L3_Registry_V1::extend( $items, $page );
+		$items = YBY_Andy_L3_Registry_V1::extend( $items, $page );
+		// Marketing is a Core-owned L2 group; Commerce only supplies validated
+		// marketing-* L3 routes. Preserve all Commerce native tabs elsewhere.
+		if ( 'andy-commerce' === $page && 'andy-core-marketing' === self::active_second_level() ) {
+			$marketing_items = array();
+			foreach ( $items as $entry ) {
+				$query = parse_url( $entry['url'] ?? '', PHP_URL_QUERY );
+				parse_str( is_string( $query ) ? $query : '', $params );
+				$tab = $params['tab'] ?? '';
+				if ( ! is_string( $tab ) ||
+				     ( 'marketing-promotions' !== $tab && 0 !== strpos( $tab, 'marketing-' ) ) ) {
+					continue;
+				}
+				if ( 'marketing-promotions' === $tab ) { $entry['title'] = '活动列表'; }
+				$marketing_items[] = $entry;
+			}
+			return $marketing_items;
+		}
+		// Once the Marketing extension is available, keep the five
+		// Marketing views exclusively under their Marketing L2.
+		// Do not duplicate them in Commerce/交易 navigation.
+		if ( 'andy-commerce' === $page ) {
+			$has_marketing_extension = false;
+			foreach ( $items as $entry ) {
+				$query = parse_url($entry['url']??'',PHP_URL_QUERY);
+				parse_str(is_string($query)?$query:'',$params);
+				if ( 0 === strpos((string)($params['tab']??''),'marketing-') &&
+				     ($params['tab']??'') !== 'marketing-promotions' ) {
+					$has_marketing_extension=true;break;
+				}
+			}
+			if ( $has_marketing_extension ) {
+				$items=array_values(array_filter($items,static function($entry) {
+					$query=parse_url($entry['url']??'',PHP_URL_QUERY);
+					parse_str(is_string($query)?$query:'',$params);
+					$tab=(string)($params['tab']??'');
+					return $tab!=='marketing-promotions' && 0!==strpos($tab,'marketing-');
+				}));
+			}
+		}
+		return $items;
 	}
 
 	/** Scoped presentation only. Controllers remain independent. */
@@ -417,7 +457,8 @@ final class YBY_Andy_OS_Navigation {
 		if ( 'andy-commerce' === $page ) {
 			$tab = isset( $_GET['tab'] ) && is_scalar( $_GET['tab'] )
 				? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
-			return 'marketing-promotions' === $tab ? 'andy-core-marketing' : 'andy-core-commerce';
+			return ( 'marketing-promotions' === $tab || 0 === strpos( $tab, 'marketing-' ) )
+				? 'andy-core-marketing' : 'andy-core-commerce';
 		}
 		if ( in_array( $page, array( 'andy-business','andy-business-programs',
 			'andy-business-applications','andy-business-settings','andy-business-pages',

@@ -36,8 +36,13 @@ $ok($rule('bundles',$bundle)===['product_ids'=>[101,202],'percent_bp'=>1775],'bu
 $tier=['minimum_qty_1'=>'2','percent_1'=>'10.00','minimum_qty_2'=>'3','percent_2'=>'20.00','minimum_qty_3'=>'','percent_3'=>''];
 $ok($rule('tiered',$tier)===['tiers'=>[['minimum_qty'=>2,'percent_bp'=>1000],['minimum_qty'=>3,'percent_bp'=>2000]]],'tier mappings');
 $tier['minimum_qty_2']='2';$checkFail(fn()=> $rule('tiered',$tier),'tier nonascending denied');
-$ok($rule('free_gift',['product_id'=>'999'])===['product_id'=>999],'disabled free-gift draft only');
-$checkFail(fn()=> $rule('free_gift',['product_id'=>'999.0']),'gift ID integer only');
+$ok($rule('free_gift',['product_id'=>'999','threshold'=>'99.00'])===
+    ['threshold_minor'=>9900,'product_id'=>999],'gift threshold and product ID saved OFF');
+$checkFail(fn()=> $rule('free_gift',['product_id'=>'999']),
+    'legacy gift without threshold cannot be newly saved');
+$checkFail(fn()=> $rule('free_gift',['product_id'=>'999','threshold'=>'0']),
+    'gift requires positive threshold');
+$checkFail(fn()=> $rule('free_gift',['product_id'=>'999.0','threshold'=>'99']),'gift ID integer only');
 $checkFail(fn()=> $rule('broken',['x'=>'1']),'unsupported type denied');
 $checkFail(fn()=>Andy_Commerce_Marketing_V2_Rule_Fields::normalize('spend_save',[]),'missing form fields denied');
 $ok(Andy_Commerce_Marketing_V2_Rule_Fields::major(6900)==='69.00','old draft amounts presentable');

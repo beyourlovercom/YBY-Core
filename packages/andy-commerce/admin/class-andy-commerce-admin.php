@@ -14,15 +14,14 @@ class Andy_Commerce_Admin {
 	/** Controller-owned route allowlist. L3 cannot invent an unhandled tab. */
 	public static function supported_tabs() {
 		return array( 'overview', 'order-export', 'checkout-shipping',
-			'marketing-promotions', 'currency-os', 'settings' );
+			'marketing-promotions', 'marketing-create', 'marketing-templates',
+			'marketing-simulate', 'marketing-logs', 'currency-os', 'settings' );
 	}
 
 	/** Called from Andy Core V1 when building a native L3 rail. */
 	public static function register_l3_items( $items, $page ) {
-		if ( ! is_array( $items ) || self::PAGE_SLUG !== $page ||
-			 ! self::currency_l3_route_exists( 'currency-os', $page ) ) {
-			return $items;
-		}
+		if ( ! is_array( $items ) || self::PAGE_SLUG !== $page ) { return $items; }
+		if ( self::currency_l3_route_exists( 'currency-os', $page ) ) {
 		$items[] = array(
 			'id' => 'andy-commerce.currency-os',
 			'parent' => self::PAGE_SLUG,
@@ -33,7 +32,40 @@ class Andy_Commerce_Admin {
 			'after' => 'settings',
 			'route_check' => array( __CLASS__, 'currency_l3_route_exists' ),
 		);
+		}
+		// Register the four additional Marketing screens after Core's native
+		// marketing-promotions (rendered as 活动列表 while Marketing L2 active).
+		// These declarations do not add WP menus or change Currency behavior.
+		if ( self::marketing_l3_route_exists( 'marketing-create', $page ) ) {
+			foreach ( array(
+				'marketing-create' => '新建活动',
+				'marketing-templates' => '活动模板',
+				'marketing-simulate' => '规则模拟',
+				'marketing-logs' => '执行记录',
+			) as $tab => $title ) {
+				$items[] = array(
+					'id' => self::PAGE_SLUG . '.' . $tab,
+					'parent' => self::PAGE_SLUG,
+					'page' => self::PAGE_SLUG,
+					'title' => $title,
+					'tab' => $tab,
+					'capability' => 'manage_woocommerce',
+					'after' => 'marketing-promotions',
+					'route_check' => array( __CLASS__, 'marketing_l3_route_exists' ),
+				);
+			}
+		}
 		return $items;
+	}
+
+	/** No marketing UI or editable drafts on WWW; direct URL is also gated. */
+	public static function marketing_l3_route_exists( $tab, $page ) {
+		return self::PAGE_SLUG === $page &&
+			in_array( $tab, array('marketing-create','marketing-templates',
+				'marketing-simulate','marketing-logs'), true ) &&
+			class_exists('Andy_Commerce_M7_Draft_Studio') &&
+			current_user_can('manage_woocommerce') &&
+			Andy_Commerce_M7_Draft_Studio::dev_only();
 	}
 
 	/** The same Dev + role gate used by the real Currency controller. */
@@ -86,6 +118,24 @@ class Andy_Commerce_Admin {
 
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
 		if ( ! in_array( $tab, self::supported_tabs(), true ) ) { $tab = 'overview'; }
+
+		// Single Commerce controller; Andy Core owns visible L2/L3 registration.
+		// Dedicated Marketing pages are Dev-only and never touch live Woo.
+		if ( 0 === strpos( $tab, 'marketing-' ) && 'marketing-promotions' !== $tab ) {
+			if ( ! self::marketing_l3_route_exists( $tab, self::PAGE_SLUG ) ) {
+				wp_die( '此营销页面仅限获得授权的 Dev 管理员使用。', '', array('response'=>403) );
+			}
+			include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-m10-workbench.php';
+			return;
+		}
+		if ( 'marketing-promotions' === $tab &&
+		     class_exists('Andy_Commerce_M7_Draft_Studio') &&
+		     Andy_Commerce_M7_Draft_Studio::dev_only() &&
+		     ! isset($_GET['legacy_studio']) && ! isset($_GET['m9_preview']) &&
+		     ! isset($_GET['m45_preview']) ) {
+			include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/marketing-m10-workbench.php';
+			return;
+		}
 
 		// Dev-only M9: read-only multi-rule USD eligibility workbench.
 		if ('marketing-promotions' === $tab && isset($_GET['m9_preview']) && $_GET['m9_preview'] === '1') {

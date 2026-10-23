@@ -29,6 +29,13 @@ $currency = isset($_GET['m9_currency']) && is_string($_GET['m9_currency'])
     ? strtoupper(sanitize_key(wp_unslash($_GET['m9_currency']))) : 'EUR';
 if (!in_array($currency,Andy_Commerce_Currency_OS_V1::SUPPORTED,true)) $currency='EUR';
 $rates=['USD'=>1000000,'EUR'=>890000,'GBP'=>746500,'AUD'=>1421700,'CAD'=>1404200];
+// The simulation country is explicitly chosen, never inferred from a Woo zone.
+$selectedCountry=isset($_GET['m9_country']) && is_string($_GET['m9_country'])
+    ? strtoupper(sanitize_key(wp_unslash($_GET['m9_country']))) : 'US';
+if (!preg_match('/^[A-Z]{2}$/D',$selectedCountry)) $selectedCountry='US';
+$countryLabels=['US'=>'美国 US','CA'=>'加拿大 CA','GB'=>'英国 GB',
+    'DE'=>'德国 DE','FR'=>'法国 FR','AU'=>'澳大利亚 AU','HK'=>'香港 HK'];
+if (!isset($countryLabels[$selectedCountry])) $selectedCountry='US';
 $zone = isset($_GET['m9_zone']) && is_string($_GET['m9_zone']) ? $_GET['m9_zone']:'5';
 if (!in_array($zone,['0','1','3','4','5'],true)) $zone='5';
 $zoneDescriptions=['5'=>'美国本土及部分亚洲地区 · USD $69','4'=>'阿拉斯加／夏威夷 · USD $129',
@@ -62,7 +69,9 @@ if (class_exists('Andy_Commerce_M7_Draft_Studio')) {
             || ($draft['currency'] ?? null)!=='USD'
             || ($draft['active'] ?? null)!==false
             || ($draft['status'] ?? null)!=='draft'
-            || !is_array($draft['rule'] ?? null)) continue;
+            || !is_array($draft['rule'] ?? null)
+            || !is_array($draft['countries']??null)
+            || !in_array($selectedCountry,$draft['countries'],true)) continue;
         $dRule=$draft['rule'];$type=$draft['type']??'';
         if ($type!=='spend_save' && $type!=='free_gift') continue;
         if (!is_int($dRule['threshold_minor']??null)
@@ -74,12 +83,23 @@ if (class_exists('Andy_Commerce_M7_Draft_Studio')) {
             'active'=>false,'priority'=>(int)($draft['priority']??0),
             'threshold_usd_minor'=>$dRule['threshold_minor'],
         ];
-        if ($type==='spend_save' && is_int($dRule['discount_minor']??null)
-            && $dRule['discount_minor']>0 && $dRule['discount_minor']<=100000000) {
-            $extra['type']='discount';$extra['discount_usd_minor']=$dRule['discount_minor'];
-        } elseif ($type==='free_gift' && is_int($dRule['gift_product_id']??null)
-            && $dRule['gift_product_id']>0) {
-            $extra['type']='gift';$extra['gift_product_id']=$dRule['gift_product_id'];
+        if ($type==='spend_save') {
+            $fixed=$dRule['discount_minor']??null;
+            $percent=$dRule['percent_bp']??null;
+            if (is_int($fixed) && $fixed>0 && $fixed<=100000000 &&
+                $percent===null) {
+                $extra['type']='discount';$extra['discount_usd_minor']=$fixed;
+            } elseif (is_int($percent) && $percent>0 && $percent<=10000 &&
+                      $fixed===null) {
+                $extra['type']='discount';$extra['discount_percent_bp']=$percent;
+            } else continue;
+        } elseif ($type==='free_gift') {
+            // V2 uses product_id; pre-V2 JSON may contain gift_product_id.
+            // No explicit USD threshold => never grant simulated gift status.
+            $giftId=$dRule['product_id']??($dRule['gift_product_id']??null);
+            if (!is_int($giftId) || $giftId<=0 ||
+                $dRule['threshold_minor']<=0) continue;
+            $extra['type']='gift';$extra['gift_product_id']=$giftId;
         } else continue;
         $rules[]=$extra;++$loadedDrafts;
     }
@@ -93,7 +113,10 @@ try {
 $usd=static function(int $x):string {return '$'.number_format($x/100,2);};
 $symbols=['USD'=>'$','EUR'=>'€','GBP'=>'£','AUD'=>'A$','CAD'=>'C$'];
 $local=$symbols[$currency].number_format($preview['qualified_after_one_discount_local_minor']/100,2);
-$builderUrl=add_query_arg(['page'=>'andy-commerce','tab'=>'marketing-promotions','m9_preview'=>'1'],admin_url('admin.php'));
+$marketingTab=isset($_GET['tab'])&&$_GET['tab']==='marketing-simulate'?
+    'marketing-simulate':'marketing-promotions';
+$builderUrl=add_query_arg(['page'=>'andy-commerce','tab'=>$marketingTab,
+    'm9_preview'=>'1'],admin_url('admin.php'));
 ?>
 <section class="andy-m9-lab" style="max-width:1360px;padding:10px 18px 24px 0">
 <style>
@@ -139,12 +162,13 @@ $builderUrl=add_query_arg(['page'=>'andy-commerce','tab'=>'marketing-promotions'
   <h3>订单场景模拟</h3><p class="ac-muted">输入示例商品金额，分别核对多条活动规则；重新计算不会保存活动。</p>
   <form method="get" action="<?php echo esc_url(admin_url('admin.php')); ?>">
     <input type="hidden" name="page" value="andy-commerce">
-    <input type="hidden" name="tab" value="marketing-promotions">
+    <input type="hidden" name="tab" value="<?php echo esc_attr($marketingTab); ?>">
     <input type="hidden" name="m9_preview" value="1">
     <div class="ac-fields">
       <label>符合条件的商品原价（USD） <input type="number" min="0" max="100000" name="m9_gross" value="<?php echo esc_attr((string)$gross); ?>"></label>
       <label>已有折扣（USD） <input type="number" min="0" max="100000" name="m9_discount" value="<?php echo esc_attr((string)$discount); ?>"></label>
       <label>客户币种 <select name="m9_currency"><?php foreach(Andy_Commerce_Currency_OS_V1::SUPPORTED as $code):?><option <?php selected($currency,$code); ?> value="<?php echo esc_attr($code); ?>"><?php echo esc_html($code); ?></option><?php endforeach;?></select></label>
+      <label>模拟国家 <select name="m9_country"><?php foreach($countryLabels as $code=>$label):?><option <?php selected($selectedCountry,$code); ?> value="<?php echo esc_attr($code); ?>"><?php echo esc_html($label); ?></option><?php endforeach;?></select></label>
       <label>配送区域 <select name="m9_zone"><?php foreach($zoneDescriptions as $code=>$text):?><option <?php selected($zone,$code); ?> value="<?php echo esc_attr($code); ?>"><?php echo esc_html($text); ?></option><?php endforeach;?></select></label>
     </div>
     <h4 class="ac-subheading">模拟活动参数（USD）</h4>
@@ -181,7 +205,7 @@ $builderUrl=add_query_arg(['page'=>'andy-commerce','tab'=>'marketing-promotions'
     <td class="<?php echo $preview['shipping']['qualifies_by_policy_preview']?'ac-good':'ac-bad'; ?>"><?php echo $preview['shipping']['qualifies_by_policy_preview']?'模拟达到免邮金额':'未达标或待验证'; ?></td>
     <td><span class="ac-state-off">未修改 Woo 运费</span></td></tr>
   </tbody></table></div>
-  <p class="description">赠品资格按已有折扣后的 USD 商品金额判断；只模拟选用一项最优惠的固定满减。普通商品免邮在该减免后重新核对，所有实际活动仍未启用。</p>
+  <p class="description">赠品资格仅计算具备有效门槛及商品 ID 的草稿；草稿国家限制仅按本次选择的模拟国家验证，真实地址仍未验证。赠品资格按已有折扣后的 USD 商品金额判断；只模拟选用一项最优惠的固定满减。普通商品免邮在该减免后重新核对，所有实际活动仍未启用。</p>
 </div>
 <div class="ac-panel">
   <h3>新建未启用活动草稿</h3>

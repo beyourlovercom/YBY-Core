@@ -41,9 +41,23 @@ final class Andy_Commerce_M9_USD_Rule_Engine {
             }
             self::amount($rule['threshold_usd_minor'] ?? null, 'rule threshold');
             if ($rule['type'] === 'discount') {
-                self::amount($rule['discount_usd_minor'] ?? null, 'discount');
-                if ($rule['discount_usd_minor'] === 0) {
-                    throw new InvalidArgumentException('Zero-value discount');
+                // A USD draft contains either a fixed minor-unit reward OR
+                // basis points (hundredths of a percent), never both.
+                $hasFixed=array_key_exists('discount_usd_minor',$rule);
+                $hasPercent=array_key_exists('discount_percent_bp',$rule);
+                if ($hasFixed === $hasPercent) {
+                    throw new InvalidArgumentException('Exactly one discount mode required');
+                }
+                if ($hasFixed) {
+                    self::amount($rule['discount_usd_minor'],'discount');
+                    if ($rule['discount_usd_minor']===0) {
+                        throw new InvalidArgumentException('Zero-value discount');
+                    }
+                } else {
+                    $bp=$rule['discount_percent_bp'];
+                    if (!is_int($bp)||$bp<1||$bp>10000) {
+                        throw new InvalidArgumentException('Invalid discount percent');
+                    }
                 }
             } elseif ($rule['type'] === 'gift') {
                 if (!is_int($rule['gift_product_id'] ?? null)
@@ -98,13 +112,16 @@ final class Andy_Commerce_M9_USD_Rule_Engine {
                 'reward_applied'=>false, 'gift_awarded'=>false,
             ];
             if ($eligible && $rule['type'] === 'discount') {
-                $saving = min($subtotal, $rule['discount_usd_minor']);
+                $saving = isset($rule['discount_percent_bp'])
+                    ? intdiv($subtotal*$rule['discount_percent_bp'],10000)
+                    : min($subtotal,$rule['discount_usd_minor']);
                 $discounts[] = [
                     'id'=>$rule['id'],
                     'priority'=>$rule['priority'],
                     'discount_usd_minor'=>$saving
                 ];
                 $entry['potential_discount_usd_minor'] = $saving;
+                $entry['discount_mode'] = isset($rule['discount_percent_bp'])?'percent':'fixed';
             }
             if ($eligible && $rule['type'] === 'gift') {
                 $entry['gift_product_id'] = $rule['gift_product_id'];

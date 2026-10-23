@@ -5,7 +5,10 @@
 		const config = window.AndyCoreNativeL3V2;
 		if (!config || !Array.isArray(config.items) || !config.items.length) return;
 		const content = document.getElementById('wpbody-content');
-		if (!content || content.querySelector('.andy-core-l3-v2')) return;
+		// The Core PHP Shell already renders this exact native L3 menu.
+        // Never add a second JS rail on top of the server-rendered one.
+        if (!content || content.querySelector('.andy-core-l3-v2') ||
+            content.querySelector('.andy-core-shell-v22__rail')) return;
 		const wrap = content.querySelector(':scope > .wrap');
 		if (!wrap || !wrap.parentElement) return;
 		// Never move the WP block editor, payment forms or unknown screens.
