@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'packages/andy-commerce/**'
+      - 'admin/class-yby-andy-os-navigation.php'
+      - 'tests/currency-v2-nav-fx-tab-harness.php'
       - '.github/workflows/currency-os-dev-preview-package.yml'
 permissions:
   contents: read
@@ -19,6 +21,10 @@ jobs:
           php packages/andy-commerce/tests/currency-os-v1-shadow-harness.php
           php packages/andy-commerce/tests/currency-os-m2-reference-fx-harness.php
           php packages/andy-commerce/tests/version-sync-v102-harness.php
+          php tests/currency-v2-nav-fx-tab-harness.php
+          php tests/andy-admin-architecture-v22-governance-harness.php
+          php tests/andy-os-unified-nav-v1-harness.php
+          php -l admin/class-yby-andy-os-navigation.php
       - name: Build Dev-only Andy Commerce WordPress ZIP
         run: |
           set -eu
@@ -29,12 +35,28 @@ jobs:
           cd ..
           sha256sum andy-commerce-v1.0.8-currency-v2-dev-only.zip > SHA256SUMS.txt
           unzip -t andy-commerce-v1.0.8-currency-v2-dev-only.zip | tail -1
+      - name: Build matching Dev-only Andy Core navigation ZIP
+        run: |
+          set -eu
+          mkdir -p /tmp/currency-preview/core-stage/yby-core
+          cp yby-core.php readme.txt README.md CHANGELOG.md VERSION.md uninstall.php /tmp/currency-preview/core-stage/yby-core/
+          for item in admin assets inc languages modules public templates; do
+            cp -R "$item" /tmp/currency-preview/core-stage/yby-core/
+          done
+          cd /tmp/currency-preview/core-stage
+          zip -qr ../andy-core-v2.2.11-currency-nav-dev-only.zip yby-core
+          cd ..
+          sha256sum andy-core-v2.2.11-currency-nav-dev-only.zip >> SHA256SUMS.txt
+          unzip -t andy-core-v2.2.11-currency-nav-dev-only.zip | tail -1
+          unzip -p andy-core-v2.2.11-currency-nav-dev-only.zip yby-core/yby-core.php | grep -F 'Version:           2.2.11'
+          unzip -p andy-core-v2.2.11-currency-nav-dev-only.zip yby-core/admin/class-yby-andy-os-navigation.php | grep -F '多币种'
       - name: Upload Dev WordPress installer and hash
         uses: actions/upload-artifact@v4
         with:
           name: andy-commerce-v1.0.8-currency-v2-dev-${{ github.event.pull_request.number }}
           path: |
             /tmp/currency-preview/andy-commerce-v1.0.8-currency-v2-dev-only.zip
+            /tmp/currency-preview/andy-core-v2.2.11-currency-nav-dev-only.zip
             /tmp/currency-preview/SHA256SUMS.txt
           retention-days: 7
           if-no-files-found: error
