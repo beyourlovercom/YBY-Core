@@ -5,6 +5,7 @@
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 require_once __DIR__.'/class-andy-commerce-m10-policy-fields.php';
+require_once __DIR__.'/class-andy-commerce-m10-policy-evaluator.php';
 
 final class Andy_Commerce_M7_Draft_Studio {
     const OPTION = 'andy_commerce_m7_inactive_drafts_v1';
