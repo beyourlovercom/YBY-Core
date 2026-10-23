@@ -908,6 +908,13 @@
       return;
     }
 
+    // Andy Core and a legacy Bricks inline hook may both call init().
+    // Prevent duplicate thank_you_page_view and repeated event listeners.
+    if (window.YBYThankYou._initialized === true) {
+      return;
+    }
+    window.YBYThankYou._initialized = true;
+
     window.YBYThankYou.hydrateCaseIdFromUrl();
     window.YBYThankYou.renderLeadName();
     window.YBYThankYou.renderCaseId();
