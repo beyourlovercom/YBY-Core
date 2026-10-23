@@ -42,6 +42,11 @@ jobs:
           php packages/andy-commerce/tests/currency-c3-dev-zone-evidence-harness.php
           php packages/andy-commerce/tests/marketing-m11-real-woo-readonly-harness.php
           php packages/andy-commerce/tests/marketing-m12-real-woo-six-shadow-harness.php
+          php -l packages/andy-commerce/tests/sandbox/p5-m13-local-execution-proof.php
+          # The executable local Woo DB test driver MUST NEVER be shipped.
+          grep -Fq -- '--exclude tests/' scripts/build-andy-commerce-dev-candidate.sh
+          test ! -e packages/andy-commerce/includes/p5-m13-local-execution-proof.php
+
           node --check packages/andy-commerce/assets/currency-c3-dev-preview.js
       - name: Actual ZIP and negative mutation
         run: |
