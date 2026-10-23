@@ -13,6 +13,7 @@ function esc_html($text){return htmlspecialchars((string)$text,ENT_QUOTES);}
 function esc_attr($text){return htmlspecialchars((string)$text,ENT_QUOTES);}
 function sanitize_key($key){return preg_replace('/[^a-z0-9_-]/','',strtolower($key));}
 function wp_unslash($data){return $data;}
+function sanitize_text_field($value){return trim(strip_tags((string)$value));}
 function selected($current,$value){if((string)$current===(string)$value)echo 'selected="selected"';}
 function wp_nonce_field($action){echo '<input type="hidden" name="_wpnonce" data-action="'.htmlspecialchars((string)$action,ENT_QUOTES).'" value="dev-placeholder">';}
 final class Andy_Commerce_M7_Draft_Studio {
@@ -24,6 +25,13 @@ final class Andy_Commerce_M7_Draft_Studio {
              'active'=>false,'status'=>'draft','type'=>'spend_save','priority'=>10,'countries'=>['US'],
              'rule'=>['threshold_minor'=>13900,'discount_minor'=>1200]
           ],
+          'id_policy'=>[
+             'id'=>'id_policy','name'=>'Dev scoped and dated USD reward','currency'=>'USD',
+             'active'=>false,'status'=>'draft','type'=>'spend_save','priority'=>22,'countries'=>['US'],
+             'policy'=>['start_date'=>'2026-11-01','end_date'=>'2026-11-30',
+               'product_scope'=>'selected','product_ids'=>[101],'stack_policy'=>'coupon_exclusive'],
+             'rule'=>['threshold_minor'=>12900,'discount_minor'=>3000]
+          ],
           'id_456'=>[
              'id'=>'id_456','name'=>'EUR draft excluded','currency'=>'EUR','countries'=>['DE'],
              'active'=>false,'status'=>'draft','type'=>'spend_save','priority'=>10,
@@ -34,6 +42,8 @@ final class Andy_Commerce_M7_Draft_Studio {
 }
 require dirname(__DIR__).'/includes/class-andy-commerce-currency-os-v1.php';
 require dirname(__DIR__).'/includes/class-andy-commerce-m9-usd-rule-engine.php';
+require dirname(__DIR__).'/includes/class-andy-commerce-m10-policy-fields.php';
+require dirname(__DIR__).'/includes/class-andy-commerce-m10-policy-evaluator.php';
 $count=0;
 function m9pageCheck(bool $v,string $msg):void {
     global $count; $count++;
@@ -85,6 +95,24 @@ $html=renderM9(['m9_currency'=>'USD','m9_zone'=>'5',
     'm9_country'=>'GB','m9_gross'=>'180','m9_discount'=>'15']);
 m9pageCheck(!str_contains($html,'draft_id_123') && str_contains($html,'$155.00'),
     'US-only draft must not qualify simulated GB shopper');
+$qualified=renderM9(['m9_currency'=>'USD','m9_zone'=>'5','m9_gross'=>'180',
+  'm9_discount'=>'15','m9_date'=>'2026-11-12','m9_product_id'=>'101','m9_country'=>'US']);
+m9pageCheck(str_contains($qualified,'draft_id_policy')&&str_contains($qualified,'$135.00'),
+    'dated scoped policy eligible only when product 101 is explicitly verified');
+foreach ([
+ ['m9_date'=>'2026-10-23'],
+ ['m9_date'=>'2026-12-01'],
+ ['m9_product_id'=>'0'],
+ ['m9_product_id'=>'999'],
+ ['m9_coupon'=>'USED10'],
+ ['m9_country'=>'CA'],
+] as $change) {
+  $params=array_merge(['m9_currency'=>'USD','m9_zone'=>'5','m9_gross'=>'180',
+    'm9_discount'=>'15','m9_date'=>'2026-11-12','m9_product_id'=>'101','m9_country'=>'US'],$change);
+  $html=renderM9($params);
+  m9pageCheck(!str_contains($html,'draft_id_policy'),
+    'policy rejects invalid synthetic scope, time, coupon or country');
+}
 $GLOBALS['testPermission']=false;
 $html=renderM9(['m9_currency'=>'USD']);
 m9pageCheck(str_contains($html,'多规则预览仅限获得授权的 Dev 管理员使用。')
