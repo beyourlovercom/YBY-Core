@@ -203,6 +203,10 @@
     return /^\/lp\/thank-you-glass-bottle-oem\/?$/.test(String(window.location.pathname || "").toLowerCase());
   }
 
+  function isIrrigationThankYouPage() {
+    return /^\/lp\/thank-you-irrigation-solution\/?$/.test(String(window.location.pathname || "").toLowerCase());
+  }
+
   function isThankYouPage() {
     return isBottleThankYouPage() || !!document.querySelector(
       [
@@ -1003,12 +1007,14 @@
       return false;
     }
 
-    if (isBottleThankYouPage()) {
-      // The bottle-specific thank-you page must follow this tab's successful
-      // server response, not a bookmark or a Case ID left by another inquiry.
+    if (isBottleThankYouPage() || isIrrigationThankYouPage()) {
+      // These governed flows may report a lead only after this browser tab
+      // received a successful Lead REST response with the same Case ID.
+      // A direct Thank You URL with a well-formed ID is not proof of a lead.
       if (normalizeCaseId(getQueryParam("case_id")) !== caseId ||
           normalizeCaseId(getSessionItem("yby_confirmed_lead_case_id")) !== caseId ||
-          getSessionItem("yby_confirmed_lead_preset") !== "bottle_oem_inquiry") {
+          (isBottleThankYouPage() &&
+            getSessionItem("yby_confirmed_lead_preset") !== "bottle_oem_inquiry")) {
         return false;
       }
     }
