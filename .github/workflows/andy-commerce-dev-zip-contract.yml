@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
       - name: Sole Commerce Dev publisher contract
         run: |
           bash -n scripts/prepare-andy-commerce-dev-release.sh
@@ -61,3 +63,20 @@ jobs:
           PY
           if bash scripts/check-andy-commerce-zip-contract.sh "$RUNNER_TEMP/no-currency.zip";then exit 1;fi
           echo NEGATIVE_ZIP_REJECTION_PASS
+
+      - name: Prepare canonical Dev-only release candidate
+        if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/marketing-m10-policy-m9-bridge-dev-20261023'
+        run: |
+          bash scripts/prepare-andy-commerce-dev-release.sh "$RUNNER_TEMP/andy-commerce-dev-candidate.zip"
+          test -s "$RUNNER_TEMP/andy-commerce-dev-candidate.zip.attestation.txt"
+          cat "$RUNNER_TEMP/andy-commerce-dev-candidate.zip.attestation.txt"
+      - name: Upload Dev ZIP and SHA attestation
+        if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/marketing-m10-policy-m9-bridge-dev-20261023'
+        uses: actions/upload-artifact@v4
+        with:
+          name: andy-commerce-dev-candidate-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/andy-commerce-dev-candidate.zip
+            ${{ runner.temp }}/andy-commerce-dev-candidate.zip.attestation.txt
+          if-no-files-found: error
+          retention-days: 14
