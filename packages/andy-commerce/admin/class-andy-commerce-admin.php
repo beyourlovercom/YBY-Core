@@ -11,6 +11,40 @@ class Andy_Commerce_Admin {
 	const PAGE_SLUG = 'andy-commerce';
 	private $m3_bridge;
 	public function __construct($m3_bridge = null) { $this->m3_bridge = $m3_bridge; }
+	/** Controller-owned route allowlist. L3 cannot invent an unhandled tab. */
+	public static function supported_tabs() {
+		return array( 'overview', 'order-export', 'checkout-shipping',
+			'marketing-promotions', 'currency-os', 'settings' );
+	}
+
+	/** Called from Andy Core V1 when building a native L3 rail. */
+	public static function register_l3_items( $items, $page ) {
+		if ( ! is_array( $items ) || self::PAGE_SLUG !== $page ||
+			 ! self::currency_l3_route_exists( 'currency-os', $page ) ) {
+			return $items;
+		}
+		$items[] = array(
+			'id' => 'andy-commerce.currency-os',
+			'parent' => self::PAGE_SLUG,
+			'page' => self::PAGE_SLUG,
+			'title' => '多币种',
+			'tab' => 'currency-os',
+			'capability' => 'manage_woocommerce',
+			'after' => 'settings',
+			'route_check' => array( __CLASS__, 'currency_l3_route_exists' ),
+		);
+		return $items;
+	}
+
+	/** The same Dev + role gate used by the real Currency controller. */
+	public static function currency_l3_route_exists( $tab, $page ) {
+		return self::PAGE_SLUG === $page &&
+			in_array( $tab, self::supported_tabs(), true ) &&
+			'currency-os' === $tab &&
+			class_exists( 'Andy_Commerce_Currency_V2_Dev' ) &&
+			Andy_Commerce_Currency_V2_Dev::access();
+	}
+
 
 	public function add_admin_menu() {
 		add_menu_page(
@@ -31,6 +65,8 @@ class Andy_Commerce_Admin {
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);
+		// This is inert with older Core; no new Core method is called.
+		add_filter( 'andy_core_l3_external_items', array( __CLASS__, 'register_l3_items' ), 10, 2 );
 	}
 
 	public function render_page() {
@@ -49,7 +85,7 @@ class Andy_Commerce_Admin {
 		}
 
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
-		if ( ! in_array( $tab, array( 'overview', 'order-export', 'checkout-shipping', 'marketing-promotions', 'currency-os', 'settings' ), true ) ) { $tab = 'overview'; }
+		if ( ! in_array( $tab, self::supported_tabs(), true ) ) { $tab = 'overview'; }
 
 		// Dev-only M9: read-only multi-rule USD eligibility workbench.
 		if ('marketing-promotions' === $tab && isset($_GET['m9_preview']) && $_GET['m9_preview'] === '1') {
