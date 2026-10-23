@@ -6,6 +6,7 @@
  * independent plugin lifecycles remain authoritative.
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
+require_once __DIR__ . '/class-yby-andy-l3-registry-v1.php';
 
 final class YBY_Andy_OS_Navigation {
 	const ROOT = 'yby-os';
@@ -385,7 +386,7 @@ final class YBY_Andy_OS_Navigation {
 			$add( '品牌', 'admin.php?page=yby-brand-os', 'manage_options' );
 			$add( '社交登录', 'admin.php?page=yby-social-login', 'manage_options', 'social_login' );
 		}
-		return $items;
+		return YBY_Andy_L3_Registry_V1::extend( $items, $page );
 	}
 
 	/** Scoped presentation only. Controllers remain independent. */
