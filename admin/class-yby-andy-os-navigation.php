@@ -6,6 +6,7 @@
  * independent plugin lifecycles remain authoritative.
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
+require_once __DIR__ . '/class-yby-andy-l3-registry-v1.php';
 
 final class YBY_Andy_OS_Navigation {
 	const ROOT = 'yby-os';
@@ -373,14 +374,6 @@ final class YBY_Andy_OS_Navigation {
 				'settings'=>'设置' ) as $tab=>$label ) {
 				$add( $label, 'admin.php?page=andy-commerce&tab='.$tab, 'manage_woocommerce' );
 			}
-			// Currency OS is a real, capability-protected Commerce tab.
-			// Expose the new L3 entry only when the installed Commerce Dev UI is present,
-			// never a dead link on WWW or other sites with older Andy Commerce.
-			if ( class_exists( 'Andy_Commerce_Currency_V2_Dev' ) &&
-				 Andy_Commerce_Currency_V2_Dev::access() ) {
-				$add( '多币种', 'admin.php?page=andy-commerce&tab=currency-os',
-					'manage_woocommerce' );
-			}
 		} elseif ( in_array( $page, array( 'yby-core', 'yby-brand-os', 'yby-social-login' ), true ) ) {
 			foreach ( array( 'general'=>'常规', 'modules'=>'模块', 'addons'=>'扩展',
 				'wp-api'=>'接口', 'system-status'=>'状态', 'updates'=>'更新' ) as $tab=>$label ) {
@@ -393,7 +386,7 @@ final class YBY_Andy_OS_Navigation {
 			$add( '品牌', 'admin.php?page=yby-brand-os', 'manage_options' );
 			$add( '社交登录', 'admin.php?page=yby-social-login', 'manage_options', 'social_login' );
 		}
-		return $items;
+		return YBY_Andy_L3_Registry_V1::extend( $items, $page );
 	}
 
 	/** Scoped presentation only. Controllers remain independent. */
