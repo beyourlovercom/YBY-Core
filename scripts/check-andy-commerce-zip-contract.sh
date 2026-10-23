@@ -4,7 +4,7 @@ zip="$1"; source_sha="${2:-unknown}"
 test -s "$zip"
 unzip -tq "$zip" >/dev/null
 entries="$(unzip -Z1 "$zip")"
-for f in admin/class-andy-commerce-admin.php admin/views/currency-os-v2-admin.php admin/views/marketing-m10-workbench.php includes/class-andy-commerce-currency-v2-dev.php includes/class-andy-commerce-m7-draft-studio.php andy-commerce.php; do
+for f in admin/class-andy-commerce-admin.php admin/views/currency-os-v2-admin.php admin/views/currency-c2c3-readonly-panel.php assets/currency-c3-dev-preview.js includes/class-andy-commerce-c3-cart-snapshot-adapter.php includes/class-andy-commerce-currency-c2c3-preview.php admin/views/marketing-m10-workbench.php admin/views/marketing-m10-six-preview.php includes/class-andy-commerce-m10-six-type-simulator.php includes/class-andy-commerce-m10-lifecycle.php includes/class-andy-commerce-currency-v2-dev.php includes/class-andy-commerce-m7-draft-studio.php andy-commerce.php; do
  echo "$entries" | grep -Fxq "andy-commerce/$f" || { echo "MISSING: $f"; exit 1; }
 done
 controller="$(unzip -p "$zip" andy-commerce/admin/class-andy-commerce-admin.php)"

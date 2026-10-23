@@ -13,9 +13,50 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Sole Commerce Dev publisher contract
+        run: |
+          bash -n scripts/prepare-andy-commerce-dev-release.sh
+          test -s packages/andy-commerce/AGENTS.md
+          grep -Fq 'feat/marketing-m10-policy-m9-bridge-dev-20261023' scripts/prepare-andy-commerce-dev-release.sh
+          grep -Fq 'feat/currency-c2-c3-shadow-preview-20261023' scripts/prepare-andy-commerce-dev-release.sh
+          grep -Fq 'RELEASE_DENIED:' scripts/prepare-andy-commerce-dev-release.sh
+      - name: Marketing M7–M10 pure simulations, lifecycle and Dev rendering
+        run: |
+          php packages/andy-commerce/tests/marketing-m7-draft-security-harness.php
+          php packages/andy-commerce/tests/marketing-m8-engine-harness.php
+          php packages/andy-commerce/tests/marketing-m10-policy-evaluator-harness.php
+          php packages/andy-commerce/tests/marketing-m10-six-type-matrix-harness.php
+          php packages/andy-commerce/tests/marketing-m10-lifecycle-harness.php
+          php packages/andy-commerce/tests/marketing-m9-dev-page-render-harness.php
+          php packages/andy-commerce/tests/marketing-m10-page-render-harness.php
+      - name: Currency C2–C3 and Footer-only regression
+        run: |
+          php packages/andy-commerce/tests/currency-os-v2-admin-shortcode-harness.php
+          php packages/andy-commerce/tests/currency-c2c3-reconcile-harness.php
+          php packages/andy-commerce/tests/currency-c3-cart-snapshot-harness.php
+          php packages/andy-commerce/tests/currency-c3-coupon-boundary-harness.php
+          php packages/andy-commerce/tests/currency-c3-dev-browser-guard-harness.php
+          php packages/andy-commerce/tests/currency-c3-dev-zone-evidence-harness.php
+          php packages/andy-commerce/tests/marketing-m11-real-woo-readonly-harness.php
+          php packages/andy-commerce/tests/marketing-m12-real-woo-six-shadow-harness.php
+          php -l packages/andy-commerce/tests/sandbox/p5-m13-local-execution-proof.php
+          php -l packages/andy-commerce/tests/sandbox/p6-hpos-native-refund.php
+          # The executable local Woo DB test driver MUST NEVER be shipped.
+          grep -Fq -- '--exclude tests/' scripts/build-andy-commerce-dev-candidate.sh
+          test ! -e packages/andy-commerce/includes/p5-m13-local-execution-proof.php
+
+          node --check packages/andy-commerce/assets/currency-c3-dev-preview.js
       - name: Actual ZIP and negative mutation
         run: |
           bash scripts/build-andy-commerce-dev-candidate.sh "$RUNNER_TEMP/commerce.zip"
+          if unzip -Z1 "$RUNNER_TEMP/commerce.zip" | grep -E 'p5-m13-local-execution-proof.php|p6-hpos-native-refund.php'; then
+            echo M13_SANDBOX_TEST_DRIVER_LEAKED_IN_INSTALLABLE_ZIP
+            exit 1
+          fi
+          echo M13_LOCAL_ONLY_SCRIPT_EXCLUDED_FROM_ZIP_PASS
           python3 - "$RUNNER_TEMP/commerce.zip" "$RUNNER_TEMP/bad.zip" <<'PY'
           import sys,zipfile
           with zipfile.ZipFile(sys.argv[1]) as z,zipfile.ZipFile(sys.argv[2],'w',zipfile.ZIP_DEFLATED) as out:
@@ -26,4 +67,30 @@ jobs:
               out.writestr(item.filename,data)
           PY
           if bash scripts/check-andy-commerce-zip-contract.sh "$RUNNER_TEMP/bad.zip";then exit 1;fi
+          python3 - "$RUNNER_TEMP/commerce.zip" "$RUNNER_TEMP/no-currency.zip" <<'PY'
+          import sys,zipfile
+          with zipfile.ZipFile(sys.argv[1]) as source,zipfile.ZipFile(sys.argv[2],'w',zipfile.ZIP_DEFLATED) as out:
+            for item in source.infolist():
+              if item.filename=='andy-commerce/includes/class-andy-commerce-currency-c2c3-preview.php':
+                continue
+              out.writestr(item,source.read(item.filename))
+          PY
+          if bash scripts/check-andy-commerce-zip-contract.sh "$RUNNER_TEMP/no-currency.zip";then exit 1;fi
           echo NEGATIVE_ZIP_REJECTION_PASS
+
+      - name: Prepare canonical Dev-only release candidate
+        if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/marketing-m10-policy-m9-bridge-dev-20261023'
+        run: |
+          bash scripts/prepare-andy-commerce-dev-release.sh "$RUNNER_TEMP/andy-commerce-dev-candidate.zip"
+          test -s "$RUNNER_TEMP/andy-commerce-dev-candidate.zip.attestation.txt"
+          cat "$RUNNER_TEMP/andy-commerce-dev-candidate.zip.attestation.txt"
+      - name: Upload Dev ZIP and SHA attestation
+        if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/marketing-m10-policy-m9-bridge-dev-20261023'
+        uses: actions/upload-artifact@v4
+        with:
+          name: andy-commerce-dev-candidate-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/andy-commerce-dev-candidate.zip
+            ${{ runner.temp }}/andy-commerce-dev-candidate.zip.attestation.txt
+          if-no-files-found: error
+          retention-days: 14
