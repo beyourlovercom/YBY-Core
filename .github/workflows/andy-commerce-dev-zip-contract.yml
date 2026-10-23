@@ -40,6 +40,7 @@ jobs:
           php packages/andy-commerce/tests/currency-c3-coupon-boundary-harness.php
           php packages/andy-commerce/tests/currency-c3-dev-browser-guard-harness.php
           php packages/andy-commerce/tests/currency-c3-dev-zone-evidence-harness.php
+          php packages/andy-commerce/tests/marketing-m11-real-woo-readonly-harness.php
           node --check packages/andy-commerce/assets/currency-c3-dev-preview.js
       - name: Actual ZIP and negative mutation
         run: |
