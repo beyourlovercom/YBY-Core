@@ -72,5 +72,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          wp eval-file "$GITHUB_WORKSPACE/tests/andy-core-l3-wordpress-real-roles.php" --path="$RUNNER_TEMP/wordpress"
+          for role in admin subscriber editor anonymous; do
+            ANDY_L3_CI_ROLE="$role" wp eval-file "$GITHUB_WORKSPACE/tests/andy-core-l3-wordpress-real-roles.php" --path="$RUNNER_TEMP/wordpress"
+          done
           echo "ANDY_L3_DISPOSABLE_WP_REAL_ROLE=PASS"
