@@ -101,6 +101,8 @@ final class Andy_Commerce_M10_Six_Type_Simulator {
             if(!self::rule($type,$d['rule'])){
                 $e['reason']='invalid_rule';$out['evaluations'][]=$e;continue;
             }
+            $e['variant']=$type==='spend_save'
+                ?(array_key_exists('percent_bp',$d['rule'])?'percent':'fixed'):$type;
             $p=$v['policy'];
             $eligible=$p['product_scope']==='selected'
                 ?array_values(array_filter($items,static fn($x):bool=>

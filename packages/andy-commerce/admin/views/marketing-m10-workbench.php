@@ -136,7 +136,9 @@ echo esc_html($operationResults[$operationKey]??'未确认操作'); ?>。所有�
  <div class="ac-table"><table class="widefat striped"><thead><tr><th>活动名称</th><th>类型</th><th>币种／地区</th><th>优先级</th><th>状态</th><th>操作</th></tr></thead><tbody>
  <?php foreach($all as $id=>$row): ?>
   <tr><td><strong><?php echo esc_html((string)($row['name']??'')); ?></strong><br><small><?php echo esc_html($id); ?></small></td>
-  <td><?php echo esc_html($labelTypes[$row['type']??'']??'待验证规则'); ?></td>
+  <td><?php echo esc_html(($row['type']??null)==='spend_save'
+      ?(isset($row['rule']['percent_bp'])?'百分比折扣':'满额立减')
+      :($labelTypes[$row['type']??'']??'待验证规则')); ?></td>
   <td><?php echo esc_html(($row['currency']??'USD').' / '.implode(', ',(array)($row['countries']??array()))); ?></td>
   <td><?php echo esc_html((string)($row['priority']??0)); ?></td><td><span class="ac-badge"><?php echo esc_html($lifeLabels[$row['lifecycle']??'draft']??'未启用草稿'); ?> · OFF</span></td>
   <td><div class="ac-inline-actions"><a href="<?php echo esc_url($base('marketing-create',array('draft_id'=>$id))); ?>">编辑</a>

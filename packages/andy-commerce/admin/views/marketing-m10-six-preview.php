@@ -98,7 +98,7 @@ $typeLabels=[
  <?php foreach($six['evaluations'] as $e): ?>
  <tr><td><?php echo esc_html($e['id']); ?></td>
  <td><?php echo esc_html($e['type']==='spend_save'&&
-     strpos($e['id'],'percent')!==false?'百分比满减':($typeLabels[$e['type']]??'未知类型')); ?></td>
+     ($e['variant']??'fixed')==='percent'?'百分比满减':($typeLabels[$e['type']]??'未知类型')); ?></td>
  <td><?php echo isset($e['qualified_basis_usd_minor'])
      ?esc_html($usd($e['qualified_basis_usd_minor'])):'—'; ?></td>
  <td><?php echo esc_html($usd($e['discount_usd_minor'])); ?></td>

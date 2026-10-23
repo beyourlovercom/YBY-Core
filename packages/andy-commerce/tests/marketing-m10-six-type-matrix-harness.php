@@ -41,6 +41,8 @@ foreach($rules as $d){
  $ok($r['actual_discount_applied']===false&&$r['actual_gift_awarded']===false
      &&$r['shipping_changed']===false&&$r['runtime_enabled']===false,
      $d['id'].' never changes Woo runtime');
+ $ok($d['id']!=='percent'||($r['evaluations'][0]['variant']??null)==='percent',
+     'percentage draft flavor from rule, not ID');
  $ok(count($r['evaluations'])===1&&$r['evaluations'][0]['eligible']===true,
      $d['id'].' qualifying diagnostic');
 }
