@@ -29,6 +29,15 @@ jobs:
           php packages/andy-commerce/tests/marketing-m10-lifecycle-harness.php
           php packages/andy-commerce/tests/marketing-m9-dev-page-render-harness.php
           php packages/andy-commerce/tests/marketing-m10-page-render-harness.php
+      - name: Currency C2–C3 and Footer-only regression
+        run: |
+          php packages/andy-commerce/tests/currency-os-v2-admin-shortcode-harness.php
+          php packages/andy-commerce/tests/currency-c2c3-reconcile-harness.php
+          php packages/andy-commerce/tests/currency-c3-cart-snapshot-harness.php
+          php packages/andy-commerce/tests/currency-c3-coupon-boundary-harness.php
+          php packages/andy-commerce/tests/currency-c3-dev-browser-guard-harness.php
+          php packages/andy-commerce/tests/currency-c3-dev-zone-evidence-harness.php
+          node --check packages/andy-commerce/assets/currency-c3-dev-preview.js
       - name: Actual ZIP and negative mutation
         run: |
           bash scripts/build-andy-commerce-dev-candidate.sh "$RUNNER_TEMP/commerce.zip"
@@ -42,4 +51,13 @@ jobs:
               out.writestr(item.filename,data)
           PY
           if bash scripts/check-andy-commerce-zip-contract.sh "$RUNNER_TEMP/bad.zip";then exit 1;fi
+          python3 - "$RUNNER_TEMP/commerce.zip" "$RUNNER_TEMP/no-currency.zip" <<'PY'
+          import sys,zipfile
+          with zipfile.ZipFile(sys.argv[1]) as source,zipfile.ZipFile(sys.argv[2],'w',zipfile.ZIP_DEFLATED) as out:
+            for item in source.infolist():
+              if item.filename=='andy-commerce/includes/class-andy-commerce-currency-c2c3-preview.php':
+                continue
+              out.writestr(item,source.read(item.filename))
+          PY
+          if bash scripts/check-andy-commerce-zip-contract.sh "$RUNNER_TEMP/no-currency.zip";then exit 1;fi
           echo NEGATIVE_ZIP_REJECTION_PASS

@@ -11,19 +11,20 @@ case "$dest" in /*) ;; *) echo "RELEASE_DENIED: absolute destination required" >
 canonical="feat/marketing-m10-policy-m9-bridge-dev-20261023"
 currency="feat/currency-c2-c3-shadow-preview-20261023"
 cd "$repo"
+source_url="https://github.com/beyourlovercom/YBY-Core.git"
 head="$(git rev-parse HEAD)"
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "RELEASE_DENIED: dirty checkout (commit and review exact source first)" >&2; exit 3
 fi
-release_head="$(git ls-remote --exit-code origin "refs/heads/$canonical" | awk '{print $1}')"
+release_head="$(git ls-remote --exit-code "$source_url" "refs/heads/$canonical" | awk '{print $1}')"
 if [[ -z "$release_head" || "$head" != "$release_head" ]]; then
   echo "RELEASE_DENIED: only canonical PR #213 exact remote HEAD may prepare Dev release" >&2; exit 3
 fi
-currency_head="$(git ls-remote --exit-code origin "refs/heads/$currency" | awk '{print $1}')"
+currency_head="$(git ls-remote --exit-code "$source_url" "refs/heads/$currency" | awk '{print $1}')"
 if [[ -z "$currency_head" ]]; then
   echo "RELEASE_DENIED: cannot verify latest PR #207 Currency HEAD" >&2; exit 3
 fi
-git fetch -q --no-tags origin "$currency" >/dev/null
+git fetch -q --no-tags "$source_url" "$currency" >/dev/null
 currency_paths=(
   packages/andy-commerce/admin/views/currency-c2c3-readonly-panel.php
   packages/andy-commerce/admin/views/currency-os-v2-admin.php

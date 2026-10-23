@@ -109,7 +109,7 @@ final class Andy_Commerce_Currency_V2_Dev {
         }
         ob_start();
         if(!self::$css_sent){self::$css_sent=true;echo self::widget_css();}
-        echo '<span class="ac-demo-switcher'.($compact?' ac-compact':'').'" id="'.esc_attr($id).'">';
+        echo '<span data-ac-c3-preview="1" class="ac-demo-switcher'.($compact?' ac-compact':'').'" id="'.esc_attr($id).'">';
         // The native select itself shows the selected currency. No demo-price,
         // heading, label, extra description or explanatory card on storefront.
         echo '<select id="'.esc_attr($id.'-select').'" '
@@ -118,6 +118,15 @@ final class Andy_Commerce_Currency_V2_Dev {
         foreach($display as $code=>$label)
             echo '<option value="'.esc_attr($code).'">'.esc_html($label).'</option>';
         echo '</select></span>';
+        // Enqueue only with an explicit Dev admin shortcode render. Never add
+        // a Woo pricing/filter hook and never expose preview rates to shoppers.
+        if (function_exists('wp_enqueue_script')) {
+            wp_enqueue_script(
+                'andy-currency-c3-dev-shadow',
+                plugins_url('assets/currency-c3-dev-preview.js', ANDY_COMMERCE_PLUGIN_DIR . 'andy-commerce.php'),
+                [], '1.0.8-c3', true
+            );
+        }
         return (string)ob_get_clean();
     }
 }

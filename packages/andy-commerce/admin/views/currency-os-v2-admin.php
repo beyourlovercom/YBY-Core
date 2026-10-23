@@ -66,6 +66,7 @@ $toggle=static function($key,$label,$value){
     <p class="muted">五币种参考汇率及 USD 财务核算只读预览；不会变更真实商品价格、运费或支付金额。</p>
     <?php $currency_os_v2_embedded=true; include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/currency-os-v1-dev-lab.php'; ?>
   </section>
+  <?php include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/currency-c2c3-readonly-panel.php'; ?>
 <?php elseif($section==='manage'):?>
   <?php $currency_names=['USD'=>'美元','EUR'=>'欧元','GBP'=>'英镑','AUD'=>'澳元','CAD'=>'加元']; ?>
   <section class="acv2-card">
