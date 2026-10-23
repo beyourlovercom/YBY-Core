@@ -36,7 +36,9 @@ ok(str_contains($compact,'select'),'has selector');
 ok(!str_contains($compact,'ac-preview-amount'),'no demo price block');
 ok(!str_contains($compact,'<small>')&&!str_contains($compact,'<label'),'no extra label/note');
 ok(!str_contains($compact,'<script>'),'no unnecessary frontend JS');
-ok(str_contains($compact,'width:134px')||str_contains($basic,'width:134px'),'WWW-matched 134px control');
+ok(str_contains($compact,'field-sizing:content')||str_contains($basic,'field-sizing:content'),'content-sized native select');
+ok(str_contains($basic,'width:auto!important') && !str_contains($basic,'width:134px'),'no fixed 134px width');
+ok(str_contains($basic,'height:26px') && str_contains($basic,'font-size:11px'),'compact 26px control');
 ok(str_contains($basic,'padding:0!important'),'zero outer padding');
 ok(!str_contains($basic,'ac-currency-front-test h3'),'no floating card headings');
 

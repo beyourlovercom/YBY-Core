@@ -72,9 +72,10 @@ final class Andy_Commerce_Currency_V2_Dev {
         exit;
     }
     static function widget_css(): string {
-        // Native WWW-sized inline control: NO card, header, price, footnote,
-        // outer margin, padding, minimum block height, overlay or shadow.
-        // Internal select padding is retained solely for the tap target.
+        // Content-sized native select: current flag + symbol + ISO code + arrow.
+        // No fixed width, UAT card, sample price, outer margin or padding.
+        // field-sizing:content is supported by the Dev Chrome browser; on
+        // browsers without it, width:auto remains a native-select fallback.
         return '<style>'
             .'.ac-demo-switcher{display:inline-flex!important;vertical-align:middle;'
             .'align-items:center;flex:0 0 auto;width:max-content;max-width:100%;'
@@ -83,12 +84,12 @@ final class Andy_Commerce_Currency_V2_Dev {
             .'background:transparent!important;box-shadow:none!important;gap:0!important}'
             .'.ac-demo-switcher select,.ac-demo-switcher.ac-compact select{'
             .'display:inline-block!important;box-sizing:border-box!important;'
-            .'width:134px!important;max-width:100%!important;min-width:0!important;'
-            .'height:34px!important;min-height:34px!important;max-height:34px!important;'
-            .'margin:0!important;padding:3px 5px!important;'
+            .'field-sizing:content!important;width:auto!important;max-width:100%!important;min-width:0!important;'
+            .'height:26px!important;min-height:26px!important;max-height:26px!important;'
+            .'margin:0!important;padding:0 2px!important;'
             .'border:1px solid #d8d3d4!important;border-radius:5px!important;'
             .'background:#fff!important;box-shadow:none!important;'
-            .'font-size:12px!important;font-weight:400!important;line-height:20px!important;'
+            .'font-size:11px!important;font-weight:400!important;line-height:20px!important;'
             .'color:#353135!important;vertical-align:middle!important}'
             .'.ac-demo-switcher select:focus-visible{outline:2px solid #96394b;outline-offset:1px}'
             .'.ac-currency-front-test{position:fixed;right:12px;bottom:12px;z-index:99999999;'
@@ -128,7 +129,7 @@ final class Andy_Commerce_Currency_V2_Dev {
     static function dev_frontend_preview(): void {
         if(!self::access() || !isset($_GET['ac_currency_preview'])
             || sanitize_key(wp_unslash($_GET['ac_currency_preview']))!=='1')return;
-        // A single 134 x 34px control, no surrounding card or text. The
+        // A single content-sized, approximately 69–77 x 26px control on Dev Chrome; no surrounding card or text. The
         // preview stays admin-only on Dev and never touches real Woo prices.
         echo '<span class="ac-currency-front-test" aria-label="Currency OS Dev-only selector preview">';
         echo do_shortcode('[andy_currency_switcher style="compact" show_flag="yes" show_symbol="yes" show_code="yes"]');
