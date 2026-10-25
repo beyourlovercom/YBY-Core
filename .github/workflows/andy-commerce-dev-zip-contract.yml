@@ -46,7 +46,15 @@ jobs:
           php -l packages/andy-commerce/tests/sandbox/p6-hpos-native-refund.php
           php -l packages/andy-commerce/tests/sandbox/aicc-m14-local-runtime.php
           php -l packages/andy-commerce/tests/sandbox/m14-config-case.php
-          python3 -m py_compile packages/andy-commerce/tests/sandbox/m14-http-test.py packages/andy-commerce/tests/sandbox/m14-store-api-checkout.py packages/andy-commerce/tests/sandbox/m14-negative-lifecycle.py packages/andy-commerce/tests/sandbox/m14-native-coupon-collision.py packages/andy-commerce/tests/sandbox/m14-classic-checkout.py packages/andy-commerce/tests/sandbox/m14-classic-six.py
+          python3 - <<'PYAST'
+          import ast
+          from pathlib import Path
+          files = sorted(Path('packages/andy-commerce/tests/sandbox').glob('m14-*.py'))
+          assert len(files) >= 6, 'M14 expected test-only Python scripts missing'
+          for path in files:
+              ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
+          print(f'M14_PYTHON_SOURCE_SYNTAX_PASS={len(files)} WITHOUT_BYTECODE_WRITE')
+          PYAST
           # The executable local Woo DB test driver MUST NEVER be shipped.
           grep -Fq -- '--exclude tests/' scripts/build-andy-commerce-dev-candidate.sh
           test ! -e packages/andy-commerce/includes/p5-m13-local-execution-proof.php
