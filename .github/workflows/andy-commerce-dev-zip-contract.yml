@@ -44,6 +44,9 @@ jobs:
           php packages/andy-commerce/tests/marketing-m12-real-woo-six-shadow-harness.php
           php -l packages/andy-commerce/tests/sandbox/p5-m13-local-execution-proof.php
           php -l packages/andy-commerce/tests/sandbox/p6-hpos-native-refund.php
+          php -l packages/andy-commerce/tests/sandbox/aicc-m14-local-runtime.php
+          php -l packages/andy-commerce/tests/sandbox/m14-config-case.php
+          python3 -m py_compile packages/andy-commerce/tests/sandbox/m14-http-test.py packages/andy-commerce/tests/sandbox/m14-store-api-checkout.py packages/andy-commerce/tests/sandbox/m14-negative-lifecycle.py packages/andy-commerce/tests/sandbox/m14-native-coupon-collision.py
           # The executable local Woo DB test driver MUST NEVER be shipped.
           grep -Fq -- '--exclude tests/' scripts/build-andy-commerce-dev-candidate.sh
           test ! -e packages/andy-commerce/includes/p5-m13-local-execution-proof.php
@@ -52,7 +55,7 @@ jobs:
       - name: Actual ZIP and negative mutation
         run: |
           bash scripts/build-andy-commerce-dev-candidate.sh "$RUNNER_TEMP/commerce.zip"
-          if unzip -Z1 "$RUNNER_TEMP/commerce.zip" | grep -E 'p5-m13-local-execution-proof.php|p6-hpos-native-refund.php'; then
+          if unzip -Z1 "$RUNNER_TEMP/commerce.zip" | grep -E 'p5-m13-local-execution-proof.php|p6-hpos-native-refund.php|aicc-m14-local-runtime.php|m14-config-case.php|m14-store-api-checkout.py|m14-negative-lifecycle.py|m14-native-coupon-collision.py'; then
             echo M13_SANDBOX_TEST_DRIVER_LEAKED_IN_INSTALLABLE_ZIP
             exit 1
           fi
