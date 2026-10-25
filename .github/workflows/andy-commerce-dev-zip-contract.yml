@@ -42,6 +42,12 @@ jobs:
           php packages/andy-commerce/tests/currency-c3-dev-zone-evidence-harness.php
           php packages/andy-commerce/tests/marketing-m11-real-woo-readonly-harness.php
           php packages/andy-commerce/tests/marketing-m12-real-woo-six-shadow-harness.php
+          php packages/andy-commerce/tests/marketing-m15-sku-allocation-harness.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-m15-cap-ledger.php
+          php -l packages/andy-commerce/tests/sandbox/m15-cap-ledger-local-uat.php
+          php -l packages/andy-commerce/tests/sandbox/m15-real-wc-allocator-uat.php
+          php -l packages/andy-commerce/tests/sandbox/m15-native-product-allocation-uat.php
+          php -l packages/andy-commerce/tests/sandbox/m15-one-order-one-cap-uat.php
           php -l packages/andy-commerce/tests/sandbox/p5-m13-local-execution-proof.php
           php -l packages/andy-commerce/tests/sandbox/p6-hpos-native-refund.php
           php -l packages/andy-commerce/tests/sandbox/aicc-m14-local-runtime.php
@@ -63,7 +69,7 @@ jobs:
       - name: Actual ZIP and negative mutation
         run: |
           bash scripts/build-andy-commerce-dev-candidate.sh "$RUNNER_TEMP/commerce.zip"
-          if unzip -Z1 "$RUNNER_TEMP/commerce.zip" | grep -E 'p5-m13-local-execution-proof.php|p6-hpos-native-refund.php|aicc-m14-local-runtime.php|m14-config-case.php|m14-store-api-checkout.py|m14-negative-lifecycle.py|m14-native-coupon-collision.py|m14-classic-checkout.py|m14-classic-six.py'; then
+          if unzip -Z1 "$RUNNER_TEMP/commerce.zip" | grep -E 'p5-m13-local-execution-proof.php|p6-hpos-native-refund.php|aicc-m14-local-runtime.php|m14-config-case.php|m14-store-api-checkout.py|m14-negative-lifecycle.py|m14-native-coupon-collision.py|m14-classic-checkout.py|m14-classic-six.py|m15-cap-ledger-local-uat.php|m15-real-wc-allocator-uat.php|m15-native-product-allocation-uat.php|m15-one-order-one-cap-uat.php'; then
             echo M13_SANDBOX_TEST_DRIVER_LEAKED_IN_INSTALLABLE_ZIP
             exit 1
           fi
