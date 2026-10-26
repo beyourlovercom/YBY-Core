@@ -36,6 +36,15 @@ class YBY_Lead_Notification_Admin {
                 ? '任务已进入重发队列，未确认实际投递。'
                 : '重发请求未接受：状态不允许、并发处理中或任务调度失败。';
         }
+        if ( isset( $_POST['yby_mail_ignore_lead_id'] ) ) {
+            $lead_id = absint( wp_unslash( $_POST['yby_mail_ignore_lead_id'] ) );
+            check_admin_referer( 'yby_mail_ignore_' . $lead_id, 'yby_mail_ignore_nonce' );
+            $reason = isset( $_POST['yby_mail_ignore_reason'] ) && is_scalar( $_POST['yby_mail_ignore_reason'] )
+                ? sanitize_text_field( wp_unslash( $_POST['yby_mail_ignore_reason'] ) ) : '';
+            $notice = YBY_Lead_Notification_Outbox::ignore_notification( $lead_id, $reason )
+                ? '已忽略该邮件通知，后续自动重试已停止；询盘及历史记录保持不变。'
+                : '无法忽略：请填写原因，或任务正在发送／已经处理。';
+        }
         if ( '' !== $notice ) {
             echo '<div class="notice notice-info"><p>' . esc_html( $notice ) . '</p></div>';
         }
@@ -49,12 +58,12 @@ class YBY_Lead_Notification_Admin {
         echo '<p><strong>需关注任务：</strong>' . esc_html( (string) $pending )
            . '。SMTP accepted 仅代表邮件服务接受，并非收件箱最终送达。</p>';
         $filter = isset( $_GET['mail_status'] ) ? sanitize_key( wp_unslash( $_GET['mail_status'] ) ) : '';
-        $allowed = array( '', 'pending', 'processing', 'smtp_accepted', 'failed', 'exhausted' );
+        $allowed = array( '', 'pending', 'processing', 'smtp_accepted', 'failed', 'exhausted', 'ignored' );
         if ( ! in_array( $filter, $allowed, true ) ) { $filter = ''; }
         $url = admin_url( 'admin.php?page=andy-core-leads&tab=mail_delivery' );
         echo '<p><label for="mail-status">状态：</label><select id="mail-status" onchange="window.location.href=this.value">';
         $labels = array( '' => '全部', 'pending' => '待发送', 'processing' => '执行中/需核对',
-            'smtp_accepted' => 'SMTP 已接受', 'failed' => '失败待重试', 'exhausted' => '重试次数耗尽' );
+            'smtp_accepted' => 'SMTP 已接受', 'failed' => '失败待重试', 'exhausted' => '重试次数耗尽', 'ignored' => '已忽略' );
         foreach ( $labels as $key => $label ) {
             $link = add_query_arg( 'mail_status', $key, $url );
             echo '<option value="' . esc_url( $link ) . '"' . selected( $filter, $key, false ) . '>'
@@ -79,6 +88,15 @@ class YBY_Lead_Notification_Admin {
                 wp_nonce_field( 'yby_mail_retry_' . $lead_id, 'yby_mail_retry_nonce' );
                 echo '<input type="hidden" name="yby_mail_retry_lead_id" value="' . esc_attr( (string) $lead_id ) . '">';
                 echo '<button type="submit" class="button button-secondary">手动重发</button></form>';
+            }
+            if ( in_array( $row['status'], array( 'pending', 'failed', 'exhausted' ), true ) ) {
+                echo '<form method="post" action="' . esc_url( $url ) . '" style="display:inline-block;margin-top:4px">';
+                wp_nonce_field( 'yby_mail_ignore_' . $lead_id, 'yby_mail_ignore_nonce' );
+                echo '<input type="hidden" name="yby_mail_ignore_lead_id" value="' . esc_attr( (string) $lead_id ) . '">';
+                echo '<input name="yby_mail_ignore_reason" type="text" placeholder="忽略原因（必填）" required maxlength="180" style="max-width:150px">';
+                echo '<button type="submit" class="button button-secondary">忽略通知</button></form>';
+            } elseif ( 'ignored' === $row['status'] ) {
+                echo '<span>已忽略：' . esc_html( YBY_Lead_Notification_Outbox::ignored_reason( $lead_id ) ) . '</span>';
             } elseif ( 'processing' === $row['status'] ) {
                 echo '状态未明：先核对 SMTP 日志';
             } else {

@@ -59,4 +59,27 @@ $receipts = (int) $wpdb->get_var( $wpdb->prepare(
     'SELECT COUNT(*) FROM ' . YBY_Lead_Notification_Outbox::table_name() . ' WHERE lead_id = %d', $lead_id
 ) );
 p0_smoke_assert( 1 === $receipts, 'unique_receipt_enforced' );
-echo "LEAD_NOTIFICATION_WORDPRESS_MYSQL_PASS 15 assertions; simulated_email_attempts=2; live_smtp=0\n";
+$GLOBALS['p0_mail_accept'] = false;
+$ignored_lead = YBY_Lead_Service::create( array_merge( $lead, array( 'name' => 'CI ignore-only synthetic lead' ) ) );
+p0_smoke_assert( ! empty( $ignored_lead['success'] ), 'ignore_fixture_saved' );
+$ignored_id = (int) $ignored_lead['lead_id'];
+$ignored_initial = YBY_Lead_Notification_Outbox::enqueue_and_attempt( $lead, $ignored_lead );
+p0_smoke_assert( 'failed' === $ignored_initial['status'], 'ignore_fixture_failed_smtp' );
+wp_set_current_user( 1 );
+p0_smoke_assert( ! YBY_Lead_Notification_Outbox::ignore_notification( $ignored_id, '' ), 'ignore_requires_reason' );
+p0_smoke_assert( YBY_Lead_Notification_Outbox::ignore_notification( $ignored_id, 'Offline test: customer already contacted' ), 'ignore_atomic_state_audit' );
+p0_smoke_assert( 'ignored' === YBY_Lead_Notification_Outbox::status( $ignored_id ), 'ignored_status_persists' );
+p0_smoke_assert( YBY_Lead_Notification_Outbox::ignored_reason( $ignored_id ) === 'Offline test: customer already contacted', 'ignored_audit_reason' );
+p0_smoke_assert( false === wp_next_scheduled( 'yby_lead_notification_retry', array( $ignored_id ) ), 'ignored_retry_unscheduled' );
+p0_smoke_assert( ! YBY_Lead_Notification_Outbox::request_manual_retry( $ignored_id ), 'ignored_cannot_be_manually_resent' );
+p0_smoke_assert( ! YBY_Lead_Notification_Outbox::ignore_notification( $lead_id, 'already sent' ), 'accepted_receipt_cannot_ignore' );
+$before_ignore_retry = $GLOBALS['p0_mail_attempts'];
+YBY_Lead_Notification_Outbox::retry( $ignored_id );
+YBY_Lead_Notification_Outbox::sweep();
+p0_smoke_assert( $before_ignore_retry === $GLOBALS['p0_mail_attempts'], 'ignored_never_resends' );
+$ignored_audits = (int) $wpdb->get_var( $wpdb->prepare(
+    'SELECT COUNT(*) FROM ' . YBY_Database::activities_table_name() . ' WHERE lead_id = %d AND activity_type = %s',
+    $ignored_id, 'email_notification_ignored'
+) );
+p0_smoke_assert( 1 === $ignored_audits, 'ignored_audit_is_single_event' );
+echo "LEAD_NOTIFICATION_WORDPRESS_MYSQL_PASS 26 assertions; live_smtp=0\n";
