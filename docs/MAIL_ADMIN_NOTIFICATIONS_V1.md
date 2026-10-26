@@ -1,34 +1,33 @@
 # Andy Core — Administrator Email Notifications V1
 
-## Purpose
-Manage low-value administrator notifications in Andy Core → 邮件 → 通道 without replacing WooCommerce, WPForms, wp_mail(), WP Mail SMTP, or the existing Tencent-scoped newsletter transport. The Email OS transport tab continues to show its prior status and now includes the notification policy panel.
+## BYL V3 canonical decision (2026-10-26)
+- The new site `dev.beyourlover.com` and its planned full-site WWW cutover use **Andy Core Native Newsletter**, not WPForms.
+- Native Newsletter persists subscriptions in `YBY_Newsletter_Store`, with customer opt-in, confirmation and unsubscribe paths.
+- Native Newsletter **does not send an admin email for every subscription**. This is a read-only built-in behavior, not a deceptive editable toggle.
+- Customer confirmation mail remains under independent Newsletter outbound approval/readiness and `YBY_Mail_Transport`. **Do not activate real sending** for this UAT.
+- Never install or restore WPForms form `26680` on BYL Dev merely to satisfy old-site compatibility tests. That form is legacy only, not the BYL V3 release gate.
 
-## Default / release safety
-- Backward compatible by default: no options stored; registration_admin and newsletter_admin default to ON. No existing site has mail suppressed merely by installing this change.
-- Change permissions require manage_options, andy_core_settings_manage, and andy_core_mail_view; POST uses admin-post.php plus nonce.
-- Does not send tests, modify SMTP routing, delete submitted forms, send marketing emails, change order/customer data, or modify WooCommerce settings.
-- Generic Core code contains no site-specific email address or form ID. No new costs/dependencies.
+## Administrator Email UI
+Go to **Andy Core → 邮件 → 通道**:
+- WordPress new-user registration → admin: genuine editable toggle (off on approved BYL Dev).
+- Andy Core native Newsletter → admin: fixed **不发送（内置规则，无需开关）** with live native service, customer outbound and readiness statuses.
+- WPForms controls (form ID, admin addresses, per-form notice) appear **only when WPForms is installed** on a site; its legacy behavior is unchanged. Hidden legacy options remain preserved when saving on a native-only site.
+- WooCommerce email summaries and native edit deep-links are read-only in Core; WC/Commerce retain setting authority.
+- Inquiry notices, payment/order notices, customer registration notices and SMTP identity are never intercepted by this V1.
 
-## Provider contract
-| Provider | V1 integration | Safety |
-| --- | --- | --- |
-| WordPress registration admin | Hook wp_send_new_user_notification_to_admin | Never touches wp_send_new_user_notification_to_user |
-| WPForms newsletter admin | Hook wpforms_process_before_form_data | Only explicit allowlisted form IDs and exact administrator addresses / {admin_email} smart tag; preserve remaining recipients and entries |
-| WooCommerce | Live read-only email list with deep links to native WC settings | Never writes WooCommerce email options or hooks blanket wp_mail suppression |
-| Inquiries / security / transport | Unchanged | No suppression intercept |
+## BYL Dev-only acceptance
+1. Confirm GitHub PR head SHA, target URL `https://dev.beyourlover.com`, affected PHP file SHA256 and known rollback; no WWW access.
+2. Check native Newsletter store exists, and admin policy/hook is registered. Confirm registration admin notification disabled, customer account hook unaffected.
+3. Render the real backend menu; assert the native Newsletter status row exists, and no WPForms ID/address fields are displayed on BYL Dev. Check administrator save, nonce, capability and setting readback.
+4. Test native Newsletter schema **with isolated transaction, insert/read/confirm/rollback**, ensuring zero retained test records and zero outbound mail. Separately check native REST/API/outbound readiness; if outbound gates are OFF, **do not mark actual REST subscribe or customer SMTP delivery as PASS**.
+5. Ensure WooCommerce source/read-only summary and inquiry delivery contracts remain intact.
+6. Owner browser visual and functional UAT remain distinct from CLI render/source tests.
 
-Option key: yby_core_mail_admin_notifications. Fields: registration_admin, newsletter_admin, newsletter_form_ids, newsletter_admin_recipients.
+## Legacy WPForms adapter (optional, not BYL V3 scope)
+The `wpforms_process_before_form_data` filter remains available for sites already using WPForms. It requires explicitly configured form IDs and administrator recipient matching; it never alters stored entries or customer recipients. Real WPForms end-to-end acceptance belongs to a compatible legacy site, not BYL Dev.
 
-## BYL environment UAT steps
-1. Install/test this branch only on approved Dev after verifying backup and target; do not install incrementally on legacy www.beyourlover.com.
-2. Navigate to admin.php?page=andy-core-email&tab=transport. Confirm transport status unchanged, card visible, WooCommerce listing read-only.
-3. For BYL newsletter, enter form ID 26680 and the real administrator notification destination (support@beyourlover.com only if the current WPForms notification matches it); uncheck Newsletter → 管理员. Uncheck 新用户注册 → 管理员.
-4. Save as a fully privileged administrator; reload and verify the settings persist.
-5. With a controlled non-production form submission, confirm WPForms stores the entry, customer mail is not blocked, and the newsletter admin-only notification is not generated. Inspect whether WPForms uses deferred sending on this install; if so, test that path too. Do not send real mail without Owner approval.
-6. Confirm inquiry form admin notifications still work, WooCommerce order / payment alert emails remain unchanged, and the customer new-account/password email remains enabled. Check all WooCommerce listed links.
-7. If any condition fails, re-enable the two administrator toggles or roll back the branch. Existing data is untouched.
-
-## Non-goals & follow-up
-- V1 does not claim real inbox delivery or production visual acceptance.
-- WooCommerce email business policy remains WooCommerce / Andy Commerce owned under AGENTS.md. A future Commerce adapter may expose editable settings using WC email APIs with exact readback and permission gates; do not maintain a second competing persistent option in Core.
-- Do not replace wp_mail globally: that would risk password reset, checkout, customer confirmation, inquiries, and security events.
+## Safeguards and release
+- No global `wp_mail` blacklist, no SMTP provider replacement, no real send tests without approval.
+- Source authority remains GitHub; Dev is a reproducible code-only integration target, never the source of truth.
+- PR #227 stays Draft until CI, scoped Dev UAT and Owner acceptance. No `main` merge, Stable or WWW/cutover authorization is inferred.
+- Rollback only scoped changed Dev PHP files and the saved Dev notification option if required.
