@@ -60,6 +60,33 @@ $source=file_get_contents(dirname(__DIR__).'/includes/class-andy-commerce-curren
 $ok(str_contains($source,'set_customer_session_cookie(true)'),'guest session cookie must be explicitly persisted');
 echo 'R9_REAL_DEV_FOOTER_SESSION_WOO_PRODUCT_STORE_API_PASS'.PHP_EOL;
 echo 'R10_EUR_COUPON_FLAT_SHIPPING_NATIVE_TAX_CALCULATOR_PASS'.PHP_EOL;
+// R10-USD invariant: even when AUD converts USD50 into AUD75, a Woo
+// native $69 minimum must NOT grant free shipping. Conversely EUR prices
+// below 69 in display units must not block a USD70-eligible shipment.
+$shipping=new WC_Shipping_Free_Shipping();
+$shipping->settings=['requires'=>'min_amount','min_amount'=>'69','ignore_discounts'=>'no'];
+$low=new WC_Product_Simple();$low->set_name('R10 USD50 below free shipping');
+$low->set_status('publish');$low->set_regular_price('50.00');$low->set_price('50.00');
+$lowId=$low->save();
+$high=new WC_Product_Simple();$high->set_name('R10 USD70 eligible');
+$high->set_status('publish');$high->set_regular_price('70.00');$high->set_price('70.00');
+$highId=$high->save();
+foreach(['EUR','GBP','AUD','CAD'] as $iso){
+    WC()->session->set('ac_currency_runtime_dev_selected',$iso);
+    WC()->cart->empty_cart();
+    $ok((bool)WC()->cart->add_to_cart($lowId,1),'USD50 add to cart '.$iso);
+    $ok($rt::free_shipping_usd(true,[],$shipping)===false,
+        'USD50 below $69 must not be eligible '.$iso);
+    WC()->cart->empty_cart();
+    $ok((bool)WC()->cart->add_to_cart($highId,1),'USD70 add to cart '.$iso);
+    $ok($rt::free_shipping_usd(false,[],$shipping)===true,
+        'USD70 above $69 eligible despite display FX '.$iso);
+    $ok((bool)WC()->cart->apply_coupon('aicc-r8-r10-test'),'USD5 coupon applied '.$iso);
+    $ok($rt::free_shipping_usd(true,[],$shipping)===false,
+        'USD70 - $5 coupon is below $69 '.$iso);
+}
+echo 'R10_USD_69_FREE_SHIPPING_FOUR_FOREIGN_CURRENCIES_PASS'.PHP_EOL;
+
 update_option($rt::OPTION,['enabled'=>false,'allowed'=>$rt::CODES],false);
 $ok(!$rt::allowed(),'instant Dev runtime disable');
 $ok($rt::currency('USD')==='USD','disabled must fall back USD');
