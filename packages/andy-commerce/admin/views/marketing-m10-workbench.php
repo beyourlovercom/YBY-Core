@@ -267,6 +267,9 @@ echo esc_html($operationResults[$operationKey]??'未确认操作'); ?>。所有�
 <tr><td colspan="5">暂无虚拟状态变更记录。没有实际订单执行记录。</td></tr>
 <?php endif; ?></tbody></table></div>
 <?php endif; ?>
+<?php if($tab==='marketing-promotions' && class_exists('Andy_Commerce_Marketing_Dev_UAT')): ?>
+<?php Andy_Commerce_Marketing_Dev_UAT::render_panel(); ?>
+<?php endif; ?>
 </section>
 <?php if($tab==='marketing-create'): ?>
 <script>

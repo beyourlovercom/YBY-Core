@@ -85,7 +85,9 @@ for harness in \
   marketing-m10-policy-evaluator-harness \
   marketing-m10-six-type-matrix-harness \
   marketing-m10-lifecycle-harness \
-  marketing-m10-page-render-harness
+  marketing-m10-page-render-harness \
+  marketing-p1p2-revocation-harness \
+  marketing-integrator-dev-uat-gate-harness
 do
   php "$repo/packages/andy-commerce/tests/$harness.php" >/dev/null
 done

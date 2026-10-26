@@ -32,6 +32,11 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m7-draft-s
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m8-promotion-evaluator.php';
 // M9 pure multi-rule USD shadow evaluator; no Woo pricing/payment hooks.
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m9-usd-rule-engine.php';
+// One integration owner: Marketing M-P1..P5 source from Draft PR #228.
+// Default OFF; public/WWW requests never satisfy the exact local/Dev UAT gate.
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-marketing-p2-woo-adapter.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-marketing-p5-checkout-hooks.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-marketing-dev-uat.php';
 
 class Andy_Commerce {
 	public function run() {
@@ -39,6 +44,10 @@ class Andy_Commerce {
 		Andy_Commerce_Currency_Runtime_C1::boot();
 		Andy_Commerce_Currency_Runtime_Dev_V1::admin_boot();
 		Andy_Commerce_Currency_Runtime_Dev_V1::boot();
+		// Hooks are registered only for the named disposable environment or
+		// a deliberately armed HTTPS Dev Woo administrator (never guests).
+		Andy_Commerce_Marketing_P2_Woo_Adapter::boot();
+		Andy_Commerce_Marketing_P5_Checkout_Hooks::boot();
 		Andy_Commerce_Shipping_Promotion_Policy::boot();
 		if ( ! class_exists( 'BYL_Shipping_Promotion_Runtime' ) ) {
 			Andy_Commerce_Shipping_Promotion_Runtime::boot();
@@ -49,6 +58,7 @@ class Andy_Commerce {
 		}
 		if ( is_admin() ) {
 			Andy_Commerce_M7_Draft_Studio::boot();
+			Andy_Commerce_Marketing_Dev_UAT::boot();
 			$admin = new Andy_Commerce_Admin();
 			add_action( 'admin_menu', array( $admin, 'add_admin_menu' ), 35 );
 		}
