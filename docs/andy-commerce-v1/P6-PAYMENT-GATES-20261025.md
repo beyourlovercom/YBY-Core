@@ -1,5 +1,22 @@
 # Andy Commerce P6 — Independent payment test gates (2026-10-25)
 
+> **SUPERSEDING OWNER DECISION — 2026-10-26:** The original Stripe provider test gate plan below is historical and no longer a release prerequisite for this owner's Andy Commerce work. Stripe-only OAuth, 3DS, decline, webhook delivery, test captures, payment/refund simulations and cross-currency Stripe charges are **`WAIVED — Owner Approved`**, not technically passed or proven. Do not request additional Stripe sandbox activity. Continue Commerce-owned Currency / Marketing / Woo-native / M15–M16 correctness and normal code+ZIP UAT; reuse existing valid evidence. Production Stripe is connected only in a later separately approved WWW cutover. No claims of operational payments or permission to charge customers follow from this waiver. GitHub main, Stable and WWW remain unchanged.
+
+## Revised P6-F completion criteria (after Owner waiver)
+
+| Required item | Acceptance |
+|---|---|
+| Currency OS and six Marketing configurations/simulation | Existing specific PASS evidence or new regression on actual Commerce integrator HEAD |
+| Woo native cart/coupon, Store API/Classic, HPOS and M15/M16 order/quota/recovery | Existing specific PASS evidence or targeted Commerce-only regression |
+| Build / installable ZIP contract / CI / rollback | Exact-head checks and signed-off Owner-facing UAT |
+| Stripe OAuth / provider test payment / Webhook / refund / FX payment UAT | **WAIVED — Owner Approved** (do not execute or label PASS) |
+| WWW/Stripe Live integration and any customer charge | **Deferred to separate authorized WWW release**; this branch cannot perform it |
+
+**Progress rule:** P6-F can close on the Commerce-specific conditions above with an explicit Stripe waiver noted, not a falsely green Stripe test ledger. Distinguish CI and existing isolated Woo evidence from external provider reconciliation.
+
+---
+
+
 ## Scope and source of truth
 This branch is a **Draft source-only** continuation of unique Commerce integrator PR #213 at exact parent `ca59db1547733c967c3eab21b1eefe7d0a07b963`. GitHub main, Stable, WWW and installed Dev versions must remain unchanged. WP backend is Desktop-only. No official DC device or READY computer may be restarted.
 
