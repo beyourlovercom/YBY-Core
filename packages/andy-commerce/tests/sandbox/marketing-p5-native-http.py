@@ -102,6 +102,12 @@ else:
         "_wp_http_referer":"/?page_id=49","terms":"on"}
     _,raw=fetch("POST","?wc-ajax=checkout",data,"application/x-www-form-urlencoded")
     out=json.loads(raw)
+    if os.environ.get("AICC_P5_EXPECT_CAP_REJECT")=="1":
+        assert out.get("result")=="failure" and "This promotion has reached its usage limit" in out.get("messages",""),out
+        print("MARKETING_P5_CLASSIC_CAP_NOTICE_PASS",
+            json.dumps({"mode":MODE,"case":CASE,
+                "reason":"quota_exhausted","external_payment":False}))
+        sys.exit(0)
     assert out.get("result")=="success",out
     u=urllib.parse.urlparse(out["redirect"])
     assert u.hostname=="127.0.0.1" and u.port==18973,u
