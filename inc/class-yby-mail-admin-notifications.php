@@ -87,6 +87,30 @@ final class YBY_Mail_Admin_Notifications {
         return $form_data;
     }
 
+    /**
+     * Optional legacy provider. The native Newsletter does not depend on WPForms.
+     *
+     * @return bool
+     */
+    public static function wpforms_available() {
+        return function_exists( 'wpforms' ) || class_exists( 'WPForms', false );
+    }
+
+    /**
+     * Read-only native Newsletter readiness, not an email sending action.
+     *
+     * @return array<string,bool>
+     */
+    public static function native_newsletter_status() {
+        $available = class_exists( 'YBY_Newsletter_REST_Controller', false );
+        return array(
+            'enabled' => $available && YBY_Newsletter_REST_Controller::enabled(),
+            'outbound' => $available && YBY_Newsletter_REST_Controller::outbound_enabled(),
+            'ready' => $available && YBY_Newsletter_REST_Controller::subscribe_ready(),
+            'administrator_notification' => false,
+        );
+    }
+
     public static function save() {
         if ( ! current_user_can( 'manage_options' ) ||
              ! current_user_can( 'andy_core_settings_manage' ) ||
@@ -96,6 +120,13 @@ final class YBY_Mail_Admin_Notifications {
         check_admin_referer( self::ACTION );
         $input = isset( $_POST['mail_admin'] ) && is_array( $_POST['mail_admin'] )
             ? wp_unslash( $_POST['mail_admin'] ) : array();
+        // A native-only site's form must not silently wipe hidden legacy settings.
+        if ( ! self::wpforms_available() ) {
+            $previous = self::settings();
+            foreach ( array( 'newsletter_admin', 'newsletter_form_ids', 'newsletter_admin_recipients' ) as $key ) {
+                $input[ $key ] = $previous[ $key ];
+            }
+        }
         update_option( self::OPTION, self::sanitize( $input ), false );
         wp_safe_redirect( admin_url( 'admin.php?page=andy-core-email&tab=transport&notification_saved=1' ) );
         exit;
@@ -121,13 +152,23 @@ final class YBY_Mail_Admin_Notifications {
         }
         echo '<table class="form-table" role="presentation"><tbody>';
         self::checkbox_row( 'registration_admin', '新用户注册 → 管理员', '仅 WordPress 原生管理员注册通知；用户账户验证及设置密码邮件不受影响。', $settings, $editable );
-        self::checkbox_row( 'newsletter_admin', 'Newsletter → 管理员', '仅作用于下方指定的 WPForms 表单及明确识别的管理员收件人；订阅记录与客户确认邮件不受影响。', $settings, $editable );
-        echo '<tr><th scope="row"><label for="yby-newsletter-forms">Newsletter WPForms 表单 ID</label></th><td>';
-        echo '<input class="regular-text" id="yby-newsletter-forms" name="mail_admin[newsletter_form_ids]" value="' . esc_attr( $settings['newsletter_form_ids'] ) . '" placeholder="例如：26680" ' . ( $editable ? '' : 'disabled' ) . '>';
-        echo '<p class="description">逗号分隔。空白表示不拦截任何表单，防止误伤正式询盘。</p></td></tr>';
-        echo '<tr><th scope="row"><label for="yby-newsletter-admins">额外管理员收件地址</label></th><td>';
-        echo '<input class="regular-text" type="text" id="yby-newsletter-admins" name="mail_admin[newsletter_admin_recipients]" value="' . esc_attr( $settings['newsletter_admin_recipients'] ) . '" placeholder="support@example.com" ' . ( $editable ? '' : 'disabled' ) . '>';
-        echo '<p class="description">默认识别 WordPress 管理员地址和 {admin_email}。仅添加真正用于订阅提醒的管理员地址；其他邮件收件人不自动加入。</p></td></tr>';
+        $native = self::native_newsletter_status();
+        echo '<tr><th scope="row">Andy Core 原生 Newsletter → 管理员</th><td>';
+        echo '<strong>不发送（内置规则，无需开关）</strong>';
+        echo '<p class="description">原生订阅不会产生管理员提醒；客户订阅确认由 Newsletter 外发授权及 Mail Transport 控制。</p>';
+        echo '<p class="description">订阅服务：' . ( $native['enabled'] ? '已启用' : '未启用' ) .
+            '；客户确认邮件外发：' . ( $native['outbound'] ? '已授权' : '未授权' ) .
+            '；整体就绪：' . ( $native['ready'] ? '是' : '否' ) . '</p></td></tr>';
+        if ( self::wpforms_available() ) {
+            echo '<tr><th colspan="2"><h3>WPForms 旧站兼容通知</h3><p class="description">仅安装 WPForms 的网站显示；不影响 Andy Core 原生 Newsletter。</p></th></tr>';
+            self::checkbox_row( 'newsletter_admin', 'WPForms Newsletter → 管理员', '仅适用于指定的 WPForms 表单。', $settings, $editable );
+            echo '<tr><th scope="row"><label for="yby-newsletter-forms">WPForms 表单 ID</label></th><td>';
+            echo '<input class="regular-text" id="yby-newsletter-forms" name="mail_admin[newsletter_form_ids]" value="' . esc_attr( $settings['newsletter_form_ids'] ) . '" placeholder="例如：26680" ' . ( $editable ? '' : 'disabled' ) . '>';
+            echo '<p class="description">仅对所列旧站表单生效。不会自动安装或创建 WPForms。</p></td></tr>';
+            echo '<tr><th scope="row"><label for="yby-newsletter-admins">额外管理员收件地址（WPForms）</label></th><td>';
+            echo '<input class="regular-text" type="text" id="yby-newsletter-admins" name="mail_admin[newsletter_admin_recipients]" value="' . esc_attr( $settings['newsletter_admin_recipients'] ) . '" ' . ( $editable ? '' : 'disabled' ) . '>';
+            echo '<p class="description">只匹配确认为订阅管理通知的管理员收件地址。</p></td></tr>';
+        }
         echo '</tbody></table>';
         if ( $editable ) { submit_button( '保存管理员通知规则' ); echo '</form>'; }
         echo '<hr><h3>WooCommerce 邮件通知</h3>';
