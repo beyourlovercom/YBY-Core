@@ -78,6 +78,13 @@ class YBY_Inquiry_Admin {
 		}
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'leads';
 		if ( 'leads' !== $tab ) {
+			if ( 'mail_delivery' === $tab ) {
+				if ( ! current_user_can( 'andy_core_settings_manage' ) ) { wp_die( esc_html__( 'Permission denied.', 'yby-core' ) ); }
+				YBY_Three_OS_Admin::render_tabs( self::page_slug(), YBY_Three_OS_Admin::inquiry_tabs(), $tab, '询盘管理' );
+				YBY_Lead_Notification_Admin::render();
+				echo '</div>';
+				return;
+			}
 			if ( 'stats' === $tab ) {
 				YBY_Three_OS_Admin::render_tabs( self::page_slug(), YBY_Three_OS_Admin::inquiry_tabs(), $tab, '询盘管理' );
 				YBY_Three_OS_Readonly::render_inquiry_stats();

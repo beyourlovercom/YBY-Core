@@ -235,71 +235,7 @@ class YBY_Lead_REST_Controller {
 	 * @return array{status:string, error_code:string} Notification transport status (not mailbox delivery).
 	 */
 	protected function dispatch_notification( $lead, $result ) {
-		$mapper               = new YBY_Inquiry_Lead_Mapper();
-		$custom_fields        = isset( $lead['custom_fields'] ) && is_array( $lead['custom_fields'] ) ? $lead['custom_fields'] : array();
-		$notification_payload = array_merge(
-			$lead,
-			array(
-				'lead_id'              => isset( $result['lead_id'] ) ? (int) $result['lead_id'] : 0,
-				'case_id'              => isset( $result['case_id'] ) ? (string) $result['case_id'] : '',
-				'status'               => isset( $result['status'] ) ? (string) $result['status'] : '',
-				'custom_fields'        => $custom_fields,
-				'custom_fields_json'   => $mapper->build_custom_fields_json( $custom_fields ),
-				'contact_email'        => isset( $lead['email'] ) ? (string) $lead['email'] : '',
-				'contact_whatsapp_url' => $this->build_whatsapp_url( isset( $lead['whatsapp'] ) ? $lead['whatsapp'] : '' ),
-				'landing_page_url'     => isset( $lead['source_url'] ) ? (string) $lead['source_url'] : '',
-			)
-		);
-		$notification_manager = new YBY_Notification_Manager();
-		$notification_result  = array(
-			'mail_sent'       => false,
-			'mail_error_code' => '',
-		);
-
-		try {
-			$notification_result = $notification_manager->sendLeadNotification( $notification_payload );
-		} catch ( \Throwable $throwable ) {
-			$notification_result = array(
-				'mail_sent'       => false,
-				'mail_error_code' => 'notification_exception',
-			);
-		}
-
-		do_action(
-			'yby_lead_notification_result',
-			is_array( $notification_result ) ? $notification_result : array(),
-			isset( $result['lead_id'] ) ? (int) $result['lead_id'] : 0,
-			isset( $result['case_id'] ) ? (string) $result['case_id'] : ''
-		);
-
-		// Persist an operational audit trail separately from the sales follow-up status.
-		// A successful wp_mail() result indicates transport acceptance, never inbox delivery.
-		$accepted = is_array( $notification_result ) && ! empty( $notification_result['mail_sent'] );
-		$status = $accepted ? 'smtp_accepted' : 'failed';
-		$error_code = $accepted ? '' : sanitize_key( (string) ( $notification_result['mail_error_code'] ?? 'notification_unknown_failure' ) );
-		if ( '' === $error_code && ! $accepted ) {
-			$error_code = 'notification_unknown_failure';
-		}
-		$lead_id = isset( $result['lead_id'] ) ? (int) $result['lead_id'] : 0;
-		if ( $lead_id > 0 ) {
-			global $wpdb;
-			$wpdb->insert(
-				YBY_Database::activities_table_name(),
-				array(
-					'lead_id' => $lead_id,
-					'activity_type' => 'email_notification',
-					'content' => $error_code,
-					'new_value' => $status,
-					'created_by' => 0,
-					'created_at' => current_time( 'mysql' ),
-				),
-				array( '%d', '%s', '%s', '%s', '%d', '%s' )
-			);
-			if ( ! $accepted && ! $wpdb->insert_id ) {
-				error_log( 'YBY lead notification audit persistence failed for lead ID ' . $lead_id );
-			}
-		}
-		return array( 'status' => $status, 'error_code' => $error_code );
+		return YBY_Lead_Notification_Outbox::enqueue_and_attempt( $lead, $result );
 	}
 
 	/**

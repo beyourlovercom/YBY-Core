@@ -20,6 +20,8 @@ class YBY_Email_Notification_Provider {
 	 * @var string
 	 */
 	protected $current_alt_body = '';
+	/** Sanitized wp_mail_failed code for the current send attempt only. */
+	protected $last_mail_error_code = '';
 
 	/**
 	 * Send a lead notification email.
@@ -44,17 +46,28 @@ class YBY_Email_Notification_Provider {
 
 		$headers = $this->build_headers( $lead );
 		add_action( 'phpmailer_init', array( $this, 'apply_alt_body' ) );
+		$this->last_mail_error_code = '';
+		add_action( 'wp_mail_failed', array( $this, 'capture_mail_error' ) );
 
 		try {
 			$sent = (bool) wp_mail( $recipient, $subject, $html, $headers );
 
 			return array(
 				'mail_sent'       => $sent,
-				'mail_error_code' => $sent ? '' : 'mail_send_failed',
+				'mail_error_code' => $sent ? '' : ( $this->last_mail_error_code ?: 'mail_send_failed' ),
 			);
 		} finally {
 			remove_action( 'phpmailer_init', array( $this, 'apply_alt_body' ) );
+			remove_action( 'wp_mail_failed', array( $this, 'capture_mail_error' ) );
+			$this->last_mail_error_code = '';
 			$this->current_alt_body = '';
+		}
+	}
+
+	/** Store only the machine-readable error code, never raw SMTP diagnostics. */
+	public function capture_mail_error( $error ) {
+		if ( is_wp_error( $error ) ) {
+			$this->last_mail_error_code = sanitize_key( (string) $error->get_error_code() );
 		}
 	}
 

@@ -60,7 +60,8 @@ class YBY_Database {
 		self::create_management_tables();
 		self::create_connector_tables();
 		self::create_email_tables();
-		if ( self::leads_table_exists() && self::management_tables_exist() && self::connector_tables_exist() && self::email_tables_exist() ) {
+		self::create_notification_table();
+		if ( self::leads_table_exists() && self::management_tables_exist() && self::connector_tables_exist() && self::email_tables_exist() && self::notification_table_exists() ) {
 			update_option( self::VERSION_OPTION, YBY_RUNTIME_DATABASE_VERSION );
 		}
 	}
@@ -225,7 +226,7 @@ class YBY_Database {
 			return true;
 		}
 
-		return ! self::leads_table_exists() || ! self::management_tables_exist() || ! self::connector_tables_exist() || ! self::email_tables_exist();
+		return ! self::leads_table_exists() || ! self::management_tables_exist() || ! self::connector_tables_exist() || ! self::email_tables_exist() || ! self::notification_table_exists();
 	}
 
 	/**
@@ -233,6 +234,40 @@ class YBY_Database {
 	 *
 	 * @return void
 	 */
+    /** Durable notification state; one outbox entry per stored lead. */
+    public static function notification_table_exists() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'yby_lead_notifications';
+        return $table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+    }
+
+    protected static function create_notification_table() {
+        global $wpdb;
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        $table = $wpdb->prefix . 'yby_lead_notifications';
+        $charset = $wpdb->get_charset_collate();
+        $sql = "CREATE TABLE {$table} (
+            id bigint unsigned NOT NULL AUTO_INCREMENT,
+            lead_id bigint unsigned NOT NULL,
+            case_id varchar(50) NOT NULL,
+            recipient_email varchar(255) NOT NULL DEFAULT '',
+            status varchar(24) NOT NULL DEFAULT 'pending',
+            attempts int unsigned NOT NULL DEFAULT 0,
+            last_error_code varchar(80) NOT NULL DEFAULT '',
+            next_retry_at datetime NULL,
+            claimed_at datetime NULL,
+            last_attempt_at datetime NULL,
+            accepted_at datetime NULL,
+            created_at datetime NOT NULL,
+            updated_at datetime NOT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY lead_id (lead_id),
+            KEY state_retry (status, next_retry_at),
+            KEY case_id (case_id)
+        ) {$charset};";
+        dbDelta( $sql );
+    }
+
 	protected static function create_leads_table() {
 		global $wpdb;
 
