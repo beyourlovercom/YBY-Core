@@ -135,3 +135,14 @@ jobs:
           wp config delete AICC_CURRENCY_RUNTIME_TEST_CURRENCY --path="$RUNNER_TEMP/woo"
           wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
           echo 'C_R2_FIVE_CURRENCY_SANDBOX_FLAGS_REMOVED=PASS'
+
+      - name: Currency C-R4 to C-R7 native Woo integration and recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp config set AICC_CURRENCY_RUNTIME_SANDBOX true --raw --path="$RUNNER_TEMP/woo"
+          wp config set AICC_CURRENCY_RUNTIME_TEST_CURRENCY CAD --path="$RUNNER_TEMP/woo"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-runtime-c4-c7-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_RUNTIME_TEST_CURRENCY --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
+          wp eval 'if (has_filter("woocommerce_product_get_price", ["Andy_Commerce_Currency_Runtime_C1","price"]) !== false) { throw new RuntimeException("Currency hooks active without sandbox gate"); } echo "C_R7_PRODUCTION_DEFAULT_OFF_GUARD_PASS\\n";' --path="$RUNNER_TEMP/woo"
