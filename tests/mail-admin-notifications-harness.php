@@ -80,4 +80,31 @@ $html = ob_get_clean();
 check( strpos( $html, 'New order' ) !== false, 'Woo email inventory displayed' );
 check( strpos( $html, 'section=new_order' ) !== false, 'Woo email native settings link' );
 check( strpos( $html, '已启用' ) !== false, 'Woo source state read only' );
+// Native-only stores have no WPForms requirement and no admin newsletter sender.
+check( ! YBY_Mail_Admin_Notifications::wpforms_available(), 'WPForms optional on native-only site' );
+class YBY_Newsletter_REST_Controller {
+    public static function enabled() { return true; }
+    public static function outbound_enabled() { return false; }
+    public static function subscribe_ready() { return false; }
+}
+$status = YBY_Mail_Admin_Notifications::native_newsletter_status();
+check( $status['enabled'] && ! $status['outbound'] && ! $status['ready'], 'native readiness shown as state, not enabled by Core' );
+check( $status['administrator_notification'] === false, 'native sends no admin newsletter notification' );
+function current_user_can( $capability ) { return true; }
+function esc_attr( $value ) { return htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' ); }
+function checked( $actual, $expected, $echo = true ) {
+    return $actual === $expected ? ' checked="checked"' : '';
+}
+function wp_nonce_field( $action ) { echo '<input type="hidden" name="_wpnonce" value="test">'; }
+function submit_button( $label ) { echo '<button>' . esc_html( $label ) . '</button>'; }
+ob_start();
+YBY_Mail_Admin_Notifications::render();
+$native_ui = ob_get_clean();
+check( strpos( $native_ui, 'Andy Core 原生 Newsletter' ) !== false, 'native source identified in admin UI' );
+check( strpos( $native_ui, '不发送（内置规则，无需开关）' ) !== false, 'native admin notice is read only and off' );
+check( strpos( $native_ui, 'Newsletter 外发授权' ) !== false, 'customer confirmation delivery gate disclosed' );
+check( strpos( $native_ui, 'name="mail_admin[newsletter_admin]"' ) === false, 'legacy WPForms toggle hidden when plugin absent' );
+check( strpos( $native_ui, 'name="mail_admin[newsletter_form_ids]"' ) === false, 'legacy WPForms form selector hidden' );
+check( strpos( $native_ui, '保存管理员通知规则' ) !== false, 'native admin registration toggle still editable' );
+check( strpos( $native_ui, 'New order' ) !== false, 'native mail UI retains Woo summary' );
 echo "MAIL_ADMIN_NOTIFICATIONS_NO_NETWORK_PASS\n";
