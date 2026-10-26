@@ -123,23 +123,18 @@ try {
         }
         if($case==='fixed'){
             // A user-entered Woo coupon wins; it does not stack with auto.
-            $manualCode='aicc-p2-manual-test-local';
-            $manual=static function($data,$incoming)use($manualCode){
-                return $incoming===$manualCode
-                    ? ['discount_type'=>'fixed_cart','amount'=>'5',
-                       'individual_use'=>true,'description'=>'local manual coupon test']
-                    : $data;
-            };
-            add_filter('woocommerce_get_shop_coupon_data',$manual,99,2);
-            try{
-                $ok($cart->apply_coupon($manualCode),'native manual coupon accepted');
-                $cart->calculate_totals();
-                $ok($cart->get_applied_coupons()===[$manualCode],
-                    'manual coupon alone, automatic revoked');
-                $ok((int)round((float)$cart->get_discount_total()*100)===500,
-                    'manual coupon USD5 not stacked');
-                $cart->remove_coupon($manualCode);
-            } finally {remove_filter('woocommerce_get_shop_coupon_data',$manual,99);}
+            // This is the existing disposable Woo native coupon from P5,
+            // not an ad-hoc fake virtual code that Woo may reject at validation.
+            $manualCode='aicc-p5-only-25';
+            $accepted=$cart->apply_coupon($manualCode);
+            $ok($accepted===true,'native manual coupon accepted: '.wp_json_encode(
+                wc_get_notices('error')));
+            $cart->calculate_totals();
+            $ok($cart->get_applied_coupons()===[$manualCode],
+                'manual coupon alone, automatic revoked');
+            $ok((int)round((float)$cart->get_discount_total()*100)===2500,
+                'manual coupon USD25 not stacked');
+            $cart->remove_coupon($manualCode);
             $cart->calculate_totals();
             $ok((int)round((float)$cart->get_discount_total()*100)===1200,
                 'automatic offer re-evaluated when manual removed');
