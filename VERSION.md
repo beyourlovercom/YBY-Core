@@ -1,9 +1,9 @@
 # VERSION
 
 - Product Name: Andy Core
-- Source Version: 2.2.11
-- Stable Candidate Version: 2.2.11 (integration RC only; Dev V3 Owner UAT pending)
-- Release Stage: RELEASE_CANDIDATE only — NOT published to Stable/Latest; no automatic deployment
+- Source Version: 2.2.12
+- Stable Candidate Version: 2.2.12 (signed candidate; Ignore Notification Owner UAT PASS)
+- Release Stage: 2.2.12 RELEASE_CANDIDATE only; no tag or Stable/Latest publication and no automatic deployment
 - Previous Published Stable / Latest Before 2.2.10: 2.2.6
 - Previous Published Canary Prerelease: 2.2.9 (U3D unattended Hostinger auto-update PASS)
 - Database Version: 1.5.0
