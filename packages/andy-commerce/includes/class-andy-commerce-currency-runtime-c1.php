@@ -56,6 +56,7 @@ final class Andy_Commerce_Currency_Runtime_C1 {
         add_filter('woocommerce_variation_prices_sale_price', [__CLASS__, 'variation_price'], 60, 3);
         add_filter('woocommerce_get_variation_prices_hash', [__CLASS__, 'variation_hash'], 60, 3);
         if (class_exists('Andy_Commerce_Currency_Runtime_C4')) Andy_Commerce_Currency_Runtime_C4::boot();
+        if (class_exists('Andy_Commerce_Currency_Runtime_C6')) Andy_Commerce_Currency_Runtime_C6::boot();
     }
 
     public static function select_for_sandbox(string $code): bool {
