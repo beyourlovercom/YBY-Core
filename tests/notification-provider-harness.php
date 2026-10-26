@@ -383,6 +383,23 @@ class YBY_Email_Template_Runtime {
 
 require_once dirname( __DIR__ ) . '/inc/class-yby-email-notification-provider.php';
 require_once dirname( __DIR__ ) . '/inc/class-yby-notification-manager.php';
+// REST harness isolates the transport adapter. The durable outbox is tested separately.
+class YBY_Lead_Notification_Outbox {
+    public static function enqueue_and_attempt( $lead, $result ) {
+        $payload = array_merge( $lead, array(
+            'lead_id' => $result['lead_id'],
+            'case_id' => $result['case_id'],
+            'status' => $result['status'],
+            'contact_email' => $lead['email'],
+            'landing_page_url' => $lead['source_url'],
+            'contact_whatsapp_url' => '',
+        ) );
+        $outcome = ( new YBY_Notification_Manager() )->sendLeadNotification( $payload );
+        do_action( 'yby_lead_notification_result', $outcome, $result['lead_id'], $result['case_id'] );
+        return array( 'status' => empty( $outcome['mail_sent'] ) ? 'failed' : 'smtp_accepted', 'error_code' => '' );
+    }
+}
+
 require_once dirname( __DIR__ ) . '/inc/class-yby-lead-rest-controller.php';
 
 function harness_assert( $condition, $message ) {

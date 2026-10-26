@@ -79,7 +79,7 @@ class YBY_Lead_REST_Controller {
 			);
 		}
 
-		$this->dispatch_notification( $lead, $result );
+		$notification = $this->dispatch_notification( $lead, $result );
 
 		return new \WP_REST_Response(
 			array(
@@ -89,6 +89,7 @@ class YBY_Lead_REST_Controller {
 					'lead_id' => (int) $result['lead_id'],
 					'case_id' => (string) $result['case_id'],
 					'status'  => (string) $result['status'],
+					'notification_status' => $notification['status'],
 				),
 			),
 			200
@@ -231,45 +232,10 @@ class YBY_Lead_REST_Controller {
 	 *
 	 * @param array<string, mixed> $lead Sanitized lead payload.
 	 * @param array<string, mixed> $result Storage result.
-	 * @return void
+	 * @return array{status:string, error_code:string} Notification transport status (not mailbox delivery).
 	 */
 	protected function dispatch_notification( $lead, $result ) {
-		$mapper               = new YBY_Inquiry_Lead_Mapper();
-		$custom_fields        = isset( $lead['custom_fields'] ) && is_array( $lead['custom_fields'] ) ? $lead['custom_fields'] : array();
-		$notification_payload = array_merge(
-			$lead,
-			array(
-				'lead_id'              => isset( $result['lead_id'] ) ? (int) $result['lead_id'] : 0,
-				'case_id'              => isset( $result['case_id'] ) ? (string) $result['case_id'] : '',
-				'status'               => isset( $result['status'] ) ? (string) $result['status'] : '',
-				'custom_fields'        => $custom_fields,
-				'custom_fields_json'   => $mapper->build_custom_fields_json( $custom_fields ),
-				'contact_email'        => isset( $lead['email'] ) ? (string) $lead['email'] : '',
-				'contact_whatsapp_url' => $this->build_whatsapp_url( isset( $lead['whatsapp'] ) ? $lead['whatsapp'] : '' ),
-				'landing_page_url'     => isset( $lead['source_url'] ) ? (string) $lead['source_url'] : '',
-			)
-		);
-		$notification_manager = new YBY_Notification_Manager();
-		$notification_result  = array(
-			'mail_sent'       => false,
-			'mail_error_code' => '',
-		);
-
-		try {
-			$notification_result = $notification_manager->sendLeadNotification( $notification_payload );
-		} catch ( \Throwable $throwable ) {
-			$notification_result = array(
-				'mail_sent'       => false,
-				'mail_error_code' => 'notification_exception',
-			);
-		}
-
-		do_action(
-			'yby_lead_notification_result',
-			is_array( $notification_result ) ? $notification_result : array(),
-			isset( $result['lead_id'] ) ? (int) $result['lead_id'] : 0,
-			isset( $result['case_id'] ) ? (string) $result['case_id'] : ''
-		);
+		return YBY_Lead_Notification_Outbox::enqueue_and_attempt( $lead, $result );
 	}
 
 	/**
