@@ -225,6 +225,16 @@ require_once dirname( __DIR__ ) . '/inc/class-yby-config.php';
 require_once dirname( __DIR__ ) . '/inc/class-yby-site-profile.php';
 require_once dirname( __DIR__ ) . '/inc/class-yby-case-id.php';
 require_once dirname( __DIR__ ) . '/inc/class-yby-lead-service.php';
+// This identity-only harness uses an offline transport stub; durable delivery has its own harness.
+class YBY_Lead_Notification_Outbox {
+    public static function enqueue_and_attempt( $lead, $result ) {
+        $payload = array_merge( $lead, array( 'lead_id' => $result['lead_id'],
+            'case_id' => $result['case_id'], 'status' => $result['status'] ) );
+        $outcome = ( new YBY_Notification_Manager() )->sendLeadNotification( $payload );
+        do_action( 'yby_lead_notification_result', $outcome, $result['lead_id'], $result['case_id'] );
+        return array( 'status' => ! empty( $outcome['mail_sent'] ) ? 'smtp_accepted' : 'failed', 'error_code' => '' );
+    }
+}
 require_once dirname( __DIR__ ) . '/inc/class-yby-lead-rest-controller.php';
 
 function harness_assert( $condition, $message ) {
