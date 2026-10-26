@@ -301,6 +301,7 @@ final class YBY_Three_OS_Admin {
             }
         } elseif ( in_array( $tab, array( 'overview', 'health', 'transport' ), true ) ) {
             YBY_Three_OS_Readonly::render_email_summary( $tab );
+            if ( 'transport' === $tab ) { YBY_Mail_Admin_Notifications::render(); }
         } else {
             $descriptions = array(
                 'overview' => '发送与队列总览。Mail OS V2 仍未启用真实队列、Worker 或自动重试。',

@@ -68,6 +68,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-inquiry-shortcodes.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-newsletter-consent.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-newsletter-store.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-mail-transport.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-mail-admin-notifications.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-newsletter-rest-controller.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-subscribe-shortcode.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-global-popup.php';
@@ -138,6 +139,7 @@ class YBY_Core {
 	 * @return void
 	 */
 	protected function define_system_hooks() {
+		YBY_Mail_Admin_Notifications::register();
 		$database = new YBY_Database();
 		$module_runtime = new YBY_Module_Runtime();
 
