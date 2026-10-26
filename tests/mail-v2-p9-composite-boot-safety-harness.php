@@ -25,6 +25,7 @@ $baseline = array(
 // inspect the **current** runtime loader to prove no Mail P9 worker is booted.
 $frozen_paths = array(
     'inc/class-yby-core.php' => 'tests/fixtures/mail-p9-frozen/inc/class-yby-core.php',
+    'admin/class-yby-three-os-admin.php' => 'tests/fixtures/mail-p9-frozen/admin/class-yby-three-os-admin.php',
 );
 foreach ($baseline as $path => $expected_blob_sha) {
     $file = $root . '/' . (isset($frozen_paths[$path]) ? $frozen_paths[$path] : $path);
@@ -70,5 +71,11 @@ composite_guard(strpos($core, "'inc/class-yby-mail-transport.php'") !== false, '
 composite_guard(strpos($core, "'admin/class-yby-three-os-admin.php'") !== false, 'v22_ui_preserved');
 composite_guard(strpos($core, "'admin/class-yby-mail-v2-p6-dev-preview.php'") !== false, 'p6_preview_preserved');
 composite_guard(strpos($core, "'admin/class-yby-andy-admin-shell-v22.php'") !== false, 'v22_shell_preserved');
+$admin_current = file_get_contents($root . '/admin/class-yby-three-os-admin.php');
+composite_guard(is_string($admin_current) &&
+    strpos($admin_current, "YBY_Mail_Admin_Notifications::render()") !== false,
+    'current_notification_transport_ui_present');
+composite_guard(strpos($core, "'inc/class-yby-mail-admin-notifications.php'") !== false,
+    'current_scoped_admin_policy_loader_present');
 echo 'MAIL_P9_COMPOSITE_BOOT_INERT_PASS assertions=' . $assertions .
     ' core_historical_sha=verified current_core_boot=checked p8_exact_sha=verified wp_hooks=0 worker=off smtp=off' . PHP_EOL;
