@@ -1,0 +1,74 @@
+name: Andy Commerce P5 Disposable Woo Sandbox
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/andy-commerce-p5-disposable-woo.yml'
+      - 'packages/andy-commerce/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-woo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: commerce_p5_isolated
+          MYSQL_USER: commerce_p5
+          MYSQL_PASSWORD: disposable-only
+          MYSQL_ROOT_PASSWORD: disposable-root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pdisposable-root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli,zip,curl
+          coverage: none
+      - name: Provision independent WordPress and WooCommerce
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          chmod +x /usr/local/bin/wp
+          wp core download --path="$RUNNER_TEMP/woo" --version=6.8.3
+          wp config create --path="$RUNNER_TEMP/woo" --dbname=commerce_p5_isolated --dbuser=commerce_p5 --dbpass=disposable-only --dbhost=127.0.0.1 --skip-check
+          wp config set DISABLE_WP_CRON true --path="$RUNNER_TEMP/woo" --raw
+          wp config set WP_ENVIRONMENT_TYPE local --path="$RUNNER_TEMP/woo"
+          wp core install --path="$RUNNER_TEMP/woo" --url=http://commerce-p5.invalid --title=CommerceDisposable --admin_user=p5-admin --admin_password=disposable-only --admin_email=admin@example.invalid --skip-email
+          wp plugin install woocommerce --activate --path="$RUNNER_TEMP/woo"
+          mkdir -p "$RUNNER_TEMP/woo/wp-content/plugins/yby-core"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/woo/wp-content/plugins/yby-core"
+          wp plugin activate yby-core --path="$RUNNER_TEMP/woo"
+          bash scripts/build-andy-commerce-dev-candidate.sh "$RUNNER_TEMP/andy-commerce-p5.zip"
+          wp plugin install "$RUNNER_TEMP/andy-commerce-p5.zip" --activate --path="$RUNNER_TEMP/woo"
+          mkdir -p "$RUNNER_TEMP/woo/wp-content/mu-plugins"
+          cat > "$RUNNER_TEMP/woo/wp-content/mu-plugins/p5-isolation.php" <<'PHP'
+          <?php
+          add_filter('pre_wp_mail', static fn() => true, 999);
+          add_filter('pre_http_request', static function($pre, $args, $url) {
+              return new WP_Error('p5_external_network_denied', 'P5 sandbox external HTTP denied');
+          }, 999, 3);
+          PHP
+          wp config set WP_HTTP_BLOCK_EXTERNAL true --path="$RUNNER_TEMP/woo" --raw
+          echo "P5_INDEPENDENT_DATABASE_AND_SITE=PASS"
+      - name: Inspect isolated runtime and OFF-only marketing
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp plugin list --path="$RUNNER_TEMP/woo"
+          test "$(wp plugin is-active woocommerce --path="$RUNNER_TEMP/woo" && echo yes)" = yes
+          test "$(wp plugin is-active yby-core --path="$RUNNER_TEMP/woo" && echo yes)" = yes
+          test "$(wp plugin is-active andy-commerce --path="$RUNNER_TEMP/woo" && echo yes)" = yes
+          test "$(wp option get andy_commerce_m7_inactive_drafts_v1 --path="$RUNNER_TEMP/woo" 2>/dev/null || true)" = ""
+          echo "P5_A_B_PLUGINS_ACTIVE_DRAFTS_OFF=PASS"
