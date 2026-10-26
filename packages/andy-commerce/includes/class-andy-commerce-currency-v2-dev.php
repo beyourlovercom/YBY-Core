@@ -95,6 +95,11 @@ final class Andy_Commerce_Currency_V2_Dev {
             .'</style>';
     }
     static function shortcode($atts=[]): string {
+        // Real Dev shopper selector takes precedence only after explicit R8 gate.
+        if(class_exists('Andy_Commerce_Currency_Runtime_Dev_V1')
+            && Andy_Commerce_Currency_Runtime_Dev_V1::allowed()) {
+            return Andy_Commerce_Currency_Runtime_Dev_V1::shortcode();
+        }
         if(!self::access())return '';
         $atts=shortcode_atts(['style'=>'default','show_flag'=>'yes','show_symbol'=>'yes','show_code'=>'yes'],(array)$atts,'andy_currency_switcher');
         $cfg=self::config();$id='ac-currency-demo-'.wp_unique_id();
