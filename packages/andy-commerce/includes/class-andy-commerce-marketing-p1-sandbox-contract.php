@@ -20,7 +20,16 @@ final class Andy_Commerce_Marketing_P1_Sandbox_Contract {
     public static function isolated(): bool {
         return defined('AICC_MARKETING_RUNTIME_SANDBOX')
             && AICC_MARKETING_RUNTIME_SANDBOX === true
-            && defined('DB_NAME') && DB_NAME === self::LOCAL_DB
+            && self::disposable_origin();
+    }
+
+    /**
+     * Site identity remains checkable even after the opt-in flag is removed,
+     * so M-P2 can clean a previously inserted session coupon or gift.
+     * This never authorizes applying a new promotion by itself.
+     */
+    public static function disposable_origin(): bool {
+        return defined('DB_NAME') && DB_NAME === self::LOCAL_DB
             && function_exists('home_url') && home_url() === self::LOCAL_URL
             && function_exists('wp_get_environment_type')
             && wp_get_environment_type() === 'local'
@@ -108,10 +117,12 @@ final class Andy_Commerce_Marketing_P1_Sandbox_Contract {
             || !is_int($stored['source_revision']??null)
             || !self::valid_draft($stored['draft'])) return null;
         $canonical=self::canonical($stored['draft']);
+        try {
+            $digest=hash('sha256',json_encode($canonical,JSON_THROW_ON_ERROR));
+        } catch (Throwable $e) { return null; } // malformed stored input fails closed
         if (($canonical['id']??null)!==$stored['draft_id']
             || ($canonical['revision']??null)!==$stored['source_revision']
-            || !hash_equals(hash('sha256',json_encode($canonical,JSON_THROW_ON_ERROR)),
-                $stored['fingerprint'])) return null;
+            || !hash_equals($digest,$stored['fingerprint'])) return null;
         if (!class_exists('Andy_Commerce_M7_Draft_Studio')) return null;
         $rows=Andy_Commerce_M7_Draft_Studio::rows();
         $latest=$rows[$stored['draft_id']]??null;
