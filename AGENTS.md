@@ -21,6 +21,14 @@
 - Follow required PR protection/checks, branch isolation and Owner-facing UAT. One work package/branch/PR and one active implementing agent per worktree; never parallel-edit the same file.
 - Missing checks or failed tests are not PASS. Do not suppress failures or expand scope to make evidence look clean.
 
+## Disposable test account and Owner UAT login readiness (Owner rule, 2026-10-26)
+- For **temporary/isolated test accounts**, prepare the usable authenticated browser session and open the exact review page **before** asking Owner to perform UAT. Never hand off a blocked login form as a review-ready page.
+- When authorized and technically permitted, set up test-only credentials locally, sign in using legitimate UI authentication on the designated READY device (without restarting its browser), verify the final page loads, and provide Owner with a ready-to-review page. Do not assume a `pass` message proves account login or OAuth completion; confirm from actual readback.
+- If a temporary test username/password must be given to Owner, provide a usable credential handoff through an approved secure channel or a plainly stated accessible path. **Do not hide credentials yet tell Owner to test**; never commit passwords, tokens, cookies, or private keys to GitHub, logs or artifacts.
+- A platform security block is a hard stop. Do not bypass it by changing tool, channel, or authentication strategy; instead report the precise blocker, keep the review status `BLOCKED`, and give a minimal safe Owner-only recovery action.
+- For third-party OAuth, SSO, MFA, payments and consent, pre-open and validate as much of the authenticated test interface as permitted. Leave only the actual identity/consent action to the authorized human; keep Live and Production isolated.
+- Owner UAT is PASS only when an accessible, correctly authenticated review page and the requested behavior have actually been verified.
+
 ## Hard stops
 Stop for Owner authorization before WWW/Production deploy; real payment/email/send events; destructive/irreversible customer/order/financial data writes; permission/business-model/architecture changes beyond approved scope; owner-only access and secret/2FA actions; or explicit Owner design/UAT acceptance gates.
 - Do not fabricate transactions, success statuses, synthetic Woo orders, or compatibility evidence.
