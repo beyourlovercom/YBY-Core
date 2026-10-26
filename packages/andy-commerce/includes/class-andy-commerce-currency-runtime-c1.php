@@ -17,6 +17,10 @@ final class Andy_Commerce_Currency_Runtime_C1 {
     public static function test_currency(): string {
         $code = defined('AICC_CURRENCY_RUNTIME_TEST_CURRENCY')
             ? AICC_CURRENCY_RUNTIME_TEST_CURRENCY : 'EUR';
+        if (self::allowed() && function_exists('WC') && WC()->session) {
+            $saved = WC()->session->get('aicc_currency_runtime_selected');
+            if (is_string($saved) && array_key_exists($saved, self::TEST_RATES)) $code = $saved;
+        }
         if (!is_string($code) || !array_key_exists($code, self::TEST_RATES)) {
             throw new InvalidArgumentException('Unsupported sandbox currency; fail closed');
         }
@@ -51,6 +55,14 @@ final class Andy_Commerce_Currency_Runtime_C1 {
         add_filter('woocommerce_variation_prices_regular_price', [__CLASS__, 'variation_price'], 60, 3);
         add_filter('woocommerce_variation_prices_sale_price', [__CLASS__, 'variation_price'], 60, 3);
         add_filter('woocommerce_get_variation_prices_hash', [__CLASS__, 'variation_hash'], 60, 3);
+        if (class_exists('Andy_Commerce_Currency_Runtime_C4')) Andy_Commerce_Currency_Runtime_C4::boot();
+    }
+
+    public static function select_for_sandbox(string $code): bool {
+        if (!self::allowed() || !array_key_exists($code, self::TEST_RATES)
+            || !function_exists('WC') || !WC()->session) return false;
+        WC()->session->set('aicc_currency_runtime_selected', $code);
+        return self::test_currency() === $code;
     }
 
     public static function currency($code): string {
