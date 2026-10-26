@@ -9,4 +9,10 @@
 7. Actual signed self-upgrade and external Cron recovery are separate Owner-authorized gates.
 8. Only after Dev Owner PASS and approved exact-head main merge, prepare immutable signed release; Stable publication and per-site rollout each need separate authorization.
 
-No schema migration: updater compatibility 1.4.0; runtime 1.5.0.
+**P0 lead notification schema migration is required:** upgrading the plugin adds `<prefix>yby_lead_notifications` with a UNIQUE `lead_id` key; old lead tables and historical records remain untouched. Compatibility version stays 1.4.0 and runtime marker stays 1.5.0; check the table's required columns and unique index, not the marker alone.
+
+9. In the disposable WordPress/MySQL test, verify lead stored → one Outbox row → synthetic SMTP failure → bounded retry → synthetic SMTP acceptance; confirm no real SMTP connection and no duplicate recipient notifications.
+10. On approved Dev, verify Inquiry → Notification shows Case ID, recipient, status, attempts and safe error code; owner checks desktop UI, failed-only filter, admin permissions, CSRF nonce and manual retry behavior with a stubbed mail transport.
+11. Confirm WP-Cron heartbeat, retry event execution and stale-`pending` hourly recovery. If database schema validation fails, lead storage may still succeed but notification must **not** be sent without a durable Outbox claim. Record the `queue_unavailable` condition.
+12. Historical pre-upgrade leads do **not** have trustworthy delivery receipts. Never bulk-resend them; reconcile existing mail logs with human review. True mailbox delivery requires recipient/provider evidence, beyond `wp_mail()` acceptance.
+13. Any site upgrade, main merge, Stable release or real SMTP test remains subject to separate Owner approval and exact-head verification.
