@@ -117,6 +117,22 @@ try {
         && in_array('aicc-p2-'.$draft['id'],$order->get_coupon_codes(),true),
         'real Woo order coupon and no external money');
     $p4::bind_saved_order($one,$orderId);
+    // Read back persisted per-unit SKU discount metadata, not only totals.
+    $saved=wc_get_order($orderId);
+    $expectedVectors=[27=>[0,0],28=>[2250],29=>[0]];
+    foreach($saved->get_items('line_item') as $item){
+        $pid=$item->get_product_id();
+        $ok($item->get_meta('_aicc_marketing_p4_unit_minor',true)===$expectedVectors[$pid],
+            'persisted SKU '.$pid.' exact unit allocation');
+    }
+    $wrong=$one;$wrong['token']='wrong_'.$uniq;
+    try {
+        $p4::confirm($ledger,$wrong,$orderId);
+        throw new RuntimeException('M_P4_TOKEN_FORGERY_BROKEN');
+    } catch(RuntimeException $e) {
+        $ok($e->getMessage()!=='M_P4_TOKEN_FORGERY_BROKEN',
+            'wrong claim token rejected');
+    }
     $confirmed=$p4::confirm($ledger,$one,$orderId);
     $ok($confirmed['committed']===true && $confirmed['idempotent']===false,
         'durable order consumes one cap once');
