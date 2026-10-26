@@ -116,7 +116,8 @@ $assert(0===count($GLOBALS['submenu']['yby-os']),'no unauthorized submenu');
 // Third-level links point only to real, capability-gated existing controllers.
 $setup(array('manage_options','andy_core_settings_manage','manage_woocommerce','andy_core_leads_view','andy_core_newsletter_view','andy_core_mail_view','edit_pages'));
 $inquiry = YBY_Andy_OS_Navigation::tertiary_items('andy-core-leads');
-$assert(7===count($inquiry),'all seven existing inquiry functions retained for authorized admin');
+$assert(8===count($inquiry),'seven original inquiry functions and dedicated mail notification record retained for admin');
+$assert(in_array('通知记录',array_column($inquiry,'title'),true),'inquiry admin dedicated mail log tertiary link');
 $newsletter = YBY_Andy_OS_Navigation::tertiary_items('andy-core-newsletter');
 $assert(4===count($newsletter),'only operational newsletter tabs visible');
 $email = YBY_Andy_OS_Navigation::tertiary_items('andy-core-email');
