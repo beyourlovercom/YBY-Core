@@ -24,7 +24,7 @@ final class Andy_Commerce_Marketing_P2_Woo_Adapter {
 
     public static function boot(): void {
         if (!class_exists('WooCommerce')
-            || !Andy_Commerce_Marketing_P1_Sandbox_Contract::isolated()
+            || !Andy_Commerce_Marketing_P1_Sandbox_Contract::disposable_origin()
             || !function_exists('get_option')
             || get_option('aicc_m14_sandbox_active','no')!=='no') return;
         // Register revocation hooks even when OFF: old session coupons and
