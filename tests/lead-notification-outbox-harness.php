@@ -26,7 +26,7 @@ class YBY_Database {
     public static function activities_table_name() { return 'wp_yby_lead_activities'; }
 }
 class YBY_Inquiry_Lead_Mapper {
-    public function build_custom_fields_json( $fields ) { return json_encode( $fields ); }
+    public function build_custom_fields_json( $fields ) { if ( ! empty( $GLOBALS['payload_fail'] ) ) { throw new RuntimeException( 'synthetic payload exception' ); } return json_encode( $fields ); }
 }
 class YBY_Notification_Manager {
     public function sendLeadNotification( $payload ) {
@@ -161,4 +161,9 @@ expect_outbox( 'smtp_accepted' === $wpdb->receipts[102]['status'], 'Sweep repair
 expect_outbox( 4 === $GLOBALS['sent_count'], 'Sweep makes only one retry attempt' );
 YBY_Lead_Notification_Outbox::sweep();
 expect_outbox( 4 === $GLOBALS['sent_count'], 'Sweep never resends accepted mail' );
-echo "LEAD_NOTIFICATION_OUTBOX_OFFLINE_PASS 20 assertions\n";
+$GLOBALS['payload_fail'] = true;
+$no_send = YBY_Lead_Notification_Outbox::enqueue_and_attempt( $lead, array( 'lead_id' => 103, 'case_id' => 'C-103', 'status' => 'received' ) );
+expect_outbox( 'failed' === $no_send['status'], 'Pre-send payload exception stored as failure' );
+expect_outbox( 'notification_exception' === $wpdb->receipts[103]['last_error_code'], 'Exception recorded as safe code' );
+expect_outbox( 4 === $GLOBALS['sent_count'], 'Payload exception never sends email' );
+echo "LEAD_NOTIFICATION_OUTBOX_OFFLINE_PASS 23 assertions\n";

@@ -64,8 +64,10 @@ class YBY_Lead_Notification_Outbox {
         if ( 1 !== (int) $claim ) {
             return array( 'status' => self::status( $lead_id ), 'error_code' => 'not_claimed' );
         }
-        $payload = self::build_payload( $lead, $result );
         try {
+            // Rendering/normalizing the payload can itself fail. Keep it inside
+            // the guarded attempt so a pre-SMTP exception is durably recorded.
+            $payload = self::build_payload( $lead, $result );
             $mail = ( new YBY_Notification_Manager() )->sendLeadNotification( $payload );
         } catch ( \Throwable $throwable ) {
             $mail = array( 'mail_sent' => false, 'mail_error_code' => 'notification_exception' );
@@ -224,7 +226,13 @@ class YBY_Lead_Notification_Outbox {
     public static function actionable_count() {
         global $wpdb;
         if ( ! YBY_Database::notification_table_exists() ) { return 0; }
-        return (int) $wpdb->get_var( "SELECT COUNT(*) FROM " . self::table_name() . " WHERE status IN ('failed','exhausted','processing')" );
+        // Stale pending must also trigger an operator warning if cron is stalled.
+        return (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM " . self::table_name() .
+            " WHERE status IN ('failed','exhausted','processing')
+               OR (status = 'pending' AND updated_at <= %s)",
+            wp_date( 'Y-m-d H:i:s', time() - 300 )
+        ) );
     }
     protected static function build_payload( $lead, $result ) {
         $mapper = new YBY_Inquiry_Lead_Mapper();
