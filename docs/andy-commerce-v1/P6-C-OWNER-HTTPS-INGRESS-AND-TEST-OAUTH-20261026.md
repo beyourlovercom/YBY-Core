@@ -1,0 +1,37 @@
+# Commerce P6-C — restricted Woo Stripe Test HTTPS ingress and OAuth preflight (2026-10-26)
+
+**State: partial PASS, full OAuth + webhook still BLOCKED. This does not close P6-F.** All activity is scoped to the independently isolated US Mac mini Woo test fixture; no main merge, Stable, Dev/WWW, Live Stripe, real shipment, email, ERP or READY-device restart.
+
+## Cloudflare test-only ingress, created with Owner authorization
+
+- Dedicated named Tunnel: `aicc-p6-woo-uat-20261026`, ID `a9ee0c3c-58fd-4a5d-8c8a-f13692a1862c`. It is independent from the pre-existing ERP and other Cloudflare tunnels.
+- Correct dedicated FQDN: `aicc-p6-woo-uat.beyourlover.com`. Account origin cert is scoped to `beyourlover.com` — not the unrelated `ybyworld.com` zone.
+- US Mac mini runs a **separate** local fail-closed Python reverse proxy on `127.0.0.1:19319`; its sole fixed Woo upstream is `127.0.0.1:18973`. The original WP Admin and PHP runtime are **not** directly tunneled.
+- Proxy routes: `/healthz` static anonymous health; fixed WP guest storefront paths / Store API **owner Basic-auth gated**; WP Admin / login **owner Basic-auth gated**; narrowly enumerated static asset extensions only; Stripe `POST /?wc-api=wc_stripe` permitted with a Stripe-Signature header **but the official Woo Gateway must still verify its HMAC**. Other public routes and sensitive MU PHP are denied.
+- Actual verified edge probes over Cloudflare using fixed IPv4 edge routing, no TLS verification bypass: `/healthz` 200, prior guest `/checkout/` 200 (before gate tightened); after tightening, unauthenticated `/checkout/`, `/cart/`, Store API, `/wp-admin/`, `/wp-login.php` all 401; MU plugin direct path, REST path bypass, and PHP plugin direct path 404. Root/admin contents not publicly opened. These are ingress proof only, not a Stripe-delivered webhook.
+- A test-only MU adapter maps proxy-authenticated, localhost-originated `X-AICC-P6-Edge` requests to HTTPS site URLs after verifying private token + HTTPS host and isolated DB; direct CLI/local site stays `http://127.0.0.1:18973`. No public or installable ZIP copy of this MU code.
+- The tunnel's credentials and the randomly generated owner Basic/edge secrets live in private files on the US Mac mini (`0600`); **no credentials, OAuth URL, ephemeral signature, PII or token** in GitHub, chat, installable ZIP or logs. Restricted gateway admin Basic authentication has not yet been completed by Owner.
+
+### Current DNS caveats / cleanup
+
+- Cloudflare authoritative nameservers return IPv6 AAAA for the correct FQDN but **no IPv4 A** in repeated read-only probes. The US Mac mini has no IPv6 route; normal public-browser access is **not yet verified**. HTTPS using an explicitly specified Cloudflare IPv4 edge IP verified valid TLS (`ssl_verify_result=0`) and correct origin routing, but **this is not a DNS PASS**.
+- The first `cloudflared tunnel route dns` attempt, using `aicc-p6-woo-uat.ybyworld.com` against a cert scoped to `beyourlover.com`, created the unintended CNAME `aicc-p6-woo-uat.ybyworld.com.beyourlover.com`. The current named tunnel ingress does **not** match this hostname and it does not serve the Woo endpoint, but the DNS record exists and must be removed.
+- Attempted precise Cloudflare DNS deletion was **blocked by platform safety inspection**. The action was not executed. **Do not use alternate tools/channels to evade this check**; have the Owner delete that exact unintended record from Cloudflare DNS for `beyourlover.com`, keeping `aicc-p6-woo-uat.beyourlover.com` intact. Owner should also inspect correct host record as **CNAME to this Tunnel, Proxied** and diagnose absent A responses before OAuth UAT. Never add a public origin IP to work around it.
+
+## Woo Stripe Test connection — progress
+
+- Official `woocommerce-gateway-stripe` v11.1.1 is now **active only on the isolated Woo sandbox**. Existing COD-only `woocommerce_payment_gateways` guard stays intact, so Woo cannot submit any Stripe payment yet.
+- WordPress still enforces `WP_HTTP_BLOCK_EXTERNAL=true`. A backed-up surgical change to the sandbox's MU guard and `WP_ACCESSIBLE_HOSTS` allows only two exact HTTPS WooCommerce **test OAuth** POST routes (`api.woocommerce.com/stripe-sandbox/oauth-init` and `/oauth-keys`) and Stripe `https://api.stripe.com/v1/` operations only with a Basic Authorization key whose decoded prefix is `sk_test_` or `rk_test_`. No external email gateways or unrelated endpoints allowed; no Live authorization accepted.
+- Actual local **9/9 filter-gate smoke**: allow Test OAuth init/keys and test-key Stripe API, deny Woo **Live** OAuth endpoint, wrong method, Stripe `sk_live_` authorization, anonymous Stripe, generic mail-provider API, and plain HTTP. COD-only and M14 OFF also verified. Fake prefixes were used **only inside the in-memory filter assertions, not real API calls**.
+- Actual Woo official Test OAuth **initialization** was invoked through `WC_Stripe_Connect::get_oauth_url(..., 'test')` and got a valid `connect.stripe.com` redirect URL; sensitive URL stored locally only. **This proves Test OAuth-init reachability, NOT completed Owner authentication or Test account linkage.** The CLI nonce/session is not a browser session; do not claim it as a completed Woo OAuth login.
+- No Stripe keys were pasted or saved in GitHub. Woo Stripe Test account has **NOT** been read back as Connected, Test Webhook status is **NOT** Configured, and there are no new Woo Stripe Test orders or signed provider webhook deliveries.
+
+## Regression, exact source and continuation gate
+
+- Isolated Woo `WP_ENVIRONMENT_TYPE=local`, DB `aicc_commerce_p5_20261023`; Woo HPOS ON. Existing 14/14 local safety PASS after guarded Stripe extension activation and egress exception.
+- Commerce 45/45 PHP harnesses PASS on local base `ca59db1547733c967c3eab21b1eefe7d0a07b963`; local ZIP build and content/menu contract PASS (test sandbox drivers not shipped). CI on successor PR HEAD must be separately read back.
+- Exact rollback: stop only independently created P6 Tunnel/proxy processes; disable/clear Stripe Test keys or deactivate extension on local fixture; restore two private pre-change backups of `site/wp-config.php` and `site/wp-content/mu-plugins/aicc-sandbox-guard.php`; remove only the dedicated `aicc-p6-restricted-edge.php` MU adapter; keep the existing ERP tunnels, server, core and historical sandbox fixtures intact. DNS cleanup of the extra CNAME needs distinct Owner Cloudflare action because of the safety block.
+
+**Unblocks for P6-C:** correct FQDN DNS A/AAAA usable + restricted authenticated Owner HTTPS admin browser session; complete official Woo Stripe **Test** tab OAuth and read back account ID and Webhooks Configured with `livemode=false`; collect a real signed Woo webhook delivery on dedicated endpoint. Never connect Live. Then P6-D/E require NEW Woo-originated Test orders and genuine provider partial/full refunds / four currencies paid captures plus M15–M16 reconciliation. Existing standalone USD/3DS/decline payments remain PASS only in their original provider scope. **P6-F remains OPEN/BLOCKED, Issue #216 remains OPEN.**
+
+Reference: WooCommerce's [Connecting to Stripe](https://woocommerce.com/document/stripe/setup-and-configuration/connecting-to-stripe/), [Testing the Stripe extension](https://woocommerce.com/document/stripe/customer-experience/testing/), and [Stripe Webhooks](https://woocommerce.com/document/stripe/setup-and-configuration/stripe-webhooks/).
