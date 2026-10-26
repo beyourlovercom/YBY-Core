@@ -98,6 +98,48 @@ final class Andy_Commerce_Marketing_P4_Order_Cap {
             || $order->get_meta('_aicc_m16_test_claim',true)!==''
             || $order->get_transaction_id()!=='')
             throw new RuntimeException('M_P4_UNVERIFIED_SAVED_WOO_ORDER');
+        // Audit each order line against the exact previously proven M15
+        // native cents plan. No hidden generic fixed-cart spreading here.
+        $plan=Andy_Commerce_Marketing_P3_SKU_Woo::plan();
+        if(!is_array($plan)||($plan['campaign']??null)!==$draft['id'])
+            throw new RuntimeException('M_P4_MISSING_ORDER_SKU_PLAN');
+        $lines=(array)($plan['lines']??[]);
+        $seen=[];$total=0;$audit=[];
+        foreach($order->get_items('line_item') as $item) {
+            if(!($item instanceof WC_Order_Item_Product)) 
+                throw new RuntimeException('M_P4_UNVERIFIED_ORDER_ITEM');
+            $pid=$item->get_product_id();
+            $qty=$item->get_quantity();
+            if(!is_int($pid)||$pid<1||isset($seen[$pid])
+                ||!is_int($qty)||$qty<1) 
+                throw new RuntimeException('M_P4_ORDER_SKU_DUPLICATED');
+            $seen[$pid]=true;
+            $allocation=$lines[$pid]??null;
+            if($allocation!==null && $qty!==$allocation['quantity'])
+                throw new RuntimeException('M_P4_ORDER_QTY_MISMATCH');
+            $expected=$allocation['amount_minor']??0;
+            $native=(int)round(((float)$item->get_subtotal()
+                -(float)$item->get_total())*100);
+            if($native!==$expected || $expected<0)
+                throw new RuntimeException('M_P4_ORDER_SKU_DISCOUNT_MISMATCH');
+            $unitVector=$allocation['unit_discounts_usd_minor']??array_fill(0,$qty,0);
+            if(!is_array($unitVector)||count($unitVector)!==$qty
+                ||array_sum($unitVector)!==$expected)
+                throw new RuntimeException('M_P4_ORDER_UNIT_VECTOR_MISMATCH');
+            $audit[]=['item'=>$item,'minor'=>$expected,'units'=>$unitVector];
+            $total+=$expected;
+        }
+        if($total!==$plan['discount_minor']
+            ||$total!==(int)round((float)$order->get_discount_total()*100))
+            throw new RuntimeException('M_P4_ORDER_TOTAL_DISCOUNT_MISMATCH');
+        // Prevalidate before touching any order item. Unit vectors make a
+        // later partial Woo refund auditable; no refund is executed here.
+        foreach($audit as $row) {
+            $row['item']->update_meta_data('_aicc_marketing_p4_discount_minor',$row['minor']);
+            $row['item']->update_meta_data('_aicc_marketing_p4_unit_minor',$row['units']);
+            $row['item']->save();
+        }
+        $order->update_meta_data('_aicc_marketing_p4_discount_minor',$total);
         $order->update_meta_data('_aicc_m16_test_campaign',$key);
         $order->update_meta_data('_aicc_m16_test_claim',$claim['token']);
         $order->update_meta_data('_aicc_marketing_p4_source',$draft['id']);
@@ -126,6 +168,25 @@ final class Andy_Commerce_Marketing_P4_Order_Cap {
             || (int)$order->get_meta('_aicc_marketing_p4_revision',true)!==$draft['revision']
             || !in_array(self::PREFIX.$draft['id'],$order->get_coupon_codes(),true))
             throw new RuntimeException('M_P4_SAVED_ORDER_SOURCE_MISMATCH');
+        $sum=0;$seen=[];
+        foreach($order->get_items('line_item') as $item) {
+            if(!($item instanceof WC_Order_Item_Product)
+                ||isset($seen[$item->get_product_id()]))
+                throw new RuntimeException('M_P4_ORDER_AUDIT_UNVERIFIED');
+            $seen[$item->get_product_id()]=true;
+            $minor=$item->get_meta('_aicc_marketing_p4_discount_minor',true);
+            $units=$item->get_meta('_aicc_marketing_p4_unit_minor',true);
+            if(!is_int($minor)||$minor<0||!is_array($units)
+                ||count($units)!==$item->get_quantity()
+                ||array_sum($units)!==$minor
+                ||$minor!==(int)round(((float)$item->get_subtotal()
+                    -(float)$item->get_total())*100))
+                throw new RuntimeException('M_P4_ORDER_ALLOCATION_TAMPER');
+            $sum+=$minor;
+        }
+        if($sum!==(int)$order->get_meta('_aicc_marketing_p4_discount_minor',true)
+            ||$sum!==(int)round((float)$order->get_discount_total()*100))
+            throw new RuntimeException('M_P4_ORDER_COUPON_TAMPER');
         return Andy_Commerce_M16_Order_Cap_Reconcile::confirm(
             $ledger,$key,$claim['token'],$orderId
         );
