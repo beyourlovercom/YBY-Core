@@ -107,4 +107,15 @@ check( strpos( $native_ui, 'name="mail_admin[newsletter_admin]"' ) === false, 'l
 check( strpos( $native_ui, 'name="mail_admin[newsletter_form_ids]"' ) === false, 'legacy WPForms form selector hidden' );
 check( strpos( $native_ui, '保存管理员通知规则' ) !== false, 'native admin registration toggle still editable' );
 check( strpos( $native_ui, 'New order' ) !== false, 'native mail UI retains Woo summary' );
+// When a legacy site installs WPForms, retain the per-form administrator rules.
+class WPForms {}
+check( YBY_Mail_Admin_Notifications::wpforms_available(), 'WPForms optional provider detected' );
+ob_start();
+YBY_Mail_Admin_Notifications::render();
+$legacy_ui = ob_get_clean();
+check( strpos( $legacy_ui, 'WPForms 旧站兼容通知' ) !== false, 'WPForms optional provider can render legacy controls' );
+check( strpos( $legacy_ui, 'name="mail_admin[newsletter_admin]"' ) !== false, 'legacy admin toggle appears on WPForms site' );
+check( strpos( $legacy_ui, 'id="yby-newsletter-forms"' ) !== false, 'legacy form IDs appear on WPForms site' );
+check( strpos( $legacy_ui, 'id="yby-newsletter-admins"' ) !== false, 'legacy recipients appear on WPForms site' );
+check( strpos( $legacy_ui, 'Andy Core 原生 Newsletter' ) !== false, 'native status remains separate from legacy rules' );
 echo "MAIL_ADMIN_NOTIFICATIONS_NO_NETWORK_PASS\n";
