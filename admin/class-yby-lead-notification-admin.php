@@ -13,7 +13,7 @@ class YBY_Lead_Notification_Admin {
         $attention = YBY_Lead_Notification_Outbox::actionable_count();
         $missing = YBY_Lead_Notification_Outbox::unqueued_count();
         if ( $attention < 1 && $missing < 1 ) { return; }
-        $url = admin_url( 'admin.php?page=andy-core-leads&tab=notification' );
+        $url = admin_url( 'admin.php?page=andy-core-leads&tab=mail_delivery' );
         echo '<div class="notice notice-warning"><p>Andy Core 询盘邮件异常：'
             . esc_html( (string) $attention ) . ' 条发送失败或状态待核对，'
             . esc_html( (string) $missing ) . ' 条未成功入队。 '
@@ -51,7 +51,7 @@ class YBY_Lead_Notification_Admin {
         $filter = isset( $_GET['mail_status'] ) ? sanitize_key( wp_unslash( $_GET['mail_status'] ) ) : '';
         $allowed = array( '', 'pending', 'processing', 'smtp_accepted', 'failed', 'exhausted' );
         if ( ! in_array( $filter, $allowed, true ) ) { $filter = ''; }
-        $url = admin_url( 'admin.php?page=andy-core-leads&tab=notification' );
+        $url = admin_url( 'admin.php?page=andy-core-leads&tab=mail_delivery' );
         echo '<p><label for="mail-status">状态：</label><select id="mail-status" onchange="window.location.href=this.value">';
         $labels = array( '' => '全部', 'pending' => '待发送', 'processing' => '执行中/需核对',
             'smtp_accepted' => 'SMTP 已接受', 'failed' => '失败待重试', 'exhausted' => '重试次数耗尽' );

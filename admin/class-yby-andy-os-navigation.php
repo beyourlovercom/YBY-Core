@@ -303,6 +303,23 @@ final class YBY_Andy_OS_Navigation {
 			foreach ( array( 'leads'=>'列表', 'stats'=>'统计' ) as $tab=>$label ) {
 				$add( $label, 'admin.php?page=andy-core-leads&tab='.$tab, 'andy_core_leads_view', 'inquiry_os' );
 			}
+			// The mail failure inbox is an independent, high-visibility L3 entry.
+			// Its count is computed only for authorized lead managers.
+			if ( current_user_can( 'andy_core_leads_view' ) &&
+				current_user_can( 'andy_core_settings_manage' ) ) {
+				$mail_title = '询盘邮件通知记录';
+				if ( class_exists( 'YBY_Lead_Notification_Outbox' ) &&
+					class_exists( 'YBY_Database' ) &&
+					YBY_Database::notification_table_exists() ) {
+					$attention = YBY_Lead_Notification_Outbox::actionable_count() +
+						YBY_Lead_Notification_Outbox::unqueued_count();
+					if ( $attention > 0 ) {
+						$mail_title .= '（' . (int) $attention . ' 待处理）';
+					}
+				}
+				$add( $mail_title, 'admin.php?page=andy-core-leads&tab=mail_delivery',
+					'andy_core_settings_manage', 'inquiry_os' );
+			}
 			foreach ( array( 'floating_inquiry'=>'悬浮询盘', 'popup_inquiry'=>'弹窗',
 				'shortcode_inquiry'=>'短代码', 'settings'=>'设置', 'notification'=>'通知' ) as $tab=>$label ) {
 				if ( current_user_can( 'andy_core_leads_view' ) ) {
