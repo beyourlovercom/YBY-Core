@@ -84,6 +84,7 @@ $verify($order->get_currency()==='CAD','native checkout CAD currency');
 $verify(abs((float)$order->get_total()-27.01)<0.001,'order total equals native Woo cart');
 $fx=$order->get_meta('_aicc_currency_runtime_fx_v1',true);
 $verify(is_array($fx),'FX snapshot saved on native checkout');
+$verify(($fx['checkout_capture_pending_save']??false)===true,'checkout FX capture marker verified after order persistence');
 $verify(($fx['base_currency']??'')==='USD' && ($fx['display_currency']??'')==='CAD','native checkout source/display currency');
 $verify(($fx['usd_subtotal_minor']??null)===2000,'USD raw merchandise less USD coupon');
 $verify(($fx['native_woo_display_minor']??null)===2701,'stored Woo amount CAD cents');
@@ -102,4 +103,22 @@ $verify(($evidence['no_gateway_refund']??false)===true,'no gateway refund enforc
 $verify(($order->get_total_refunded())>=5.0,'Woo refund linked to order');
 $verify(get_option('andy_commerce_m7_inactive_drafts_v1',[])===[],'Marketing stays OFF');
 echo 'C_R7_NATIVE_WOO_INTERNAL_REFUND_FX_PASS cad_minor=500 usd_reverse_minor=370'.PHP_EOL;
+// Separate native Woo order, fully refunded without a payment provider. A
+// rounded CAD 27.01 total must reverse precisely USD 20.00, not USD 20.01.
+$secondOrderId=$checkout->create_order([
+    'payment_method'=>'cod','billing_first_name'=>'Synthetic',
+    'billing_last_name'=>'FullRefund','billing_email'=>'nobody@example.invalid','billing_country'=>'US'
+]);
+if(is_wp_error($secondOrderId)) throw new RuntimeException('Second native checkout failed');
+$secondOrder=wc_get_order($secondOrderId);
+$verify($secondOrder instanceof WC_Order && abs((float)$secondOrder->get_total()-27.01)<0.001,
+    'second checkout total for full refund');
+$full=wc_create_refund([
+    'amount'=>27.01,'reason'=>'Disposable full refund FX roundtrip',
+    'order_id'=>$secondOrderId,'refund_payment'=>false,'restock_items'=>false
+]);
+if(is_wp_error($full)) throw new RuntimeException('Full no-gateway refund failed');
+$fullEvidence=Andy_Commerce_Currency_Runtime_C6::refund_evidence($full,$secondOrder);
+$verify(($fullEvidence['reversed_usd_minor']??null)===2000,'full refund exact original USD reversal');
+echo 'C_R7_NATIVE_WOO_FULL_REFUND_EXACT_USD_REVERSAL_PASS cad_minor=2701 usd_minor=2000'.PHP_EOL;
 echo 'C_R7_NO_STRIPE_NO_EMAIL_NO_ERP_NO_PRODUCTION_WRITE=PASS'.PHP_EOL;
