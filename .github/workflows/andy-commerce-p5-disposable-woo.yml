@@ -122,3 +122,16 @@ jobs:
           wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-runtime-c1-disposable-wc.php" --path="$RUNNER_TEMP/woo"
           wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
           echo 'C_R1_SANDBOX_FLAG_REMOVED=PASS'
+
+      - name: Currency C-R2 five native Woo product cart Store API paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp config set AICC_CURRENCY_RUNTIME_SANDBOX true --raw --path="$RUNNER_TEMP/woo"
+          for iso in USD EUR GBP AUD CAD; do
+            wp config set AICC_CURRENCY_RUNTIME_TEST_CURRENCY "$iso" --path="$RUNNER_TEMP/woo"
+            wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-runtime-c2-five-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          done
+          wp config delete AICC_CURRENCY_RUNTIME_TEST_CURRENCY --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
+          echo 'C_R2_FIVE_CURRENCY_SANDBOX_FLAGS_REMOVED=PASS'
