@@ -155,6 +155,11 @@ final class Andy_Commerce_Currency_Runtime_Dev_V1 {
         if(!in_array($code,self::settings()['allowed'],true))wp_die('不支持的币种','',['response'=>400]);
         if(!function_exists('WC') || !WC()->session)wp_die('购物车会话不存在','',['response'=>409]);
         WC()->session->set('ac_currency_runtime_dev_selected',$code);
+        // Anonymous visitors do not necessarily have a Woo session cookie yet.
+        // Explicitly persist the customer session before the redirect, or the
+        // selected currency resets to USD on the next request.
+        if(method_exists(WC()->session,'set_customer_session_cookie'))
+            WC()->session->set_customer_session_cookie(true);
         if(WC()->cart) {
             // Currency changes invalidate native Woo shipping package session caches.
             $packages=WC()->shipping()?WC()->shipping()->get_packages():[];
