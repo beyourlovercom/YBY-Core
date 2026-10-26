@@ -41,7 +41,7 @@ jobs:
           set -euo pipefail
           curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
           chmod +x /usr/local/bin/wp
-          wp core download --path="$RUNNER_TEMP/woo" --version=6.8.3
+          wp core download --path="$RUNNER_TEMP/woo" --version=7.0
           wp config create --path="$RUNNER_TEMP/woo" --dbname=commerce_p5_isolated --dbuser=commerce_p5 --dbpass=disposable-only --dbhost=127.0.0.1 --skip-check
           wp config set DISABLE_WP_CRON true --path="$RUNNER_TEMP/woo" --raw
           wp config set WP_ENVIRONMENT_TYPE local --path="$RUNNER_TEMP/woo"
