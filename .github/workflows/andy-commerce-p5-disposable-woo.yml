@@ -111,3 +111,14 @@ jobs:
           test "$BEFORE" = "$AFTER"
           wp plugin is-active andy-commerce --path="$RUNNER_TEMP/woo"
           echo 'P6_F_FILE_RESTORE_AND_REACTIVATE_PASS; NO_PRODUCTION_MUTATION=TRUE'
+
+      - name: Currency C-R1 native EUR Woo cart isolated activation
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The flag exists only in this disposable WordPress config. Do not
+          # enable it on Dev or any live site.
+          wp config set AICC_CURRENCY_RUNTIME_SANDBOX true --raw --path="$RUNNER_TEMP/woo"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-runtime-c1-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
+          echo 'C_R1_SANDBOX_FLAG_REMOVED=PASS'
