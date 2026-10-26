@@ -14,6 +14,9 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-o
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-reference-fx-v1.php';
 // Dev-only Currency OS V2 admin visual and shortcode preview; no Woo price hooks.
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-v2-dev.php';
+// C-R1 runtime: source-loaded everywhere, but its Woo hooks are strictly
+// isolated to a disposable local sandbox with an explicit wp-config flag.
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-c1.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-order-coupon-column.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m4-shipping-shadow.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m5-progress-projection.php';
@@ -27,6 +30,7 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m9-usd-rul
 class Andy_Commerce {
 	public function run() {
 		Andy_Commerce_Currency_V2_Dev::boot();
+		Andy_Commerce_Currency_Runtime_C1::boot();
 		Andy_Commerce_Shipping_Promotion_Policy::boot();
 		if ( ! class_exists( 'BYL_Shipping_Promotion_Runtime' ) ) {
 			Andy_Commerce_Shipping_Promotion_Runtime::boot();
