@@ -17,6 +17,14 @@ function wp_schedule_single_event( $when, $hook, $args ) { if ( ! empty( $GLOBAL
 function wp_next_scheduled( $hook ) { return false; }
 function wp_schedule_event( $when, $schedule, $hook ) { return true; }
 function current_user_can( $cap ) { return true; }
+function get_current_user_id() { return 1; }
+function sanitize_text_field( $value ) { return strip_tags( $value ); }
+function wp_clear_scheduled_hook( $hook, $args ) {
+    $GLOBALS['cron_events'] = array_values( array_filter( $GLOBALS['cron_events'], static function( $event ) use ( $hook, $args ) {
+        return $event[1] !== $hook || $event[2] !== $args;
+    } ) );
+    return 1;
+}
 class YBY_Config {
     public static function get_lead_notification_primary_recipient_email() { return 'ops@example.test'; }
 }
@@ -69,6 +77,14 @@ class Outbox_Fake_Db {
     public function get_var( $sql ) {
         $id = $this->id( $sql );
         if ( ! isset( $this->receipts[$id] ) ) { return null; }
+        if ( stripos( $sql, 'SELECT content' ) !== false && stripos( $sql, 'email_notification_ignored' ) !== false ) {
+            foreach ( array_reverse( $this->activities ) as $activity ) {
+                if ( (int) $activity['lead_id'] === $id && 'email_notification_ignored' === $activity['activity_type'] ) {
+                    return $activity['content'];
+                }
+            }
+            return null;
+        }
         if ( stripos( $sql, 'SELECT attempts' ) !== false ) { return $this->receipts[$id]['attempts']; }
         if ( stripos( $sql, 'SELECT status' ) !== false ) { return $this->receipts[$id]['status']; }
         return $id;
@@ -77,6 +93,12 @@ class Outbox_Fake_Db {
         $id = $this->id( $sql );
         if ( ! isset( $this->receipts[$id] ) ) { return 0; }
         $row = &$this->receipts[$id];
+        if ( stripos( $sql, "status = 'ignored'" ) !== false ) {
+            if ( ! in_array( $row['status'], array( 'pending','failed','exhausted' ), true ) ) { return 0; }
+            $row['status'] = 'ignored';
+            $row['next_retry_at'] = null;
+            return 1;
+        }
         if ( stripos( $sql, "status = 'processing'" ) !== false ) {
             if ( ! in_array( $row['status'], array('pending','failed'), true ) ||
                  (int) $row['attempts'] >= 4 ||
@@ -166,4 +188,15 @@ $no_send = YBY_Lead_Notification_Outbox::enqueue_and_attempt( $lead, array( 'lea
 expect_outbox( 'failed' === $no_send['status'], 'Pre-send payload exception stored as failure' );
 expect_outbox( 'notification_exception' === $wpdb->receipts[103]['last_error_code'], 'Exception recorded as safe code' );
 expect_outbox( 4 === $GLOBALS['sent_count'], 'Payload exception never sends email' );
-echo "LEAD_NOTIFICATION_OUTBOX_OFFLINE_PASS 23 assertions\n";
+expect_outbox( ! YBY_Lead_Notification_Outbox::ignore_notification( 103, '' ), 'Cannot ignore without a reason' );
+expect_outbox( YBY_Lead_Notification_Outbox::ignore_notification( 103, 'Dev synthetic - no notification needed' ), 'Eligible failure can be ignored' );
+expect_outbox( 'ignored' === $wpdb->receipts[103]['status'], 'Ignore persists independent status' );
+expect_outbox( 'Dev synthetic - no notification needed' === YBY_Lead_Notification_Outbox::ignored_reason( 103 ), 'Ignore reason recorded in activity history' );
+expect_outbox( ! YBY_Lead_Notification_Outbox::ignore_notification( 103, 'double ignore' ), 'Repeated ignore rejected' );
+expect_outbox( ! YBY_Lead_Notification_Outbox::request_manual_retry( 103 ), 'Ignored notification not eligible for manual resend' );
+YBY_Lead_Notification_Outbox::retry( 103 );
+YBY_Lead_Notification_Outbox::sweep();
+expect_outbox( 4 === $GLOBALS['sent_count'], 'Ignored notification never sends after cron or sweep' );
+expect_outbox( ! YBY_Lead_Notification_Outbox::ignore_notification( 101, 'in flight' ), 'Processing record cannot be ignored' );
+expect_outbox( ! YBY_Lead_Notification_Outbox::ignore_notification( 102, 'delivered' ), 'SMTP accepted record cannot be ignored' );
+echo "LEAD_NOTIFICATION_OUTBOX_OFFLINE_PASS 32 assertions\n";

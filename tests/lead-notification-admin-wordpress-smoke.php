@@ -31,6 +31,9 @@ lead_admin_check( false !== strpos( $html, (string) $receipt['case_id'] ), 'case
 lead_admin_check( false !== strpos( $html, 'mail_send_failed' ), 'error_visibility' );
 lead_admin_check( false !== strpos( $html, '手动重发' ), 'manual_retry_button_visibility' );
 lead_admin_check( false !== strpos( $html, 'yby_mail_retry_nonce' ), 'nonce_present' );
+lead_admin_check( false !== strpos( $html, '忽略通知' ), 'ignore_button_visible' );
+lead_admin_check( false !== strpos( $html, 'yby_mail_ignore_nonce' ), 'ignore_nonce_present' );
+lead_admin_check( false !== strpos( $html, 'yby_mail_ignore_reason' ), 'ignore_reason_required' );
 lead_admin_check( false !== strpos( $html, 'SMTP accepted' ), 'delivery_semantics' );
 ob_start();
 YBY_Lead_Notification_Admin::render_notice();
@@ -55,4 +58,12 @@ if ( YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) {
 }
 $wpdb->update( $table, array( 'status' => $original, 'last_error_code' => '' ),
     array( 'lead_id' => $lead_id ), array( '%s', '%s' ), array( '%d' ) );
-echo "LEAD_NOTIFICATION_ADMIN_WP_PASS 8 assertions; live_email=0\n";
+// Ignored receipts remain visible with a reason, without a resend control.
+$_GET['mail_status'] = 'ignored';
+ob_start();
+YBY_Lead_Notification_Admin::render();
+$ignored_html = ob_get_clean();
+lead_admin_check( false !== strpos( $ignored_html, '已忽略' ), 'ignored_filter_visible' );
+lead_admin_check( false !== strpos( $ignored_html, 'Offline test: customer already contacted' ), 'ignored_reason_visible' );
+unset( $_GET['mail_status'] );
+echo "LEAD_NOTIFICATION_ADMIN_WP_PASS 13 assertions; live_email=0\n";

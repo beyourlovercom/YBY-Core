@@ -180,6 +180,60 @@ class YBY_Lead_Notification_Outbox {
         ) );
         foreach ( (array) $ids as $lead_id ) { self::retry( (int) $lead_id ); }
     }
+    /**
+     * Explicitly ignore a notification, never the underlying inquiry.
+     * The status update and reason audit are one InnoDB transaction. The
+     * atomic WHERE disallows in-flight processing or already accepted mail.
+     *
+     * @return bool True only when state and reason were both committed.
+     */
+    public static function ignore_notification( $lead_id, $reason ) {
+        global $wpdb;
+        $lead_id = (int) $lead_id;
+        if ( ! current_user_can( 'andy_core_settings_manage' ) || $lead_id < 1 ) { return false; }
+        $reason = trim( sanitize_text_field( (string) $reason ) );
+        if ( '' === $reason || strlen( $reason ) > 600 ) { return false; }
+        if ( false === $wpdb->query( 'START TRANSACTION' ) ) { return false; }
+        $now = current_time( 'mysql' );
+        $changed = $wpdb->query( $wpdb->prepare(
+            "UPDATE " . self::table_name() . " SET status = 'ignored',
+             next_retry_at = NULL, claimed_at = NULL, updated_at = %s
+             WHERE lead_id = %d AND status IN ('pending', 'failed', 'exhausted')",
+            $now, $lead_id
+        ) );
+        if ( 1 !== (int) $changed ) {
+            $wpdb->query( 'ROLLBACK' );
+            return false;
+        }
+        $audited = $wpdb->insert( YBY_Database::activities_table_name(), array(
+            'lead_id' => $lead_id,
+            'activity_type' => 'email_notification_ignored',
+            'content' => $reason,
+            'new_value' => 'ignored',
+            'created_by' => get_current_user_id(),
+            'created_at' => $now,
+        ), array( '%d', '%s', '%s', '%s', '%d', '%s' ) );
+        if ( false === $audited || false === $wpdb->query( 'COMMIT' ) ) {
+            $wpdb->query( 'ROLLBACK' );
+            error_log( 'YBY notification ignore audit failed for lead ' . $lead_id );
+            return false;
+        }
+        // Remove only this lead's retry events. A concurrently loaded callback
+        // will still fail the atomic status claim and cannot send the email.
+        wp_clear_scheduled_hook( 'yby_lead_notification_retry', array( $lead_id ) );
+        return true;
+    }
+
+    /** Audit reason remains visible without repurposing SMTP error fields. */
+    public static function ignored_reason( $lead_id ) {
+        global $wpdb;
+        return (string) $wpdb->get_var( $wpdb->prepare(
+            'SELECT content FROM ' . YBY_Database::activities_table_name() .
+            ' WHERE lead_id = %d AND activity_type = %s ORDER BY id DESC LIMIT 1',
+            (int) $lead_id, 'email_notification_ignored'
+        ) );
+    }
+
     /** Schedule an explicit resend only for a confirmed failed/exhausted receipt. */
     public static function request_manual_retry( $lead_id ) {
         global $wpdb;
