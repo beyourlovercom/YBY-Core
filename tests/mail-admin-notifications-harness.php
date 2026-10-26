@@ -108,7 +108,8 @@ check( strpos( $native_ui, 'name="mail_admin[newsletter_form_ids]"' ) === false,
 check( strpos( $native_ui, '保存管理员通知规则' ) !== false, 'native admin registration toggle still editable' );
 check( strpos( $native_ui, 'New order' ) !== false, 'native mail UI retains Woo summary' );
 // When a legacy site installs WPForms, retain the per-form administrator rules.
-class WPForms {}
+class TestOptionalWPForms {}
+class_alias( 'TestOptionalWPForms', 'WPForms' );
 check( YBY_Mail_Admin_Notifications::wpforms_available(), 'WPForms optional provider detected' );
 ob_start();
 YBY_Mail_Admin_Notifications::render();
