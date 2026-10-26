@@ -64,7 +64,6 @@ final class YBY_Three_OS_Admin {
             'leads' => '列表', 'stats' => '统计',
             'floating_inquiry' => '悬浮询盘', 'popup_inquiry' => '弹窗',
             'shortcode_inquiry' => '短代码', 'settings' => '设置', 'notification' => '通知',
-            'mail_delivery' => '邮件记录',
         );
     }
 

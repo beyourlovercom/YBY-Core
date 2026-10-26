@@ -33,7 +33,7 @@ class YBY_Lead_Notification_Admin {
         $filter = isset( $_GET['mail_status'] ) ? sanitize_key( wp_unslash( $_GET['mail_status'] ) ) : '';
         $allowed = array( '', 'pending', 'processing', 'smtp_accepted', 'failed', 'exhausted' );
         if ( ! in_array( $filter, $allowed, true ) ) { $filter = ''; }
-        $url = admin_url( 'admin.php?page=andy-core-leads&tab=mail_delivery' );
+        $url = admin_url( 'admin.php?page=andy-core-leads&tab=notification' );
         echo '<p><label for="mail-status">状态：</label><select id="mail-status" onchange="window.location.href=this.value">';
         $labels = array( '' => '全部', 'pending' => '待发送', 'processing' => '执行中/需核对',
             'smtp_accepted' => 'SMTP 已接受', 'failed' => '失败待重试', 'exhausted' => '重试次数耗尽' );
