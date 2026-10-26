@@ -122,6 +122,63 @@ final class Andy_Commerce_Currency_Runtime_Dev_V1 {
         }
         return $rates;
     }
+    /**
+     * Woo core free-shipping minimum_amount is configured in store-base USD.
+     * Foreign unit prices must never be compared directly with this USD
+     * threshold. Only native free_shipping methods are handled here.
+     * Complex coupon combinations are denied, not guessed from display FX.
+     */
+    public static function free_shipping_usd($available,$package,$method) {
+        if(!self::allowed() || self::selected()==='USD'
+            || !($method instanceof WC_Shipping_Free_Shipping)
+            || !function_exists('WC') || !WC()->cart) return $available;
+        $requirement=(string)$method->get_option('requires','');
+        if(!in_array($requirement,['min_amount','either','both'],true))return $available;
+        $threshold=self::usd_minor($method->get_option('min_amount','0'));
+        if($threshold===null) return false;
+        $subtotal=0;
+        foreach(WC()->cart->get_cart() as $line) {
+            $product=$line['data']??null;
+            $qty=$line['quantity']??null;
+            if(!($product instanceof WC_Product) || !is_numeric($qty)
+               || (int)$qty<1 || (int)$qty>1000 || (int)$qty!=(float)$qty)return false;
+            $amount=self::usd_minor($product->get_price('edit'));
+            if($amount===null)return false;
+            $subtotal+=$amount*(int)$qty;
+            if($subtotal>1000000000)return false;
+        }
+        if((string)$method->get_option('ignore_discounts','no')!=='yes') {
+            $applied=WC()->cart->get_applied_coupons();
+            if(count($applied)>1)return false;
+            if(count($applied)===1){
+                $coupon=new WC_Coupon($applied[0]);
+                // Fixed-cart discounts are exactly USD-denominated, but all
+                // other coupon logic belongs to Marketing and must not be
+                // approximated by the currency runtime.
+                if($coupon->get_discount_type('edit')!=='fixed_cart')return false;
+                $discount=self::usd_minor($coupon->get_amount('edit'));
+                if($discount===null)return false;
+                $subtotal=max(0,$subtotal-$discount);
+            }
+        }
+        $minimumMet=$subtotal >= $threshold;
+        if($requirement==='min_amount')return $minimumMet;
+        $couponMet=false;
+        foreach(WC()->cart->get_applied_coupons() as $code) {
+            $coupon=new WC_Coupon($code);
+            if($coupon->get_free_shipping()){$couponMet=true;break;}
+        }
+        return $requirement==='both'
+            ? ($minimumMet && $couponMet)
+            : ($minimumMet || $couponMet);
+    }
+    private static function usd_minor($value): ?int {
+        if(!is_scalar($value))return null;
+        $raw=(string)$value;
+        if(!preg_match('/^(?:0|[1-9][0-9]{0,7})(?:\\.[0-9]{1,2})?$/D',$raw))return null;
+        [$whole,$fraction]=array_pad(explode('.',$raw,2),2,'');
+        return (int)$whole*100+(int)str_pad($fraction,2,'0');
+    }
     public static function boot(): void {
         if(!self::allowed() || self::$running)return;
         self::$running=true;
@@ -138,6 +195,7 @@ final class Andy_Commerce_Currency_Runtime_Dev_V1 {
         add_filter('woocommerce_get_variation_prices_hash',[__CLASS__,'variation_hash'],60,3);
         add_filter('woocommerce_coupon_get_amount',[__CLASS__,'coupon'],60,2);
         add_filter('woocommerce_package_rates',[__CLASS__,'shipping'],60,2);
+        add_filter('woocommerce_shipping_free_shipping_is_available',[__CLASS__,'free_shipping_usd'],999,3);
         add_action('wp_loaded',[__CLASS__,'switch_request'],25,0);
         // R11 payment readiness is not yet accepted: foreign checkout must
         // never accidentally charge a live provider from a Dev currency view.
