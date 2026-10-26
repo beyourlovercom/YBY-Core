@@ -56,6 +56,8 @@ $rateTax=WC_Tax::calc_tax('9.00',[1=>['rate'=>'5.0000','label'=>'Synthetic 5','c
 $ok(abs((float)wc_round_tax_total(array_sum($rateTax))-0.45)<0.001,'native Woo tax calculator');
 $ok(!str_contains($rt::shortcode(),'Dev preview'),'shopper form is functional not C3 DOM overlay');
 echo 'R8_FX_RATE_FRESHNESS_DEFAULT_OFF_AND_CONFLICT_GATE_PASS'.PHP_EOL;
+$source=file_get_contents(dirname(__DIR__).'/includes/class-andy-commerce-currency-runtime-dev-v1.php');
+$ok(str_contains($source,'set_customer_session_cookie(true)'),'guest session cookie must be explicitly persisted');
 echo 'R9_REAL_DEV_FOOTER_SESSION_WOO_PRODUCT_STORE_API_PASS'.PHP_EOL;
 echo 'R10_EUR_COUPON_FLAT_SHIPPING_NATIVE_TAX_CALCULATOR_PASS'.PHP_EOL;
 update_option($rt::OPTION,['enabled'=>false,'allowed'=>$rt::CODES],false);
