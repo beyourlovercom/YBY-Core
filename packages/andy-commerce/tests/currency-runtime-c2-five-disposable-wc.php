@@ -38,4 +38,24 @@ $json=json_decode(wp_json_encode($r->get_data()),true);
 $prices=$json['prices']??[];
 $assert(($prices['currency_code']??null)===$code,'Store API currency');
 $assert((string)($prices['price']??'')===(string)$expected,'Store API minor price');
+$ledger=Andy_Commerce_Currency_Runtime_Reconcile::cart_preview([
+    'base_usd_minor'=>2500,
+    'native_cart_local_minor'=>$expected*2,
+    'rate_micros'=>Andy_Commerce_Currency_Runtime_C1::TEST_RATES[$code],
+    'cart_line_count'=>1,
+    'currency'=>$code,
+    'source'=>'TEST_FIXED_FX',
+    'timestamp'=>1793000000,
+]);
+$assert(($ledger['rounding_adjustment_display_minor']??null)===($code==='CAD'?1:0),'FX rounding reconciliation');
+$assert(($ledger['payment_executed']??true)===false,'unexpected payment');
+try {
+    Andy_Commerce_Currency_Runtime_Reconcile::cart_preview([
+      'base_usd_minor'=>2500,'native_cart_local_minor'=>$expected*2+10,
+      'rate_micros'=>Andy_Commerce_Currency_Runtime_C1::TEST_RATES[$code],
+      'cart_line_count'=>1,'currency'=>$code,'source'=>'TEST_FIXED_FX','timestamp'=>1793000000
+    ]);
+    $assert(false,'unsafe mismatch must fail closed');
+} catch (InvalidArgumentException $expectedException) {}
 echo 'C_R2_FIVE_CURRENCY_WOO_STORE_API_PASS code='.$code.' product_minor='.$expected.' cart_minor='.($expected*2).PHP_EOL;
+echo 'C_R3_FX_ROUNDING_RECONCILE_PASS code='.$code.' adjustment_minor='.$ledger['rounding_adjustment_display_minor'].PHP_EOL;
