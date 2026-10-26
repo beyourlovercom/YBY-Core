@@ -204,6 +204,16 @@ class YBY_Lead_Notification_Outbox {
             'SELECT * FROM ' . self::table_name() . ' ORDER BY id DESC LIMIT %d', $limit
         ), ARRAY_A );
     }
+    /** Missing outbox receipts previously recorded in the separate lead activity audit. */
+    public static function unqueued_count() {
+        global $wpdb;
+        if ( ! YBY_Database::notification_table_exists() ) { return 0; }
+        return (int) $wpdb->get_var(
+            "SELECT COUNT(DISTINCT a.lead_id) FROM " . YBY_Database::activities_table_name() . " a
+             LEFT JOIN " . self::table_name() . " n ON n.lead_id = a.lead_id
+             WHERE a.activity_type = 'email_outbox_unavailable' AND n.lead_id IS NULL"
+        );
+    }
     public static function actionable_count() {
         global $wpdb;
         if ( ! YBY_Database::notification_table_exists() ) { return 0; }

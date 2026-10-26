@@ -3,6 +3,22 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class YBY_Lead_Notification_Admin {
+    /** WordPress admin warning visible even when staff do not open Inquiry settings. */
+    public static function render_notice() {
+        if ( ! current_user_can( 'andy_core_settings_manage' ) ) { return; }
+        if ( ! YBY_Database::notification_table_exists() ) {
+            echo '<div class="notice notice-error"><p>Andy Core：询盘邮件任务表缺失，通知无法安全发送。请检查数据库升级。</p></div>';
+            return;
+        }
+        $attention = YBY_Lead_Notification_Outbox::actionable_count();
+        $missing = YBY_Lead_Notification_Outbox::unqueued_count();
+        if ( $attention < 1 && $missing < 1 ) { return; }
+        $url = admin_url( 'admin.php?page=andy-core-leads&tab=notification' );
+        echo '<div class="notice notice-warning"><p>Andy Core 询盘邮件异常：'
+            . esc_html( (string) $attention ) . ' 条发送失败或状态待核对，'
+            . esc_html( (string) $missing ) . ' 条未成功入队。 '
+            . '<a href="' . esc_url( $url ) . '">查看询盘通知记录</a></p></div>';
+    }
     public static function render() {
         if ( ! current_user_can( 'andy_core_settings_manage' ) ) {
             wp_die( esc_html__( 'Permission denied.', 'yby-core' ) );
@@ -28,6 +44,8 @@ class YBY_Lead_Notification_Admin {
             echo '<div class="notice notice-error"><p>询盘主通知收件人地址无效。</p></div>';
         }
         $pending = YBY_Lead_Notification_Outbox::actionable_count();
+        $missing = YBY_Lead_Notification_Outbox::unqueued_count();
+        echo '<p><strong>未成功入队：</strong>' . esc_html( (string) $missing ) . '。恢复前不会发送邮件。</p>';
         echo '<p><strong>需关注任务：</strong>' . esc_html( (string) $pending )
            . '。SMTP accepted 仅代表邮件服务接受，并非收件箱最终送达。</p>';
         $filter = isset( $_GET['mail_status'] ) ? sanitize_key( wp_unslash( $_GET['mail_status'] ) ) : '';
@@ -72,3 +90,5 @@ class YBY_Lead_Notification_Admin {
         echo '</tbody></table></div>';
     }
 }
+
+add_action( 'admin_notices', array( 'YBY_Lead_Notification_Admin', 'render_notice' ) );
