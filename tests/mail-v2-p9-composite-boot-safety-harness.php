@@ -24,6 +24,9 @@ $baseline = array(
 // byte-for-byte candidate in a read-only fixture, while the checks below still
 // inspect the **current** runtime loader to prove no Mail P9 worker is booted.
 $frozen_paths = array(
+    // Version-only bootstrap changes must not rewrite the immutable Mail P9 baseline.
+    // Continue checking the current bootstrap for forbidden Mail P9 startup hooks below.
+    'yby-core.php' => 'tests/fixtures/mail-p9-frozen/yby-core.php',
     'inc/class-yby-core.php' => 'tests/fixtures/mail-p9-frozen/inc/class-yby-core.php',
 );
 foreach ($baseline as $path => $expected_blob_sha) {

@@ -1,3 +1,11 @@
+## v2.2.12 - 2026-10-26 (Ignore Notification signed candidate)
+
+- Inquiry notification history gains the Ignore Notification action, mandatory reason, actor identity and timestamp. Lead Closed/Archive and SMTP failure history remain unchanged.
+- Only pending, failed and exhausted transport receipts are eligible. Atomic state transition quarantines processing/accepted states and stops notification retries.
+- Ignore reason is visible after dismissal, and alert counts exclude ignored entries.
+- PR #229 Owner Bottle Dev UAT PASS: synthetic case pending -> ignored, attention 1 -> 0, mail and Cron isolated. WordPress/MySQL 26 assertions and admin 13 assertions passed.
+- Runtime database remains 1.5.0; signed updater compatibility remains 1.4.0. v2.2.11 Stable remains immutable. Stable publication and production upgrade are independent gates.
+
 ## v2.2.11 - 2026-10-19 (integrated V3 + Update Control candidate; NOT published)
 
 - Navigation V3 per Owner-approved interactive design: exactly seven Chinese left L2 entries, four collapsible right L3 groups (文档 / 招商 / 落地页 / 项目), and native WordPress landing/project edit controls. PR #173; Dev visual UAT remains independent and pending.

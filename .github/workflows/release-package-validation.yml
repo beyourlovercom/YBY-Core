@@ -45,6 +45,7 @@ jobs:
           test -s scripts/build-v2.2.9-release.sh
           test -s scripts/build-v2.2.10-release.sh
           test -s scripts/build-v2.2.11-release.sh
+          test -s scripts/build-v2.2.12-release.sh
           echo "CURRENT_RELEASE_BUILDER_PRESENT"
 
       - name: Setup PHP
@@ -78,19 +79,19 @@ jobs:
         run: |
           set -euo pipefail
           release_root="$GITHUB_WORKSPACE"
-          RELEASE_SOURCE_DIR="$release_root" RELEASE_OUTPUT_DIR="$GITHUB_WORKSPACE/releases/v2.2.11" SOURCE_BRANCH="${SOURCE_BRANCH}" SOURCE_COMMIT="${SOURCE_COMMIT}" BUILD_CONTEXT=RELEASE_CANDIDATE bash scripts/build-v2.2.11-release.sh
-          package="releases/v2.2.11/andy-core-v2.2.11.zip"
-          checksum="releases/v2.2.11/SHA256.txt"
-          metadata="releases/v2.2.11/update-metadata.json"
+          RELEASE_SOURCE_DIR="$release_root" RELEASE_OUTPUT_DIR="$GITHUB_WORKSPACE/releases/v2.2.12" SOURCE_BRANCH="${SOURCE_BRANCH}" SOURCE_COMMIT="${SOURCE_COMMIT}" BUILD_CONTEXT=RELEASE_CANDIDATE bash scripts/build-v2.2.12-release.sh
+          package="releases/v2.2.12/andy-core-v2.2.12.zip"
+          checksum="releases/v2.2.12/SHA256.txt"
+          metadata="releases/v2.2.12/update-metadata.json"
           test -s "$package"
           test -s "$checksum"
           test -s "$metadata"
-          test -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" || { echo "Missing signed V2.2.11 candidate secret in GitHub Actions"; exit 1; }
-          test -s releases/v2.2.11/update-metadata.sig
-          test -s releases/v2.2.11/BUILD_INFO.md
-          for doc in RELEASE_NOTES_v2.2.11.md UPGRADE_GUIDE_v2.2.11.md ROLLBACK_GUIDE_v2.2.11.md; do
+          test -n "${ANDY_CORE_UPDATE_SIGNING_SECRET:-}" || { echo "Missing signed V2.2.12 candidate secret in GitHub Actions"; exit 1; }
+          test -s releases/v2.2.12/update-metadata.sig
+          test -s releases/v2.2.12/BUILD_INFO.md
+          for doc in RELEASE_NOTES_v2.2.12.md UPGRADE_GUIDE_v2.2.12.md ROLLBACK_GUIDE_v2.2.12.md; do
             test -s "$doc"
-            cp "$doc" releases/v2.2.11/
+            cp "$doc" releases/v2.2.12/
           done
           unzip -Z1 "$package" | awk -F/ 'NF && $1 != "yby-core" { exit 1 }'
           unzip -Z1 "$package" | grep -Fx 'yby-core/yby-core.php'
@@ -99,30 +100,32 @@ jobs:
           unzip -Z1 "$package" | grep -Fx 'yby-core/inc/class-yby-lead-notification-outbox.php'
           unzip -Z1 "$package" | grep -Fx 'yby-core/admin/class-yby-lead-notification-admin.php'
           unzip -p "$package" yby-core/inc/class-yby-core.php | grep -F 'class-yby-lead-notification-outbox.php'
+          unzip -p "$package" yby-core/inc/class-yby-lead-notification-outbox.php | grep -F 'function ignore_notification'
+          unzip -p "$package" yby-core/admin/class-yby-lead-notification-admin.php | grep -F 'yby_mail_ignore_lead_id'
           unzip -p "$package" yby-core/inc/class-yby-database.php | grep -F 'create_notification_table'
-          grep -Fq 'yby_lead_notifications' RELEASE_NOTES_v2.2.11.md
-          grep -Fq 'yby_lead_notifications' UPGRADE_GUIDE_v2.2.11.md
-          grep -Fq 'yby_lead_notifications' ROLLBACK_GUIDE_v2.2.11.md
+          grep -Fq 'yby_lead_notifications' RELEASE_NOTES_v2.2.12.md
+          grep -Fq 'yby_lead_notifications' UPGRADE_GUIDE_v2.2.12.md
+          grep -Fq 'yby_lead_notifications' ROLLBACK_GUIDE_v2.2.12.md
           ! unzip -Z1 "$package" | grep -E '(^|/)(\.git|\.github|tests|docs|releases|scripts|packages)(/|$)'
-          unzip -p "$package" yby-core/yby-core.php | grep -F 'Version:           2.2.11'
-          unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_CORE_VERSION', '2.2.11' );"
+          unzip -p "$package" yby-core/yby-core.php | grep -F 'Version:           2.2.12'
+          unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_CORE_VERSION', '2.2.12' );"
           unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_DATABASE_VERSION', '1.4.0' );"
           unzip -p "$package" yby-core/yby-core.php | grep -F "define( 'YBY_RUNTIME_DATABASE_VERSION', '1.5.0' );"
           expected_sha="$(awk 'NF {print $1; exit}' "$checksum")"
           actual_sha="$(sha256sum "$package" | awk '{print $1}')"
           test "$expected_sha" = "$actual_sha"
-          php -r '$m=json_decode(file_get_contents($argv[1]),true); if (!is_array($m) || ($m["schema_version"] ?? null)!==1 || ($m["version"] ?? "")!=="2.2.11" || ($m["database_version"] ?? "")!=="1.4.0" || ($m["runtime_database_version"] ?? "")!=="1.5.0" || ($m["package"] ?? "")!=="andy-core-v2.2.11.zip" || ($m["sha256"] ?? "")!==$argv[2]) exit(1);' "$metadata" "$actual_sha"
+          php -r '$m=json_decode(file_get_contents($argv[1]),true); if (!is_array($m) || ($m["schema_version"] ?? null)!==1 || ($m["version"] ?? "")!=="2.2.12" || ($m["database_version"] ?? "")!=="1.4.0" || ($m["runtime_database_version"] ?? "")!=="1.5.0" || ($m["package"] ?? "")!=="andy-core-v2.2.12.zip" || ($m["sha256"] ?? "")!==$argv[2]) exit(1);' "$metadata" "$actual_sha"
           git show v1.5.7:inc/class-yby-update-verifier.php > "$RUNNER_TEMP/v157-update-verifier.php"
           php tests/updater-backward-compat-harness.php "$RUNNER_TEMP/v157-update-verifier.php" "$package" "$metadata"
-          grep -F 'Build Context: RELEASE_CANDIDATE' releases/v2.2.11/BUILD_INFO.md
-          grep -F 'PHP Lint: PASS' releases/v2.2.11/BUILD_INFO.md
-          grep -F 'git diff --check: PASS' releases/v2.2.11/BUILD_INFO.md
-          grep -F 'Ed25519 Signature: PASS' releases/v2.2.11/BUILD_INFO.md
-          php -r '$m=file_get_contents($argv[1]); $s=base64_decode(trim(file_get_contents($argv[2])),true); $p=base64_decode("LcPq5x+fNa96aC+cXyC1ZbwRoGXCihF9YSG+iMHtjKU=",true); if (!is_string($m) || !is_string($s) || !is_string($p) || !sodium_crypto_sign_verify_detached($s,$m,$p)) {fwrite(STDERR,"Ed25519 verification FAIL\\n");exit(1);} echo "Ed25519 verification PASS\\n";' releases/v2.2.11/update-metadata.json releases/v2.2.11/update-metadata.sig
+          grep -F 'Build Context: RELEASE_CANDIDATE' releases/v2.2.12/BUILD_INFO.md
+          grep -F 'PHP Lint: PASS' releases/v2.2.12/BUILD_INFO.md
+          grep -F 'git diff --check: PASS' releases/v2.2.12/BUILD_INFO.md
+          grep -F 'Ed25519 Signature: PASS' releases/v2.2.12/BUILD_INFO.md
+          php -r '$m=file_get_contents($argv[1]); $s=base64_decode(trim(file_get_contents($argv[2])),true); $p=base64_decode("LcPq5x+fNa96aC+cXyC1ZbwRoGXCihF9YSG+iMHtjKU=",true); if (!is_string($m) || !is_string($s) || !is_string($p) || !sodium_crypto_sign_verify_detached($s,$m,$p)) {fwrite(STDERR,"Ed25519 verification FAIL\\n");exit(1);} echo "Ed25519 verification PASS\\n";' releases/v2.2.12/update-metadata.json releases/v2.2.12/update-metadata.sig
 
       - name: Upload release candidate
         uses: actions/upload-artifact@v4
         with:
-          name: andy-core-v2.2.11-release-candidate
-          path: releases/v2.2.11
+          name: andy-core-v2.2.12-release-candidate
+          path: releases/v2.2.12
           if-no-files-found: error
