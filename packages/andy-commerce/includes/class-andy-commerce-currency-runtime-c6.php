@@ -56,6 +56,10 @@ final class Andy_Commerce_Currency_Runtime_C6 {
             ]);
         } catch (Throwable $e) { return; }
         $order->set_currency($currency);
+        // The checkout_create_order hook runs before Woo saves the new order.
+        // Mark this as a pending-to-save snapshot, not as a failed order.
+        $ledger['checkout_capture_pending_save']=true;
+        unset($ledger['order_saved']);
         $order->update_meta_data('_aicc_currency_runtime_fx_v1',$ledger);
     }
     public static function refund_evidence($refund,$order): array {
@@ -65,14 +69,21 @@ final class Andy_Commerce_Currency_Runtime_C6 {
             throw new InvalidArgumentException('Currency refund not in independent sandbox');
         }
         $snapshot=$order->get_meta('_aicc_currency_runtime_fx_v1',true);
-        if (!is_array($snapshot) || ($snapshot['order_saved']??null)!==false
+        if (!is_array($snapshot) || ($snapshot['checkout_capture_pending_save']??null)!==true
             || ($snapshot['display_currency']??null)!==$order->get_currency()) {
             throw new InvalidArgumentException('Missing verified checkout FX snapshot');
         }
         $rate=(int)($snapshot['fx_snapshot']['rate_micros']??0);
         if ($rate<100000) throw new InvalidArgumentException('Invalid original rate');
         $local=self::usd_minor(abs((float)$refund->get_amount()));
-        $usd=intdiv(($local*1000000)+intdiv($rate,2),$rate);
+        if ($local<1 || $local>($snapshot['native_woo_display_minor']??0)) {
+            throw new InvalidArgumentException('Invalid display refund amount');
+        }
+        // Full refund must exactly reverse original USD ledger, not acquire a
+        // one-cent FX difference from re-converting the rounded shop total.
+        $usd=($local===($snapshot['native_woo_display_minor']??0))
+            ? (int)$snapshot['usd_subtotal_minor']
+            : intdiv(($local*1000000)+intdiv($rate,2),$rate);
         if ($usd>($snapshot['usd_subtotal_minor']??0)) {
             throw new InvalidArgumentException('Refund exceeds USD base');
         }
