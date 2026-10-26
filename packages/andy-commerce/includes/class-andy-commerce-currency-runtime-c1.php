@@ -12,8 +12,16 @@ declare(strict_types=1);
 if (!defined('ABSPATH')) exit;
 
 final class Andy_Commerce_Currency_Runtime_C1 {
-    public const TEST_CURRENCY = 'EUR';
-    public const TEST_RATE_MICROS = 900000;
+    public const TEST_RATES = ['USD'=>1000000, 'EUR'=>900000, 'GBP'=>780000, 'AUD'=>1500000, 'CAD'=>1350000];
+
+    public static function test_currency(): string {
+        $code = defined('AICC_CURRENCY_RUNTIME_TEST_CURRENCY')
+            ? AICC_CURRENCY_RUNTIME_TEST_CURRENCY : 'EUR';
+        if (!is_string($code) || !array_key_exists($code, self::TEST_RATES)) {
+            throw new InvalidArgumentException('Unsupported sandbox currency; fail closed');
+        }
+        return $code;
+    }
 
     public static function allowed(): bool {
         if (!defined('AICC_CURRENCY_RUNTIME_SANDBOX') || AICC_CURRENCY_RUNTIME_SANDBOX !== true
@@ -46,7 +54,7 @@ final class Andy_Commerce_Currency_Runtime_C1 {
     }
 
     public static function currency($code): string {
-        return self::allowed() ? self::TEST_CURRENCY : (string)$code;
+        return self::allowed() ? self::test_currency() : (string)$code;
     }
 
     private static function from_usd($value) {
@@ -60,7 +68,7 @@ final class Andy_Commerce_Currency_Runtime_C1 {
         }
         [$whole, $fraction] = array_pad(explode('.', $raw, 2), 2, '');
         $minor = (int)$whole * 100 + (int)str_pad($fraction, 2, '0');
-        $local = Andy_Commerce_Currency_OS_V1::convert_usd_minor($minor, self::TEST_RATE_MICROS);
+        $local = Andy_Commerce_Currency_OS_V1::convert_usd_minor($minor, self::TEST_RATES[self::test_currency()]);
         return number_format($local / 100, 2, '.', '');
     }
 
@@ -76,7 +84,7 @@ final class Andy_Commerce_Currency_Runtime_C1 {
 
     public static function variation_hash($hash, $product, $for_display) {
         if (self::allowed() && is_array($hash)) {
-            $hash['aicc_currency_runtime'] = [self::TEST_CURRENCY, self::TEST_RATE_MICROS];
+            $hash['aicc_currency_runtime'] = [self::test_currency(), self::TEST_RATES[self::test_currency()]];
         }
         return $hash;
     }
