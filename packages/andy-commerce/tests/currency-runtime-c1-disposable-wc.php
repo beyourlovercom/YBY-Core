@@ -40,7 +40,8 @@ if (is_wp_error($response) || !($response instanceof WP_REST_Response)
     || $response->get_status() !== 200) {
     throw new RuntimeException('C-R2 native Store API route unavailable');
 }
-$payload = $response->get_data();
+$payload = json_decode(wp_json_encode($response->get_data()), true);
+$assert(is_array($payload), 'Store API payload is not an object/array');
 $prices = $payload['prices'] ?? [];
 $assert(($prices['currency_code'] ?? null) === 'EUR','Store API currency mismatch');
 $assert((string)($prices['price'] ?? '') === '1125','Store API sale price cents');
