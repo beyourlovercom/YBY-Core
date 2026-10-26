@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) { exit; }
 
 require_once __DIR__.'/class-andy-commerce-marketing-p1-sandbox-contract.php';
 require_once __DIR__.'/class-andy-commerce-m12-woo-six-shadow.php';
+require_once __DIR__.'/class-andy-commerce-marketing-p3-sku-woo.php';
 
 final class Andy_Commerce_Marketing_P2_Woo_Adapter {
     private const CLASSIFICATIONS = 'andy_commerce_marketing_p2_line_flags';
@@ -31,6 +32,7 @@ final class Andy_Commerce_Marketing_P2_Woo_Adapter {
         // gifts must be removed after activation is disabled or revised.
 
         add_filter('woocommerce_get_shop_coupon_data',[self::class,'coupon_data'],10,3);
+        Andy_Commerce_Marketing_P3_SKU_Woo::boot();
         add_filter('woocommerce_coupon_is_valid',[self::class,'coupon_valid'],10,2);
         add_filter('woocommerce_apply_with_individual_use_coupon',[self::class,'prefer_manual_coupon'],10,4);
         add_action('woocommerce_applied_coupon',[self::class,'manual_coupon_added'],5,1);
@@ -67,6 +69,7 @@ final class Andy_Commerce_Marketing_P2_Woo_Adapter {
     }
 
     private static function clear_source($session): void {
+        Andy_Commerce_Marketing_P3_SKU_Woo::clear();
         if($session) {
             $session->set(self::SESSION_DISCOUNT,null);
             $session->set(self::SESSION_ORIGIN,null);
@@ -273,6 +276,10 @@ final class Andy_Commerce_Marketing_P2_Woo_Adapter {
                 self::remove_gifts($cart);
                 $discount=$sim['projected_discount_usd_minor']??null;
                 if(!is_int($discount)||$discount<1||$discount>1000000)return;
+                // P3 is opt-in; when ON, invalid/unknown SKU attribution
+                // rejects the promotion rather than falling back to total-only.
+                if(Andy_Commerce_Marketing_P3_SKU_Woo::active()
+                    && !Andy_Commerce_Marketing_P3_SKU_Woo::prepare($cart,$flags,$draft,$discount))return;
                 $session->set(self::SESSION_DISCOUNT,$discount);
                 $session->set(self::SESSION_ORIGIN,[
                     'code'=>self::code($draft),'fingerprint'=>self::origin($draft)
