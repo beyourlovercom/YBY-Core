@@ -51,6 +51,7 @@ add_action('woocommerce_init', static function():void {
     ];
     // No synthetic checkout may attempt customer/admin emails.
     add_filter('pre_wp_mail',static fn()=>true,PHP_INT_MAX);
+    $quotaTrial=get_option('aicc_marketing_p5_quota_trial','no')==='yes';
     // Only memory filters. No published campaigns or plugin-option writes.
     $options=[
         Andy_Commerce_M7_Draft_Studio::OPTION=>[$draft['id']=>$draft],
@@ -58,10 +59,17 @@ add_action('woocommerce_init', static function():void {
         $p1::APPROVAL_OPTION=>$p1::prepare($draft),
         'andy_commerce_marketing_p2_line_flags'=>$flags,
         'andy_commerce_marketing_p3_sku_enabled'=>'yes',
-        'andy_commerce_marketing_p4_order_cap_enabled'=>'no',
+        'andy_commerce_marketing_p4_order_cap_enabled'=>$quotaTrial?'yes':'no',
+        'andy_commerce_marketing_p4_caps'=>[
+            $draft['id']=>['revision'=>1,'max_uses'=>2],
+        ],
     ];
     foreach($options as $key=>$value){
         add_filter('pre_option_'.$key,static function($previous)use($value){return $value;},1,1);
     }
     Andy_Commerce_Marketing_P2_Woo_Adapter::boot();
+    if($quotaTrial && $case!=='gift') {
+        require_once $root.'/class-andy-commerce-marketing-p5-checkout-hooks.php';
+        Andy_Commerce_Marketing_P5_Checkout_Hooks::boot();
+    }
 },5);
