@@ -27,11 +27,9 @@ fi
 git fetch -q --no-tags "$source_url" "$currency" >/dev/null
 currency_paths=(
   packages/andy-commerce/admin/views/currency-c2c3-readonly-panel.php
-  packages/andy-commerce/admin/views/currency-os-v2-admin.php
   packages/andy-commerce/assets/currency-c3-dev-preview.js
   packages/andy-commerce/includes/class-andy-commerce-c3-cart-snapshot-adapter.php
   packages/andy-commerce/includes/class-andy-commerce-currency-c2c3-preview.php
-  packages/andy-commerce/includes/class-andy-commerce-currency-v2-dev.php
   packages/andy-commerce/tests/currency-c2c3-reconcile-harness.php
   packages/andy-commerce/tests/currency-c3-cart-snapshot-harness.php
   packages/andy-commerce/tests/currency-c3-coupon-boundary-harness.php
@@ -48,6 +46,21 @@ for path in "${currency_paths[@]}"; do
     echo "RELEASE_DENIED: PR #207 Currency file differs; explicitly reconcile $path" >&2; exit 4
   fi
 done
+# R8/R9 intentionally extend these TWO PR #207 sources, so byte-for-byte
+# equality with the frozen historical PR is no longer a valid integration gate.
+# All other Currency PR #207 files remain exact-hash protected above.
+# Validate the accepted V2 tab/shortcode contract and scoped new entry points.
+grep -Fq "'fx'=>'汇率核算'" packages/andy-commerce/admin/views/currency-os-v2-admin.php ||
+  { echo "RELEASE_DENIED: Currency V2 admin FX tab lost" >&2; exit 4; }
+grep -Fq 'Andy_Commerce_Currency_Runtime_Dev_V1::settings' packages/andy-commerce/admin/views/currency-os-v2-admin.php ||
+  { echo "RELEASE_DENIED: R8 admin runtime status lost" >&2; exit 4; }
+grep -Fq "add_shortcode('andy_currency_switcher'" packages/andy-commerce/includes/class-andy-commerce-currency-v2-dev.php ||
+  { echo "RELEASE_DENIED: Currency shortcode lost" >&2; exit 4; }
+grep -Fq 'Andy_Commerce_Currency_Runtime_Dev_V1::shortcode()' packages/andy-commerce/includes/class-andy-commerce-currency-v2-dev.php ||
+  { echo "RELEASE_DENIED: R9 shopper currency form lost" >&2; exit 4; }
+php -l packages/andy-commerce/includes/class-andy-commerce-currency-runtime-dev-v1.php >/dev/null
+php -l packages/andy-commerce/admin/views/currency-os-v2-admin.php >/dev/null
+php -l packages/andy-commerce/includes/class-andy-commerce-currency-v2-dev.php >/dev/null
 # The controlled Core L3 registry is frozen; Commerce may change its own adapter.
 base="38e651d6567721900e80eaedc8311148af882368"
 core_changes="$(git diff --name-only "$base" HEAD -- admin/ inc/ modules/ assets/js/andy-core-native-l3-v2.js)"
