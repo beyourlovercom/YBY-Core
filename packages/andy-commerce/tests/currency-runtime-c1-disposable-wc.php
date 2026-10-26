@@ -32,4 +32,18 @@ $assert(abs((float)WC()->cart->get_total('edit')-22.50)<0.001,'native cart payab
 $assert((string)wc_get_product($id)->get_price('edit')==='12.50','database USD unchanged after totals');
 echo 'C_R1_NATIVE_WOO_EUR_PRODUCT_AND_CART_PASS USD12.50*2 EUR22.50'.PHP_EOL;
 echo 'C_R1_USD_SOURCE_STABLE_NO_DOUBLE_CONVERSION_PASS'.PHP_EOL;
+// Exercise the actual Woo Store API registered route inside WordPress, not a
+// hand-built JSON mock. This is a GET-only synthetic product catalog request.
+$request = new WP_REST_Request('GET', '/wc/store/v1/products/'.$id);
+$response = rest_do_request($request);
+if (is_wp_error($response) || !($response instanceof WP_REST_Response)
+    || $response->get_status() !== 200) {
+    throw new RuntimeException('C-R2 native Store API route unavailable');
+}
+$payload = $response->get_data();
+$prices = $payload['prices'] ?? [];
+$assert(($prices['currency_code'] ?? null) === 'EUR','Store API currency mismatch');
+$assert((string)($prices['price'] ?? '') === '1125','Store API sale price cents');
+$assert((string)($prices['regular_price'] ?? '') === '1800','Store API regular price cents');
+echo 'C_R2_NATIVE_WOO_STORE_API_PRODUCT_PASS EUR11.25 regularEUR18.00'.PHP_EOL;
 echo 'C_R1_GATEWAY_NOT_CONNECTED=TRUE'.PHP_EOL;
