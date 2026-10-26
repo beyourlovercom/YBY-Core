@@ -17,6 +17,7 @@ require_once __DIR__.'/class-andy-commerce-m12-woo-six-shadow.php';
 final class Andy_Commerce_Marketing_P2_Woo_Adapter {
     private const CLASSIFICATIONS = 'andy_commerce_marketing_p2_line_flags';
     private const SESSION_DISCOUNT = 'andy_commerce_p2_discount_minor';
+    private const SESSION_ORIGIN = 'andy_commerce_p2_coupon_origin';
     private const GIFT_MARKER = 'andy_commerce_p2_sandbox_gift';
     private const COUPON_PREFIX = 'aicc-p2-';
     private static bool $busy=false;
@@ -25,10 +26,12 @@ final class Andy_Commerce_Marketing_P2_Woo_Adapter {
         if (!class_exists('WooCommerce')
             || !Andy_Commerce_Marketing_P1_Sandbox_Contract::isolated()
             || !function_exists('get_option')
-            || get_option('aicc_m14_sandbox_active','no')!=='no'
-            || Andy_Commerce_Marketing_P1_Sandbox_Contract::current()===null) return;
+            || get_option('aicc_m14_sandbox_active','no')!=='no') return;
+        // Register revocation hooks even when OFF: old session coupons and
+        // gifts must be removed after activation is disabled or revised.
 
         add_filter('woocommerce_get_shop_coupon_data',[self::class,'coupon_data'],10,3);
+        add_filter('woocommerce_coupon_is_valid',[self::class,'coupon_valid'],10,2);
         add_filter('woocommerce_apply_with_individual_use_coupon',[self::class,'prefer_manual_coupon'],10,4);
         add_action('woocommerce_applied_coupon',[self::class,'manual_coupon_added'],5,1);
         add_action('woocommerce_before_calculate_totals',[self::class,'gift_zero_price'],99,1);
@@ -51,9 +54,41 @@ final class Andy_Commerce_Marketing_P2_Woo_Adapter {
         return strncmp($code,self::COUPON_PREFIX,strlen(self::COUPON_PREFIX))===0;
     }
 
+    private static function origin(array $draft): string {
+        return hash('sha256',json_encode($draft,JSON_THROW_ON_ERROR));
+    }
+
+    private static function valid_origin(array $draft,$session): bool {
+        $source=$session->get(self::SESSION_ORIGIN);
+        return is_array($source)
+            && ($source['code']??null)===self::code($draft)
+            && is_string($source['fingerprint']??null)
+            && hash_equals(self::origin($draft),$source['fingerprint']);
+    }
+
+    private static function clear_source($session): void {
+        if($session) {
+            $session->set(self::SESSION_DISCOUNT,null);
+            $session->set(self::SESSION_ORIGIN,null);
+        }
+    }
+
+    public static function coupon_valid($valid,$coupon) {
+        if(!($coupon instanceof WC_Coupon))return $valid;
+        $code=$coupon->get_code();
+        if(!is_string($code)||!self::tracked($code))return $valid;
+        $draft=self::campaign();$session=self::session();
+        return $valid && $draft !== null && $session
+            && $code===self::code($draft)
+            && self::valid_origin($draft,$session)
+            && is_int($session->get(self::SESSION_DISCOUNT))
+            && $session->get(self::SESSION_DISCOUNT)>0;
+    }
+
     public static function coupon_data($data,$code,$coupon) {
         $draft=self::campaign(); $session=self::session();
-        if(!$draft || !$session || !is_string($code) || $code!==self::code($draft))return $data;
+        if(!$draft || !$session || !is_string($code) || $code!==self::code($draft)
+            || !self::valid_origin($draft,$session))return $data;
         $discount=$session->get(self::SESSION_DISCOUNT);
         if(!is_int($discount)||$discount<1||$discount>1000000)return $data;
         return [
@@ -75,14 +110,12 @@ final class Andy_Commerce_Marketing_P2_Woo_Adapter {
     public static function manual_coupon_added($incoming): void {
         $draft=self::campaign();
         $session=self::session();
-        if(!$draft || !$session || !is_string($incoming)
-            || $incoming===self::code($draft) || !WC()->cart) return;
+        if(!$session || !is_string($incoming) || !WC()->cart
+            || ($draft && $incoming===self::code($draft))) return;
         self::$busy=true;
         try {
-            if(WC()->cart->has_discount(self::code($draft))) {
-                WC()->cart->remove_coupon(self::code($draft));
-            }
-            $session->set(self::SESSION_DISCOUNT,null);
+            self::clean_automatic(WC()->cart);
+            self::clear_source($session);
             self::remove_gifts(WC()->cart);
         } finally { self::$busy=false; }
     }
@@ -94,8 +127,11 @@ final class Andy_Commerce_Marketing_P2_Woo_Adapter {
         $giftId=$draft['rule']['product_id']??null;
         if(!is_int($giftId)||$giftId<1)return;
         foreach($cart->get_cart() as $item) {
-            if(!empty($item[self::GIFT_MARKER])
+            if(isset($item[self::GIFT_MARKER])
+                && is_string($item[self::GIFT_MARKER])
+                && hash_equals(self::origin($draft),$item[self::GIFT_MARKER])
                 && (int)($item['product_id']??0)===$giftId
+                && ($item['quantity']??null)===1
                 && isset($item['data']) && ($item['data'] instanceof WC_Product)) {
                 $item['data']->set_price('0');
             }
@@ -127,7 +163,7 @@ final class Andy_Commerce_Marketing_P2_Woo_Adapter {
         self::$busy=true;
         try {
             foreach($own as $code)$cart->remove_coupon($code);
-            if($session)$session->set(self::SESSION_DISCOUNT,null);
+            self::clear_source($session);
             $cart->calculate_totals(); // recover clean native Woo authoritative total
         } finally { self::$busy=$prior; }
         return true;
@@ -142,6 +178,8 @@ final class Andy_Commerce_Marketing_P2_Woo_Adapter {
             $pid=(string)$item['product_id'];
             if(!empty($item[self::GIFT_MARKER])
                 && ($draft['type']??null)==='free_gift'
+                && ($item[self::GIFT_MARKER]??null)===self::origin($draft)
+                && ($item['quantity']??null)===1
                 && (int)$item['product_id']===($draft['rule']['product_id']??null)) {
                 $flags[$key]=['eligible_for_promotion'=>false,
                     'special_shipping'=>false,'free_gift'=>true];
@@ -169,6 +207,7 @@ final class Andy_Commerce_Marketing_P2_Woo_Adapter {
         if(!$draft) {
             self::clean_automatic($cart);
             self::remove_gifts($cart);
+            self::clear_source($session);
             return;
         }
         $codes=array_values((array)$cart->get_applied_coupons());
@@ -177,7 +216,19 @@ final class Andy_Commerce_Marketing_P2_Woo_Adapter {
         if($manual || count($codes)>1) {
             self::clean_automatic($cart);
             self::remove_gifts($cart);
+            self::clear_source($session);
             return; // Native user coupon always wins, never double-stack.
+        }
+        // A changed campaign or tampered cart gift is never repriced for free.
+        foreach($cart->get_cart() as $item) {
+            if(isset($item[self::GIFT_MARKER])
+                && (($item[self::GIFT_MARKER]??null)!==self::origin($draft)
+                    || ($item['quantity']??null)!==1
+                    || ($draft['type']??null)!=='free_gift'
+                    || ($item['product_id']??null)!==($draft['rule']['product_id']??null))) {
+                self::remove_gifts($cart);
+                break;
+            }
         }
 
         // Remove only our coupon then recompute; otherwise repeated totals
@@ -213,7 +264,8 @@ final class Andy_Commerce_Marketing_P2_Woo_Adapter {
                     foreach($cart->get_cart() as $line){
                         if((int)($line['product_id']??0)===$giftId) return;
                     }
-                    if($cart->add_to_cart($giftId,1,0,[],[self::GIFT_MARKER=>true])) {
+                    if($cart->add_to_cart($giftId,1,0,[],
+                        [self::GIFT_MARKER=>self::origin($draft)])) {
                         $cart->calculate_totals();
                     }
                     return;
@@ -222,7 +274,11 @@ final class Andy_Commerce_Marketing_P2_Woo_Adapter {
                 $discount=$sim['projected_discount_usd_minor']??null;
                 if(!is_int($discount)||$discount<1||$discount>1000000)return;
                 $session->set(self::SESSION_DISCOUNT,$discount);
+                $session->set(self::SESSION_ORIGIN,[
+                    'code'=>self::code($draft),'fingerprint'=>self::origin($draft)
+                ]);
                 if($cart->apply_coupon(self::code($draft)))$cart->calculate_totals();
+                else self::clear_source($session);
             } finally {self::$busy=false;}
         } catch(Throwable $e) {
             self::clean_automatic($cart);
