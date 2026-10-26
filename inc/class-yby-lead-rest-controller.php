@@ -79,7 +79,7 @@ class YBY_Lead_REST_Controller {
 			);
 		}
 
-		$this->dispatch_notification( $lead, $result );
+		$notification = $this->dispatch_notification( $lead, $result );
 
 		return new \WP_REST_Response(
 			array(
@@ -89,6 +89,7 @@ class YBY_Lead_REST_Controller {
 					'lead_id' => (int) $result['lead_id'],
 					'case_id' => (string) $result['case_id'],
 					'status'  => (string) $result['status'],
+					'notification_status' => $notification['status'],
 				),
 			),
 			200
@@ -231,7 +232,7 @@ class YBY_Lead_REST_Controller {
 	 *
 	 * @param array<string, mixed> $lead Sanitized lead payload.
 	 * @param array<string, mixed> $result Storage result.
-	 * @return void
+	 * @return array{status:string, error_code:string} Notification transport status (not mailbox delivery).
 	 */
 	protected function dispatch_notification( $lead, $result ) {
 		$mapper               = new YBY_Inquiry_Lead_Mapper();
@@ -270,6 +271,35 @@ class YBY_Lead_REST_Controller {
 			isset( $result['lead_id'] ) ? (int) $result['lead_id'] : 0,
 			isset( $result['case_id'] ) ? (string) $result['case_id'] : ''
 		);
+
+		// Persist an operational audit trail separately from the sales follow-up status.
+		// A successful wp_mail() result indicates transport acceptance, never inbox delivery.
+		$accepted = is_array( $notification_result ) && ! empty( $notification_result['mail_sent'] );
+		$status = $accepted ? 'smtp_accepted' : 'failed';
+		$error_code = $accepted ? '' : sanitize_key( (string) ( $notification_result['mail_error_code'] ?? 'notification_unknown_failure' ) );
+		if ( '' === $error_code && ! $accepted ) {
+			$error_code = 'notification_unknown_failure';
+		}
+		$lead_id = isset( $result['lead_id'] ) ? (int) $result['lead_id'] : 0;
+		if ( $lead_id > 0 ) {
+			global $wpdb;
+			$wpdb->insert(
+				YBY_Database::activities_table_name(),
+				array(
+					'lead_id' => $lead_id,
+					'activity_type' => 'email_notification',
+					'content' => $error_code,
+					'new_value' => $status,
+					'created_by' => 0,
+					'created_at' => current_time( 'mysql' ),
+				),
+				array( '%d', '%s', '%s', '%s', '%d', '%s' )
+			);
+			if ( ! $accepted && ! $wpdb->insert_id ) {
+				error_log( 'YBY lead notification audit persistence failed for lead ID ' . $lead_id );
+			}
+		}
+		return array( 'status' => $status, 'error_code' => $error_code );
 	}
 
 	/**
