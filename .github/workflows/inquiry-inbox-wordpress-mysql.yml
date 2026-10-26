@@ -67,6 +67,10 @@ jobs:
         run: |
           set -euo pipefail
           wp eval-file "$GITHUB_WORKSPACE/tests/lead-notification-wordpress-mysql-smoke.php" --path="$RUNNER_TEMP/wordpress"
+      - name: Lead notification admin rendering smoke (no send, disposable DB)
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/tests/lead-notification-admin-wordpress-smoke.php" --path="$RUNNER_TEMP/wordpress"
       - name: Andy OS genuine WordPress admin route validation
         run: |
           set -euo pipefail
