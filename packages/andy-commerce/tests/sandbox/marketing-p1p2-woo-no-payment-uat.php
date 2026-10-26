@@ -99,6 +99,60 @@ try {
             $ok(count($codes)===1 && $codes[0]==='aicc-p2-'.$draft['id'],
                 $case.' only one owned coupon');
         }
+        // Repeated Woo total calculation must not stack or duplicate offers.
+        $cart->calculate_totals();
+        $ok((int)round((float)$cart->get_discount_total()*100)===$expected[$case],
+            $case.' repeated totals idempotent');
+        if($case==='gift'){
+            $owned=array_filter($cart->get_cart(),static fn($x)=>
+                !empty($x['andy_commerce_p2_sandbox_gift']));
+            $ok(count($owned)===1,'gift not duplicated after recalculation');
+            // Below-threshold native cart updates must revoke the gift.
+            foreach($cart->get_cart() as $key=>$line){
+                if(in_array($line['product_id'],[28,29],true))$cart->remove_cart_item($key);
+            }
+            $cart->calculate_totals();
+            $ok(count(array_filter($cart->get_cart(),static fn($x)=>
+                !empty($x['andy_commerce_p2_sandbox_gift'])))===0,
+                'gift revoked when cart drops below threshold');
+            $cart->add_to_cart(28,1);$cart->add_to_cart(29,1);
+            $cart->calculate_totals();
+            $ok(count(array_filter($cart->get_cart(),static fn($x)=>
+                !empty($x['andy_commerce_p2_sandbox_gift'])))===1,
+                'gift restored once when eligible again');
+        }
+        if($case==='fixed'){
+            // A user-entered Woo coupon wins; it does not stack with auto.
+            $manualCode='aicc-p2-manual-test-local';
+            $manual=static function($data,$incoming)use($manualCode){
+                return $incoming===$manualCode
+                    ? ['discount_type'=>'fixed_cart','amount'=>'5',
+                       'individual_use'=>true,'description'=>'local manual coupon test']
+                    : $data;
+            };
+            add_filter('woocommerce_get_shop_coupon_data',$manual,99,2);
+            try{
+                $ok($cart->apply_coupon($manualCode),'native manual coupon accepted');
+                $cart->calculate_totals();
+                $ok($cart->get_applied_coupons()===[$manualCode],
+                    'manual coupon alone, automatic revoked');
+                $ok((int)round((float)$cart->get_discount_total()*100)===500,
+                    'manual coupon USD5 not stacked');
+                $cart->remove_coupon($manualCode);
+            } finally {remove_filter('woocommerce_get_shop_coupon_data',$manual,99);}
+            $cart->calculate_totals();
+            $ok((int)round((float)$cart->get_discount_total()*100)===1200,
+                'automatic offer re-evaluated when manual removed');
+            $changed=$draft;$changed['revision']=2;
+            $virtual[Andy_Commerce_M7_Draft_Studio::OPTION]=[$draft['id']=>$changed];
+            $cart->calculate_totals();
+            $ok((int)round((float)$cart->get_discount_total()*100)===0,
+                'revised campaign approval automatically invalidated');
+            $virtual[Andy_Commerce_M7_Draft_Studio::OPTION]=[$draft['id']=>$draft];
+            $cart->calculate_totals();
+            $ok((int)round((float)$cart->get_discount_total()*100)===1200,
+                'approved revision restores proper discount');
+        }
         // Disable the campaign without changing any database option.
         $virtual[$p1::SWITCH_OPTION]='no';
         $cart->calculate_totals();
