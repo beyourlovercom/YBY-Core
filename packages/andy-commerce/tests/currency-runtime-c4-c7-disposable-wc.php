@@ -54,7 +54,7 @@ WC()->cart->empty_cart();
 $verify((bool)WC()->cart->add_to_cart($id,2),'Woo cart product add');
 $verify(WC()->cart->apply_coupon('aicc-currency-fixed-five'),'native coupon apply');
 WC()->cart->calculate_totals();
-$verify(abs((float)WC()->cart->get_cart_contents_total()-33.76)<0.001,'native CAD item total');
+$verify(abs((float)WC()->cart->get_subtotal()-33.76)<0.001,'native CAD pre-discount merchandise subtotal');
 $verify(abs((float)WC()->cart->get_discount_total()-6.75)<0.001,'native fixed coupon CAD amount');
 $verify(abs((float)WC()->cart->get_total('edit')-27.01)<0.001,'native coupon cart payable CAD');
 $verify(abs((float)WC()->cart->get_shipping_total())<0.001 && abs((float)WC()->cart->get_total_tax())<0.001,'no ambiguous tax/shipping in checkout');
