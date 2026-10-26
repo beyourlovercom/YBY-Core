@@ -131,7 +131,9 @@ try {
                 wc_get_notices('error')));
             $cart->calculate_totals();
             $ok($cart->get_applied_coupons()===[$manualCode],
-                'manual coupon alone, automatic revoked');
+                'manual coupon alone, automatic revoked: codes='.
+                wp_json_encode($cart->get_applied_coupons()).' errors='.
+                wp_json_encode(wc_get_notices('error')));
             $ok((int)round((float)$cart->get_discount_total()*100)===2500,
                 'manual coupon USD25 not stacked');
             $cart->remove_coupon($manualCode);
