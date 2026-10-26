@@ -100,6 +100,8 @@ jobs:
           unzip -Z1 "$package" | grep -Fx 'yby-core/inc/class-yby-lead-notification-outbox.php'
           unzip -Z1 "$package" | grep -Fx 'yby-core/admin/class-yby-lead-notification-admin.php'
           unzip -p "$package" yby-core/inc/class-yby-core.php | grep -F 'class-yby-lead-notification-outbox.php'
+          unzip -p "$package" yby-core/inc/class-yby-lead-notification-outbox.php | grep -F 'function ignore_notification'
+          unzip -p "$package" yby-core/admin/class-yby-lead-notification-admin.php | grep -F 'yby_mail_ignore_lead_id'
           unzip -p "$package" yby-core/inc/class-yby-database.php | grep -F 'create_notification_table'
           grep -Fq 'yby_lead_notifications' RELEASE_NOTES_v2.2.12.md
           grep -Fq 'yby_lead_notifications' UPGRADE_GUIDE_v2.2.12.md
