@@ -176,13 +176,17 @@ final class Andy_Commerce_Marketing_P4_Order_Cap {
             $seen[$item->get_product_id()]=true;
             $minor=$item->get_meta('_aicc_marketing_p4_discount_minor',true);
             $units=$item->get_meta('_aicc_marketing_p4_unit_minor',true);
-            if(!is_int($minor)||$minor<0||!is_array($units)
+            // Woo item-meta storage serializes scalar integers as numeric
+            // strings; validate strict decimal representation then cast.
+            if((!is_int($minor)&&(!is_string($minor)
+                    ||!preg_match('/^(?:0|[1-9][0-9]{0,8})$/D',$minor)))
+                ||(int)$minor<0||!is_array($units)
                 ||count($units)!==$item->get_quantity()
-                ||array_sum($units)!==$minor
-                ||$minor!==(int)round(((float)$item->get_subtotal()
+                ||array_sum($units)!==(int)$minor
+                ||(int)$minor!==(int)round(((float)$item->get_subtotal()
                     -(float)$item->get_total())*100))
                 throw new RuntimeException('M_P4_ORDER_ALLOCATION_TAMPER');
-            $sum+=$minor;
+            $sum+=(int)$minor;
         }
         if($sum!==(int)$order->get_meta('_aicc_marketing_p4_discount_minor',true)
             ||$sum!==(int)round((float)$order->get_discount_total()*100))
