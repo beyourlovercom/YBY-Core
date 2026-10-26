@@ -164,10 +164,17 @@ class YBY_Lead_Notification_Outbox {
     public static function sweep() {
         global $wpdb;
         if ( ! YBY_Database::notification_table_exists() ) { return; }
+        // Include orphaned pending tasks after a five-minute grace period.
+        // Manual requeue may succeed while wp_schedule_single_event() fails.
+        // A row is atomically claimed by attempt(); even two workers cannot send twice.
+        $grace = wp_date( 'Y-m-d H:i:s', time() - 300 );
         $ids = $wpdb->get_col( $wpdb->prepare(
             "SELECT lead_id FROM " . self::table_name() .
-            " WHERE status = 'failed' AND attempts < %d AND next_retry_at <= %s ORDER BY next_retry_at ASC LIMIT 20",
-            self::MAX_ATTEMPTS, current_time( 'mysql' )
+            " WHERE attempts < %d AND (
+                (status = 'failed' AND next_retry_at <= %s)
+                OR (status = 'pending' AND updated_at <= %s)
+             ) ORDER BY updated_at ASC LIMIT 20",
+            self::MAX_ATTEMPTS, current_time( 'mysql' ), $grace
         ) );
         foreach ( (array) $ids as $lead_id ) { self::retry( (int) $lead_id ); }
     }

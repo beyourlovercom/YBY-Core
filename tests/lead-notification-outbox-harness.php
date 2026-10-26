@@ -13,7 +13,7 @@ function do_action( $name, ...$args ) { $GLOBALS['actions'][] = array( $name, $a
 function current_time( $format ) { return 'mysql' === $format ? gmdate( 'Y-m-d H:i:s' ) : time(); }
 function wp_date( $format, $stamp ) { return gmdate( $format, $stamp ); }
 function sanitize_key( $key ) { return preg_replace( '/[^a-z0-9_-]/', '', strtolower( $key ) ); }
-function wp_schedule_single_event( $when, $hook, $args ) { $GLOBALS['cron_events'][] = array( $when, $hook, $args ); return true; }
+function wp_schedule_single_event( $when, $hook, $args ) { if ( ! empty( $GLOBALS['cron_fail'] ) ) { return false; } $GLOBALS['cron_events'][] = array( $when, $hook, $args ); return true; }
 function wp_next_scheduled( $hook ) { return false; }
 function wp_schedule_event( $when, $schedule, $hook ) { return true; }
 function current_user_can( $cap ) { return true; }
@@ -107,7 +107,7 @@ class Outbox_Fake_Db {
     public function get_col( $sql ) {
         $ids = array();
         foreach ( $this->receipts as $id => $row ) {
-            if ( $row['status'] === 'failed' && $row['attempts'] < 4 && $row['next_retry_at'] <= gmdate('Y-m-d H:i:s') ) { $ids[] = $id; }
+            if ( $row['attempts'] < 4 && ( ( $row['status'] === 'failed' && $row['next_retry_at'] <= gmdate('Y-m-d H:i:s') ) || ( $row['status'] === 'pending' && $row['updated_at'] <= gmdate('Y-m-d H:i:s', time() - 300) ) ) ) { $ids[] = $id; }
         }
         return array_slice( $ids, 0, 20 );
     }
@@ -150,4 +150,15 @@ YBY_Lead_Notification_Outbox::recover(102, 1);
 expect_outbox( 'failed' === $wpdb->receipts[102]['status'] && 3 === $GLOBALS['sent_count'], 'Recovery only attempts after durable queue exists' );
 YBY_Lead_Notification_Outbox::recover(102, 1);
 expect_outbox( 3 === $GLOBALS['sent_count'], 'Repeat recovery does not send before retry window' );
-echo "LEAD_NOTIFICATION_OUTBOX_OFFLINE_PASS 15 assertions\n";
+$wpdb->receipts[102]['status'] = 'exhausted';
+$GLOBALS['cron_fail'] = true;
+expect_outbox( ! YBY_Lead_Notification_Outbox::request_manual_retry( 102 ), 'Failed scheduler reports false' );
+expect_outbox( 'pending' === $wpdb->receipts[102]['status'], 'Requeue state remains pending' );
+$wpdb->receipts[102]['updated_at'] = gmdate('Y-m-d H:i:s', time() - 360 );
+$GLOBALS['mail_success'] = true;
+YBY_Lead_Notification_Outbox::sweep();
+expect_outbox( 'smtp_accepted' === $wpdb->receipts[102]['status'], 'Sweep repairs missed pending schedule' );
+expect_outbox( 4 === $GLOBALS['sent_count'], 'Sweep makes only one retry attempt' );
+YBY_Lead_Notification_Outbox::sweep();
+expect_outbox( 4 === $GLOBALS['sent_count'], 'Sweep never resends accepted mail' );
+echo "LEAD_NOTIFICATION_OUTBOX_OFFLINE_PASS 20 assertions\n";

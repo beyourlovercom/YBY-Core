@@ -238,7 +238,27 @@ class YBY_Database {
     public static function notification_table_exists() {
         global $wpdb;
         $table = $wpdb->prefix . 'yby_lead_notifications';
-        return $table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+        if ( $table !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) ) {
+            return false;
+        }
+        // A partial dbDelta must not activate mail sending without the unique
+        // lead claim and recovery/diagnostic fields. Validate actual schema.
+        $fields = array();
+        foreach ( (array) $wpdb->get_col( 'SHOW COLUMNS FROM ' . $table ) as $field ) {
+            $fields[ (string) $field ] = true;
+        }
+        foreach ( array( 'lead_id', 'case_id', 'recipient_email', 'status', 'attempts', 'last_error_code', 'next_retry_at', 'claimed_at', 'last_attempt_at', 'accepted_at', 'created_at', 'updated_at' ) as $field ) {
+            if ( ! isset( $fields[ $field ] ) ) { return false; }
+        }
+        $unique_lead = false;
+        foreach ( (array) $wpdb->get_results( 'SHOW INDEX FROM ' . $table, ARRAY_A ) as $index ) {
+            if ( 'lead_id' === (string) ( $index['Key_name'] ?? '' ) &&
+                'lead_id' === (string) ( $index['Column_name'] ?? '' ) &&
+                '0' === (string) ( $index['Non_unique'] ?? '1' ) ) {
+                $unique_lead = true;
+            }
+        }
+        return $unique_lead;
     }
 
     protected static function create_notification_table() {
