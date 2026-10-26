@@ -20,6 +20,7 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r
 // C-R3 pure rounding ledger proposal; no order metadata or payment hooks.
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-reconcile.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-c4.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-c6.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-order-coupon-column.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m4-shipping-shadow.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m5-progress-projection.php';
