@@ -1,7 +1,7 @@
 === Andy Commerce ===
 Contributors: ybyglobal
 Requires PHP: 8.0
-Stable tag: 1.0.8
+Stable tag: 1.0.9-dev.1
 
 Reusable B2C / WooCommerce Addon for Andy Core.
 
@@ -13,6 +13,11 @@ Reusable B2C / WooCommerce Addon for Andy Core.
 The plugin fails closed with an admin notice when dependencies are missing or incompatible.
 
 == Changelog ==
+
+= 1.0.9-dev.1 (Dev-only R8-R10 Candidate) =
+* Adds master-OFF Dev shopper currency runtime using explicit time-limited Frankfurter reference FX snapshots; stale snapshots and legacy currency conflicts disable it.
+* Preserves USD Woo merchant base, functional native Footer currency selector, Woo session and Store API currency, native fixed coupon and tax-free flat shipping preview.
+* Foreign payment gateways disabled pending R11; Marketing unchanged/OFF; never activate on WWW. This is NOT Stable or YayCurrency production replacement.
 
 = 1.0.8 (Dev-only Candidate) =
 * Currency OS V2 Owner-approved native admin layout: five configuration tabs, save of isolated Dev preview settings, preserved 1.0.6 FX Ledger.
