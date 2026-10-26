@@ -49,6 +49,8 @@ add_action('woocommerce_init', static function():void {
         '29'=>['eligible_for_promotion'=>true,'special_shipping'=>false,'free_gift'=>false],
         '30'=>['eligible_for_promotion'=>false,'special_shipping'=>false,'free_gift'=>true],
     ];
+    // No synthetic checkout may attempt customer/admin emails.
+    add_filter('pre_wp_mail',static fn()=>true,PHP_INT_MAX);
     // Only memory filters. No published campaigns or plugin-option writes.
     $options=[
         Andy_Commerce_M7_Draft_Studio::OPTION=>[$draft['id']=>$draft],
