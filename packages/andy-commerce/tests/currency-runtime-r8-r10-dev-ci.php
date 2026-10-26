@@ -27,7 +27,7 @@ $rt::boot();
 if(function_exists('wc_load_cart')) wc_load_cart();
 $ok(WC()->cart instanceof WC_Cart && WC()->session!==null,'cart and shopper session ready');
 $ok(get_woocommerce_currency()==='USD','default currency USD');
-$ok(str_contains($rt::shortcode(),'<form')&&str_contains($rt::shortcode(),'ac_currency_dev_select'),'shopper Footer renders POST form + nonce');
+$ok(str_contains($rt::shortcode(),'<form')&&str_contains($rt::shortcode(),'name="ac_currency_nonce"') && str_contains($rt::shortcode(),'name="ac_currency_code"'),'shopper Footer renders POST form + nonce');
 WC()->session->set('ac_currency_runtime_dev_selected','EUR');
 $ok(get_woocommerce_currency()==='EUR','session changes Woo currency');
 $ok($rt::gateways(['cod'=>new stdClass()])===[],'forex gateway blocked');
