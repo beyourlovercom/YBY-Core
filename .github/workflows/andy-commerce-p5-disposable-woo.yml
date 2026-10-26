@@ -78,6 +78,11 @@ jobs:
           set -euo pipefail
           wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/p5-disposable-native-woo.php" --path="$RUNNER_TEMP/woo"
 
+      - name: P5-C native coupon variation and shipping compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/p5-disposable-compatibility.php" --path="$RUNNER_TEMP/woo"
       - name: P6-F disposable Commerce deactivate/reactivate smoke
         shell: bash
         run: |
@@ -89,3 +94,20 @@ jobs:
           wp plugin is-active woocommerce --path="$RUNNER_TEMP/woo"
           test "$(wp option get andy_commerce_m7_inactive_drafts_v1 --path="$RUNNER_TEMP/woo" 2>/dev/null || true)" = ""
           echo 'P6_F_DISPOSABLE_REACTIVATION_PASS; CAMPAIGNS_OFF=YES'
+
+      - name: P6-F disposable exact ZIP rollback and reinstall
+        shell: bash
+        run: |
+          set -euo pipefail
+          PLUG="$RUNNER_TEMP/woo/wp-content/plugins/andy-commerce"
+          test -f "$PLUG/andy-commerce.php"
+          BEFORE="$(sha256sum "$PLUG/admin/class-andy-commerce-admin.php" | cut -d' ' -f1)"
+          cp -a "$PLUG" "$RUNNER_TEMP/commerce-pre-rollback"
+          wp plugin deactivate andy-commerce --path="$RUNNER_TEMP/woo"
+          mv "$PLUG" "$RUNNER_TEMP/commerce-before-restore"
+          cp -a "$RUNNER_TEMP/commerce-pre-rollback" "$PLUG"
+          wp plugin activate andy-commerce --path="$RUNNER_TEMP/woo"
+          AFTER="$(sha256sum "$PLUG/admin/class-andy-commerce-admin.php" | cut -d' ' -f1)"
+          test "$BEFORE" = "$AFTER"
+          wp plugin is-active andy-commerce --path="$RUNNER_TEMP/woo"
+          echo 'P6_F_FILE_RESTORE_AND_REACTIVATE_PASS; NO_PRODUCTION_MUTATION=TRUE'
