@@ -13,9 +13,23 @@ class YBY_Lead_Notification_Outbox {
         return $wpdb->prefix . 'yby_lead_notifications';
     }
     public static function enqueue_and_attempt( $lead, $result ) {
+        global $wpdb;
         $lead_id = isset( $result['lead_id'] ) ? (int) $result['lead_id'] : 0;
         $case_id = isset( $result['case_id'] ) ? (string) $result['case_id'] : '';
         if ( ! self::enqueue( $lead_id, $case_id ) ) {
+            // The lead is already persisted; record the failure independently,
+            // and never attempt SMTP without a durable outbox claim.
+            $logged = $wpdb->insert( YBY_Database::activities_table_name(), array(
+                'lead_id' => $lead_id, 'activity_type' => 'email_outbox_unavailable',
+                'content' => 'outbox_write_failed', 'new_value' => 'queue_unavailable',
+                'created_by' => 0, 'created_at' => current_time( 'mysql' ),
+            ), array( '%d', '%s', '%s', '%s', '%d', '%s' ) );
+            if ( false === $logged ) {
+                error_log( 'YBY lead notification fallback audit failed for lead ' . $lead_id );
+            }
+            if ( ! wp_schedule_single_event( time() + 300, 'yby_lead_notification_recover', array( $lead_id, 1 ) ) ) {
+                error_log( 'YBY lead notification recovery scheduling failed for lead ' . $lead_id );
+            }
             error_log( 'YBY lead notification outbox unavailable for lead ' . $lead_id );
             return array( 'status' => 'queue_unavailable', 'error_code' => 'outbox_write_failed' );
         }
@@ -95,6 +109,36 @@ class YBY_Lead_Notification_Outbox {
         ) );
         return is_string( $value ) && '' !== $value ? $value : 'queue_unavailable';
     }
+    /** Recover a saved lead whose initial outbox insert failed; no mail was sent. */
+    public static function recover( $lead_id, $round = 1 ) {
+        global $wpdb;
+        $lead_id = (int) $lead_id;
+        $round = (int) $round;
+        if ( $lead_id < 1 || $round < 1 || $round > self::MAX_ATTEMPTS ) { return; }
+        $lead = $wpdb->get_row( $wpdb->prepare(
+            'SELECT * FROM ' . YBY_Database::leads_table_name() . ' WHERE id = %d', $lead_id
+        ), ARRAY_A );
+        if ( ! is_array( $lead ) ) {
+            error_log( 'YBY outbox recovery missing lead ' . $lead_id );
+            return;
+        }
+        if ( ! self::enqueue( $lead_id, (string) $lead['case_id'] ) ) {
+            if ( $round < self::MAX_ATTEMPTS ) {
+                $delay = min( 3600, 300 * $round );
+                if ( ! wp_schedule_single_event( time() + $delay, 'yby_lead_notification_recover', array( $lead_id, $round + 1 ) ) ) {
+                    error_log( 'YBY outbox recovery reschedule failed for lead ' . $lead_id );
+                }
+            } else {
+                error_log( 'YBY outbox recovery exhausted for lead ' . $lead_id );
+            }
+            return;
+        }
+        $lead['custom_fields'] = json_decode( (string) ( $lead['custom_fields'] ?? '{}' ), true );
+        if ( ! is_array( $lead['custom_fields'] ) ) { $lead['custom_fields'] = array(); }
+        self::attempt( $lead, array( 'lead_id' => $lead_id,
+            'case_id' => $lead['case_id'], 'status' => $lead['status'] ) );
+    }
+
     public static function retry( $lead_id ) {
         global $wpdb;
         $lead_id = (int) $lead_id;
@@ -182,5 +226,6 @@ class YBY_Lead_Notification_Outbox {
     }
 }
 add_action( 'yby_lead_notification_retry', array( 'YBY_Lead_Notification_Outbox', 'retry' ), 10, 1 );
+add_action( 'yby_lead_notification_recover', array( 'YBY_Lead_Notification_Outbox', 'recover' ), 10, 2 );
 add_action( 'init', array( 'YBY_Lead_Notification_Outbox', 'schedule_sweep' ) );
 add_action( 'yby_lead_notification_sweep', array( 'YBY_Lead_Notification_Outbox', 'sweep' ) );
