@@ -86,13 +86,34 @@ final class Andy_Commerce_Marketing_P5_Checkout_Hooks {
     }
 
     public static function classic_before($order,$data): void {
-        if($order instanceof WC_Order)self::reserve($order);
+        if(!($order instanceof WC_Order))return;
+        try { self::reserve($order); }
+        catch(RuntimeException $e) {
+            if($e->getMessage()==='M_P5_CAMPAIGN_CAP_EXHAUSTED_OR_REUSED')
+                throw new RuntimeException(
+                    'This promotion has reached its usage limit. Please refresh your cart.'
+                );
+            throw $e;
+        }
     }
     public static function classic_after($order): void {
         if($order instanceof WC_Order)self::commit($order);
     }
     public static function blocks_before($order,$request): void {
-        if($order instanceof WC_Order)self::reserve($order);
+        if(!($order instanceof WC_Order))return;
+        try {
+            self::reserve($order);
+        }catch(RuntimeException $e){
+            if($e->getMessage()==='M_P5_CAMPAIGN_CAP_EXHAUSTED_OR_REUSED'
+                &&class_exists('\\Automattic\\WooCommerce\\StoreApi\\Exceptions\\RouteException')){
+                throw new \Automattic\WooCommerce\StoreApi\Exceptions\RouteException(
+                    'aicc_marketing_cap_exhausted',
+                    'This promotion has reached its usage limit. Please refresh your cart.',
+                    409
+                );
+            }
+            throw $e;
+        }
     }
     public static function blocks_after($order): void {
         if($order instanceof WC_Order)self::commit($order);
