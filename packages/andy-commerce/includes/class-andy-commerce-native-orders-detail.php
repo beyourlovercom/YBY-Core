@@ -8,7 +8,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class Andy_Commerce_Native_Order_Detail_Skin {
-    const VERSION = '1.0.8-native-detail-v1';
+    const VERSION = '1.0.9-native-detail-v1';
     const NONCE = 'andy_commerce_native_orders_pin_v1';
     const META = 'byl_native_order_pinned_boxes_v1';
     // Restrict writes to known order-screen metabox identifiers. Unknown plugin boxes retain native WP UI.
