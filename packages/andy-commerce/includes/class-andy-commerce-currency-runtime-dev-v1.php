@@ -139,6 +139,12 @@ final class Andy_Commerce_Currency_Runtime_Dev_V1 {
         add_filter('woocommerce_coupon_get_amount',[__CLASS__,'coupon'],60,2);
         add_filter('woocommerce_package_rates',[__CLASS__,'shipping'],60,2);
         add_action('wp_loaded',[__CLASS__,'switch_request'],25,0);
+        // R11 payment readiness is not yet accepted: foreign checkout must
+        // never accidentally charge a live provider from a Dev currency view.
+        add_filter('woocommerce_available_payment_gateways',[__CLASS__,'gateways'],999,1);
+    }
+    public static function gateways($gateways) {
+        return self::allowed() && self::selected()!=='USD' ? [] : $gateways;
     }
     public static function switch_request(): void {
         if(!self::allowed() || ($_SERVER['REQUEST_METHOD']??'')!=='POST'
