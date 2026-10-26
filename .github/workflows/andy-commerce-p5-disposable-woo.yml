@@ -77,3 +77,15 @@ jobs:
         run: |
           set -euo pipefail
           wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/p5-disposable-native-woo.php" --path="$RUNNER_TEMP/woo"
+
+      - name: P6-F disposable Commerce deactivate/reactivate smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp plugin deactivate andy-commerce --path="$RUNNER_TEMP/woo"
+          if wp plugin is-active andy-commerce --path="$RUNNER_TEMP/woo"; then exit 1; fi
+          wp plugin activate andy-commerce --path="$RUNNER_TEMP/woo"
+          wp plugin is-active andy-commerce --path="$RUNNER_TEMP/woo"
+          wp plugin is-active woocommerce --path="$RUNNER_TEMP/woo"
+          test "$(wp option get andy_commerce_m7_inactive_drafts_v1 --path="$RUNNER_TEMP/woo" 2>/dev/null || true)" = ""
+          echo 'P6_F_DISPOSABLE_REACTIVATION_PASS; CAMPAIGNS_OFF=YES'
