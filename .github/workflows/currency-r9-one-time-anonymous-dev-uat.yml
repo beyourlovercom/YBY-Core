@@ -1,0 +1,26 @@
+name: Currency R9 One-Time Anonymous Dev UAT
+
+# This isolated CI is deliberately triggered only by its explicit signoff
+# marker. It must not call the Dev site on every Commerce code change.
+on:
+  pull_request:
+    paths:
+      - docs/andy-commerce-v1/CURRENCY-R9-ANONYMOUS-DEV-GATE-20261026.md
+
+permissions:
+  contents: read
+
+jobs:
+  anonymous-dev-store-api:
+    if: github.event.pull_request.head.ref == 'feat/marketing-m10-policy-m9-bridge-dev-20261023'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Anonymous guest Footer → Woo Store API on DEV only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/currency-r9-anonymous-dev-uat.py
