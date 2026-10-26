@@ -71,7 +71,7 @@ if MODE=="store":
             "customer_note":"M-P5 local no-money Woo acceptance"})
     except urllib.error.HTTPError as e:
         if os.environ.get("AICC_P5_EXPECT_CAP_REJECT")=="1":
-            assert e.code>=400 and "M_P5_CAMPAIGN_CAP_EXHAUSTED_OR_REUSED" in e.aicc_body,                ("wrong rejection",e.code,e.aicc_body[:500])
+            assert e.code==409 and '"aicc_marketing_cap_exhausted"' in e.aicc_body and "Please refresh your cart" in e.aicc_body,                ("wrong rejection",e.code,e.aicc_body[:500])
             print("MARKETING_P5_REAL_CHECKOUT_CAP_DENIAL_PASS",
                 json.dumps({"http":e.code,"case":CASE,"mode":MODE,
                    "external_payment":False,"reason":"quota_exhausted"}))
