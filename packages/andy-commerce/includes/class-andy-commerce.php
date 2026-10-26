@@ -21,6 +21,8 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-reconcile.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-c4.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-c6.php';
+// R8-R10 separate real Dev runtime, default OFF; never loaded as active WWW runtime.
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-dev-v1.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-order-coupon-column.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m4-shipping-shadow.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m5-progress-projection.php';
@@ -35,6 +37,8 @@ class Andy_Commerce {
 	public function run() {
 		Andy_Commerce_Currency_V2_Dev::boot();
 		Andy_Commerce_Currency_Runtime_C1::boot();
+		Andy_Commerce_Currency_Runtime_Dev_V1::admin_boot();
+		Andy_Commerce_Currency_Runtime_Dev_V1::boot();
 		Andy_Commerce_Shipping_Promotion_Policy::boot();
 		if ( ! class_exists( 'BYL_Shipping_Promotion_Runtime' ) ) {
 			Andy_Commerce_Shipping_Promotion_Runtime::boot();
