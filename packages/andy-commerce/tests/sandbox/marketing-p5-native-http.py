@@ -5,7 +5,7 @@ Run: AICC_P5_CASE=bogo AICC_P5_MODE=store|classic python3 script.py
 Requires the separately installed disposable-only P5 bridge and COD enabled.
 Does not use account credentials, external network or merchant services.
 """
-import os, json, re, html, urllib.request, urllib.parse, urllib.error, http.cookiejar, pathlib
+import os, json, re, html, sys, urllib.request, urllib.parse, urllib.error, http.cookiejar, pathlib
 
 CASE=os.environ.get("AICC_P5_CASE", "")
 MODE=os.environ.get("AICC_P5_MODE", "")
@@ -32,7 +32,8 @@ def fetch(method, path, data=None, contenttype="application/json"):
                 if r.headers.get(k): headers[k]=r.headers[k]
             return r.status,r.read()
     except urllib.error.HTTPError as e:
-        print("LOCAL_HTTP_ERROR",method,path,e.code,e.read().decode(errors="replace")[:500])
+        e.aicc_body=e.read().decode(errors="replace")
+        print("LOCAL_HTTP_ERROR",method,path,e.code,e.aicc_body[:500])
         raise
 address={"first_name":"AICC","last_name":"P5 Synthetic","address_1":"1 Local Test",
  "address_2":"","city":"Testville","state":"CA","postcode":"90001",
@@ -63,10 +64,21 @@ if MODE=="store":
     else:
         assert len(coupons)==1 and coupons[0]["code"]==expected_code,coupons
     _,b=fetch("GET",prefix+"/wc/store/v1/checkout")
-    _,b=fetch("POST",prefix+"/wc/store/v1/checkout",{
-        "billing_address":billing,"shipping_address":address,
-        "payment_method":"cod","payment_data":[],"create_account":False,
-        "customer_note":"M-P5 local no-money Woo acceptance"})
+    try:
+        _,b=fetch("POST",prefix+"/wc/store/v1/checkout",{
+            "billing_address":billing,"shipping_address":address,
+            "payment_method":"cod","payment_data":[],"create_account":False,
+            "customer_note":"M-P5 local no-money Woo acceptance"})
+    except urllib.error.HTTPError as e:
+        if os.environ.get("AICC_P5_EXPECT_CAP_REJECT")=="1":
+            assert e.code>=400 and "M_P5_CAMPAIGN_CAP_EXHAUSTED_OR_REUSED" in e.aicc_body,                ("wrong rejection",e.code,e.aicc_body[:500])
+            print("MARKETING_P5_REAL_CHECKOUT_CAP_DENIAL_PASS",
+                json.dumps({"http":e.code,"case":CASE,"mode":MODE,
+                   "external_payment":False,"reason":"quota_exhausted"}))
+            sys.exit(0)
+        raise
+    if os.environ.get("AICC_P5_EXPECT_CAP_REJECT")=="1":
+        raise RuntimeError("CAP_EXHAUSTED_CHECKOUT_INCORRECTLY_ACCEPTED")
     out=json.loads(b); order_id=out.get("order_id")
     assert isinstance(order_id,int) and order_id>0,out
 else:
