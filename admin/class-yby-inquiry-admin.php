@@ -83,7 +83,7 @@ class YBY_Inquiry_Admin {
 					wp_die( esc_html__( 'Permission denied.', 'yby-core' ) );
 				}
 				$tabs = YBY_Three_OS_Admin::inquiry_tabs();
-				$tabs['mail_delivery'] = '询盘邮件通知记录';
+				$tabs['mail_delivery'] = '通知记录';
 				YBY_Three_OS_Admin::render_tabs( self::page_slug(), $tabs, $tab, '询盘管理' );
 				YBY_Lead_Notification_Admin::render();
 				echo '</div>';

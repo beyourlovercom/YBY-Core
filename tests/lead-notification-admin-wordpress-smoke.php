@@ -26,7 +26,7 @@ unset( $_POST['yby_mail_retry_lead_id'] );
 ob_start();
 YBY_Lead_Notification_Admin::render();
 $html = ob_get_clean();
-lead_admin_check( false !== strpos( $html, '询盘邮件通知记录' ), 'page_heading' );
+lead_admin_check( false !== strpos( $html, '通知记录' ), 'page_heading' );
 lead_admin_check( false !== strpos( $html, (string) $receipt['case_id'] ), 'case_id_visibility' );
 lead_admin_check( false !== strpos( $html, 'mail_send_failed' ), 'error_visibility' );
 lead_admin_check( false !== strpos( $html, '手动重发' ), 'manual_retry_button_visibility' );
@@ -42,7 +42,7 @@ $_GET['tab'] = 'mail_delivery';
 ob_start();
 ( new YBY_Inquiry_Admin( 'yby-core', YBY_CORE_VERSION ) )->render_page();
 $route_html = ob_get_clean();
-lead_admin_check( false !== strpos( $route_html, '询盘邮件通知记录' ), 'independent_tertiary_route_heading' );
+lead_admin_check( false !== strpos( $route_html, '通知记录' ), 'independent_tertiary_route_heading' );
 lead_admin_check( false !== strpos( $route_html, (string) $receipt['case_id'] ), 'independent_route_renders_failed_receipt' );
 if ( YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) {
     $links = YBY_Andy_OS_Navigation::tertiary_items( 'andy-core-leads' );
@@ -50,7 +50,7 @@ if ( YBY_Module_Registry::is_enabled( 'inquiry_os' ) ) {
         return false !== strpos( $link['url'], 'tab=mail_delivery' );
     } ) );
     lead_admin_check( 1 === count( $matches ), 'single_canonical_tertiary_route' );
-    lead_admin_check( false !== strpos( $matches[0]['title'], '询盘邮件通知记录' ), 'tertiary_menu_title' );
+    lead_admin_check( false !== strpos( $matches[0]['title'], '通知记录' ), 'tertiary_menu_title' );
     lead_admin_check( false !== strpos( $matches[0]['title'], '待处理' ), 'failed_mail_count_visible_in_menu' );
 }
 $wpdb->update( $table, array( 'status' => $original, 'last_error_code' => '' ),

@@ -307,7 +307,7 @@ final class YBY_Andy_OS_Navigation {
 			// Its count is computed only for authorized lead managers.
 			if ( current_user_can( 'andy_core_leads_view' ) &&
 				current_user_can( 'andy_core_settings_manage' ) ) {
-				$mail_title = '询盘邮件通知记录';
+				$mail_title = '通知记录';
 				if ( class_exists( 'YBY_Lead_Notification_Outbox' ) &&
 					class_exists( 'YBY_Database' ) &&
 					YBY_Database::notification_table_exists() ) {

@@ -23,7 +23,7 @@ class YBY_Lead_Notification_Admin {
         if ( ! current_user_can( 'andy_core_settings_manage' ) ) {
             wp_die( esc_html__( 'Permission denied.', 'yby-core' ) );
         }
-        echo '<div class="wrap"><h2>询盘邮件通知记录</h2>';
+        echo '<div class="wrap"><h2>通知记录</h2>';
         if ( ! YBY_Database::notification_table_exists() ) {
             echo '<div class="notice notice-error"><p>通知任务表缺失，暂不能发送通知。请检查 Andy Core 数据库升级。</p></div></div>';
             return;
