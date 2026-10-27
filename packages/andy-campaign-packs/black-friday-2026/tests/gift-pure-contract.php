@@ -5,11 +5,19 @@ define('ABSPATH','/');
 class WC_Cart {
     public function __construct(private array $items) {}
     public function get_cart(): array { return $this->items; }
+    public function remove_cart_item($key): void { unset($this->items[$key]); }
+    public function calculate_totals(): void {}
 }
+class WooCommerce {}
 class WC_Product {
     public float $price=100;
+    public function __construct(public string $type='simple',public bool $stock=true) {}
     public function set_price($p): void { $this->price=(float)$p; }
+    public function is_type($name): bool { return $name===$this->type; }
+    public function is_purchasable(): bool { return $this->type==='simple'; }
+    public function is_in_stock(): bool { return $this->stock; }
 }
+function wc_get_product($id) { return $GLOBALS['products'][(int)$id]??false; }
 function get_woocommerce_currency(): string { return $GLOBALS['c3_currency'] ?? 'USD'; }
 function wc_get_price_decimals(): int { return 2; }
 function wc_format_decimal($v) { return number_format((float)$v,2,'.',''); }
@@ -19,6 +27,14 @@ require dirname(__DIR__).'/includes/class-byl-bf2026-gifts.php';
 $GLOBALS['gift_catalog']=array(1001=>array('upgrade_minor'=>0),1002=>array('upgrade_minor'=>999),1003=>array('upgrade_minor'=>-10),1004=>array('upgrade_minor'=>100001));
 $catalog=BYL_BF2026_Gifts::catalog();
 yes(count($catalog)===2 && $catalog[1001]===0 && $catalog[1002]===999,'catalog validates prices');
+$GLOBALS['products']=array(1001=>new WC_Product(),1002=>new WC_Product());
+yes(!BYL_BF2026_Gifts::ready(),'one free item is insufficient for two-free-gift promise');
+$GLOBALS['gift_catalog'][1005]=array('upgrade_minor'=>0);
+$GLOBALS['products'][1005]=new WC_Product();
+yes(BYL_BF2026_Gifts::ready(),'two stocked free gifts permit activation');
+$GLOBALS['products'][1005]->stock=false;
+yes(!BYL_BF2026_Gifts::ready(),'stockout revokes readiness');
+$GLOBALS['products'][1005]->stock=true;
 $normal=['product_id'=>10,'quantity'=>1,'line_total'=>205.0];
 $free=['product_id'=>1001,'quantity'=>1,'line_total'=>0.0,'data'=>new WC_Product(),
     'andy_campaign_pack_id'=>BYL_BF2026_Gifts::ID,'_byl_bf2026_gift'=>true];
@@ -38,6 +54,10 @@ $edge=BYL_BF2026_Gifts::eligibility(new WC_Cart([['product_id'=>10,'line_total'=
 yes($edge['slots']===2,'exact 199 threshold');
 $empty=BYL_BF2026_Gifts::eligibility(new WC_Cart([$free]));
 yes($empty['slots']===0,'gift-only cart no reward');
+$GLOBALS['products'][1002]->stock=false;
+$mock = new WC_Cart([$normal,$free,$premium]);
+BYL_BF2026_Gifts::reconcile($mock);
+yes(count($mock->get_cart())===2,'out-of-stock premium gift removed on cart reconcile');
 $GLOBALS['c3_currency']='EUR';
 yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,'foreign currency fail closed');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=10\n";
+echo "BYL_BF2026_PURE_CONTRACT_PASS=14\n";
