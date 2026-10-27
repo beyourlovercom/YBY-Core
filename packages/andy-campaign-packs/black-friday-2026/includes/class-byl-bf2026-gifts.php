@@ -158,16 +158,27 @@ final class BYL_BF2026_Gifts {
     }
 
     public static function handle_post(): void {
-        $mode = sanitize_key( wp_unslash( $_POST['byl_bf2026_action'] ?? '' ) );
-        if ( 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? 'GET' )
-            || ! in_array( $mode, array( 'select', 'remove' ), true )
+        // Reject array-shaped POST values before WordPress scalar sanitizers.
+        if ( 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? 'GET' ) ) { return; }
+        $raw_mode = $_POST['byl_bf2026_action'] ?? '';
+        if ( ! is_string( $raw_mode ) ) { return; }
+        $mode = sanitize_key( wp_unslash( $raw_mode ) );
+        if ( ! in_array( $mode, array( 'select', 'remove' ), true )
             || ! function_exists( 'WC' ) || ! WC()->cart ) { return; }
-        $token = sanitize_text_field( wp_unslash( $_POST['byl_bf2026_nonce'] ?? '' ) );
+        $raw_nonce = $_POST['byl_bf2026_nonce'] ?? '';
+        if ( ! is_string( $raw_nonce ) ) {
+            wp_die( 'Invalid gift selection nonce', '', array( 'response' => 403 ) );
+        }
+        $token = sanitize_text_field( wp_unslash( $raw_nonce ) );
         if ( ! wp_verify_nonce( $token, 'byl_bf2026_gifts' ) ) {
             wp_die( 'Invalid gift selection nonce', '', array( 'response' => 403 ) );
         }
         if ( 'remove' === $mode ) {
-            $key = sanitize_text_field( wp_unslash( $_POST['gift_cart_key'] ?? '' ) );
+            $raw_key = $_POST['gift_cart_key'] ?? '';
+            if ( ! is_string( $raw_key ) ) {
+                wp_die( 'Invalid gift cart key', '', array( 'response' => 422 ) );
+            }
+            $key = sanitize_text_field( wp_unslash( $raw_key ) );
             $line = WC()->cart->get_cart_item( $key );
             if ( is_array( $line ) && self::is_gift( $line ) ) {
                 WC()->cart->remove_cart_item( $key );
@@ -176,7 +187,11 @@ final class BYL_BF2026_Gifts {
             wp_safe_redirect( wp_get_referer() ?: wc_get_cart_url() );
             exit;
         }
-        $id = absint( $_POST['gift_product_id'] ?? 0 );
+        $raw_id = $_POST['gift_product_id'] ?? '';
+        if ( ! is_scalar( $raw_id ) ) {
+            wp_die( 'Invalid gift product ID', '', array( 'response' => 422 ) );
+        }
+        $id = absint( $raw_id );
         $catalog = self::catalog();
         WC()->cart->calculate_totals();
         $slots = self::eligibility( WC()->cart )['slots'];
