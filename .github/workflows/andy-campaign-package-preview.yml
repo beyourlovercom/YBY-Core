@@ -1,0 +1,59 @@
+name: Andy Campaign package preview (NO DEPLOY)
+
+on:
+  pull_request:
+    paths:
+      - 'packages/andy-campaign/**'
+      - 'packages/andy-campaign-packs/**'
+      - '.github/workflows/andy-campaign-package-preview.yml'
+  push:
+    paths:
+      - 'packages/andy-campaign/**'
+      - 'packages/andy-campaign-packs/**'
+      - '.github/workflows/andy-campaign-package-preview.yml'
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Gate - source syntax and contract
+        run: |
+          set -eu
+          find packages/andy-campaign packages/andy-campaign-packs -type f -name '*.php' -print0 | xargs -0 -n 1 php -l
+          php packages/andy-campaign/tests/lite-decision-harness.php
+          php packages/andy-campaign/tests/core-navigation-harness.php
+          php packages/andy-campaign-packs/black-friday-2026/tests/gift-pure-contract.php
+      - name: Stage exactly two independent installable packages
+        run: |
+          set -eu
+          mkdir -p dist/stage/andy-campaign/includes
+          mkdir -p dist/stage/black-friday-2026/includes
+          cp packages/andy-campaign/andy-campaign.php dist/stage/andy-campaign/
+          cp packages/andy-campaign/includes/class-andy-campaign-lite.php dist/stage/andy-campaign/includes/
+          cp packages/andy-campaign-packs/black-friday-2026/black-friday-2026.php dist/stage/black-friday-2026/
+          cp packages/andy-campaign-packs/black-friday-2026/includes/class-byl-bf2026-gifts.php dist/stage/black-friday-2026/includes/
+          grep -q 'Plugin Name: Andy Campaign' dist/stage/andy-campaign/andy-campaign.php
+          grep -q 'Plugin Name: BYL Black Friday' dist/stage/black-friday-2026/black-friday-2026.php
+          cd dist/stage
+          zip -q -r ../andy-campaign-0.1.0-preview.zip andy-campaign
+          zip -q -r ../byl-black-friday-2026-0.1.0-preview.zip black-friday-2026
+          cd ..
+          sha256sum *preview.zip > SHA256SUMS
+          cat SHA256SUMS
+          unzip -l andy-campaign-0.1.0-preview.zip
+          unzip -l byl-black-friday-2026-0.1.0-preview.zip
+      - name: Upload source-only preview artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: andy-campaign-c3c5-preview
+          path: |
+            dist/*preview.zip
+            dist/SHA256SUMS
+          retention-days: 7
+          if-no-files-found: error
