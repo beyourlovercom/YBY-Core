@@ -2,6 +2,7 @@
 /** Standalone no-WordPress tests for BF gift boundaries and price mapping. */
 declare(strict_types=1);
 define('ABSPATH','/');
+define('WC_VERSION','11.2.1');
 class WC_Cart {
     public function __construct(private array $items) {}
     public function get_cart(): array { return $this->items; }
@@ -61,6 +62,12 @@ yes($free['data']->price===0.0,'free gift zero');
 yes($premium['data']->price===9.99,'premium gift upgrade exact');
 yes(BYL_BF2026_Gifts::exclude_gift_coupon(true,null,null,$premium)===false,'gift coupon excluded');
 yes(BYL_BF2026_Gifts::exclude_gift_coupon(true,null,null,$normal)===true,'merchandise coupon allowed');
+$giftItem = (object) array( 'object' => $premium );
+$merchItem = (object) array( 'object' => $normal );
+$eligibleItems=BYL_BF2026_Gifts::exclude_gift_discount_items(array($giftItem,$merchItem),null,null);
+yes(count($eligibleItems)===1 && $eligibleItems[0] === $merchItem, 'fixed-cart allocation excludes paid gift upgrade');
+yes(BYL_BF2026_Gifts::exclude_gift_discount_items('original',null,null)==='original',
+    'unrecognized coupon item representation returns unchanged');
 $low=BYL_BF2026_Gifts::eligibility(new WC_Cart([['product_id'=>10,'quantity'=>1,'line_total'=>185.0],$premium]));
 yes($low['basis_minor']===18500 && $low['slots']===1,'coupon drops below threshold');
 $edge=BYL_BF2026_Gifts::eligibility(new WC_Cart([['product_id'=>10,'line_total'=>199.0]]));
@@ -90,4 +97,4 @@ yes(true,'nested action POST ignored without throwing');
 unset($_POST,$_SERVER['REQUEST_METHOD']);
 $GLOBALS['c3_currency']='EUR';
 yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,'foreign currency fail closed');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=20\n";
+echo "BYL_BF2026_PURE_CONTRACT_PASS=22\n";
