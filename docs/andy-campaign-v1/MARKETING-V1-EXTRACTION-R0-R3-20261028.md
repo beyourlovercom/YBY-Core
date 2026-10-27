@@ -58,3 +58,11 @@ The last row is **fail closed, not permission to disable or delete historical or
 - Review M15/M16 only when new Code-First Pack needs quota. Preserve schema, cap claims and exact old source until migration/rollback is audited.
 - C4/C5 actual Classic/Blocks order persistence, HPOS, taxes, shipping, refunds, five-currency Stripe and shopper UI remain NO-GO for customer launch.
 - This migration source work does not authorize merging main, installing Dev, modifying WWW, real orders or automated email.
+
+## Execution readback — 2026-10-28 (source-only, no release)
+- Commerce source-only child **Draft PR #246**: `feature/commerce-marketing-v1-retire-gate-20261028` stacked on PR #213. It changes only P1 guard, P5 guard, UAT arm handler, Commerce package AGENTS, the CI check and the isolated PHP harness. It **does not modify PR #213** or create a new publisher.
+- The US Mac mini *separate scratch tree* at `/Users/a/AI/uat/andy-campaign-v1-extraction-20261028/repo` executed: `COMMERCE_MARKETING_V1_CAMPAIGN_EXCLUSION_PASS=6`, existing `MARKETING_DEV_UAT_SECURITY_PASS=17`, `MARKETING_P1P2_SOURCE_HARNESS_PASS=22`, `M10_SIX_TYPE_MATRIX_PASS=61`; no real checkout or database migration.
+- Campaign **PR #242** source tests: `ANDY_CAMPAIGN_LITE_DECISIONS_PASS=15`, `ANDY_CAMPAIGN_CORE_NAV_PASS=8`.
+- Isolated Woo WP DB `aicc_campaign_c3_20261027` at US Mac mini verified Campaign black-friday pack decision: `eligible` with only Campaign master ON, `legacy_engine_active` with standalone P1 ON, standalone Dev UAT STATUS ON, or both legacy flags ON. Original `andy_campaign_lite_master`, `andy_commerce_marketing_p1_sandbox_enabled`, `andy_commerce_marketing_dev_uat_enabled` restored to `no/no/no`. No customer records, product writes, orders or payment requests.
+- Gate status: **R0 V1 freeze PASS / R1 ownership & publisher boundary PASS / R3 reciprocal source guard and isolated contract PASS**. **Commerce child Dev installed readback and coordinated cutover NOT DONE**; cannot assert full installed dual-engine protection until PR #246 is incorporated into the single Commerce publisher and verified with PR #242 installation. R2 M15/M16 relocation deferred intentionally.
+- Neither PR has been merged to main or installed to Dev/WWW. Both remain Draft. Existing Currency/Checkout/Campaign C4/5 payment/refund gates continue independently.
