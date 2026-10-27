@@ -87,6 +87,57 @@ foreach(['EUR','GBP','AUD','CAD'] as $iso){
 }
 echo 'R10_USD_69_FREE_SHIPPING_FOUR_FOREIGN_CURRENCIES_PASS'.PHP_EOL;
 
+// #233 reproduces separate-HTTP-request Store API catalog behavior.
+// Simulate a signed Woo shopper cookie persisted to native WC session DB.
+// A fresh product-only request must recover EUR when WC()->session begins NULL.
+WC()->session->set('ac_currency_runtime_dev_selected','EUR');
+$wcSession=WC()->session;
+$reflect=new ReflectionObject($wcSession);
+$expiration=(int)$reflect->getProperty('_session_expiration')->getValue($wcSession);
+$expiring=(int)$reflect->getProperty('_session_expiring')->getValue($wcSession);
+$customerId=(string)$wcSession->get_customer_id();
+$ok($customerId!=='' && $expiration>time() && function_exists('wp_fast_hash'),
+    '#233 fixture requires valid Woo signed session');
+$cookieName='wp_woocommerce_session_'.COOKIEHASH;
+$cookieValue=$customerId.'|'.$expiration.'|'.$expiring.'|'.wp_fast_hash($customerId.'|'.$expiration);
+$_COOKIE[$cookieName]=$cookieValue;
+$wcSession->save_data();
+$ok(is_array($wcSession->get_session_cookie()),'#233 native cookie signature verifies');
+WC()->session=null;
+$ok(WC()->session===null,'#233 simulated REST product request starts without Woo session');
+$productResponse=rest_do_request(new WP_REST_Request('GET','/wc/store/v1/products/'.$id));
+$ok($productResponse instanceof WP_REST_Response && $productResponse->get_status()===200,
+    '#233 single product REST GET');
+$productPayload=json_decode(wp_json_encode($productResponse->get_data()),true);
+$ok(($productPayload['prices']['currency_code']??null)==='EUR'
+  && (string)($productPayload['prices']['price']??'')==='1125',
+    '#233 REST product EUR price uses restored signed cookie');
+$ok(WC()->session!==null && WC()->session->get('ac_currency_runtime_dev_selected')==='EUR',
+    '#233 restored Woo guest session');
+WC()->session=null;
+$listRequest=new WP_REST_Request('GET','/wc/store/v1/products');
+$listRequest->set_param('include',[$id]);
+$listResponse=rest_do_request($listRequest);
+$ok($listResponse instanceof WP_REST_Response && $listResponse->get_status()===200,
+    '#233 catalog list REST GET');
+$catalog=json_decode(wp_json_encode($listResponse->get_data()),true);
+$matching=array_values(array_filter($catalog,static fn($p)=>(int)($p['id']??0)===$id));
+$ok(count($matching)===1 && ($matching[0]['prices']['currency_code']??null)==='EUR',
+    '#233 REST product catalog EUR via restored signed cookie');
+$ok((float)wc_get_product($id)->get_price('edit')===12.50,
+    '#233 product canonical USD unchanged');
+echo 'R9_ISSUE233_GUEST_PRODUCT_SINGLE_AND_LIST_RESTORE_EUR_PASS'.PHP_EOL;
+// A fresh anonymous product GET without any Woo cookie must not initialize
+// a session, and the catalog should remain USD.
+WC()->session=null;
+unset($_COOKIE[$cookieName]);
+$anonymousRequest=new WP_REST_Request('GET','/wc/store/v1/products/'.$id);
+$anonymousResponse=rest_do_request($anonymousRequest);
+$anonymous=json_decode(wp_json_encode($anonymousResponse->get_data()),true);
+$ok(WC()->session===null && ($anonymous['prices']['currency_code']??null)==='USD',
+    '#233 cookie-less catalog keeps USD without creating session');
+echo 'R9_ISSUE233_ANON_NO_COOKIE_USD_FALLBACK_PASS'.PHP_EOL;
+
 update_option($rt::OPTION,['enabled'=>false,'allowed'=>$rt::CODES],false);
 $ok(!$rt::allowed(),'instant Dev runtime disable');
 $ok($rt::currency('USD')==='USD','disabled must fall back USD');
