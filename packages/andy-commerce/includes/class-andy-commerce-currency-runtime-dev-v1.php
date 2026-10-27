@@ -179,10 +179,38 @@ final class Andy_Commerce_Currency_Runtime_Dev_V1 {
         [$whole,$fraction]=array_pad(explode('.',$raw,2),2,'');
         return (int)$whole*100+(int)str_pad($fraction,2,'0');
     }
+    /**
+     * Issue #233: WC initializes the customer session for Cart API requests,
+     * but public Store API product GETs can run without one. Recover ONLY an
+     * existing shopper session, using Woo's own signed cookie verification.
+     * Never create a guest/cart or accept a currency supplied by REST params.
+     *
+     * WordPress invokes rest_request_before_callbacks after route matching but
+     * before the Store API product controller formats prices and currency.
+     */
+    public static function restore_store_product_session($response, $handler, $request) {
+        if ($response !== null || !($request instanceof WP_REST_Request)
+            || $request->get_method() !== 'GET'
+            || !preg_match('~^/wc/store/v1/products(?:/[0-9]+)?/?$~D', $request->get_route())
+            || !self::allowed() || !function_exists('WC')
+            || !defined('COOKIEHASH') || !method_exists(WC(), 'initialize_session')) {
+            return $response;
+        }
+        $cookieName='wp_woocommerce_session_' . COOKIEHASH;
+        // Never instantiate a new anonymous session on a public, cacheable
+        // product GET without an existing Woo-issued session cookie.
+        if (!isset($_COOKIE[$cookieName]) || !is_string($_COOKIE[$cookieName])
+            || $_COOKIE[$cookieName] === '') return $response;
+        // WC()->initialize_session() is idempotent when already initialized.
+        // The Woo session handler validates signature, expiry and customer ID.
+        WC()->initialize_session();
+        return $response;
+    }
     public static function boot(): void {
         if(!self::allowed() || self::$running)return;
         self::$running=true;
         add_filter('woocommerce_currency',[__CLASS__,'currency'],60,1);
+        add_filter('rest_request_before_callbacks',[__CLASS__,'restore_store_product_session'],10,3);
         foreach(['woocommerce_product_get_price',
                   'woocommerce_product_get_regular_price',
                   'woocommerce_product_get_sale_price',
