@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Andy Core Notification UI R0-R2 Browser Fixture</title>
+<style>
+body { background: #fff5f6; font-family: Arial,sans-serif; padding: 30px; }
+.island, .island-main, .island-title, strong { background: red !important; font-size: 64px !important; }
+.woocommerce-message { background: yellow; color: black; display: block; }
+</style></head><body>
+<h1>Shadow DOM and module isolation fixture</h1>
+<div class="woocommerce-message" id="native-woo">Native WooCommerce message must remain visible</div>
+<script>
+window.AndyCoreNotificationUIConfig = {
+  cssUrl: new URL('../../public/assets/css/andy-core-notification-ui.css', location.href).href,
+  holdMs: 600, enterMs: 230, exitMs: 230, dedupeMs: 1200, criticalMs: 320
+};
+</script>
+<script src="../../public/assets/js/andy-core-notification-ui.js"></script>
+</body></html>
