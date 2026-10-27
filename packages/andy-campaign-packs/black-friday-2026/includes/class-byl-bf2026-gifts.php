@@ -31,6 +31,8 @@ final class BYL_BF2026_Gifts {
         add_action( 'woocommerce_before_calculate_totals', array( __CLASS__, 'reprice' ), 80 );
         add_action( 'woocommerce_after_calculate_totals', array( __CLASS__, 'reconcile' ), 80 );
         add_action( 'woocommerce_check_cart_items', array( __CLASS__, 'validate' ), 80 );
+        // Native coupons may discount merchandise but never the promotional gift upgrade line.
+        add_filter( 'woocommerce_coupon_is_valid_for_product', array( __CLASS__, 'exclude_gift_coupon' ), 90, 4 );
         add_action( 'woocommerce_checkout_create_order_line_item', array( __CLASS__, 'order_line' ), 80, 4 );
         add_shortcode( 'byl_bf2026_gifts', array( __CLASS__, 'render' ) );
         add_action( 'wp_loaded', array( __CLASS__, 'handle_post' ), 25 );
@@ -117,6 +119,10 @@ final class BYL_BF2026_Gifts {
             }
         }
         if ( $count > $slots ) { wc_add_notice( 'Gift selection exceeds your eligible allowance.', 'error' ); }
+    }
+
+    public static function exclude_gift_coupon( $valid, $product, $coupon, $cart_item ) {
+        return is_array( $cart_item ) && self::is_gift( $cart_item ) ? false : $valid;
     }
 
     public static function order_line( $item, $cart_item_key, $values, $order ): void {
