@@ -19,6 +19,10 @@ final class Andy_Campaign_Lite {
         // Every active WordPress pack is loaded before this hook; only trusted PHP may register.
         do_action( 'andy_campaign_register', self::$instance );
         add_action( 'init', array( self::$instance, 'launch' ), 20 );
+        // Cleanup is deliberately unconditional: OFF/expired/uninstalled packs
+        // must never leave promotional Woo cart lines to be repriced as purchases.
+        add_action( 'woocommerce_cart_loaded_from_session',
+            array( self::$instance, 'revoke_stale_lines' ), 95, 1 );
         if ( is_admin() ) {
             add_action( 'admin_menu', array( self::$instance, 'admin_menu' ), 25 );
             add_action( 'admin_post_andy_campaign_lite_save', array( self::$instance, 'save' ) );
@@ -102,6 +106,20 @@ final class Andy_Campaign_Lite {
                 call_user_func( $this->packs[ $id ]['boot'], $id );
             } catch ( Throwable $e ) {
                 error_log( 'ANDY_CAMPAIGN_BOOT_ERROR id=' . $id . ' type=' . get_class( $e ) );
+            }
+        }
+    }
+
+    /** Remove only lines bearing this host's reserved pack marker. Never touch normal products. */
+    public function revoke_stale_lines( $cart ): void {
+        if ( ! $cart instanceof WC_Cart ) { return; }
+        $states = $this->decisions();
+        foreach ( $cart->get_cart() as $key => $line ) {
+            if ( ! is_array( $line ) ) { continue; }
+            $id = $line['andy_campaign_pack_id'] ?? null;
+            if ( ! is_string( $id ) || '' === $id ) { continue; }
+            if ( ( $states[ $id ] ?? 'unregistered' ) !== 'eligible' ) {
+                $cart->remove_cart_item( $key );
             }
         }
     }
