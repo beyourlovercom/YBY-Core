@@ -111,7 +111,14 @@ final class Andy_Commerce_Marketing_Dev_UAT {
             // Stop the old campaign BEFORE changing approval/sku flags.
             update_option(self::SWITCH,'no',false);
             update_option(self::STATUS,'no',false);
-            $snapshot=Andy_Commerce_Marketing_P1_Sandbox_Contract::prepare($draft);
+            try {
+                $snapshot=Andy_Commerce_Marketing_P1_Sandbox_Contract::prepare($draft);
+            } catch (Throwable $e) {
+                // Invalid draft or owner/currency context is a user-facing
+                // validation failure, never a WordPress critical error.
+                wp_die('Test activity approval rejected; verify the scheduled OFF draft, USD store base and Woo admin permissions.',
+                    '', ['response'=>422]);
+            }
             update_option(self::DRAFT,$snapshot,false);
             update_option('andy_commerce_marketing_p2_line_flags',$flags,false);
             update_option('andy_commerce_marketing_p3_sku_enabled','yes',false);
