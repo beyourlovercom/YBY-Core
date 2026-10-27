@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) exit;
 
 final class Andy_Commerce_Currency_Runtime_C1 {
     public const TEST_RATES = ['USD'=>1000000, 'EUR'=>900000, 'GBP'=>780000, 'AUD'=>1500000, 'CAD'=>1350000];
+    private static bool $referenceUnavailable = false;
 
     public static function test_currency(): string {
         $code = defined('AICC_CURRENCY_RUNTIME_TEST_CURRENCY')
@@ -40,6 +41,18 @@ final class Andy_Commerce_Currency_Runtime_C1 {
 
     public static function boot(): void {
         if (!self::allowed()) return;
+        if (defined('AICC_CURRENCY_R13_FX_SNAPSHOT_FILE')) {
+            try { self::quote(self::test_currency()); }
+            catch (Throwable $e) {
+                self::$referenceUnavailable=true;
+                add_filter('rest_pre_dispatch',[__CLASS__,'blocked_rest_request'],1,3);
+                add_action('woocommerce_checkout_process',[__CLASS__,'blocked_classic_checkout'],1);
+                add_filter('woocommerce_available_payment_gateways',[__CLASS__,'blocked_gateways'],9999);
+                add_action('woocommerce_before_cart',[__CLASS__,'blocked_notice'],1);
+                add_action('woocommerce_before_checkout_form',[__CLASS__,'blocked_notice'],1);
+                return;
+            }
+        }
         add_filter('woocommerce_currency', [__CLASS__, 'currency'], 60, 1);
         // Woo's product prices are stored as USD. Reading a "view" price quotes
         // an EUR amount, while "edit" remains unchanged and reproducible.
@@ -58,6 +71,28 @@ final class Andy_Commerce_Currency_Runtime_C1 {
         if (class_exists('Andy_Commerce_Currency_Runtime_C4')) Andy_Commerce_Currency_Runtime_C4::boot();
         if (class_exists('Andy_Commerce_Currency_Runtime_C6')) Andy_Commerce_Currency_Runtime_C6::boot();
         if (class_exists('Andy_Commerce_Currency_R13_Native_Tax_Shipping')) Andy_Commerce_Currency_R13_Native_Tax_Shipping::boot();
+    }
+
+    /** REST failure is explicit and occurs before the gateway is invoked. */
+    public static function blocked_rest_request($result,$server,$request) {
+        if (!self::$referenceUnavailable || !($request instanceof WP_REST_Request)) return $result;
+        if (str_starts_with($request->get_route(),'/wc/store/v1/')) {
+            return new WP_Error('aicc_fx_rate_unavailable',
+                'Exchange rates are temporarily unavailable. Please try again later.',
+                ['status'=>503]);
+        }
+        return $result;
+    }
+    public static function blocked_classic_checkout(): void {
+        if (self::$referenceUnavailable) wc_add_notice(
+            'Exchange rates are temporarily unavailable. Please try again later.','error');
+    }
+    public static function blocked_gateways($gateways): array {
+        return self::$referenceUnavailable ? [] : (array)$gateways;
+    }
+    public static function blocked_notice(): void {
+        if (self::$referenceUnavailable) wc_print_notice(
+            'Exchange rates are temporarily unavailable. Please try again later.','error');
     }
 
     /** Consistent per-shopper frozen quote: reject a changed/expired provider file. */

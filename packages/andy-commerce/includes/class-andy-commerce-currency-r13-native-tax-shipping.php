@@ -35,7 +35,8 @@ final class Andy_Commerce_Currency_R13_Native_Tax_Shipping {
         if (!Andy_Commerce_Currency_Runtime_C1::allowed()||!($order instanceof WC_Order))return;
         if($order->get_currency()==='USD')return;
         $fx=$order->get_meta('_aicc_currency_runtime_fx_v1',true);
-        if(!is_array($fx)||($fx['display_currency']??null)!==$order->get_currency()
+        if(wc_string_to_bool(apply_filters('woocommerce_shipping_prices_include_tax',false))
+           ||!is_array($fx)||($fx['display_currency']??null)!==$order->get_currency()
            ||!is_int($fx['usd_subtotal_minor']??null)
            ||!is_int($fx['native_woo_display_minor']??null)
            ||$fx['native_woo_display_minor']!==self::minor($order->get_total())
