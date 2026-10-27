@@ -47,7 +47,7 @@ verify( ! YBY_Module_Registry::is_enabled( 'notification_ui' ), 'module initiall
 
 $runtime = new YBY_Module_Runtime();
 $runtime->boot_registered_extensions();
-verify( empty( $GLOBALS['notify_test_hooks']['wp_enqueue_scripts'] ), 'OFF adds no frontend hooks' );
+verify( count( $GLOBALS['notify_test_hooks']['wp_enqueue_scripts'] ?? array() ) === 1, 'OFF only loads shared native notice skin hook' );
 YBY_Notification_UI_Module::enqueue_assets( $meta );
 verify( empty( $GLOBALS['notify_test_scripts'] ), 'OFF enqueues no assets' );
 
@@ -60,7 +60,7 @@ verify( YBY_Module_Registry::is_enabled( 'notification_ui' ), 'central switch ON
 verify( count( YBY_Module_Registry::enabled_modules() ) === count( $with_notification ), 'no other switch disturbed' );
 $runtime_on = new YBY_Module_Runtime();
 $runtime_on->boot_registered_extensions();
-verify( count( $GLOBALS['notify_test_hooks']['wp_enqueue_scripts'] ?? array() ) === 1, 'only one frontend asset hook' );
+verify( count( $GLOBALS['notify_test_hooks']['wp_enqueue_scripts'] ?? array() ) === 2, 'native skin and enabled island hooks' );
 verify( YBY_Notification_UI_Module::should_enqueue_assets( $meta ), 'ON frontend available' );
 $GLOBALS['notify_test_admin'] = true;
 verify( ! YBY_Notification_UI_Module::should_enqueue_assets( $meta ), 'never on admin pages' );

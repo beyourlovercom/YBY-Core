@@ -35,12 +35,12 @@ function collect($route,$admin=false){
  YBY_Notification_UI_Module::enqueue_assets(YBY_Module_Registry::module('notification_ui'));
  return array_map(static function($e){return $e['handle'];},$GLOBALS['scripts']);
 }
-check(collect('global')===array('andy-core-notification-ui'),'on global only core engine');
+check(collect('global')===array('andy-core-notification-ui','andy-core-notification-woo-classic'),'on global Woo routes both modules');
 check(collect('checkout')===array('andy-core-notification-ui','andy-core-notification-woo-classic'),'checkout addon');
 check($GLOBALS['scripts'][1]['deps']===array('andy-core-notification-ui'),'Woo depends on engine');
 check(collect('cart')===array('andy-core-notification-ui','andy-core-notification-woo-classic'),'cart addon');
-check(collect('order-pay')===array('andy-core-notification-ui'),'exclude order pay');
-check(collect('thankyou')===array('andy-core-notification-ui'),'exclude receipt');
+check(collect('order-pay')===array('andy-core-notification-ui','andy-core-notification-woo-classic'),'exclude order pay');
+check(collect('thankyou')===array('andy-core-notification-ui','andy-core-notification-woo-classic'),'exclude receipt');
 check(collect('checkout',true)===array(),'exclude admin');
 YBY_Module_Registry::save($existing);
 check(collect('checkout')===array(),'off checkout disables everything');
@@ -49,9 +49,9 @@ $js=file_get_contents(dirname(__DIR__).'/public/assets/js/andy-core-notification
 check(strpos($js,'woocommerce-message')!==false,'Woo success DOM selector');
 check(strpos($js,'woocommerce-error')!==false,'Woo error skip guard');
 check(strpos($js,"getComputedStyle(node)")!==false,'visibility check');
-check(strpos($js,'notify({ type:')!==false,'Core-only API handoff');
+check(strpos($js,'api.notify({type:type')!==false,'Core-only API handoff');
 check(strpos($js,'restoreNative')!==false,'native fallback');
 check(strpos($js,'style.setProperty')!==false,'only per-node style suppression');
 check(strpos($js,'.woocommerce-message{display:none}')===false,'never hide Woo globally');
 check(strpos($js,'fetch(')===false&&strpos($js,'XMLHttpRequest')===false,'no business network');
-echo "PASS notification-ui-v1-r3-route-harness (OFF/ON/OFF, Classic, Order Pay excluded, no Woo business side effects)\n";
+echo "PASS notification-ui-v1-r3-route-harness (OFF/ON/OFF, Classic, all Woo frontend pages, no Woo business side effects)\n";

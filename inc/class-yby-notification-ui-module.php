@@ -2,7 +2,7 @@
 /**
  * Theme-independent Notification UI foundation.
  *
- * R1/R2: opt-in display engine only. Native WooCommerce notices are untouched.
+ * Core-owned island (ON) plus independent compact native notice fallback skin (ON/OFF).
  * @package YBY_Core
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
@@ -12,7 +12,7 @@ class YBY_Notification_UI_Module {
 	const VERSION = '1.0.0';
 
 	public static function register_module() {
-		return YBY_Module_Registry::register(
+		$registered = YBY_Module_Registry::register(
 			self::MODULE_ID,
 			array(
 				'name'            => 'Notification UI（灵动岛通知）',
@@ -34,12 +34,17 @@ class YBY_Notification_UI_Module {
 				'dependencies'    => array( 'core_runtime', 'module_registry' ),
 			)
 		);
+		// Native notice presentation must be compact even when the island is OFF.
+		if ( function_exists( 'add_action' ) ) {
+			add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_native_skin' ), 40 );
+		}
+		return $registered;
 	}
 
 	public static function boot( $module ) {
 		unset( $module );
-		// Woo Classic DOM adapter is enqueued only by Core on eligible customer routes.
-		// No Woo success/error filters are registered; OFF always stays native.
+		// All Woo frontend notices are bridged conservatively by Core JS.
+		// Native skin stays available regardless of island toggle.
 	}
 
 	public static function should_enqueue_assets( $module ) {
@@ -50,13 +55,21 @@ class YBY_Notification_UI_Module {
 			&& ! is_embed();
 	}
 
-	/** Strictly limit Woo Classic success bridge to the Cart and ordinary Checkout. */
+	/** All Woo frontend routes, including product, account and checkout notices. */
 	public static function should_enqueue_woo_classic() {
 		if ( ! class_exists( 'WooCommerce' ) || ! self::should_enqueue_assets( array() ) ) { return false; }
-		if ( function_exists( 'is_order_received_page' ) && is_order_received_page() ) { return false; }
-		if ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url( 'order-pay' ) ) { return false; }
-		return ( function_exists( 'is_cart' ) && is_cart() )
-			|| ( function_exists( 'is_checkout' ) && is_checkout() );
+		return true; // Do not lose account, product, order-pay, or error notices.
+	}
+
+	/** Scoped, theme-independent native notice fallback, even when module OFF. */
+	public static function enqueue_native_skin() {
+		if ( is_admin() || ! class_exists( 'WooCommerce' ) ) { return; }
+		wp_enqueue_style(
+			'andy-core-native-notice-skin',
+			YBY_CORE_PLUGIN_URL . 'public/assets/css/andy-core-native-notice-skin.css',
+			array(),
+			YBY_CORE_VERSION
+		);
 	}
 
 	public static function enqueue_assets( $module ) {
