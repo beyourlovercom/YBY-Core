@@ -23,6 +23,7 @@ final class Andy_Commerce_Currency_R13_Dual_Ledger {
         $time=$input['rate_timestamp']??null;
         $qty=$input['unit_count']??null;
         $couponCount=$input['coupon_count']??null;
+        $taxInclusive=$input['tax_inclusive']??null;
         if(!is_string($currency)
             || !in_array($currency,Andy_Commerce_Currency_OS_V1::SUPPORTED,true)
             || !is_int($rate)||$rate<100000||$rate>10000000
@@ -30,7 +31,8 @@ final class Andy_Commerce_Currency_R13_Dual_Ledger {
             || !is_string($source)||!preg_match('/^[a-zA-Z0-9._:-]{3,64}$/D',$source)
             || !is_int($time)||$time<1
             || !is_int($qty)||$qty<1||$qty>100
-            || !is_int($couponCount)||$couponCount<0||$couponCount>1)
+            || !is_int($couponCount)||$couponCount<0||$couponCount>1
+            || !is_bool($taxInclusive))
             throw new InvalidArgumentException('R13 missing FX source or unsupported promotion');
         $raw=$input['usd']??null;
         $local=$input['woo_local']??null;
@@ -54,8 +56,10 @@ final class Andy_Commerce_Currency_R13_Dual_Ledger {
         }
         if($raw['discount']>$raw['merchandise'] || $local['discount']>$local['merchandise'])
             throw new InvalidArgumentException('R13 discount exceeds merchandise');
-        $usdTotal=$raw['merchandise']-$raw['discount']+$raw['shipping']+$raw['tax'];
-        $localTotal=$local['merchandise']-$local['discount']+$local['shipping']+$local['tax'];
+        $usdTotal=$raw['merchandise']-$raw['discount']+$raw['shipping']
+            +($taxInclusive?0:$raw['tax']);
+        $localTotal=$local['merchandise']-$local['discount']+$local['shipping']
+            +($taxInclusive?0:$local['tax']);
         if($usdTotal<0||$usdTotal>1000000000
             || $localTotal!==self::minor($input['woo_order_total_minor']??null))
             throw new InvalidArgumentException('R13 Woo order total is not authoritative');
@@ -70,6 +74,7 @@ final class Andy_Commerce_Currency_R13_Dual_Ledger {
             'fx_source'=>$source,'rate_micros'=>$rate,'rate_timestamp'=>$time,
             'components'=>$components,'total_rounding_local_minor'=>$delta,
             'coupon_count'=>$couponCount,'unit_count'=>$qty,
+            'tax_inclusive'=>$taxInclusive,
             'payment_executed'=>false,'provider_settlement_verified'=>false,
         ];
     }
