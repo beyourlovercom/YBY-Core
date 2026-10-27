@@ -37,10 +37,12 @@ final class Andy_Campaign_Lite {
         $version = $spec['version'] ?? '';
         $callback = $spec['boot'] ?? null;
         $resources = $spec['resources'] ?? array();
+        $ready = $spec['ready'] ?? null;
         if ( ! is_string( $id ) || ! preg_match( '/^[a-z][a-z0-9-]{2,63}$/D', $id )
           || ! is_string( $name ) || '' === trim( $name ) || strlen( $name ) > 120
           || ! is_string( $version ) || ! preg_match( '/^[0-9]+\.[0-9]+\.[0-9]+(?:-[a-z0-9.-]+)?$/D', $version )
-          || ! is_callable( $callback ) || ! is_array( $resources )
+          || ! is_callable( $callback ) || ( null !== $ready && ! is_callable( $ready ) )
+          || ! is_array( $resources )
           || isset( $this->packs[ $id ] ) ) { return false; }
         $allowed = array( 'cart-discount', 'gift', 'shipping', 'coupon', 'checkout-display' );
         if ( count( $resources ) > count( $allowed ) ) { return false; }
@@ -50,13 +52,23 @@ final class Andy_Campaign_Lite {
         if ( count( array_unique( $resources ) ) !== count( $resources ) ) { return false; }
         $this->packs[ $id ] = array(
             'id' => $id, 'name' => $name, 'version' => $version,
-            'resources' => $resources, 'boot' => $callback,
+            'resources' => $resources, 'boot' => $callback, 'ready' => $ready,
         );
         ksort( $this->packs, SORT_STRING );
         return true;
     }
 
     public function packs() { return $this->packs; }
+
+    /** Optional pack-owned readiness guard; never executes customer-facing mutations. */
+    private static function is_ready( array $pack ): bool {
+        if ( ! isset( $pack['ready'] ) ) { return true; }
+        try { return call_user_func( $pack['ready'] ) === true; }
+        catch ( Throwable $error ) {
+            error_log( 'ANDY_CAMPAIGN_READINESS_ERROR id=' . $pack['id'] );
+            return false;
+        }
+    }
 
     private function configuration() {
         $raw = get_option( self::SETTINGS, array() );
@@ -83,6 +95,7 @@ final class Andy_Campaign_Lite {
             elseif ( ! $enabled ) { $reason = 'campaign_off'; }
             elseif ( $start > 0 && $now < $start ) { $reason = 'not_started'; }
             elseif ( $end > 0 && $now >= $end ) { $reason = 'expired'; }
+            elseif ( ! self::is_ready( $pack ) ) { $reason = 'pack_not_ready'; }
             else {
                 foreach ( $pack['resources'] as $resource ) {
                     if ( isset( $used[ $resource ] ) ) { $reason = 'resource_conflict'; break; }
@@ -172,9 +185,13 @@ final class Andy_Campaign_Lite {
                     wp_die( 'Only existing Andy Core landing pages can be linked', '', array( 'response' => 422 ) );
                 }
             }
+            $requested_enabled = isset( $_POST['enabled'] );
+            if ( $requested_enabled && ! self::is_ready( $this->packs[ $id ] ) ) {
+                wp_die( 'Campaign cannot be enabled: gift pool or required configuration is unavailable', '', array( 'response' => 422 ) );
+            }
             $config = $this->configuration();
             $config[ $id ] = array(
-                'enabled' => isset( $_POST['enabled'] ), 'start' => $start, 'end' => $end,
+                'enabled' => $requested_enabled, 'start' => $start, 'end' => $end,
                 'landing_page_ids' => $ids,
             );
             update_option( self::SETTINGS, $config, false );
