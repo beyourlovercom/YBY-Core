@@ -59,3 +59,35 @@ Source proof at `5892110b91e8c8a70927317f63fa5d16c0c267f0`, with later README-on
   - Black Friday pack ZIP: `982960b991adea0a49954587ac12ce255443a88c84af1edf839944492799003a`
   - These are **unsanctioned preview packages**, not a signed production release. Later commits must use their own workflow runs/digests.
 - Remaining owner/site acceptance: actual isolated Woo Classic/Blocks order+refund (blocked by the prior safety restriction), tax-inclusive and dynamic-shipping combinations, HPOS/order-item verification, live real FX/multicurrency Checkout, real gift SKU selection, shopper-responsive UI, refunds/coupon stack and no-selection policy. **C5 Production = NO-GO; PR Draft**, no merge or official Dev/WWW deployment.
+
+## Additional C4 native Woo cart/Blocks/Taxes/Shipping regression (continuation)
+All results are from the **existing dedicated local-only US Mac mini WordPress database**, *not* official Dev or WWW. No real order, payment, shipping label, fulfillment or customer records were created.
+
+### Native inclusive tax
+- In one isolated request, simulated US CA **8.25%** rate via Woo native `woocommerce_matched_rates` and `woocommerce_base_tax_rates` filters, and temporarily enabled `woocommerce_calc_taxes=yes` / `woocommerce_prices_include_tax=yes`.
+- Merchandise labeled **USD205 tax-inclusive** became Woo merchandise `line_total=189.37644342` excluding **USD15.62** sales tax. The USD199 threshold correctly evaluated **18,938 cents**, yielding **one gift**, removing the ineligible second gift.
+- Shop tax options restored to `no/no`; Campaign master restored `no`. This is an isolated tax-rate simulation, not a claim about live multi-jurisdiction tax engines.
+
+### Native Woo Blocks Store API cart read
+- `WP_REST_Request('GET','/wc/store/v1/cart')` returned **200**, three cart lines and `USD`: merchandise **20,500 minor units**, free gift **0**, paid upgrade **999**; total **21,499 minor units**.
+- This validates **Store API cart serialization/read**, not a Blocks payment or persisted order.
+
+### Native shipping with coupon
+- The isolated WordPress install initially had no enabled shipping method. One attempted shipping-only test was **invalid** because Woo `WC_Cart::needs_shipping()` returns false if shipping method count is zero (not a Campaign calculation failure).
+- Added a **temporary WooCommerce flat-rate shipping method** with cost **USD12.34** in isolated Zone 0, then executed separate native Woo cart requests:
+  - USD205 merchandise + one free + one USD9.99 premium gift + shipping USD12.34 = **USD227.33** and **two slots**.
+  - Applying isolated native USD20 fixed-cart coupon reduced qualifying merchandise to **USD185**, revoked the second gift, left shipping at **USD12.34**; final total **USD197.34**.
+- Temporary shipping method and option deleted, isolated cart emptied, Campaign master restored **OFF**. This is a native flat-rate stand-in for a dynamically selected Woo shipping rate, **not** certification of every third-party carrier/dynamic shipping provider.
+
+### Fixed-cart coupon upgrade-fee P0 found and repaired
+- **Initial reproducible failure** before fix: coupon USD20 on merchandise USD205 + one premium gift USD9.99 incorrectly yielded merchandise **USD194.99** and premium upgrade **USD0**. Thus the previous `woocommerce_coupon_is_valid_for_product` guard alone **did not protect fixed-cart coupons**, due Woo `get_items_to_apply_coupon` accepting globally valid coupons.
+- **Root cause traced in installed WooCommerce 11.2.1 source:** `WC_Discounts::get_items_to_apply_coupon()` lets `is_valid_for_cart()` bypass per-product coupon applicability. Woo 8.8+ instead offers `woocommerce_coupon_get_items_to_apply` filter before discount allocation.
+- **Patch:** filter the Woo discount-item list to exclude all entries with this Campaign's protected gift marker for *all* coupon types; require WooCommerce >=8.8.0 for BF pack readiness. Existing per-product guard remains supplementary.
+- **Corrected native Woo readback:** merchandise **USD185** after USD20 coupon, premium upgrade **USD9.99** unchanged, final **USD194.99**, one gift. This matches the Code-First campaign policy.
+- Other newly tested boundaries: gifts on backorder or with zero managed stock do not qualify for the two-free-gift promise; invalid gift before payment is rejected by `woocommerce_checkout_validate_order_before_payment` for Store API; classic cart notices and pre-payment Store API share a single validator. Pure PHP contract suite **BYL_BF2026_PURE_CONTRACT_PASS=24**.
+- **Source code/isolated cart tests are NOT real persisted Classic or Blocks checkouts.** Actual HPOS/Checkout/Stripe, full refund, multi-currency FX and full visitor browser UAT remain release-blocking, as previously recorded.
+
+### Protection / ownership
+- Core-owned `landing_page` CPT and native menu remain untouched.
+- Campaign master was restored OFF in the isolated site after each verification; no live Dev or WWW activation, no merge of Draft PR.
+- Vendor checkout integration remains isolated from the separately active Currency/P6 branch. No claim of Production readiness.
