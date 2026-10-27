@@ -25,6 +25,8 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r
 // Pure three-ledger Stripe TEST provider balance audit: no hooks/provider writes.
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r13-settlement-audit.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r13-fx-quote-guard.php';
+// Exact-host + named-admin + short-lived Dev-only Currency UAT gate; default OFF.
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r13-dev-canary.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-c4.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-c6.php';
 // Fail-closed TEST-only post-provider refund ledger. No charge/refund API writes.
@@ -49,6 +51,7 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-marketing-
 class Andy_Commerce {
 	public function run() {
 		Andy_Commerce_Currency_V2_Dev::boot();
+		Andy_Commerce_Currency_R13_Dev_Canary::boot();
 		Andy_Commerce_Currency_Runtime_C1::boot();
 		Andy_Commerce_Currency_Runtime_Dev_V1::admin_boot();
 		Andy_Commerce_Currency_Runtime_Dev_V1::boot();

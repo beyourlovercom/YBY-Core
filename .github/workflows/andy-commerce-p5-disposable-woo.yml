@@ -226,6 +226,14 @@ jobs:
           wp config delete AICC_CURRENCY_R13_HPOS_EXPECT --path="$RUNNER_TEMP/woo"
           echo 'R13_HPOS_TEST_PROCESS_FLAGS_REMOVED=PASS'
 
+      - name: R13 Dev Canary strict admin-only TEST account and payment gateway gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l "$GITHUB_WORKSPACE/packages/andy-commerce/includes/class-andy-commerce-currency-r13-dev-canary.php"
+          php "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-dev-canary-gate-contract.php"
+          echo 'R13_DEV_CANARY_OFF_BY_DEFAULT_WWW_GUEST_LIVE_DENIED=PASS'
+
       - name: Currency P6-E Stripe TEST three-ledger settlement pure audit
         shell: bash
         run: |

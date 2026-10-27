@@ -29,6 +29,11 @@ final class Andy_Commerce_Currency_Runtime_C1 {
     }
 
     public static function allowed(): bool {
+        if ((!defined('AICC_CURRENCY_RUNTIME_SANDBOX') || AICC_CURRENCY_RUNTIME_SANDBOX !== true)
+            && class_exists('Andy_Commerce_Currency_R13_Dev_Canary')
+            && Andy_Commerce_Currency_R13_Dev_Canary::armed()) {
+            return class_exists('WooCommerce') && class_exists('Andy_Commerce_Currency_OS_V1');
+        }
         if (!defined('AICC_CURRENCY_RUNTIME_SANDBOX') || AICC_CURRENCY_RUNTIME_SANDBOX !== true
             || !defined('DB_NAME') || DB_NAME !== 'commerce_p5_isolated'
             || !function_exists('wp_get_environment_type') || wp_get_environment_type() !== 'local'
@@ -41,7 +46,9 @@ final class Andy_Commerce_Currency_Runtime_C1 {
 
     public static function boot(): void {
         if (!self::allowed()) return;
-        if (defined('AICC_CURRENCY_R13_FX_SNAPSHOT_FILE')) {
+        if (defined('AICC_CURRENCY_R13_FX_SNAPSHOT_FILE')
+            || (class_exists('Andy_Commerce_Currency_R13_Dev_Canary')
+                && Andy_Commerce_Currency_R13_Dev_Canary::armed())) {
             try { self::quote(self::test_currency()); }
             catch (Throwable $e) {
                 self::$referenceUnavailable=true;
@@ -69,7 +76,11 @@ final class Andy_Commerce_Currency_Runtime_C1 {
         add_filter('woocommerce_variation_prices_sale_price', [__CLASS__, 'variation_price'], 60, 3);
         add_filter('woocommerce_get_variation_prices_hash', [__CLASS__, 'variation_hash'], 60, 3);
         if (class_exists('Andy_Commerce_Currency_Runtime_C4')) Andy_Commerce_Currency_Runtime_C4::boot();
-        if (class_exists('Andy_Commerce_Currency_Runtime_C6')) Andy_Commerce_Currency_Runtime_C6::boot();
+        // C6 is a synthetic standalone proof, never a live Dev order writer.
+        if (class_exists('Andy_Commerce_Currency_Runtime_C6')
+            && !(class_exists('Andy_Commerce_Currency_R13_Dev_Canary')
+                 && Andy_Commerce_Currency_R13_Dev_Canary::armed()))
+            Andy_Commerce_Currency_Runtime_C6::boot();
         if (class_exists('Andy_Commerce_Currency_R13_Native_Tax_Shipping')) Andy_Commerce_Currency_R13_Native_Tax_Shipping::boot();
     }
 
@@ -99,6 +110,9 @@ final class Andy_Commerce_Currency_Runtime_C1 {
     public static function quote(string $currency): array {
         if (!array_key_exists($currency,self::TEST_RATES))
             throw new InvalidArgumentException('Unexpected shopper currency');
+        if (class_exists('Andy_Commerce_Currency_R13_Dev_Canary')
+            && Andy_Commerce_Currency_R13_Dev_Canary::armed())
+            return Andy_Commerce_Currency_R13_Dev_Canary::quote($currency);
         if (defined('AICC_CURRENCY_R13_FX_SNAPSHOT_FILE')) {
             if (!class_exists('Andy_Commerce_Currency_R13_FX_Quote_Guard'))
                 throw new InvalidArgumentException('R13 reference rate validator missing');

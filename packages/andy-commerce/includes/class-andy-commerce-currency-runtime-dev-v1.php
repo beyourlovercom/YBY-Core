@@ -61,7 +61,10 @@ final class Andy_Commerce_Currency_Runtime_Dev_V1 {
         return $v;
     }
     public static function allowed(): bool {
-        return self::site() && self::settings()['enabled']
+        return self::site()
+            && !(class_exists('Andy_Commerce_Currency_R13_Dev_Canary')
+                 && Andy_Commerce_Currency_R13_Dev_Canary::armed())
+            && self::settings()['enabled']
             && self::rates()!==null && !self::legacy_conflict()
             && class_exists('WooCommerce') && class_exists('Andy_Commerce_Currency_OS_V1');
     }
