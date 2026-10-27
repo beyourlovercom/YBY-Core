@@ -11,6 +11,17 @@ final class Andy_Commerce_Currency_Runtime_C6 {
     public static function boot(): void {
         if (!Andy_Commerce_Currency_Runtime_C1::allowed()) return;
         add_action('woocommerce_checkout_create_order',[__CLASS__,'checkout_snapshot'],60,2);
+        // Store API/Checkout Blocks hook is before payment. This proof runs
+        // solely on disposable Woo, NEVER on actual Dev/WWW checkout.
+        add_action('woocommerce_store_api_checkout_order_processed',[__CLASS__,'blocks_snapshot'],60,1);
+    }
+    public static function blocks_snapshot($order): void {
+        if (!Andy_Commerce_Currency_Runtime_C1::allowed()
+            || !($order instanceof WC_Order)) return;
+        if (is_array($order->get_meta('_aicc_currency_runtime_fx_v1',true)))return;
+        self::checkout_snapshot($order,[]);
+        if (is_array($order->get_meta('_aicc_currency_runtime_fx_v1',true)))
+            $order->save();
     }
     private static function usd_minor($value): int {
         if (!is_scalar($value) || !preg_match('/^(0|[1-9][0-9]{0,7})(?:\\.[0-9]{1,2})?$/D',(string)$value)) {
@@ -23,6 +34,9 @@ final class Andy_Commerce_Currency_Runtime_C6 {
         if (!Andy_Commerce_Currency_Runtime_C1::allowed() || !($order instanceof WC_Order)
             || !function_exists('WC') || !WC()->cart) return;
         $cart=WC()->cart;
+        // Preserve the checkout-time rate snapshot; never rewrite it as
+        // a later Store API hook or shipping/cart calculation runs.
+        if (is_array($order->get_meta('_aicc_currency_runtime_fx_v1',true)))return;
         // We must not pretend a mixed tax/shipping or unsupported promotion
         // order has a reconciled USD ledger.
         if (abs((float)$cart->get_shipping_total())>0.00001 ||
@@ -76,21 +90,43 @@ final class Andy_Commerce_Currency_Runtime_C6 {
         $rate=(int)($snapshot['fx_snapshot']['rate_micros']??0);
         if ($rate<100000) throw new InvalidArgumentException('Invalid original rate');
         $local=self::usd_minor(abs((float)$refund->get_amount()));
-        if ($local<1 || $local>($snapshot['native_woo_display_minor']??0)) {
+        $originalDisplay=(int)($snapshot['native_woo_display_minor']??0);
+        $originalUsd=(int)($snapshot['usd_subtotal_minor']??0);
+        if ($local<1 || $originalDisplay<1 || $originalUsd<0 || $local>$originalDisplay) {
             throw new InvalidArgumentException('Invalid display refund amount');
         }
-        // Full refund must exactly reverse original USD ledger, not acquire a
-        // one-cent FX difference from re-converting the rounded shop total.
-        $usd=($local===($snapshot['native_woo_display_minor']??0))
-            ? (int)$snapshot['usd_subtotal_minor']
-            : intdiv(($local*1000000)+intdiv($rate,2),$rate);
-        if ($usd>($snapshot['usd_subtotal_minor']??0)) {
-            throw new InvalidArgumentException('Refund exceeds USD base');
+        $alreadyDisplay=0;
+        $alreadyUsd=0;
+        foreach ($order->get_refunds() as $previous) {
+            if (!($previous instanceof WC_Order_Refund)
+                || (int)$previous->get_id()===(int)$refund->get_id()) continue;
+            // No unverifiable legacy refund in this sandbox proof.
+            $existing=$previous->get_meta('_aicc_currency_runtime_refund_v1',true);
+            if (!is_array($existing)
+                || ($existing['original_order_id']??null)!==(int)$order->get_id()
+                || ($existing['original_rate_micros']??null)!==$rate
+                || !is_int($existing['refund_display_minor']??null)
+                || !is_int($existing['reversed_usd_minor']??null)) {
+                throw new InvalidArgumentException('Prior refund has no verifiable FX evidence');
+            }
+            $alreadyDisplay+=$existing['refund_display_minor'];
+            $alreadyUsd+=$existing['reversed_usd_minor'];
         }
+        if ($alreadyDisplay+$local>$originalDisplay || $alreadyUsd>$originalUsd)
+            throw new InvalidArgumentException('Cumulative refund exceeds captured order ledger');
+        // The final refund must reverse the exact USD remainder. Intermediate
+        // refunds use the original locked FX, never the current market rate.
+        $usd=($alreadyDisplay+$local===$originalDisplay)
+            ? ($originalUsd-$alreadyUsd)
+            : intdiv(($local*1000000)+intdiv($rate,2),$rate);
+        if ($usd<0 || $usd>$originalUsd-$alreadyUsd)
+            throw new InvalidArgumentException('Cumulative USD refund exceeds original');
         $info=[
             'original_order_id'=>(int)$order->get_id(),'currency'=>$order->get_currency(),
             'refund_display_minor'=>$local,'reversed_usd_minor'=>$usd,
             'original_rate_micros'=>$rate,'no_gateway_refund'=>true,
+            'cumulative_display_minor'=>$alreadyDisplay+$local,
+            'cumulative_reversed_usd_minor'=>$alreadyUsd+$usd,
         ];
         $refund->update_meta_data('_aicc_currency_runtime_refund_v1',$info);
         $refund->save();
