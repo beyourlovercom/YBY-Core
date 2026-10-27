@@ -50,7 +50,12 @@ class YBY_Analytics_Module {
 
 	public static function should_enqueue_diagnostics( $module ) {
 		unset( $module );
-		return ! is_admin();
+		if ( is_admin() ) { return false; }
+		// Default stays unchanged unless the independent Andy Speed plugin opts in.
+		// Only its diagnostics inspector is gated; GTM and tracking remain unaffected.
+		if ( ! apply_filters( 'andy_core_analytics_debug_only', false ) ) { return true; }
+		$settings = self::get_settings();
+		return ! empty( $settings['debug'] );
 	}
 
 	public static function enqueue_diagnostics( $module ) {
