@@ -26,6 +26,26 @@ final class BYL_BF2026_Gifts {
         return $result;
     }
 
+    private static function gift_product( int $id ) {
+        if ( ! function_exists( 'wc_get_product' ) || $id <= 0 ) { return false; }
+        $product = wc_get_product( $id );
+        return $product instanceof WC_Product && $product->is_type( 'simple' )
+            && $product->is_purchasable() && $product->is_in_stock() ? $product : false;
+    }
+
+    /** Minimum two free options; the USD199 promise must never require paid upgrades. */
+    public static function ready(): bool {
+        if ( ! class_exists( 'WooCommerce' ) || ! self::valid_currency() ) { return false; }
+        $free = 0;
+        foreach ( self::catalog() as $id => $upgrade ) {
+            if ( 0 === $upgrade && self::gift_product( (int) $id ) ) {
+                ++$free;
+                if ( $free >= 2 ) { return true; }
+            }
+        }
+        return false;
+    }
+
     public static function boot(): void {
         if ( ! class_exists( 'WooCommerce' ) ) { return; }
         add_action( 'woocommerce_before_calculate_totals', array( __CLASS__, 'reprice' ), 80 );
@@ -86,14 +106,15 @@ final class BYL_BF2026_Gifts {
         if ( self::$busy || ! $cart instanceof WC_Cart ) { return; }
         $catalog = self::catalog();
         $slots = self::eligibility( $cart )['slots'];
-        $kept = 0; $remove = array();
+        $kept = 0; $remove = array(); $seen = array();
         foreach ( $cart->get_cart() as $key => $line ) {
             if ( ! self::is_gift( $line ) ) { continue; }
             $id = (int) ( $line['product_id'] ?? 0 );
             if ( ! isset( $catalog[ $id ] ) || ! self::valid_currency()
-                 || (int) ( $line['quantity'] ?? 0 ) !== 1 || $kept >= $slots ) {
+                 || (int) ( $line['quantity'] ?? 0 ) !== 1 || $kept >= $slots
+                 || isset( $seen[ $id ] ) || ! self::gift_product( $id ) ) {
                 $remove[] = $key;
-            } else { ++$kept; }
+            } else { ++$kept; $seen[ $id ] = true; }
         }
         if ( ! $remove ) { return; }
         self::$busy = true;
@@ -108,15 +129,17 @@ final class BYL_BF2026_Gifts {
         $cart = WC()->cart;
         $catalog = self::catalog();
         $slots = self::eligibility( $cart )['slots'];
-        $count = 0;
+        $count = 0; $seen = array();
         foreach ( $cart->get_cart() as $line ) {
             if ( ! self::is_gift( $line ) ) { continue; }
             $id = (int) ( $line['product_id'] ?? 0 );
             ++$count;
-            if ( ! isset( $catalog[ $id ] ) || (int) ( $line['quantity'] ?? 0 ) !== 1 ) {
+            if ( ! isset( $catalog[ $id ] ) || (int) ( $line['quantity'] ?? 0 ) !== 1
+                 || isset( $seen[ $id ] ) || ! self::gift_product( $id ) ) {
                 wc_add_notice( 'Invalid promotional gift; please update your cart.', 'error' );
                 return;
             }
+            $seen[ $id ] = true;
         }
         if ( $count > $slots ) { wc_add_notice( 'Gift selection exceeds your eligible allowance.', 'error' ); }
     }
@@ -163,9 +186,8 @@ final class BYL_BF2026_Gifts {
             if ( (int) ( $line['product_id'] ?? 0 ) === $id ) { $slots = 0; }
             ++$selected;
         }
-        $product = isset( $catalog[ $id ] ) ? wc_get_product( $id ) : false;
-        if ( $slots <= $selected || ! $product || ! $product->is_purchasable()
-            || ! $product->is_in_stock() || $product->is_type( 'variable' ) ) {
+        $product = isset( $catalog[ $id ] ) ? self::gift_product( $id ) : false;
+        if ( $slots <= $selected || ! $product ) {
             wc_add_notice( 'This promotional gift is unavailable or you have reached the gift limit.', 'error' );
         } else {
             $key = WC()->cart->add_to_cart( $id, 1, 0, array(), array(
@@ -202,8 +224,8 @@ final class BYL_BF2026_Gifts {
             echo '<p>No gift items are currently configured.</p>';
         } else {
             foreach ( $catalog as $id => $upgrade ) {
-                $p = wc_get_product( $id );
-                if ( ! $p || ! $p->is_purchasable() || ! $p->is_in_stock() ) { continue; }
+                $p = self::gift_product( (int) $id );
+                if ( ! $p ) { continue; }
                 echo '<form method="post">';
                 wp_nonce_field( 'byl_bf2026_gifts', 'byl_bf2026_nonce' );
                 echo '<input type="hidden" name="byl_bf2026_action" value="select">';
