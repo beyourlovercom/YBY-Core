@@ -5,7 +5,6 @@
  * cumulative→full refund ledger in a throwaway native Woo database.
  * The Blocks event proof is NOT the HTTP Store API checkout POST/payment.
  */
-declare(strict_types=1);
 if (!defined('ABSPATH') || DB_NAME!=='commerce_p5_isolated'
     || get_option('siteurl')!=='http://commerce-p5.invalid'
     || !defined('AICC_CURRENCY_RUNTIME_SANDBOX')
