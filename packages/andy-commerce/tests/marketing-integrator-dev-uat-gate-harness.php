@@ -6,13 +6,14 @@ $GLOBALS['dev_host']='https://www.beyourlover.com';
 $GLOBALS['environment']='production';
 $GLOBALS['login']=false;
 $GLOBALS['can_manage']=false;
-$GLOBALS['opts']=[];
+$GLOBALS['opts']=['woocommerce_currency'=>'USD'];
+$GLOBALS['visitor_currency']='USD';
 function home_url($path=''){return $GLOBALS['dev_host'].$path;}
 function wp_get_environment_type(){return $GLOBALS['environment'];}
 function is_ssl(){return true;}
 function is_user_logged_in(){return $GLOBALS['login'];}
 function current_user_can($permission){return $GLOBALS['can_manage'];}
-function get_woocommerce_currency(){return 'USD';}
+function get_woocommerce_currency(){return $GLOBALS['visitor_currency'];}
 function wc_get_price_decimals(){return 2;}
 function get_option($key,$fallback=null){return $GLOBALS['opts'][$key]??$fallback;}
 function is_admin(){return false;}
@@ -39,6 +40,16 @@ $GLOBALS['opts']['andy_commerce_marketing_dev_uat_enabled']='yes';
 $assert($p1::approved_dev_owner(),'explicit Dev UAT option and permission');
 $assert($p1::isolated(),'Dev owner UAT accepted');
 $assert($p1::disposable_origin(),'Dev operator-only hooks available for safe cleanup');
+$GLOBALS['visitor_currency']='EUR';
+$assert($p1::dev_admin_setup(),
+    'EUR display still allows authorized Dev admin to prepare a draft');
+$assert(!$p1::approved_dev_owner() && !$p1::isolated(),
+    'EUR display never activates USD promotion runtime');
+$GLOBALS['visitor_currency']='GBP';
+$assert($p1::dev_admin_setup() && !$p1::approved_dev_owner(),
+    'GBP display can prepare but cannot run USD discount');
+$GLOBALS['visitor_currency']='USD';
+$assert($p1::approved_dev_owner(),'switching visitor back to USD restores gated runtime');
 $GLOBALS['can_manage']=false;
 $assert(!$p1::isolated() && !$p1::disposable_origin(),'Dev guest without privileges denied');
 $GLOBALS['can_manage']=true;
