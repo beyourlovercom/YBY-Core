@@ -75,13 +75,18 @@ final class Andy_Campaign_Lite {
         return is_array( $raw ) ? $raw : array();
     }
 
+    /** Both legacy V1 runtime switches must be OFF before Campaign may run. */
+    public static function legacy_runtime_requested(): bool {
+        return get_option( 'andy_commerce_marketing_dev_uat_enabled', 'no' ) === 'yes'
+            || get_option( 'andy_commerce_marketing_p1_sandbox_enabled', 'no' ) === 'yes';
+    }
+
     public function decisions( $now = null ) {
         $now = is_int( $now ) ? $now : time();
         $config = $this->configuration();
         $master = get_option( self::MASTER, 'no' ) === 'yes';
-        // Never run alongside the legacy Dev-UAT marketing engine.
-        $legacy = get_option( 'andy_commerce_marketing_dev_uat_enabled', 'no' ) === 'yes'
-            || get_option( 'andy_commerce_marketing_p1_sandbox_enabled', 'no' ) === 'yes';
+        // Legacy V1 switches are treated as authoritative OFF-vetoes, even if partial.
+        $legacy = self::legacy_runtime_requested();
         $used = array();
         $out = array();
         foreach ( $this->packs as $id => $pack ) {
@@ -172,6 +177,9 @@ final class Andy_Campaign_Lite {
         $scope = sanitize_key( wp_unslash( $_POST['scope'] ?? '' ) );
         if ( 'master' === $scope ) {
             $state = isset( $_POST['enabled'] ) ? 'yes' : 'no';
+            if ( 'yes' === $state && self::legacy_runtime_requested() ) {
+                wp_die( 'Disable the legacy Andy Commerce Marketing V1 engine before enabling Andy Campaign.', '', array( 'response' => 409 ) );
+            }
             update_option( self::MASTER, $state, false );
             self::log_event( 'kernel', 'master_' . $state );
         } elseif ( 'campaign' === $scope ) {
@@ -192,6 +200,9 @@ final class Andy_Campaign_Lite {
                 }
             }
             $requested_enabled = isset( $_POST['enabled'] );
+            if ( $requested_enabled && self::legacy_runtime_requested() ) {
+                wp_die( 'Legacy Marketing V1 must be OFF before configuring an active campaign.', '', array( 'response' => 409 ) );
+            }
             if ( $requested_enabled && ! self::is_ready( $this->packs[ $id ] ) ) {
                 wp_die( 'Campaign cannot be enabled: gift pool or required configuration is unavailable', '', array( 'response' => 422 ) );
             }
@@ -216,6 +227,9 @@ final class Andy_Campaign_Lite {
         if ( ! in_array( $tab, array( 'campaigns', 'logs', 'settings' ), true ) ) { $tab = 'campaigns'; }
         echo '<div class="wrap"><h1>Andy Campaign · Lite</h1>';
         echo '<p>Code-first packs. Andy Core owns all landing page content and editing. No PHP editor, no discount engine.</p>';
+        if ( self::legacy_runtime_requested() ) {
+            echo '<div class="notice notice-warning"><p>Legacy Andy Commerce Marketing V1 is ON. Andy Campaign runtime is blocked until both legacy switches are OFF; do not run two marketing engines.</p></div>';
+        }
         if ( 'logs' === $tab ) {
             echo '<h2>操作记录（最多最近100条）</h2><table class="widefat striped"><thead><tr><th>UTC</th><th>活动</th><th>事件</th></tr></thead><tbody>';
             $events = get_option( self::EVENTS, array() );
