@@ -16,6 +16,7 @@ add_action( 'andy_campaign_register', static function ( $host ) {
         'name' => 'BYL Black Friday 2026',
         'version' => '0.1.0',
         'resources' => array( 'gift' ),
+        'ready' => array( 'BYL_BF2026_Gifts', 'ready' ),
         'boot' => array( 'BYL_BF2026_Gifts', 'boot' ),
     ) );
 }, 10, 1 );
