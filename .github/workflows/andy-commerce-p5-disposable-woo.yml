@@ -189,7 +189,10 @@ jobs:
           wp option update woocommerce_custom_orders_table_enabled no --path="$RUNNER_TEMP/woo"
           wp config set AICC_CURRENCY_R13_HPOS_EXPECT off --path="$RUNNER_TEMP/woo"
           wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-hpos-disposable-wc.php" --path="$RUNNER_TEMP/woo"
-          # Woo forbids switching authority while legacy orders are unsynced.\n          # Sync only this one-use MySQL site; no production HPOS migration.\n          wp wc hpos sync --batch-size=100 --path="$RUNNER_TEMP/woo"\n          wp option update woocommerce_custom_orders_table_enabled yes --path="$RUNNER_TEMP/woo"
+          # Woo forbids switching authority while legacy orders are unsynced.
+          # Sync only this one-use MySQL site; no production HPOS migration.
+          wp wc hpos sync --batch-size=100 --path="$RUNNER_TEMP/woo"
+          wp option update woocommerce_custom_orders_table_enabled yes --path="$RUNNER_TEMP/woo"
           wp config set AICC_CURRENCY_R13_HPOS_EXPECT on --path="$RUNNER_TEMP/woo"
           wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-hpos-disposable-wc.php" --path="$RUNNER_TEMP/woo"
           wp config delete AICC_CURRENCY_R13_HPOS_EXPECT --path="$RUNNER_TEMP/woo"
