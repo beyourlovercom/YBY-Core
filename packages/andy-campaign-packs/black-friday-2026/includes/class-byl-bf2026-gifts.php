@@ -29,8 +29,14 @@ final class BYL_BF2026_Gifts {
     private static function gift_product( int $id ) {
         if ( ! function_exists( 'wc_get_product' ) || $id <= 0 ) { return false; }
         $product = wc_get_product( $id );
-        return $product instanceof WC_Product && $product->is_type( 'simple' )
-            && $product->is_purchasable() && $product->is_in_stock() ? $product : false;
+        if ( ! $product instanceof WC_Product || ! $product->is_type( 'simple' )
+             || ! $product->is_purchasable() || ! $product->is_in_stock()
+             || 'instock' !== $product->get_stock_status()
+             || $product->backorders_allowed()
+             || ( $product->managing_stock() && (int) $product->get_stock_quantity() < 1 ) ) {
+            return false;
+        }
+        return $product;
     }
 
     /** Minimum two free options; the USD199 promise must never require paid upgrades. */
