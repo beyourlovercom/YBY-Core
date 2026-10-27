@@ -38,8 +38,8 @@ class YBY_Notification_UI_Module {
 
 	public static function boot( $module ) {
 		unset( $module );
-		// Only the core-owned JS/CSS engine is registered at R2.
-		// WooCommerce success and native notice filters are an R3 gate.
+		// Woo Classic DOM adapter is enqueued only by Core on eligible customer routes.
+		// No Woo success/error filters are registered; OFF always stays native.
 	}
 
 	public static function should_enqueue_assets( $module ) {
@@ -48,6 +48,15 @@ class YBY_Notification_UI_Module {
 			&& ! is_admin()
 			&& ! is_feed()
 			&& ! is_embed();
+	}
+
+	/** Strictly limit Woo Classic success bridge to the Cart and ordinary Checkout. */
+	public static function should_enqueue_woo_classic() {
+		if ( ! class_exists( 'WooCommerce' ) || ! self::should_enqueue_assets( array() ) ) { return false; }
+		if ( function_exists( 'is_order_received_page' ) && is_order_received_page() ) { return false; }
+		if ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url( 'order-pay' ) ) { return false; }
+		return ( function_exists( 'is_cart' ) && is_cart() )
+			|| ( function_exists( 'is_checkout' ) && is_checkout() );
 	}
 
 	public static function enqueue_assets( $module ) {
@@ -72,5 +81,14 @@ class YBY_Notification_UI_Module {
 				'criticalMs'    => 3000,
 			)
 		);
+		if ( self::should_enqueue_woo_classic() ) {
+			wp_enqueue_script(
+				'andy-core-notification-woo-classic',
+				YBY_CORE_PLUGIN_URL . 'public/assets/js/andy-core-notification-woo-classic.js',
+				array( $handle ),
+				YBY_CORE_VERSION,
+				true
+			);
+		}
 	}
 }
