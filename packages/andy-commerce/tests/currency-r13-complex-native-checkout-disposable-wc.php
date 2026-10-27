@@ -17,8 +17,6 @@ $sku=(int)get_option('aicc_p6f_ci_primary_sku',0);
 $instance=(int)get_option('aicc_p6f_ci_shipping_instance',0);
 $check($sku>0&&$instance>0,'existing isolated sku/flat shipping fixture');
 if($case==='inclusive')update_option('woocommerce_prices_include_tax','yes');
-if($case==='deny_shipping_inclusive')
- add_filter('woocommerce_shipping_prices_include_tax','__return_true',200);
 if($case==='dynamic') {
  $set=get_option('woocommerce_flat_rate_'.$instance.'_settings',[]);
  $check(is_array($set),'flat configuration');
@@ -56,6 +54,8 @@ WC()->cart->calculate_shipping();WC()->cart->calculate_totals();
 $currency=get_woocommerce_currency();
 $total=(float)WC()->cart->get_total('edit');
 $check($currency==='CAD'&&$total>0,'native CAD cart');
+if($case==='deny_shipping_inclusive')
+ add_filter('woocommerce_shipping_prices_include_tax','__return_true',200);
 add_filter('woocommerce_available_payment_gateways',static function($gateways) {
  $cod=new WC_Gateway_COD();$cod->enabled='yes';return ['cod'=>$cod];},999);
 $address=['first_name'=>'AICC','last_name'=>'P6F','address_1'=>'1 Test Lane',
