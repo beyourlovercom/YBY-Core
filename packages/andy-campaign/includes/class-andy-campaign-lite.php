@@ -161,8 +161,14 @@ final class Andy_Campaign_Lite {
 
     public function save() {
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Forbidden', '', array( 'response' => 403 ) ); }
-        check_admin_referer( 'andy_campaign_lite_save' );
         if ( 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) ) { wp_die( 'POST required', '', array( 'response' => 405 ) ); }
+        $scalar_fields = array( '_wpnonce', 'scope', 'campaign_id', 'start', 'end', 'landing_page_ids' );
+        foreach ( $scalar_fields as $field ) {
+            if ( isset( $_POST[ $field ] ) && ! is_string( $_POST[ $field ] ) ) {
+                wp_die( 'Invalid input field', '', array( 'response' => 422 ) );
+            }
+        }
+        check_admin_referer( 'andy_campaign_lite_save' );
         $scope = sanitize_key( wp_unslash( $_POST['scope'] ?? '' ) );
         if ( 'master' === $scope ) {
             $state = isset( $_POST['enabled'] ) ? 'yes' : 'no';
@@ -205,7 +211,8 @@ final class Andy_Campaign_Lite {
 
     public function page() {
         if ( ! current_user_can( 'manage_woocommerce' ) ) { wp_die( 'Forbidden', '', array( 'response' => 403 ) ); }
-        $tab = sanitize_key( wp_unslash( $_GET['tab'] ?? 'campaigns' ) );
+        $raw_tab = $_GET['tab'] ?? 'campaigns';
+        $tab = is_string( $raw_tab ) ? sanitize_key( wp_unslash( $raw_tab ) ) : 'campaigns';
         if ( ! in_array( $tab, array( 'campaigns', 'logs', 'settings' ), true ) ) { $tab = 'campaigns'; }
         echo '<div class="wrap"><h1>Andy Campaign · Lite</h1>';
         echo '<p>Code-first packs. Andy Core owns all landing page content and editing. No PHP editor, no discount engine.</p>';
