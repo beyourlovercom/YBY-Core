@@ -62,10 +62,15 @@ $assert($blocks->get_meta('_aicc_currency_runtime_fx_v1',true)===$blockFx,
     'Blocks event idempotent; no FX snapshot rewrite');
 echo 'R11_BLOCKS_NATIVE_PREPAYMENT_HOOK_IMMUTABLE_FX_PASS'.PHP_EOL;
 // Native WP Store API checkout GET: read-only preview, no order/payment.
-$checkoutGet=rest_do_request(new WP_REST_Request('GET','/wc/store/v1/checkout'));
+$checkoutRequest=new WP_REST_Request('GET','/wc/store/v1/checkout');
+$checkoutRequest->set_header('Nonce',wp_create_nonce('wc_store_api'));
+$checkoutGet=rest_do_request($checkoutRequest);
+$checkoutDiagnostics=json_decode(wp_json_encode($checkoutGet->get_data()),true);
+echo 'R11_STORE_API_GET_DIAGNOSTIC status='.$checkoutGet->get_status()
+    .' code='.sanitize_key((string)($checkoutDiagnostics['code']??'none')).PHP_EOL;
 $assert($checkoutGet instanceof WP_REST_Response
     && $checkoutGet->get_status()===200,'Store API GET checkout native nonpaying preview');
-$get=json_decode(wp_json_encode($checkoutGet->get_data()),true);
+$get=$checkoutDiagnostics;
 $assert(is_array($get),'native Checkout Blocks GET response');
 echo 'R11_NATIVE_STORE_API_CHECKOUT_GET_NONPAYING_PASS'.PHP_EOL;
 // Reject pretending mixed tax or shipping has already been reconciled to USD.
