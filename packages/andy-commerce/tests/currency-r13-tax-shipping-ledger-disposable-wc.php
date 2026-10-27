@@ -29,9 +29,19 @@ foreach($cases as $case){
  $localMerch=$convert($case['gross'],$case['rate'])*$case['qty'];
  $localCoupon=$convert($case['coupon'],$case['rate']);
  $localShip=$convert($case['shipping'],$case['rate']);
- $usdTax=$taxCents($usdMerch-$case['coupon']+$case['shipping'],$case['taxrate'],$case['inclusive']);
- $localTax=$taxCents($localMerch-$localCoupon+$localShip,$case['taxrate'],$case['inclusive']);
- $localTotal=$localMerch-$localCoupon+$localShip+($case['inclusive']?0:$localTax);
+ if($case['inclusive']){
+   // Woo persists net catalogue subtotal and separately records included item tax.
+   $usdIncluded=$taxCents($usdMerch,$case['taxrate'],true);
+   $localIncluded=$taxCents($localMerch,$case['taxrate'],true);
+   $usdMerch-=$usdIncluded;
+   $localMerch-=$localIncluded;
+   $usdTax=$usdIncluded+$taxCents($case['shipping'],$case['taxrate'],false);
+   $localTax=$localIncluded+$taxCents($localShip,$case['taxrate'],false);
+ } else {
+   $usdTax=$taxCents($usdMerch-$case['coupon']+$case['shipping'],$case['taxrate'],false);
+   $localTax=$taxCents($localMerch-$localCoupon+$localShip,$case['taxrate'],false);
+ }
+ $localTotal=$localMerch-$localCoupon+$localShip+$localTax;
  $ledger=Andy_Commerce_Currency_R13_Dual_Ledger::reconcile([
    'currency'=>$case['currency'],'rate_micros'=>$case['rate'],
    'rate_source'=>'CI_SYNTHETIC_LOCKED','rate_timestamp'=>1793000000,
@@ -70,7 +80,7 @@ $reject=static function($input) use($ok){
 };
 $bad['woo_local']['shipping']=550;
 $reject($bad);
-$bad['woo_local']['shipping']=1350;$bad['coupon_count']=2;
+$bad['woo_local']['shipping']=1350;$bad['coupon_count']=4;
 $reject($bad);
 $bad['coupon_count']=0;$bad['woo_order_total_minor']=14984;
 $reject($bad);
