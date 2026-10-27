@@ -70,6 +70,10 @@ $req->set_param('expected_total',(string)round($total*100));
 $res=rest_do_request($req);
 $data=(array)$res->get_data();
 if($case==='deny_shipping_inclusive') {
+ echo 'P6F_NEGATIVE_DIAG_STATUS='.$res->get_status().' CODE='.($data['code']??'none')
+     .' INCLUSIVE='.json_encode(apply_filters('woocommerce_shipping_prices_include_tax',false))
+     .' REGISTERED='.json_encode(has_action('woocommerce_store_api_checkout_order_processed',
+         ['Andy_Commerce_Currency_R13_Native_Tax_Shipping','require_snapshot'])).PHP_EOL;
  $check($res->get_status()===422
       &&($data['code']??null)==='aicc_currency_unreconciled',
       'untrusted inclusive shipping blocked before gateway');
