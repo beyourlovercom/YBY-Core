@@ -41,7 +41,10 @@ final class BYL_BF2026_Gifts {
 
     /** Minimum two free options; the USD199 promise must never require paid upgrades. */
     public static function ready(): bool {
-        if ( ! class_exists( 'WooCommerce' ) || ! self::valid_currency() ) { return false; }
+        if ( ! class_exists( 'WooCommerce' ) || ! self::valid_currency()
+             || ! defined( 'WC_VERSION' ) || version_compare( WC_VERSION, '8.8.0', '<' ) ) {
+            return false;
+        }
         $free = 0;
         foreach ( self::catalog() as $id => $upgrade ) {
             if ( 0 === $upgrade && self::gift_product( (int) $id ) ) {
@@ -59,6 +62,9 @@ final class BYL_BF2026_Gifts {
         add_action( 'woocommerce_check_cart_items', array( __CLASS__, 'validate' ), 80 );
         // Native coupons may discount merchandise but never the promotional gift upgrade line.
         add_filter( 'woocommerce_coupon_is_valid_for_product', array( __CLASS__, 'exclude_gift_coupon' ), 90, 4 );
+        // Fixed-cart coupons validate for the whole cart and bypass product eligibility.
+        // Woo 8.8+ exposes the correct pre-allocation item list for all coupon types.
+        add_filter( 'woocommerce_coupon_get_items_to_apply', array( __CLASS__, 'exclude_gift_discount_items' ), 90, 3 );
         add_action( 'woocommerce_checkout_create_order_line_item', array( __CLASS__, 'order_line' ), 80, 4 );
         add_shortcode( 'byl_bf2026_gifts', array( __CLASS__, 'render' ) );
         add_action( 'wp_loaded', array( __CLASS__, 'handle_post' ), 25 );
@@ -152,6 +158,15 @@ final class BYL_BF2026_Gifts {
 
     public static function exclude_gift_coupon( $valid, $product, $coupon, $cart_item ) {
         return is_array( $cart_item ) && self::is_gift( $cart_item ) ? false : $valid;
+    }
+
+    /** Exclude any paid/free promotional gift before fixed-cart coupon allocation. */
+    public static function exclude_gift_discount_items( $items, $coupon, $discounts ) {
+        if ( ! is_array( $items ) ) { return $items; }
+        return array_values( array_filter( $items, static function ( $item ) {
+            $cart_item = is_object( $item ) ? ( $item->object ?? null ) : null;
+            return ! is_array( $cart_item ) || ! self::is_gift( $cart_item );
+        } ) );
     }
 
     public static function order_line( $item, $cart_item_key, $values, $order ): void {
