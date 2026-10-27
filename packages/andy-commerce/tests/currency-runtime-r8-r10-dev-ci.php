@@ -102,6 +102,13 @@ $cookieName='wp_woocommerce_session_'.COOKIEHASH;
 $cookieValue=$customerId.'|'.$expiration.'|'.$expiring.'|'.wp_fast_hash($customerId.'|'.$expiration);
 $_COOKIE[$cookieName]=$cookieValue;
 $wcSession->save_data();
+$cookieProp=$reflect->getProperty('_cookie')->getValue($wcSession);
+$parts=explode('|',$cookieValue);
+$cookieVerify=function_exists('wp_verify_fast_hash')
+    ? wp_verify_fast_hash($customerId.'|'.$expiration,$parts[3]??'') : false;
+echo 'R9_233_COOKIE_DIAG name_match='.($cookieProp===$cookieName?'YES':'NO')
+    .' parsed_parts='.count($parts).' hash_valid='.($cookieVerify?'YES':'NO')
+    .' wc_session_cookie_valid='.(is_array($wcSession->get_session_cookie())?'YES':'NO').PHP_EOL;
 $ok(is_array($wcSession->get_session_cookie()),'#233 native cookie signature verifies');
 WC()->session=null;
 $ok(WC()->session===null,'#233 simulated REST product request starts without Woo session');
