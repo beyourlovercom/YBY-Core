@@ -9,6 +9,7 @@
 declare(strict_types=1);
 if(!defined('ABSPATH'))exit;
 require_once __DIR__.'/class-andy-commerce-marketing-p4-order-cap.php';
+require_once __DIR__.'/class-andy-commerce-marketing-p4-gift-cap.php';
 
 final class Andy_Commerce_Marketing_P5_Checkout_Hooks {
     private const SESSION_TOKEN='andy_commerce_marketing_p5_checkout_token';
@@ -53,7 +54,7 @@ final class Andy_Commerce_Marketing_P5_Checkout_Hooks {
     private static function reserve(WC_Order $order): void {
         if(!self::enabled())return;
         $draft=Andy_Commerce_Marketing_P1_Sandbox_Contract::current();
-        if(!$draft||$draft['type']==='free_gift')return; // P4 gift-cap not yet implemented
+        if(!$draft)return;
         if($order->get_payment_method()!=='cod'
             ||$order->get_transaction_id()!==''
             ||!WC()->cart instanceof WC_Cart)
@@ -61,11 +62,16 @@ final class Andy_Commerce_Marketing_P5_Checkout_Hooks {
         if(self::$requestClaim!==null)return; // at most one reserve per request
         global $wpdb;
         $ledger=new Andy_Commerce_M15_Cap_Ledger($wpdb);
-        $claim=Andy_Commerce_Marketing_P4_Order_Cap::reserve(
-            $ledger,self::token($draft),WC()->cart);
+        $claim=$draft['type']==='free_gift'
+            ? Andy_Commerce_Marketing_P4_Gift_Cap::reserve(
+                $ledger,self::token($draft),WC()->cart)
+            : Andy_Commerce_Marketing_P4_Order_Cap::reserve(
+                $ledger,self::token($draft),WC()->cart);
         if(($claim['accepted']??false)!==true
             ||($claim['status']??'')!=='reserved')
             throw new RuntimeException('M_P5_CAMPAIGN_CAP_EXHAUSTED_OR_REUSED');
+        if($draft['type']==='free_gift')
+            Andy_Commerce_Marketing_P4_Gift_Cap::stamp($order,$claim);
         self::$requestClaim=$claim;
     }
 
@@ -75,10 +81,18 @@ final class Andy_Commerce_Marketing_P5_Checkout_Hooks {
             throw new RuntimeException('M_P5_ORDER_NOT_DURABLE');
         global $wpdb;
         $ledger=new Andy_Commerce_M15_Cap_Ledger($wpdb);
-        Andy_Commerce_Marketing_P4_Order_Cap::bind_saved_order(
-            self::$requestClaim,$order->get_id());
-        $result=Andy_Commerce_Marketing_P4_Order_Cap::confirm(
-            $ledger,self::$requestClaim,$order->get_id());
+        $draft=Andy_Commerce_Marketing_P1_Sandbox_Contract::current();
+        if(($draft['type']??null)==='free_gift') {
+            Andy_Commerce_Marketing_P4_Gift_Cap::bind_saved_order(
+                self::$requestClaim,$order->get_id());
+            $result=Andy_Commerce_Marketing_P4_Gift_Cap::confirm(
+                $ledger,self::$requestClaim,$order->get_id());
+        } else {
+            Andy_Commerce_Marketing_P4_Order_Cap::bind_saved_order(
+                self::$requestClaim,$order->get_id());
+            $result=Andy_Commerce_Marketing_P4_Order_Cap::confirm(
+                $ledger,self::$requestClaim,$order->get_id());
+        }
         if(($result['committed']??false)!==true)
             throw new RuntimeException('M_P5_CAP_CONFIRM_NOT_COMMITTED');
         self::$requestClaim=null;
@@ -125,8 +139,13 @@ final class Andy_Commerce_Marketing_P5_Checkout_Hooks {
         if($order instanceof WC_Order && $order->get_id()>0)return;
         global $wpdb;
         $ledger=new Andy_Commerce_M15_Cap_Ledger($wpdb);
-        Andy_Commerce_Marketing_P4_Order_Cap::abort_before_order(
-            $ledger,self::$requestClaim);
+        $draft=Andy_Commerce_Marketing_P1_Sandbox_Contract::current();
+        if(($draft['type']??null)==='free_gift')
+            Andy_Commerce_Marketing_P4_Gift_Cap::abort_before_order(
+                $ledger,self::$requestClaim);
+        else
+            Andy_Commerce_Marketing_P4_Order_Cap::abort_before_order(
+                $ledger,self::$requestClaim);
         self::$requestClaim=null;
         if(WC()->session) WC()->session->set(self::SESSION_TOKEN,null);
     }

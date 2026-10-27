@@ -125,9 +125,9 @@ final class Andy_Commerce_Marketing_Dev_UAT {
             update_option('andy_commerce_marketing_p4_caps',[
                 $id=>['revision'=>$draft['revision'],'max_uses'=>$uses],
             ],false);
-            // Gift quota is explicitly out of P4 scope; no false guarantees.
+            // All six Dev UAT types now have a guarded M15 reservation path.
             update_option('andy_commerce_marketing_p4_order_cap_enabled',
-                $draft['type']==='free_gift'?'no':'yes',false);
+                'yes',false);
             update_option(self::SWITCH,'yes',false);
             update_option(self::STATUS,'yes',false);
         } elseif($mode==='preview'){
