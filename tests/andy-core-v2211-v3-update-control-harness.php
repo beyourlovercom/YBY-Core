@@ -12,7 +12,7 @@ $nav = file_get_contents( $root . '/admin/class-yby-andy-os-navigation.php' );
 $assert = static function ( $ok, $label ) {
     if ( ! $ok ) { fwrite( STDERR, 'FAIL V2211_COMBINED ' . $label . PHP_EOL ); exit( 1 ); }
 };
-$assert( strpos( $plugin, "define( 'YBY_CORE_VERSION', '2.2.12' );" ) !== false, 'candidate_version' );
+$assert( strpos( $plugin, "define( 'YBY_CORE_VERSION', '2.3.0' );" ) !== false, 'candidate_version' );
 $assert( strpos( $core, "'inc/class-yby-update-control.php'" ) !== false, 'control_loaded_by_single_plugin' );
 $assert( strpos( $core, 'YBY_Update_Control( $updater )' ) !== false, 'shared_existing_updater' );
 foreach ( array( 'hide_plugin_notices', 'block_plugin_auto', 'prune_update_cron' ) as $key ) {

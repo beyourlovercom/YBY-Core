@@ -30,7 +30,7 @@ function add_action( $hook, $callback, $priority = 10, $args = 1 ) {
 function admin_url( $p = '' ) { return '/wp-admin/' . $p; }
 function add_query_arg( $args, $u ) { return $u . '?' . http_build_query( $args ); }
 
-define( 'YBY_CORE_VERSION', '2.2.12' );
+define( 'YBY_CORE_VERSION', '2.3.0' );
 define( 'YBY_CORE_PLUGIN_URL', 'https://example.com/wp-content/plugins/yby-core/' );
 require dirname( __DIR__ ) . '/inc/class-yby-module-registry.php';
 require dirname( __DIR__ ) . '/inc/class-yby-module-runtime.php';
