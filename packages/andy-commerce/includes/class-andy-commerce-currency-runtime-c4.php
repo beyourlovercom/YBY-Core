@@ -45,10 +45,18 @@ final class Andy_Commerce_Currency_Runtime_C4 {
             $objectId=spl_object_id($rate);
             if (isset(self::$shippingRateConversions[$objectId])) continue;
             $local=self::to_local_minor(self::minor($rate->get_cost()));
-            // Do not mutate Woo shipping taxes here: tax matrix is verified
-            // in isolation and the general tax-inclusive case remains gated.
-            if ($rate->get_taxes()) continue;
-            $rate->set_cost(number_format($local/100,2,'.',''));
+            // Woo's flat-rate net shipping price is stored in base USD.
+            // For native taxable rates recompute the destination shipping tax
+            // from WC_Tax instead of retaining the stale USD tax allocation.
+            // Inclusive *shipping prices* are a separate release gate.
+            if (wc_string_to_bool(apply_filters('woocommerce_shipping_prices_include_tax',false))) continue;
+            $oldTaxes=$rate->get_taxes();
+            $shippingTaxRates=WC_Tax::get_shipping_tax_rates();
+            if ($oldTaxes && !$shippingTaxRates) continue; // deny uncertain rate context
+            $localPrice=number_format($local/100,2,'.','');
+            $newTaxes=$shippingTaxRates ? WC_Tax::calc_shipping_tax($localPrice,$shippingTaxRates) : [];
+            $rate->set_cost($localPrice);
+            $rate->set_taxes($newTaxes);
             self::$shippingRateConversions[$objectId]=true;
         }
         return $rates;

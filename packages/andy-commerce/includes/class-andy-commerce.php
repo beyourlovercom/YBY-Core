@@ -21,6 +21,7 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-reconcile.php';
 // R13 pure trusted source USD ↔ Woo display reconciliation (no runtime hooks).
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r13-dual-ledger.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r13-native-tax-shipping.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-c4.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-c6.php';
 // Fail-closed TEST-only post-provider refund ledger. No charge/refund API writes.
