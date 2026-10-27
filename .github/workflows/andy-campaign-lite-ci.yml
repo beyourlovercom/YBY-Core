@@ -1,0 +1,36 @@
+name: Andy Campaign Lite CI
+
+on:
+  pull_request:
+    paths:
+      - 'packages/andy-campaign/**'
+      - 'admin/class-yby-andy-os-navigation.php'
+      - 'docs/andy-campaign-v1/**'
+      - '.github/workflows/andy-campaign-lite-ci.yml'
+      - 'AGENTS.md'
+  push:
+    paths:
+      - 'packages/andy-campaign/**'
+      - 'admin/class-yby-andy-os-navigation.php'
+      - 'docs/andy-campaign-v1/**'
+      - '.github/workflows/andy-campaign-lite-ci.yml'
+      - 'AGENTS.md'
+  workflow_dispatch:
+
+jobs:
+  lint-and-contract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax
+        run: |
+          find packages/andy-campaign -type f -name '*.php' -print0 | xargs -0 -n 1 php -l
+          php -l admin/class-yby-andy-os-navigation.php
+      - name: Campaign runtime eligibility, collisions and legacy exclusion
+        run: php packages/andy-campaign/tests/lite-decision-harness.php
+      - name: Core menu/Content Landing Pages ownership
+        run: php packages/andy-campaign/tests/core-navigation-harness.php
+      - name: Existing Andy Core navigation regression
+        run: php tests/andy-os-unified-nav-v1-harness.php
