@@ -16,3 +16,10 @@ Applies to every Currency, Marketing and Commerce-plugin package change. Root AG
 5. Restricted-role negative UAT Issue #208 remains separately evidence-based. No real transaction until P0–P4 fully PASS and separately scoped P5/P6 sandbox approval. No main/Stable/WWW deployment without separate authorization.
 
 The gate does not revoke permissions held by existing WordPress users; it is enforced in source packaging and release workflow and recorded in both PRs.
+
+## Owner 2026-10-28: Marketing V1 is frozen; Commerce → Campaign exit gate
+- PR #213 stays the **only Currency + Commerce Dev publisher**. This child branch adds **source-only, reciprocal legacy Marketing runtime vetoes**; it must not publish its own Dev ZIP or replace PR #213's current Currency/Stripe files.
+- **Do not add new Marketing V1 activities or extend M7–M10 no-code rule editing.** Preserve old Dev preview UI and pure tests as regression evidence until separately approved retirement; do not erase drafts or M15/M16 tables/claims.
+- New seasonal campaigns belong to standalone Andy Campaign PHP Packs. When `andy_campaign_lite_master=yes`, M-P1 `current()` and M-P5 cap callbacks must reject legacy execution, and the legacy operator `arm` action must HTTP 409. When old STATUS or SWITCH is ON, Andy Campaign rejects itself. If both are ON, **both engines must fail closed**.
+- Currency, Stripe, payment, order, taxes, shipping remain owned by Commerce; existing Andy Core Landing Pages editor and native menus remain owned by Core.
+- No automatic DB migrations, option resets, Production writes or 'ready to merge' claims from a passing PHP harness. Integrate the guard only through the current exact-head Dev publisher and explicitly approved gate.
