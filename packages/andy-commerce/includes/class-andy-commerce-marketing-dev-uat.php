@@ -14,8 +14,10 @@ final class Andy_Commerce_Marketing_Dev_UAT {
     private const SWITCH=Andy_Commerce_Marketing_P1_Sandbox_Contract::SWITCH_OPTION;
 
     public static function site_gate(): bool {
-        return defined('AICC_MARKETING_DEV_UAT') && AICC_MARKETING_DEV_UAT===true
-            && function_exists('home_url')
+        // Rendering the read-only Dev admin panel and installing inert M15
+        // schema do not require runtime authorization. Runtime enablement
+        // remains guarded by the wp-config constant in the P1 contract.
+        return function_exists('home_url')
             && rtrim(home_url(),'/')==='https://dev.beyourlover.com'
             && function_exists('wp_get_environment_type')
             && in_array(wp_get_environment_type(),['staging','development'],true)
@@ -68,6 +70,8 @@ final class Andy_Commerce_Marketing_Dev_UAT {
             if(!self::tables_exist())
                 wp_die('M15 schema verification failed','',['response'=>500]);
         } elseif($mode==='arm'){
+            if(!defined('AICC_MARKETING_DEV_UAT') || AICC_MARKETING_DEV_UAT!==true)
+                wp_die('Runtime UAT is disabled by server configuration','',['response'=>403]);
             if(!self::tables_exist())
                 wp_die('Create and verify M15 cap tables first','',['response'=>422]);
             $id=sanitize_key(wp_unslash($_POST['draft_id']??''));
@@ -153,6 +157,10 @@ final class Andy_Commerce_Marketing_Dev_UAT {
         try{$table=self::tables_exist()?'SCHEMA_PRESENT':'NOT_CREATED';}catch(Throwable $e){}
         echo '<div class="ac-card"><h2>Marketing OS — 受控 Dev UAT</h2>';
         echo '<p>默认 OFF。仅用于 Dev 审核；不触发生产优惠、赠品或真实支付。</p>';
+        $serverUat=defined('AICC_MARKETING_DEV_UAT')&&AICC_MARKETING_DEV_UAT===true;
+        echo '<p>运行时服务器授权：<strong>'.
+            esc_html($serverUat?'AVAILABLE':'NOT_CONFIGURED — 管理与建表可用，营销执行禁用').
+            '</strong></p>';
         echo '<p>M15 名额表：<strong>'.esc_html($table).'</strong>；自动运行状态：<strong>'.
             esc_html(get_option(self::STATUS,'no')==='yes'?'ON':'OFF').'</strong></p>';
         foreach([['schema','初始化 M15 名额表'],['disable','立即关闭营销运行']] as $a){
@@ -162,7 +170,7 @@ final class Andy_Commerce_Marketing_Dev_UAT {
             wp_nonce_field('andy_commerce_marketing_dev_uat');
             echo '<button type="submit" class="button">'.esc_html($a[1]).'</button></form>';
         }
-        if($table==='SCHEMA_PRESENT'){
+        if($table==='SCHEMA_PRESENT' && $serverUat){
             $rows=Andy_Commerce_M7_Draft_Studio::rows();
             echo '<form method="post" action="'.esc_url(admin_url('admin-post.php')).'">';
             echo '<input type="hidden" name="action" value="andy_commerce_marketing_dev_uat">';
