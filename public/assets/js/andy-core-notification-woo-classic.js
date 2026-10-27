@@ -6,7 +6,7 @@
   'use strict';
   if (win.AndyCoreWooNoticeBridge) { return; }
 
-  var SELECTOR = '.woocommerce-notices-wrapper .woocommerce-message, .woocommerce .woocommerce-message';
+  var SELECTOR = '.woocommerce-notices-wrapper .woocommerce-message, .woocommerce .woocommerce-message, .woocommerce-notices-wrapper .wc-block-components-notice-banner.is-success, .woocommerce .wc-block-components-notice-banner.is-success';
   var watched = new Map();
   var observer = null, pollTimer = 0, attempts = 0, disposed = false;
   var stats = { accepted: 0, duplicates: 0, skipped: 0 };
@@ -23,7 +23,7 @@
     if (!node || !node.isConnected || !node.matches(SELECTOR) ||
       node.hasAttribute('data-andy-core-notice-suppressed') ||
       node.hidden || node.getAttribute('aria-hidden') === 'true') { return false; }
-    if (node.closest('.woocommerce-error, .woocommerce-info') ||
+    if (node.closest('.woocommerce-error, .woocommerce-info, .wc-block-components-notice-banner.is-error, .wc-block-components-notice-banner.is-warning') ||
       node.querySelector('a,button,input,select,textarea,[role="button"]')) { return false; }
     if (!isCheckoutOrCart()) { return false; }
     var style = win.getComputedStyle(node);
