@@ -16,6 +16,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-addon-registry.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-settings-store.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-module-runtime.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-article-toc-module.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-notification-ui-module.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-analytics-module.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-business-os-module.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-security.php';
@@ -144,6 +145,7 @@ class YBY_Core {
 		$module_runtime = new YBY_Module_Runtime();
 
 		$this->loader->add_action( 'andy_core_register_modules', 'YBY_Article_TOC_Module', 'register_module', 10, 0 );
+		$this->loader->add_action( 'andy_core_register_modules', 'YBY_Notification_UI_Module', 'register_module', 13, 0 );
 		$this->loader->add_action( 'andy_core_register_modules', 'YBY_Analytics_Module', 'register_module', 11, 0 );
 $this->loader->add_action( 'andy_core_register_modules', 'YBY_Business_OS_Module', 'register_module', 12, 0 );
 		$this->loader->add_action( 'plugins_loaded', 'YBY_Activator', 'sync_capabilities', 1, 0 );
