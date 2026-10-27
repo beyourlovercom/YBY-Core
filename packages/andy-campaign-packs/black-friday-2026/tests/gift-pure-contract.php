@@ -95,6 +95,21 @@ $_POST=array('byl_bf2026_action'=>array('select'));
 BYL_BF2026_Gifts::handle_post();
 yes(true,'nested action POST ignored without throwing');
 unset($_POST,$_SERVER['REQUEST_METHOD']);
+class WP_Error {
+    public array $errors = [];
+    public function add($code,$message): void { $this->errors[$code]=$message; }
+}
+function WC() { return $GLOBALS['bf_woo']; }
+$GLOBALS['bf_woo']=(object)array('cart'=>new WC_Cart(array($normal,$premium)));
+$invalid=new WP_Error();
+BYL_BF2026_Gifts::validate_store_api(null,$invalid);
+yes(isset($invalid->errors['byl_bf2026_invalid_gift']),
+    'Store API rejects unavailable promotional gift before payment');
+$GLOBALS['bf_woo']->cart = new WC_Cart(array($normal,$free));
+$valid = new WP_Error();
+BYL_BF2026_Gifts::validate_store_api(null,$valid);
+yes(count($valid->errors)===0,
+    'Store API accepts valid stock and allowance');
 $GLOBALS['c3_currency']='EUR';
 yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,'foreign currency fail closed');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=22\n";
+echo "BYL_BF2026_PURE_CONTRACT_PASS=24\n";
