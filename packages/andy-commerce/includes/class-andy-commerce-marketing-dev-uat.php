@@ -21,8 +21,9 @@ final class Andy_Commerce_Marketing_Dev_UAT {
             && rtrim(home_url(),'/')==='https://dev.beyourlover.com'
             && function_exists('wp_get_environment_type')
             && in_array(wp_get_environment_type(),['staging','development'],true)
-            && function_exists('get_woocommerce_currency')
-            && get_woocommerce_currency()==='USD'
+            // The inert admin/DDL panel must not disappear when a Currency
+            // admin visitor has selected EUR/GBP. Promo runtime separately
+            // enforces native USD in the P1 approval contract.
             && function_exists('is_ssl') && is_ssl();
     }
 
