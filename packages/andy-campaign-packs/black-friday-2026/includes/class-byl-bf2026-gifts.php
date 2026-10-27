@@ -60,6 +60,8 @@ final class BYL_BF2026_Gifts {
         add_action( 'woocommerce_before_calculate_totals', array( __CLASS__, 'reprice' ), 80 );
         add_action( 'woocommerce_after_calculate_totals', array( __CLASS__, 'reconcile' ), 80 );
         add_action( 'woocommerce_check_cart_items', array( __CLASS__, 'validate' ), 80 );
+        // Store API / Blocks validates an order through a separate WooCommerce hook.
+        add_action( 'woocommerce_checkout_validate_order_before_payment', array( __CLASS__, 'validate_store_api' ), 80, 2 );
         // Native coupons may discount merchandise but never the promotional gift upgrade line.
         add_filter( 'woocommerce_coupon_is_valid_for_product', array( __CLASS__, 'exclude_gift_coupon' ), 90, 4 );
         // Fixed-cart coupons validate for the whole cart and bypass product eligibility.
@@ -136,9 +138,9 @@ final class BYL_BF2026_Gifts {
         } finally { self::$busy = false; }
     }
 
-    public static function validate(): void {
-        if ( ! function_exists( 'WC' ) || ! WC()->cart ) { return; }
-        $cart = WC()->cart;
+    /** One server-side validation result shared by Classic and Store API. */
+    private static function cart_validation_issue( $cart ): string {
+        if ( ! $cart instanceof WC_Cart ) { return ''; }
         $catalog = self::catalog();
         $slots = self::eligibility( $cart )['slots'];
         $count = 0; $seen = array();
@@ -148,12 +150,25 @@ final class BYL_BF2026_Gifts {
             ++$count;
             if ( ! isset( $catalog[ $id ] ) || (int) ( $line['quantity'] ?? 0 ) !== 1
                  || isset( $seen[ $id ] ) || ! self::gift_product( $id ) ) {
-                wc_add_notice( 'Invalid promotional gift; please update your cart.', 'error' );
-                return;
+                return 'Invalid promotional gift; please update your cart.';
             }
             $seen[ $id ] = true;
         }
-        if ( $count > $slots ) { wc_add_notice( 'Gift selection exceeds your eligible allowance.', 'error' ); }
+        if ( $count > $slots ) { return 'Gift selection exceeds your eligible allowance.'; }
+        return '';
+    }
+
+    public static function validate(): void {
+        if ( ! function_exists( 'WC' ) || ! WC()->cart ) { return; }
+        $reason = self::cart_validation_issue( WC()->cart );
+        if ( '' !== $reason ) { wc_add_notice( $reason, 'error' ); }
+    }
+
+    /** Store API checkout uses WP_Error before payment, not Classic cart notices. */
+    public static function validate_store_api( $order, $errors ): void {
+        if ( ! $errors instanceof WP_Error || ! function_exists( 'WC' ) || ! WC()->cart ) { return; }
+        $reason = self::cart_validation_issue( WC()->cart );
+        if ( '' !== $reason ) { $errors->add( 'byl_bf2026_invalid_gift', $reason ); }
     }
 
     public static function exclude_gift_coupon( $valid, $product, $coupon, $cart_item ) {
