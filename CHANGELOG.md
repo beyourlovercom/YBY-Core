@@ -1,3 +1,12 @@
+## v2.3.0 - 2026-10-27 (Notification UI release candidate only)
+
+- Andy Core independent All-Notice Dynamic Island for WooCommerce success, information, warning, error and some Block-style banners.
+- OFF-by-default module under Andy Core System Modules; when OFF, Core still gives native Woo notices a compact clean skin.
+- Critical errors persist; actionable or contextual notices remain operable; failures are fail-open with original messages restored.
+- BYL V3 and Twenty Twenty-Five isolated R5 UAT and Owner visual approval PASS.
+- Database markers unchanged: runtime 1.5.0, updater compatibility 1.4.0; existing yby_lead_notifications history preserved.
+- No Stable publication, production upgrade, real Cron replay or mail sending is authorized.
+
 ## v2.2.12 - 2026-10-26 (Ignore Notification signed candidate)
 
 - Inquiry notification history gains the Ignore Notification action, mandatory reason, actor identity and timestamp. Lead Closed/Archive and SMTP failure history remain unchanged.
