@@ -28,29 +28,41 @@ final class Andy_Commerce_Marketing_P1_Sandbox_Contract {
      * Woo administrator and two independent OFF-by-default WordPress switches.
      * No guest checkout or production URL may activate Marketing from this.
      */
-    private static function dev_origin(): bool {
+    private static function dev_identity(): bool {
         return defined('AICC_MARKETING_DEV_UAT')
             && AICC_MARKETING_DEV_UAT === true
             && function_exists('home_url')
             && rtrim(home_url(), '/') === 'https://dev.beyourlover.com'
             && function_exists('is_ssl') && is_ssl()
             && function_exists('wp_get_environment_type')
-            && in_array(wp_get_environment_type(), ['staging','development'], true)
+            && in_array(wp_get_environment_type(), ['staging','development'], true);
+    }
+
+    /** Runtime checks the buyer's active currency, not just the store base. */
+    private static function dev_origin(): bool {
+        return self::dev_identity()
             && function_exists('get_woocommerce_currency')
             && get_woocommerce_currency() === 'USD'
             && function_exists('wc_get_price_decimals')
             && wc_get_price_decimals() === 2;
     }
 
+    /** An authorized administrator may PREPARE while viewing EUR/GBP.
+     * The site's BASE currency must remain USD; actual promotion runtime
+     * continues to require USD in dev_origin().
+     */
     public static function dev_admin_setup(): bool {
-        return self::dev_origin()
+        return self::dev_identity()
+            && function_exists('get_option')
+            && get_option('woocommerce_currency','') === 'USD'
+            && function_exists('wc_get_price_decimals')
+            && wc_get_price_decimals() === 2
             && function_exists('is_user_logged_in') && is_user_logged_in()
             && function_exists('current_user_can') && current_user_can('manage_woocommerce');
     }
 
     public static function approved_dev_owner(): bool {
-        return self::dev_admin_setup()
-            && function_exists('get_option')
+        return self::dev_origin() && self::dev_admin_setup()
             && get_option('andy_commerce_marketing_dev_uat_enabled','no') === 'yes';
     }
 
