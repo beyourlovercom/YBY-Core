@@ -135,12 +135,23 @@ final class BYL_BF2026_Gifts {
     }
 
     public static function handle_post(): void {
+        $mode = sanitize_key( wp_unslash( $_POST['byl_bf2026_action'] ?? '' ) );
         if ( 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? 'GET' )
-            || ( $_POST['byl_bf2026_action'] ?? '' ) !== 'select'
+            || ! in_array( $mode, array( 'select', 'remove' ), true )
             || ! function_exists( 'WC' ) || ! WC()->cart ) { return; }
         $token = sanitize_text_field( wp_unslash( $_POST['byl_bf2026_nonce'] ?? '' ) );
         if ( ! wp_verify_nonce( $token, 'byl_bf2026_gifts' ) ) {
             wp_die( 'Invalid gift selection nonce', '', array( 'response' => 403 ) );
+        }
+        if ( 'remove' === $mode ) {
+            $key = sanitize_text_field( wp_unslash( $_POST['gift_cart_key'] ?? '' ) );
+            $line = WC()->cart->get_cart_item( $key );
+            if ( is_array( $line ) && self::is_gift( $line ) ) {
+                WC()->cart->remove_cart_item( $key );
+            }
+            WC()->cart->calculate_totals();
+            wp_safe_redirect( wp_get_referer() ?: wc_get_cart_url() );
+            exit;
         }
         $id = absint( $_POST['gift_product_id'] ?? 0 );
         $catalog = self::catalog();
@@ -173,8 +184,14 @@ final class BYL_BF2026_Gifts {
         $eligible = self::eligibility( WC()->cart );
         $catalog = self::catalog();
         $selected = 0;
-        foreach ( WC()->cart->get_cart() as $line ) {
-            if ( self::is_gift( $line ) ) { ++$selected; }
+        $selected_ids = array();
+        $selected_keys = array();
+        foreach ( WC()->cart->get_cart() as $key => $line ) {
+            if ( self::is_gift( $line ) ) {
+                ++$selected;
+                $selected_ids[] = (int) ( $line['product_id'] ?? 0 );
+                $selected_keys[] = $key;
+            }
         }
         ob_start();
         echo '<section class="byl-bf2026-gifts"><h2>Choose your Black Friday gift</h2>';
@@ -192,7 +209,16 @@ final class BYL_BF2026_Gifts {
                 echo '<input type="hidden" name="byl_bf2026_action" value="select">';
                 echo '<input type="hidden" name="gift_product_id" value="' . esc_attr( (string) $id ) . '">';
                 echo '<span>' . esc_html( $p->get_name() ) . ( $upgrade > 0 ? ' · Upgrade +$' . esc_html( number_format( $upgrade / 100, 2 ) ) : ' · FREE' ) . '</span> ';
-                echo '<button type="submit"' . ( $selected >= $eligible['slots'] ? ' disabled' : '' ) . '>Choose</button></form>';
+                $blocked = $selected >= $eligible['slots'] || in_array( $id, $selected_ids, true );
+                echo '<button type="submit"' . ( $blocked ? ' disabled' : '' ) . '>'
+                    . ( in_array( $id, $selected_ids, true ) ? 'Selected' : 'Choose' ) . '</button></form>';
+            }
+            foreach ( $selected_keys as $key ) {
+                echo '<form method="post">';
+                wp_nonce_field( 'byl_bf2026_gifts', 'byl_bf2026_nonce' );
+                echo '<input type="hidden" name="byl_bf2026_action" value="remove">';
+                echo '<input type="hidden" name="gift_cart_key" value="' . esc_attr( (string) $key ) . '">';
+                echo '<button type="submit">Remove selected gift</button></form>';
             }
         }
         echo '</section>';
