@@ -240,6 +240,10 @@ jobs:
           wp config set AICC_CURRENCY_RUNTIME_SANDBOX true --raw --path="$RUNNER_TEMP/woo"
           wp config set AICC_CURRENCY_RUNTIME_TEST_CURRENCY CAD --path="$RUNNER_TEMP/woo"
           wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-native-tax-shipping-blocks-post-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          # Each WP CLI process is a distinct native Checkout session. Woo Store API
+          # caches the current draft order in its route instance within one process.
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-native-tax-shipping-two-sku-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-native-tax-shipping-mixed-reject-disposable-wc.php" --path="$RUNNER_TEMP/woo"
           wp config delete AICC_CURRENCY_RUNTIME_TEST_CURRENCY --path="$RUNNER_TEMP/woo"
           wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
           echo 'P6D_OFFLINE_WOO_NATIVE_TAX_SHIPPING_ORDER_AND_GATE_ROLLBACK=PASS'
