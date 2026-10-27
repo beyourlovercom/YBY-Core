@@ -96,19 +96,15 @@ $reflect=new ReflectionObject($wcSession);
 $expiration=(int)$reflect->getProperty('_session_expiration')->getValue($wcSession);
 $expiring=(int)$reflect->getProperty('_session_expiring')->getValue($wcSession);
 $customerId=(string)$wcSession->get_customer_id();
-$ok($customerId!=='' && $expiration>time() && function_exists('wp_fast_hash'),
+$ok($customerId!=='' && $expiration>time() && function_exists('wp_hash'),
     '#233 fixture requires valid Woo signed session');
 $cookieName='wp_woocommerce_session_'.COOKIEHASH;
-$cookieValue=$customerId.'|'.$expiration.'|'.$expiring.'|'.wp_fast_hash($customerId.'|'.$expiration);
+$cookieMessage=$customerId.'|'.$expiration;
+// Woo 11.2.1 signs WC session cookies with hash_hmac('md5', msg, wp_hash(msg)).
+$cookieValue=$customerId.'|'.$expiration.'|'.$expiring.'|'
+    .hash_hmac('md5',$cookieMessage,wp_hash($cookieMessage));
 $_COOKIE[$cookieName]=$cookieValue;
 $wcSession->save_data();
-$cookieProp=$reflect->getProperty('_cookie')->getValue($wcSession);
-$parts=explode('|',$cookieValue);
-$cookieVerify=function_exists('wp_verify_fast_hash')
-    ? wp_verify_fast_hash($customerId.'|'.$expiration,$parts[3]??'') : false;
-echo 'R9_233_COOKIE_DIAG name_match='.($cookieProp===$cookieName?'YES':'NO')
-    .' parsed_parts='.count($parts).' hash_valid='.($cookieVerify?'YES':'NO')
-    .' wc_session_cookie_valid='.(is_array($wcSession->get_session_cookie())?'YES':'NO').PHP_EOL;
 $ok(is_array($wcSession->get_session_cookie()),'#233 native cookie signature verifies');
 WC()->session=null;
 $ok(WC()->session===null,'#233 simulated REST product request starts without Woo session');
