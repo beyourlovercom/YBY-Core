@@ -7,6 +7,8 @@ class YBY_Module_Registry { public static function is_enabled($name) { return tr
 function current_user_can($cap) { return in_array($cap,array('manage_options','manage_woocommerce','edit_pages','edit_posts',
     'andy_core_settings_manage','andy_core_leads_view','andy_core_newsletter_view','andy_core_mail_view','manage_categories'),true); }
 function admin_url($path='') { return 'https://dev.example.test/wp-admin/'.$path; }
+function sanitize_key($value) { return strtolower(preg_replace('/[^a-z0-9_-]/i','',(string)$value)); }
+function wp_unslash($value) { return $value; }
 function test_true($condition,$msg) { if(!$condition)throw new RuntimeException($msg); }
 require_once dirname(__DIR__) . '/includes/class-andy-campaign-lite.php';
 require_once dirname(__DIR__,3) . '/admin/class-yby-andy-os-navigation.php';
