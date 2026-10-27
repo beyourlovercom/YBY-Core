@@ -29,6 +29,17 @@ $ok(get_woocommerce_currency()==='CAD'
     'source CAD cart total is 27.01');
 update_option('woocommerce_cod_settings',['enabled'=>'yes','title'=>'Offline Sandbox COD',
     'description'=>'CI only','enable_for_virtual'=>'yes'],false);
+/*
+ * Woo gateways may have been instantiated before this test updated the option.
+ * Explicitly supply a single in-memory OFFLINE COD gateway ONLY within this
+ * disposable process; never register Stripe, PayPal or external handlers.
+ */
+add_filter('woocommerce_available_payment_gateways', static function($available) {
+    $cod=new WC_Gateway_COD();
+    $cod->enabled='yes';
+    $cod->enable_for_virtual=true;
+    return ['cod'=>$cod];
+},999,1);
 $req=new WP_REST_Request('POST','/wc/store/v1/checkout');
 $req->set_header('Nonce',wp_create_nonce('wc_store_api'));
 $req->set_header('Content-Type','application/json');
