@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Andy Core Woo Classic R3 fail-open fixture</title><style>
+body{font:16px Arial;padding:25px;background:#fff5f6;}
+.island-title{color:red!important;font-size:80px!important}
+.woocommerce-notices-wrapper>.woocommerce-message{display:block;padding:16px;border:2px solid #888;background:#e8f9ee}
+.woocommerce-error{background:#fce4e4;color:#922;border:2px solid #922;padding:12px}
+</style></head><body class="woocommerce woocommerce-checkout">
+<main class="woocommerce"><section class="woocommerce-notices-wrapper">
+<div class="woocommerce-message" id="success-1" role="status">Coupon applied successfully.</div>
+<div class="woocommerce-message" id="success-2" role="status">Coupon applied successfully.</div>
+<div class="woocommerce-error" id="native-error" role="alert">Payment failed: Please try another card.</div>
+<div class="woocommerce-message" id="native-action" role="status"><a href="#cart">View cart</a> Added to cart.</div>
+</section><form class="checkout woocommerce-checkout"></form></main>
+<script>
+const broken=new URL(location.href).searchParams.get('broken')==='1';
+window.AndyCoreNotificationUIConfig={
+ cssUrl: broken ? 'file:///nonexistent/byl-notification-ui-test-stylesheet.css':
+ new URL('../../public/assets/css/andy-core-notification-ui.css',location.href).href,
+ holdMs:3500,exitMs:230,dedupeMs:1200,criticalMs:1300
+};
+</script>
+<script src="../../public/assets/js/andy-core-notification-ui.js"></script>
+<script src="../../public/assets/js/andy-core-notification-woo-classic.js"></script>
+</body></html>

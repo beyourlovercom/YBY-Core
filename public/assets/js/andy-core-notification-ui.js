@@ -158,7 +158,8 @@
   win.addEventListener('andy-core:notify', onEvent);
   var api = {
     version: '1.0.0', notify: notify, dismiss: dismiss,
-    getState: function () { return active ? { id: active.id, type: active.type, compact: !!(host && host.classList.contains('is-compact')) } : null; }
+    isReady: function () { return styleState === 'ready' && !!(host && host.isConnected && surface); },
+    getState: function () { return active ? { id: active.id, type: active.type, key: active.key, title: active.title, compact: !!(host && host.classList.contains('is-compact')) } : null; }
   };
   win.AndyCoreNotificationUI = api;
   if (!win.AndyCore) { win.AndyCore = {}; }
