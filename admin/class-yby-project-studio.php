@@ -227,7 +227,9 @@ class YBY_Project_Studio {
 		// Use the existing server-rendered V2.2 Content shell. Controllers and
 		// authorization remain unchanged; render the selected view exactly once.
 		$render_view = function () use ( $view, $post_id ) {
-			if ( 'runtime' === $view && $post_id ) {
+			if ( 'wholesale' === $view ) {
+				$this->render_wholesale_country_readonly();
+			} elseif ( 'runtime' === $view && $post_id ) {
 				$this->render_runtime_viewer( $post_id );
 			} elseif ( 'overview' === $view && $post_id ) {
 				$this->render_project_overview( $post_id );
@@ -240,6 +242,30 @@ class YBY_Project_Studio {
 		} else {
 			$render_view();
 		}
+	}
+
+	/**
+	 * Country-clone source preflight: read-only and strictly isolated to Irrigation Dev.
+	 * Existing V2.2 admin shell, role checks and navigation stay unchanged.
+	 */
+	protected function render_wholesale_country_readonly() {
+		if ( 'development' !== wp_get_environment_type() ||
+			'dev.ybyirrigation.com' !== strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) ) ||
+			! current_user_can( 'manage_options' ) ||
+			! current_user_can( 'andy_core_settings_manage' ) ) {
+			wp_die( esc_html__( 'Wholesale country preview is restricted to authorized Irrigation Dev administrators.', 'yby-core' ) );
+		}
+		require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-wholesale-country-clone-v2.php';
+		$countries = YBY_Wholesale_Country_Clone_V2::countries();
+		$country   = isset( $_GET['country'] ) ? strtoupper( sanitize_key( wp_unslash( $_GET['country'] ) ) ) : 'DE';
+		$preflight = YBY_Wholesale_Country_Clone_V2::preflight( $country );
+		$existing  = get_posts( array(
+			'post_type'      => YBY_Project_CPT::post_type(),
+			'post_status'    => array( 'draft', 'publish', 'pending', 'private' ),
+			'posts_per_page' => 60,
+			'meta_key'       => '_yby_wholesale_clone_v2_key',
+		) );
+		include YBY_CORE_PLUGIN_DIR . 'admin/views/wholesale-country-clone-v2.php';
 	}
 
 	/**
