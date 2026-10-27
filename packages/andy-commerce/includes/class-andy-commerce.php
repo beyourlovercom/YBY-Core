@@ -23,6 +23,8 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r13-dual-ledger.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-c4.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-c6.php';
+// Fail-closed TEST-only post-provider refund ledger. No charge/refund API writes.
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r13-stripe-refund-ledger.php';
 // R8-R10 separate real Dev runtime, default OFF; never loaded as active WWW runtime.
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-dev-v1.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-order-coupon-column.php';

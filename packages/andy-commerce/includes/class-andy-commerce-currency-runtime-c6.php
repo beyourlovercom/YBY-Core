@@ -14,6 +14,10 @@ final class Andy_Commerce_Currency_Runtime_C6 {
         // Store API/Checkout Blocks hook is before payment. This proof runs
         // solely on disposable Woo, NEVER on actual Dev/WWW checkout.
         add_action('woocommerce_store_api_checkout_order_processed',[__CLASS__,'blocks_snapshot'],60,1);
+        // This hook executes after Woo saved a successful gateway refund.
+        // The R13 handler independently verifies Stripe TEST refund and original payment via GET.
+        if (class_exists('Andy_Commerce_Currency_R13_Stripe_Refund_Ledger'))
+            Andy_Commerce_Currency_R13_Stripe_Refund_Ledger::boot();
     }
     public static function blocks_snapshot($order): void {
         if (!Andy_Commerce_Currency_Runtime_C1::allowed()

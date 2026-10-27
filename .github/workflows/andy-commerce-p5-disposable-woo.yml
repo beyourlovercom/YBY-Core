@@ -189,6 +189,13 @@ jobs:
           php -l "$GITHUB_WORKSPACE/scripts/currency-r13-stripe-native-woo-preflight.php"
           echo 'R13_TEST_WEBHOOK_PREFLIGHT_SOURCE_SYNTAX_PASS; PUBLIC_DELIVERY_UNVERIFIED'
 
+      - name: Currency R13 Stripe TEST provider refund locked USD pure contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          php "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-provider-refund-ledger-contract.php"
+          echo 'R13_REFUND_LEDGER_2700_SPLITS_EXACT_NO_PROVIDER_POST=PASS'
+
       - name: Currency R13 native Woo country tax shipping source USD dual ledger
         shell: bash
         run: |
