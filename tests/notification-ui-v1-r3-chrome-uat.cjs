@@ -28,7 +28,7 @@ const s=await evalJs("(()=>{let el=document.querySelector('andy-core-notificatio
 assert(s.first&&s.second&&s.error&&s.action,'duplicate successes suppressed, critical/action native intact');
 assert(s.coreText==='Coupon applied successfully.'&&s.computed==='12.5px','theme isolated CSS');
 assert(s.a.duplicates>=1,'identical native duplicate recognized');
-const newMsg=await evalJs("(()=>{const n=document.createElement('div');n.className='woocommerce-message';n.id='new-coupon-msg';n.textContent='Coupon B applied successfully.';document.querySelector('.woocommerce-notices-wrapper').appendChild(n);return n.textContent;})()");
+const newMsg=await evalJs("(()=>{const n=document.createElement('div');n.className='woocommerce-message';n.id='new-coupon-msg';n.textContent='Coupon B applied successfully.';document.querySelector('form.checkout').appendChild(n);return n.textContent;})()");
 await waitFor("document.querySelector('#new-coupon-msg').hidden");
 const core=await evalJs("document.querySelector('andy-core-notification-ui').shadowRoot.querySelector('.island-title').textContent");
 assert(core===newMsg,'new Woo native event preempts');
@@ -41,7 +41,7 @@ await send('Emulation.clearDeviceMetricsOverride');
 return {s,mobile,restored};
 }
 async function broken(){
-await send('Page.navigate',{url:url+'?broken=1'});
+const brokenUrl=new URL(url);brokenUrl.searchParams.set('broken','1');await send('Page.navigate',{url:brokenUrl.href});
 await waitFor("!!window.AndyCoreWooNoticeBridge");
 await sleep(1600);
 const s=await evalJs("(()=>({ready:window.AndyCoreNotificationUI.isReady(),state:window.AndyCoreWooNoticeBridge.stats(),first:document.querySelector('#success-1').hidden,second:document.querySelector('#success-2').hidden,error:document.querySelector('#native-error').hidden}))()");

@@ -6,7 +6,7 @@
   'use strict';
   if (win.AndyCoreWooNoticeBridge) { return; }
 
-  var SELECTOR = '.woocommerce-notices-wrapper > .woocommerce-message, .woocommerce > .woocommerce-message';
+  var SELECTOR = '.woocommerce-notices-wrapper .woocommerce-message, .woocommerce .woocommerce-message';
   var watched = new Map();
   var observer = null, pollTimer = 0, attempts = 0, disposed = false;
   var stats = { accepted: 0, duplicates: 0, skipped: 0 };
