@@ -121,6 +121,25 @@ $req2->set_param('shipping_address',$address);
 $req2->set_param('expected_total','10935');
 $res2=rest_do_request($req2);
 $body2=(array)$res2->get_data();
+if($res2->get_status()!==200){
+ echo 'P6F_DIAG_CART='.wp_json_encode([
+    'currency'=>get_woocommerce_currency(),'total'=>WC()->cart->get_total('edit'),
+    'shipping'=>WC()->cart->get_shipping_total(),'tax'=>WC()->cart->get_total_tax(),
+    'discount'=>WC()->cart->get_discount_total(),'count'=>count(WC()->cart->get_cart()),
+    'coupons'=>WC()->cart->get_applied_coupons(),
+ ]).PHP_EOL;
+ $latest=wc_get_orders(['limit'=>1,'orderby'=>'ID','order'=>'DESC','return'=>'objects']);
+ foreach($latest as $diagOrder){
+    echo 'P6F_DIAG_ORDER='.wp_json_encode([
+        'id'=>$diagOrder->get_id(),'currency'=>$diagOrder->get_currency(),
+        'total'=>$diagOrder->get_total(),'discount'=>$diagOrder->get_discount_total(),
+        'shipping'=>$diagOrder->get_shipping_total(),'tax'=>$diagOrder->get_total_tax(),
+        'fx'=>is_array($diagOrder->get_meta('_aicc_currency_runtime_fx_v1',true)),
+        'items'=>array_map(static function($i){return ['id'=>$i->get_product_id(),'qty'=>$i->get_quantity(),
+             'subtotal'=>$i->get_subtotal(),'total'=>$i->get_total()];},array_values($diagOrder->get_items('line_item'))),
+    ]).PHP_EOL;
+ }
+}
 $check($res2->get_status()===200,'P6F two item native checkout HTTP '.$res2->get_status().' CODE '.($body2['code']??'none'));
 $order2=wc_get_order((int)($body2['order_id']??0));
 $check($order2 instanceof WC_Order,'P6F second order persisted');
