@@ -226,6 +226,13 @@ jobs:
           wp config delete AICC_CURRENCY_R13_HPOS_EXPECT --path="$RUNNER_TEMP/woo"
           echo 'R13_HPOS_TEST_PROCESS_FLAGS_REMOVED=PASS'
 
+      - name: Currency P6-E Stripe TEST three-ledger settlement pure audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          php "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-stripe-test-settlement-audit-contract.php"
+          echo 'P6E_REFERENCE_FX_NEVER_EQUALS_PROVIDER_PAYOUT=PASS'
+
       - name: Currency P6-D native Store API taxable shipping locked USD ledger
         shell: bash
         run: |
