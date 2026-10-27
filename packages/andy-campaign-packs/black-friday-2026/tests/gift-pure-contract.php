@@ -58,6 +58,23 @@ $GLOBALS['products'][1002]->stock=false;
 $mock = new WC_Cart([$normal,$free,$premium]);
 BYL_BF2026_Gifts::reconcile($mock);
 yes(count($mock->get_cart())===2,'out-of-stock premium gift removed on cart reconcile');
+class BF_Order_Item_Stub {
+    public array $meta = [];
+    public function add_meta_data($key,$value,$unique): void { $this->meta[$key]=$value; }
+}
+$item=new BF_Order_Item_Stub();
+BYL_BF2026_Gifts::order_line($item,'key',$premium,null);
+yes(($item->meta['_andy_campaign_id']??'')===BYL_BF2026_Gifts::ID
+    && ($item->meta['_byl_bf2026_upgrade_usd_minor']??0)===999,
+    'order-item metadata callback attributes premium gift correctly');
+$normalItem=new BF_Order_Item_Stub();
+BYL_BF2026_Gifts::order_line($normalItem,'key',$normal,null);
+yes($normalItem->meta===array(),'normal merchandise receives no gift metadata');
+$_SERVER['REQUEST_METHOD']='POST';
+$_POST=array('byl_bf2026_action'=>array('select'));
+BYL_BF2026_Gifts::handle_post();
+yes(true,'nested action POST ignored without throwing');
+unset($_POST,$_SERVER['REQUEST_METHOD']);
 $GLOBALS['c3_currency']='EUR';
 yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,'foreign currency fail closed');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=14\n";
+echo "BYL_BF2026_PURE_CONTRACT_PASS=17\n";
