@@ -106,6 +106,9 @@ $second->set_name('P6F second USD taxable SKU');$second->set_status('publish');
 $second->set_virtual(false);$second->set_manage_stock(false);
 $second->set_tax_status('taxable');$second->set_regular_price('20.00');$second->set_price('20.00');
 $secondId=$second->save();
+// A new shopper/order must not inherit the previous Store API draft order.
+WC()->session->set('store_api_draft_order',0);
+WC()->session->set('order_awaiting_payment',0);
 WC()->cart->empty_cart();
 $check((bool)WC()->cart->add_to_cart($pid,1),'P6F first product');
 $check((bool)WC()->cart->add_to_cart($secondId,1),'P6F second product');
@@ -164,6 +167,8 @@ $exempt->set_name('P6F mixed exempt unsafe tax');$exempt->set_status('publish');
 $exempt->set_virtual(false);$exempt->set_manage_stock(false);
 $exempt->set_tax_status('none');$exempt->set_regular_price('20.00');$exempt->set_price('20.00');
 $exemptId=$exempt->save();
+WC()->session->set('store_api_draft_order',0);
+WC()->session->set('order_awaiting_payment',0);
 WC()->cart->empty_cart();
 $check((bool)WC()->cart->add_to_cart($pid,1),'P6F mixed taxable item');
 $check((bool)WC()->cart->add_to_cart($exemptId,1),'P6F mixed exempt item');
