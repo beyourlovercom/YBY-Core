@@ -27,6 +27,9 @@ add_action('andy_campaign_register', static function($host) {
             'resources'=>$resources,'boot'=>static function($pack) { $GLOBALS['ac_boots'][]=$pack; })),
             'valid pack registration: '.$id);
     }
+    assert_true($host->register(array('id'=>'demo-delta','name'=>'Not ready','version'=>'1.0.0',
+        'resources'=>array('shipping'),'ready'=>static function() { return false; },
+        'boot'=>static function($pack) { $GLOBALS['ac_boots'][]=$pack; })),'register readiness pack');
     assert_true(!$host->register(array('id'=>'../../bad','name'=>'Bad','version'=>'1.0.0',
         'resources'=>array('gift'),'boot'=>static function(){})), 'reject path-like IDs');
     assert_true(!$host->register(array('id'=>'bad-input','name'=>'Bad','version'=>'1.0.0',
@@ -34,18 +37,20 @@ add_action('andy_campaign_register', static function($host) {
 },10,1);
 
 $host=Andy_Campaign_Lite::boot();
-assert_true(count($host->packs())===3,'three packs registered');
+assert_true(count($host->packs())===4,'four packs registered');
 assert_true($host->decisions(1000)['demo-alpha']==='master_off','default OFF');
 $GLOBALS['ac_options'][Andy_Campaign_Lite::MASTER]='yes';
 $GLOBALS['ac_options'][Andy_Campaign_Lite::SETTINGS]=array(
     'demo-alpha'=>array('enabled'=>true,'start'=>900,'end'=>1200),
     'demo-beta'=>array('enabled'=>true,'start'=>900,'end'=>1200),
+    'demo-delta'=>array('enabled'=>true,'start'=>900,'end'=>1200),
     'demo-gamma'=>array('enabled'=>true,'start'=>900,'end'=>1200),
 );
 $states=$host->decisions(1000);
 assert_true($states['demo-alpha']==='eligible','alpha active');
 assert_true($states['demo-beta']==='eligible','beta independently active');
 assert_true($states['demo-gamma']==='resource_conflict','overlap fail closed');
+assert_true($states['demo-delta']==='pack_not_ready','pack readiness fail closed');
 assert_true($host->decisions(800)['demo-alpha']==='not_started','start schedule');
 assert_true($host->decisions(1200)['demo-alpha']==='expired','end exclusive');
 $GLOBALS['ac_options']['andy_commerce_marketing_dev_uat_enabled']='yes';
@@ -54,4 +59,4 @@ unset($GLOBALS['ac_options']['andy_commerce_marketing_dev_uat_enabled']);
 $GLOBALS['ac_options'][Andy_Campaign_Lite::MASTER]='no';
 $host->launch();
 assert_true(count($GLOBALS['ac_boots'])===0,'OFF invokes no pack boot');
-echo "ANDY_CAMPAIGN_LITE_DECISIONS_PASS=10\n";
+echo "ANDY_CAMPAIGN_LITE_DECISIONS_PASS=11\n";
