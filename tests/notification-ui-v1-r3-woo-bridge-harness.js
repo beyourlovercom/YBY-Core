@@ -1,65 +1,69 @@
-/* Woo Classic bridge state machine — no Woo orders, sessions or network. */
-const assert=require('node:assert/strict'), fs=require('node:fs'), path=require('node:path'), vm=require('node:vm');
-const src=fs.readFileSync(path.resolve(__dirname,'../public/assets/js/andy-core-notification-woo-classic.js'),'utf8');
-function setup(ready=true){
- const listeners={}, notices=[], body={classList:{contains:s=>s==='woocommerce-checkout'},isConnected:true};
- const make=(id,txt,opts={})=>({
-   id,textContent:txt,hidden:false,isConnected:true,attrs:{},style:{
-     current:'',priority:'',
-     getPropertyValue:function(n){return n==='display'?this.current:'';},
-     getPropertyPriority:function(){return this.priority;},
-     setProperty:function(n,v,p=''){if(n==='display'){this.current=v;this.priority=p;}},
-     removeProperty:function(n){if(n==='display')this.current='';}
-   },
-   matches:s=>s.includes('woocommerce-message')&&!opts.error,
-   closest:s=>opts.error?true:null,querySelector:s=>opts.action?{}:null,
-   getAttribute:function(n){return this.attrs[n]??null;},
-   setAttribute:function(n,v){this.attrs[n]=String(v);},
-   removeAttribute:function(n){delete this.attrs[n];},
-   hasAttribute:function(n){return n in this.attrs;}
- });
- const a=make('a','Coupon applied successfully.');
- const b=make('b','Coupon applied successfully.');
- const err=make('e','Payment failed.',{error:true});
- const link=make('l','Added to cart.',{action:true});
- notices.push(a,b,err,link);
- const doc={body,readyState:'complete',querySelectorAll:s=>notices.slice()};
- let current=null,n=0;
- const api={isReady:()=>ready,notify:p=>{current={id:++n,type:p.type,key:p.key};return {id:n};},getState:()=>current};
- const win={
-   AndyCoreNotificationUI:api,location:{pathname:'/checkout'},
-   getComputedStyle:node=>({display:node.style.current||'block',visibility:'visible'}),
-   setTimeout:()=>1,clearTimeout:()=>{},
-   addEventListener:(n,cb)=>{listeners[n]=cb;},
-   removeEventListener:(n)=>{delete listeners[n];},
-   MutationObserver:class {constructor(cb){this.cb=cb;}observe(){}disconnect(){}}
+/* All-notice bridge: Woo successes, errors, info, safe action links, fail open. */
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const source=fs.readFileSync(path.resolve(__dirname,'../public/assets/js/andy-core-notification-woo-classic.js'),'utf8');
+function fakeNode(text,type='success',opts={}){
+ const attrs={},css={display:'',priority:''};
+ const classes=['woocommerce-'+(type==='success'?'message':type)];
+ return {
+  textContent:text,hidden:false,isConnected:true,attributes:attrs,
+  parentElement:null,style:{
+   getPropertyValue:()=>css.display,getPropertyPriority:()=>css.priority,
+   setProperty:(n,v,p)=>{css.display=v;css.priority=p;},removeProperty:()=>{css.display='';}
+  },
+  matches(selector){return selector.includes('.'+classes[0]) && !opts.notMatching;},
+  closest(selector){if(opts.contextual&&selector.includes('form-row'))return {};return null;},
+  querySelectorAll(){return opts.controls||[];},
+  getAttribute(key){return Object.hasOwn(attrs,key)?attrs[key]:null;},
+  hasAttribute(key){return Object.hasOwn(attrs,key);},
+  setAttribute(key,val){attrs[key]=String(val);},
+  removeAttribute(key){delete attrs[key];}
  };
- vm.runInNewContext(src,{window:win,document:doc,Map,String,Object,Array,Number});
- return {api,win,notices,make,listeners};
 }
-const x=setup(true);
-assert.equal(x.notices[0].hidden,true);
-assert.equal(x.notices[1].hidden,true);
-assert.equal(x.notices[2].hidden,false,'payment error remains native');
-assert.equal(x.notices[3].hidden,false,'actionable notice stays native');
-assert.equal(x.win.AndyCoreWooNoticeBridge.stats().duplicates,1);
-assert.equal(x.api.getState().type,'success');
-const newer=x.make('new','Coupon B applied successfully.');
-x.notices.push(newer);
-x.win.AndyCoreWooNoticeBridge.scan();
-assert.equal(newer.hidden,true,'new notice safely handed over');
-assert.ok(x.api.getState().key.includes('coupon b'));
-x.listeners.error();
-for(const n of x.notices)assert.equal(n.hidden,false,'restore on fatal error');
-assert.equal(x.win.AndyCoreWooNoticeBridge.stats().suppressed,0);
-const before=x.api.getState().key;
-const later=x.make('late','This should remain visible.');
-x.notices.push(later);
-x.win.AndyCoreWooNoticeBridge.scan();
-assert.equal(later.hidden,false,'bridge disabled after fatal error');
-assert.equal(before,x.api.getState().key);
+function setup(ready=true){
+ const nodes=[fakeNode('Coupon applied successfully.'),fakeNode('Coupon applied successfully.'),
+  fakeNode('Payment declined, please retry.','error'),
+  fakeNode('Address cannot be empty.','error',{contextual:true})];
+ let next=0,current=null;
+ const listeners={},doc={readyState:'complete',body:{},
+  querySelectorAll:()=>nodes};
+ const api={isReady:()=>ready,notify(p){current={id:++next,type:p.type,key:p.key,action:p.action};return{id:next};},getState:()=>current};
+ const win={location:{href:'https://test.invalid/checkout/',pathname:'/checkout/',origin:'https://test.invalid'},
+  AndyCoreNotificationUI:api,getComputedStyle:n=>({display:n.style.getPropertyValue('display')||'block',visibility:'visible'}),
+  setTimeout:()=>3,clearTimeout:()=>{},addEventListener:(n,f)=>{listeners[n]=f;},
+  removeEventListener:n=>{delete listeners[n];},MutationObserver:class{observe(){}disconnect(){}constructor(fn){this.fn=fn;}}};
+ vm.runInNewContext(source,{window:win,document:doc,Map,Object,Array,String,URL});
+ return {nodes,win,api,listeners};
+}
+const t=setup();
+assert.equal(t.nodes[0].hidden,true);
+assert.equal(t.nodes[1].hidden,true);
+assert.equal(t.win.AndyCoreWooNoticeBridge.stats().duplicates,1);
+assert.equal(t.nodes[2].hidden,false,'prior critical error restored when superseded');
+assert.equal(t.api.getState().type,'error');
+assert.equal(t.nodes[3].hidden,false,'field error remains inline to keep context');
+assert.equal(t.win.AndyCoreWooNoticeBridge.stats().contextual,1);
+const newInfo=fakeNode('Shipping updated.','info');
+t.nodes.push(newInfo);t.win.AndyCoreWooNoticeBridge.scan();
+assert.equal(newInfo.hidden,true,'info uses island');
+const link={tagName:'A',href:'https://test.invalid/cart/',textContent:'View cart',
+ hasAttribute:()=>false,classList:{contains:()=>false}};
+const notice=fakeNode('View cart Item added.','success',{controls:[link]});
+t.nodes.push(notice);t.win.AndyCoreWooNoticeBridge.scan();
+assert.equal(notice.hidden,true);
+assert.equal(t.api.getState().action.url,'https://test.invalid/cart/');
+const foreign={...link,href:'https://external.example/'};
+const unsafe=fakeNode('External help available','info',{controls:[foreign]});
+t.nodes.push(unsafe);t.win.AndyCoreWooNoticeBridge.scan();
+assert.equal(unsafe.hidden,false,'external action remains native');
+t.listeners.error();
+assert.equal(t.nodes[0].hidden,false);
+assert.equal(t.nodes[2].hidden,false);
+assert.equal(t.nodes[4].hidden,false);
+const after=fakeNode('Should stay native','error');
+t.nodes.push(after);t.win.AndyCoreWooNoticeBridge.scan();
+assert.equal(after.hidden,false,'fail open after JS error');
 const off=setup(false);
-for(const n of off.notices)assert.equal(n.hidden,false,'CSS unavailable -> original native');
-assert.equal(off.win.AndyCoreWooNoticeBridge.stats().accepted,0);
-assert.doesNotMatch(src,/fetch\(|XMLHttpRequest|wc_add_notice|WC\(\)->cart/,'no network or business writes');
-console.log('PASS notification-ui-v1-r3-woo-bridge-harness (truthful handoff, duplicate, errors, fail open, dispose)');
+assert.equal(off.nodes.every(n=>!n.hidden),true,'engine unavailable native remains');
+assert.doesNotMatch(source,/fetch\(|XMLHttpRequest|wc_add_notice|WC\(\)->cart/);
+console.log('PASS notification-ui-v1-r3-woo-bridge-harness (all notice types, contextual, action, fallback)');

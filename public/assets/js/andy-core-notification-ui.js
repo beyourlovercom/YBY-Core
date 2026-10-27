@@ -13,7 +13,7 @@
   var ICONS = { success: '✓', info: 'i', warning: '!', error: '×', blocked: '!', running: '…' };
   var CRITICAL = { error: true, blocked: true, warning: true };
   var host = null, surface = null, headline = null, detail = null, mark = null;
-  var close = null, styleState = 'pending', pending = null, active = null;
+  var close = null, actionLink = null, styleState = 'pending', pending = null, active = null;
   var serial = 0, holdTimer = null, exitTimer = null, retractTimer = null;
   var recent = new Map();
 
@@ -33,6 +33,17 @@
     return {
       id: ++serial, type: type, title: title,
       message: escapeText(value.message, 360),
+      action: (function () {
+        if (!value.action || typeof value.action !== 'object') return null;
+        var label = escapeText(value.action.label, 50);
+        try {
+          var u = new URL(String(value.action.url || ''), win.location.href);
+          if (label && /^https?:$/.test(u.protocol) && u.origin === win.location.origin) {
+            return {label:label,url:u.href};
+          }
+        } catch (err) { return null; }
+        return null;
+      })(),
       key: escapeText(value.key || (type + ':' + title), 180),
       critical: value.critical === true || (value.critical !== false && !!CRITICAL[type])
     };
@@ -49,8 +60,9 @@
     host.setAttribute('aria-hidden', 'false');
     if (close) { close.hidden = false; }
     if (detail) { detail.hidden = !active.message; }
+    if (actionLink) { actionLink.hidden = !active.action; }
     clearTimers();
-    if (active.critical) {
+    if (active.critical || active.action) {
       retractTimer = win.setTimeout(function () {
         if (host && active && host.classList.contains('is-visible')) {
           host.classList.add('is-compact');
@@ -68,6 +80,10 @@
     host.dataset.type = item.type;
     headline.textContent = item.title;
     detail.textContent = item.message;
+    if (actionLink) {
+      actionLink.textContent = item.action ? item.action.label : '';
+      actionLink.href = item.action ? item.action.url : '#';
+    }
     mark.textContent = ICONS[item.type];
     surface.setAttribute('role', item.critical ? 'alert' : 'status');
     surface.setAttribute('aria-live', item.critical ? 'assertive' : 'polite');
@@ -130,11 +146,13 @@
     var copy = doc.createElement('div'); copy.className = 'island-copy';
     headline = doc.createElement('strong'); headline.className = 'island-title';
     detail = doc.createElement('span'); detail.className = 'island-detail';
+    actionLink = doc.createElement('a'); actionLink.className = 'island-action';
+    actionLink.hidden = true;
     close = doc.createElement('button'); close.className = 'island-dismiss'; close.type = 'button';
     close.setAttribute('aria-label', 'Dismiss notification'); close.textContent = '×';
     close.addEventListener('click', function (e) { e.stopPropagation(); dismiss(); });
     copy.appendChild(headline); copy.appendChild(detail);
-    main.appendChild(mark); main.appendChild(copy); main.appendChild(close);
+    main.appendChild(mark); main.appendChild(copy); main.appendChild(actionLink); main.appendChild(close);
     surface.appendChild(main); shadow.appendChild(surface);
     surface.addEventListener('click', function () {
       if (active && host.classList.contains('is-compact')) { setExpanded(); }
