@@ -91,3 +91,9 @@ All results are from the **existing dedicated local-only US Mac mini WordPress d
 - Core-owned `landing_page` CPT and native menu remain untouched.
 - Campaign master was restored OFF in the isolated site after each verification; no live Dev or WWW activation, no merge of Draft PR.
 - Vendor checkout integration remains isolated from the separately active Currency/P6 branch. No claim of Production readiness.
+
+## CI base-commit synchronization after concurrent Core main updates
+- While PR #242 remained Draft, the independent Andy Core Notification PR #243 advanced `main` from `03422efc4...` to `5bb00a71de3600a0f9bc2b895d76e0cfef33d296`.
+- A prior shared **Release Package Validation** job rejected its own stale GitHub PR base payload while GitHub generated a merge test with the newer main as parent; it did not reach campaign packaging. It is **not** counted PASS.
+- Refreshed PR #242's existing `main` base to the current SHA through GitHub PR metadata only, without force-push, merge to main, or deployment. Fresh synchronized PR CI is required to supersede the stale provenance failure.
+- No production action is authorized by this refresh; PR remains Draft.
