@@ -181,6 +181,14 @@ jobs:
           wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
           echo 'R13_STRIPE_TEST_QUOTE_FIVE_CURRENCY_COMPLETE_NO_EXTERNAL_GATEWAY=PASS'
 
+      - name: Currency R13 native Stripe HTTPS preflight scripts syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile "$GITHUB_WORKSPACE/scripts/currency-r13-woo-stripe-https-preflight.py"
+          php -l "$GITHUB_WORKSPACE/scripts/currency-r13-stripe-native-woo-preflight.php"
+          echo 'R13_TEST_WEBHOOK_PREFLIGHT_SOURCE_SYNTAX_PASS; PUBLIC_DELIVERY_UNVERIFIED'
+
       - name: Currency R13 native Woo country tax shipping source USD dual ledger
         shell: bash
         run: |
