@@ -67,7 +67,7 @@ final class Andy_Commerce_Currency_Runtime_C6 {
         try {
             $ledger=Andy_Commerce_Currency_Runtime_Reconcile::cart_preview([
                 'base_usd_minor'=>$usd,'native_cart_local_minor'=>$local,
-                'rate_micros'=>Andy_Commerce_Currency_Runtime_C1::TEST_RATES[$currency],
+                'rate_micros'=>Andy_Commerce_Currency_Runtime_C1::quote($currency)['rate_micros'],
                 'cart_line_count'=>$lineCount+count($cart->get_applied_coupons()),
                 'currency'=>$currency,'source'=>'CI_SYNTHETIC_LOCKED',
                 'timestamp'=>1793000000,

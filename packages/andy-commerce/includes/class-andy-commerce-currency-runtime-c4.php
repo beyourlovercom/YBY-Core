@@ -9,6 +9,12 @@ declare(strict_types=1);
 if (!defined('ABSPATH')) exit;
 final class Andy_Commerce_Currency_Runtime_C4 {
     private static array $shippingRateConversions = [];
+    /** Trusted Woo flat-rate original quote, including evaluated dynamic formulas. */
+    public static function source_shipping_quote(string $rateId): ?array {
+        if (!Andy_Commerce_Currency_Runtime_C1::allowed() || !WC()->session) return null;
+        $v=WC()->session->get('aicc_r13_woo_source_shipping_quotes',[]);
+        return is_array($v) && is_array($v[$rateId]??null)?$v[$rateId]:null;
+    }
     public static function boot(): void {
         if (!Andy_Commerce_Currency_Runtime_C1::allowed()) return;
         add_filter('woocommerce_coupon_get_amount', [__CLASS__, 'coupon'], 60, 2);
@@ -21,7 +27,7 @@ final class Andy_Commerce_Currency_Runtime_C4 {
         }
         return Andy_Commerce_Currency_OS_V1::convert_usd_minor(
             $usdMinor,
-            Andy_Commerce_Currency_Runtime_C1::TEST_RATES[Andy_Commerce_Currency_Runtime_C1::test_currency()]
+            Andy_Commerce_Currency_Runtime_C1::quote(Andy_Commerce_Currency_Runtime_C1::test_currency())['rate_micros']
         );
     }
     private static function minor($raw): int {
@@ -44,7 +50,8 @@ final class Andy_Commerce_Currency_Runtime_C4 {
             if ($rate->get_method_id()!=='flat_rate') continue;
             $objectId=spl_object_id($rate);
             if (isset(self::$shippingRateConversions[$objectId])) continue;
-            $local=self::to_local_minor(self::minor($rate->get_cost()));
+            $sourceMinor=self::minor($rate->get_cost());
+            $local=self::to_local_minor($sourceMinor);
             // Woo's flat-rate net shipping price is stored in base USD.
             // For native taxable rates recompute the destination shipping tax
             // from WC_Tax instead of retaining the stale USD tax allocation.
@@ -57,6 +64,17 @@ final class Andy_Commerce_Currency_Runtime_C4 {
             $newTaxes=$shippingTaxRates ? WC_Tax::calc_shipping_tax($localPrice,$shippingTaxRates) : [];
             $rate->set_cost($localPrice);
             $rate->set_taxes($newTaxes);
+            if (WC()->session) {
+                $quotes=WC()->session->get('aicc_r13_woo_source_shipping_quotes',[]);
+                if(!is_array($quotes))$quotes=[];
+                $q=Andy_Commerce_Currency_Runtime_C1::quote(Andy_Commerce_Currency_Runtime_C1::test_currency());
+                $quotes[$rate->get_id()]=['rate_id'=>$rate->get_id(),
+                    'source_usd_minor'=>$sourceMinor,'native_minor'=>$local,
+                    'currency'=>$q['currency'],'rate_micros'=>$q['rate_micros'],
+                    'snapshot_hash'=>$q['snapshot_hash'],'provider'=>'WOO_NATIVE_FLAT_RATE',
+                    'evaluated_dynamic'=>true];
+                WC()->session->set('aicc_r13_woo_source_shipping_quotes',$quotes);
+            }
             self::$shippingRateConversions[$objectId]=true;
         }
         return $rates;

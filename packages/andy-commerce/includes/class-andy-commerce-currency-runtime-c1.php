@@ -60,10 +60,36 @@ final class Andy_Commerce_Currency_Runtime_C1 {
         if (class_exists('Andy_Commerce_Currency_R13_Native_Tax_Shipping')) Andy_Commerce_Currency_R13_Native_Tax_Shipping::boot();
     }
 
+    /** Consistent per-shopper frozen quote: reject a changed/expired provider file. */
+    public static function quote(string $currency): array {
+        if (!array_key_exists($currency,self::TEST_RATES))
+            throw new InvalidArgumentException('Unexpected shopper currency');
+        if (defined('AICC_CURRENCY_R13_FX_SNAPSHOT_FILE')) {
+            if (!class_exists('Andy_Commerce_Currency_R13_FX_Quote_Guard'))
+                throw new InvalidArgumentException('R13 reference rate validator missing');
+            $quote=Andy_Commerce_Currency_R13_FX_Quote_Guard::selected_rate($currency);
+            if (WC()->session) {
+                $key='aicc_currency_r13_fx_quote_lock';
+                $old=WC()->session->get($key);
+                if (is_array($old) && $old!==$quote)
+                    throw new InvalidArgumentException('Shopper FX reference changed or expired; restart quote');
+                WC()->session->set($key,$quote);
+            }
+            return $quote;
+        }
+        return ['currency'=>$currency,'rate_micros'=>self::TEST_RATES[$currency],
+            'rate_source'=>'CI_SYNTHETIC_LOCKED','retrieved_at_utc'=>1793000000,
+            'quote_date'=>null,'snapshot_hash'=>null,'is_settlement_rate'=>false];
+    }
+
     public static function select_for_sandbox(string $code): bool {
         if (!self::allowed() || !array_key_exists($code, self::TEST_RATES)
             || !function_exists('WC') || !WC()->session) return false;
         WC()->session->set('aicc_currency_runtime_selected', $code);
+        WC()->session->__unset('aicc_currency_r13_fx_quote_lock');
+        // Invalidate Woo's cached shipping calculations across currency switches.
+        foreach (array_keys(WC()->cart?WC()->cart->get_shipping_packages():[]) as $index)
+            WC()->session->__unset('shipping_for_package_'.$index);
         return self::test_currency() === $code;
     }
 
@@ -82,7 +108,7 @@ final class Andy_Commerce_Currency_Runtime_C1 {
         }
         [$whole, $fraction] = array_pad(explode('.', $raw, 2), 2, '');
         $minor = (int)$whole * 100 + (int)str_pad($fraction, 2, '0');
-        $local = Andy_Commerce_Currency_OS_V1::convert_usd_minor($minor, self::TEST_RATES[self::test_currency()]);
+        $local = Andy_Commerce_Currency_OS_V1::convert_usd_minor($minor, self::quote(self::test_currency())['rate_micros']);
         return number_format($local / 100, 2, '.', '');
     }
 
@@ -98,7 +124,8 @@ final class Andy_Commerce_Currency_Runtime_C1 {
 
     public static function variation_hash($hash, $product, $for_display) {
         if (self::allowed() && is_array($hash)) {
-            $hash['aicc_currency_runtime'] = [self::test_currency(), self::TEST_RATES[self::test_currency()]];
+            $q=self::quote(self::test_currency());
+            $hash['aicc_currency_runtime'] = [$q['currency'],$q['rate_micros'],$q['snapshot_hash']];
         }
         return $hash;
     }

@@ -31,7 +31,7 @@ final class Andy_Commerce_Currency_R13_Dual_Ledger {
             || !is_string($source)||!preg_match('/^[a-zA-Z0-9._:-]{3,64}$/D',$source)
             || !is_int($time)||$time<1
             || !is_int($qty)||$qty<1||$qty>100
-            || !is_int($couponCount)||$couponCount<0||$couponCount>1
+            || !is_int($couponCount)||$couponCount<0||$couponCount>3
             || !is_bool($taxInclusive))
             throw new InvalidArgumentException('R13 missing FX source or unsupported promotion');
         $raw=$input['usd']??null;
@@ -45,7 +45,7 @@ final class Andy_Commerce_Currency_R13_Dual_Ledger {
             // Native Woo rounds per product, tax line and shipping rate.
             // Never silently normalize a larger unexplained discrepancy.
             $tolerance=$k==='merchandise'? $qty :
-                ($k==='tax'? $qty+2 : ($k==='shipping'?2:($couponCount?2:0)));
+                ($k==='tax'? $qty+3 : ($k==='shipping'?2:($couponCount?$couponCount*2+1:0)));
             if(abs($actual-$expected)>$tolerance)
                 throw new InvalidArgumentException('R13 '.$k.' FX source/actual divergence');
             $components[$k]=[
@@ -56,10 +56,10 @@ final class Andy_Commerce_Currency_R13_Dual_Ledger {
         }
         if($raw['discount']>$raw['merchandise'] || $local['discount']>$local['merchandise'])
             throw new InvalidArgumentException('R13 discount exceeds merchandise');
-        $usdTotal=$raw['merchandise']-$raw['discount']+$raw['shipping']
-            +($taxInclusive?0:$raw['tax']);
-        $localTotal=$local['merchandise']-$local['discount']+$local['shipping']
-            +($taxInclusive?0:$local['tax']);
+        // Woo Order subtotal and shipping are net even when catalogue prices
+        // include tax; Woo always adds its tax lines to the invoice total.
+        $usdTotal=$raw['merchandise']-$raw['discount']+$raw['shipping']+$raw['tax'];
+        $localTotal=$local['merchandise']-$local['discount']+$local['shipping']+$local['tax'];
         if($usdTotal<0||$usdTotal>1000000000
             || $localTotal!==self::minor($input['woo_order_total_minor']??null))
             throw new InvalidArgumentException('R13 Woo order total is not authoritative');

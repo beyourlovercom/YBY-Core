@@ -233,17 +233,21 @@ jobs:
           php "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-stripe-test-settlement-audit-contract.php"
           echo 'P6E_REFERENCE_FX_NEVER_EQUALS_PROVIDER_PAYOUT=PASS'
 
-      - name: Currency P6-D native Store API taxable shipping locked USD ledger
+      - name: Currency P6-D/F real Woo complex checkout and reference FX fail-closed
         shell: bash
         run: |
           set -euo pipefail
+          php "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-reference-fx-quote-contract.php"
           wp config set AICC_CURRENCY_RUNTIME_SANDBOX true --raw --path="$RUNNER_TEMP/woo"
           wp config set AICC_CURRENCY_RUNTIME_TEST_CURRENCY CAD --path="$RUNNER_TEMP/woo"
           wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-native-tax-shipping-blocks-post-disposable-wc.php" --path="$RUNNER_TEMP/woo"
           # Each WP CLI process is a distinct native Checkout session. Woo Store API
           # caches the current draft order in its route instance within one process.
           wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-native-tax-shipping-two-sku-disposable-wc.php" --path="$RUNNER_TEMP/woo"
-          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-native-tax-shipping-mixed-reject-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          # Every Checkout has a freshly instantiated Store API route object.
+          for scenario in mixed coupons dynamic deny_shipping_inclusive inclusive; do
+            P6_COMPLEX_CASE="$scenario" wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-complex-native-checkout-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          done
           wp config delete AICC_CURRENCY_RUNTIME_TEST_CURRENCY --path="$RUNNER_TEMP/woo"
           wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
           echo 'P6D_OFFLINE_WOO_NATIVE_TAX_SHIPPING_ORDER_AND_GATE_ROLLBACK=PASS'
