@@ -8,8 +8,21 @@ if (!defined('ABSPATH')) exit;
 final class Andy_Commerce_Currency_R13_Native_Tax_Shipping {
     public static function boot(): void {
         if (!Andy_Commerce_Currency_Runtime_C1::allowed()) return;
+        add_filter('rest_request_before_callbacks',[__CLASS__,'reject_unsupported_shipping_before_checkout'],5,3);
         add_action('woocommerce_store_api_checkout_order_processed',[__CLASS__,'snapshot'],80,1);
         add_action('woocommerce_store_api_checkout_order_processed',[__CLASS__,'require_snapshot'],95,1);
+    }
+    /** Woo wraps hook exceptions in HTTP 500. Preflight unsupported configurations. */
+    public static function reject_unsupported_shipping_before_checkout($response,$handler,$request) {
+        if ($response !== null || !($request instanceof WP_REST_Request)
+            || $request->get_method() !== 'POST'
+            || $request->get_route() !== '/wc/store/v1/checkout'
+            || !Andy_Commerce_Currency_Runtime_C1::allowed()
+            || !wc_string_to_bool(apply_filters('woocommerce_shipping_prices_include_tax',false)))
+            return $response;
+        return new WP_Error('aicc_currency_unreconciled',
+           'Tax-inclusive shipping is not supported for this currency checkout.',
+           ['status'=>422]);
     }
     private static function minor($v): ?int {
         // Woo native tax-inclusive discounts can have 8 decimal places before
