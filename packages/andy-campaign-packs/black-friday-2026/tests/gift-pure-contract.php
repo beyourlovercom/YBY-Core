@@ -16,6 +16,12 @@ class WC_Product {
     public function is_type($name): bool { return $name===$this->type; }
     public function is_purchasable(): bool { return $this->type==='simple'; }
     public function is_in_stock(): bool { return $this->stock; }
+    public function get_stock_status(): string { return $this->stock ? 'instock' : 'outofstock'; }
+    public bool $backorders = false;
+    public int $qty = 10;
+    public function backorders_allowed(): bool { return $this->backorders; }
+    public function managing_stock(): bool { return true; }
+    public function get_stock_quantity(): int { return $this->qty; }
 }
 function wc_get_product($id) { return $GLOBALS['products'][(int)$id]??false; }
 function get_woocommerce_currency(): string { return $GLOBALS['c3_currency'] ?? 'USD'; }
@@ -35,6 +41,13 @@ yes(BYL_BF2026_Gifts::ready(),'two stocked free gifts permit activation');
 $GLOBALS['products'][1005]->stock=false;
 yes(!BYL_BF2026_Gifts::ready(),'stockout revokes readiness');
 $GLOBALS['products'][1005]->stock=true;
+$GLOBALS['products'][1005]->backorders=true;
+yes(!BYL_BF2026_Gifts::ready(),'backordered gifts do not satisfy free gift promise');
+$GLOBALS['products'][1005]->backorders=false;
+$GLOBALS['products'][1005]->qty=0;
+yes(!BYL_BF2026_Gifts::ready(),'zero managed stock blocks promotion even with instock flag');
+$GLOBALS['products'][1005]->qty=10;
+yes(BYL_BF2026_Gifts::ready(),'physical available free gift stock restored');
 $normal=['product_id'=>10,'quantity'=>1,'line_total'=>205.0];
 $free=['product_id'=>1001,'quantity'=>1,'line_total'=>0.0,'data'=>new WC_Product(),
     'andy_campaign_pack_id'=>BYL_BF2026_Gifts::ID,'_byl_bf2026_gift'=>true];
@@ -77,4 +90,4 @@ yes(true,'nested action POST ignored without throwing');
 unset($_POST,$_SERVER['REQUEST_METHOD']);
 $GLOBALS['c3_currency']='EUR';
 yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,'foreign currency fail closed');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=17\n";
+echo "BYL_BF2026_PURE_CONTRACT_PASS=20\n";
