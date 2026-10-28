@@ -51,7 +51,7 @@ if($mode==='present'){
  must(YBY_Andy_OS_Navigation::active_second_level()==='andy-core-marketing','Campaign highlights Marketing');
 }else{
  must($destination==='admin.php?page=andy-commerce&tab=marketing-promotions','old Marketing destination restored');
- must(in_array('促销',$labels,true) && in_array('新建活动',$labels,true),'old Marketing L3 retained');
+ must(in_array('活动列表',$labels,true) && in_array('新建活动',$labels,true),'old Marketing L3 retained');
  must(YBY_Andy_OS_Navigation::active_second_level()==='andy-core-marketing','old Commerce archive highlights Marketing');
 }
 $content=YBY_Andy_OS_Navigation::tertiary_items('andy-business');
