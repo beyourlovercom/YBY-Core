@@ -83,6 +83,9 @@ final class BYL_BF2026_Gifts {
              || wc_get_price_decimals() !== 2 ) { return false; }
         $currency = get_woocommerce_currency();
         if ( 'USD' === $currency ) { return true; }
+        if ( ! in_array( $currency, array( 'EUR', 'GBP', 'AUD', 'CAD' ), true ) ) {
+            return false;
+        }
         // Only the Commerce-owned, read-only, source-USD quote may approve
         // foreign entitlement. Never reverse-convert shopper-visible totals.
         return class_exists( 'Andy_Commerce_Campaign_USD_Basis_V1' )
