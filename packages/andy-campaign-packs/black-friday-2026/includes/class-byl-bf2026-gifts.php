@@ -26,9 +26,27 @@ final class BYL_BF2026_Gifts {
         return $result;
     }
 
+    /** Owner-reviewed code-only ERP, cost and destination approvals. */
+    public static function gift_approvals(): array {
+        $items = apply_filters( 'byl_bf2026_gift_approvals', array() );
+        return is_array( $items ) && count( $items ) <= 30 ? $items : array();
+    }
+
+    private static function approved_gift( int $id ): bool {
+        $catalog = self::catalog();
+        if ( ! isset( $catalog[ $id ] )
+             || ! class_exists( 'BYL_BF2026_R8_Readiness' ) ) { return false; }
+        $review = BYL_BF2026_R8_Readiness::inspect(
+            array( $id => array( 'upgrade_minor' => (int) $catalog[ $id ] ) ),
+            self::gift_approvals()
+        );
+        return ( $review['rows'][0]['status'] ?? 'BLOCKED' ) === 'APPROVED';
+    }
+
     private static function gift_product( int $id ) {
         if ( ! function_exists( 'wc_get_product' ) || $id <= 0 ) { return false; }
         $product = wc_get_product( $id );
+        if ( ! self::approved_gift( $id ) ) { return false; }
         if ( ! $product instanceof WC_Product || ! $product->is_type( 'simple' )
              || ! $product->is_purchasable() || ! $product->is_in_stock()
              || 'instock' !== $product->get_stock_status()
@@ -45,6 +63,13 @@ final class BYL_BF2026_Gifts {
              || ! defined( 'WC_VERSION' ) || version_compare( WC_VERSION, '8.8.0', '<' ) ) {
             return false;
         }
+        if ( ! class_exists( 'BYL_BF2026_R8_Readiness' ) ) { return false; }
+        $products = array();
+        foreach ( self::catalog() as $id => $upgrade ) {
+            $products[ (int) $id ] = array( 'upgrade_minor' => (int) $upgrade );
+        }
+        $review = BYL_BF2026_R8_Readiness::inspect( $products, self::gift_approvals() );
+        if ( ! ( $review['release_ready'] ?? false ) ) { return false; }
         $free = 0;
         foreach ( self::catalog() as $id => $upgrade ) {
             if ( 0 === $upgrade && self::gift_product( (int) $id ) ) {
