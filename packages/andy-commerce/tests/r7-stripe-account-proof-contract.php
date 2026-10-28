@@ -66,4 +66,66 @@ verifyR7(!$class::payment_ready(),'WWW host never permitted');
 $_SERVER['HTTP_HOST']='dev.beyourlover.com';
 $GLOBALS['r7_opts']['woocommerce_stripe_settings']['test_secret_key']='sk_live_SYNTHETIC';
 verifyR7(!$class::payment_ready(),'non TEST key blocked');
+
+/** Mock only WordPress Store API request payloads; no checkout is performed. */
+class WP_REST_Request {
+    public function __construct(private string $method,private string $route,private array $params=[]){}
+    public function get_method(){return $this->method;}
+    public function get_route(){return $this->route;}
+    public function get_param($name){return $this->params[$name]??null;}
+}
+class WP_Error {
+    public function __construct(private string $code,private string $message,private array $data=[]){}
+    public function get_error_code(){return $this->code;}
+    public function get_error_data(){return $this->data;}
+}
+class Andy_Commerce_Currency_Runtime_C1 {
+    public static function test_currency(){return $GLOBALS['r7_currency']??'USD';}
+}
+class R7_Session {
+    public function get($key){return $GLOBALS['r7_session'][$key]??null;}
+}
+function WC(){return $GLOBALS['r7_woo'];}
+$GLOBALS['r7_woo']=(object)['session'=>new R7_Session()];
+$GLOBALS['r7_currency']='EUR';
+$GLOBALS['r7_opts']['woocommerce_stripe_settings']['test_secret_key']='sk_test_SYNTHETIC_R7_DO_NOT_USE';
+$GLOBALS['r7_opts']['woocommerce_stripe_settings']['enabled']='no';
+$GLOBALS['r7_opts'][$class::ACCOUNT_PROOF]=$correctProof;
+$GLOBALS['r7_opts'][$class::OPTION]['expires_at']=time()+600;
+$r=new WP_REST_Request('POST','/wc/store/v1/checkout',['payment_method'=>'stripe']);
+$err=$class::checkout_preflight(null,null,$r);
+verifyR7($err instanceof WP_Error && $err->get_error_code()==='aicc_stripe_test_not_ready',
+    'Blocks foreign TEST checkout rejects disabled gateway before order');
+$GLOBALS['r7_opts']['woocommerce_stripe_settings']['enabled']='yes';
+$err=$class::checkout_preflight(null,null,new WP_REST_Request(
+    'POST','/wc/store/v1/checkout',['payment_method'=>'woocommerce_payments']));
+verifyR7($err instanceof WP_Error&&$err->get_error_code()==='aicc_stripe_test_only',
+    'Blocks foreign checkout denies other gateways even with TEST proof');
+verifyR7($class::checkout_preflight(null,null,$r)===null,
+    'only synthetic fresh proof plus stripe TEST passes preflight, no payment');
+$GLOBALS['r7_opts'][$class::ACCOUNT_PROOF]['verified_at']=time()-901;
+verifyR7($class::checkout_preflight(null,null,$r)->get_error_code()==='aicc_stripe_test_not_ready',
+    'expired proof blocks Store API before provider invocation');
+$GLOBALS['r7_opts'][$class::ACCOUNT_PROOF]=$correctProof;
+$GLOBALS['r7_opts'][$class::OPTION]['expires_at']=time()-1;
+$GLOBALS['r7_session']=['aicc_currency_runtime_selected'=>'CAD'];
+verifyR7($class::checkout_preflight(null,null,$r)->get_error_code()==='aicc_r13_dev_session_expired',
+    'expired staff session plus retained foreign cart fails closed');
+verifyR7($class::gateways(['stripe'=>'TEST_STRIPE','woocommerce_payments'=>'OTHER'])===[],
+    'foreign cart after canary expiration exposes zero gateways');
+$GLOBALS['r7_opts'][$class::OPTION]['expires_at']=time()+600;
+$GLOBALS['r7_currency']='USD';
+$GLOBALS['r7_session']=[];
+verifyR7($class::checkout_preflight(null,null,$r)===null,
+    'USD ordinary checkout not intercepted by foreign preflight');
+verifyR7($class::gateways(['stripe'=>'TEST_STRIPE','woocommerce_payments'=>'OTHER'])
+  ===['woocommerce_payments'=>'OTHER'],
+    'USD original WooPayments remains available, standalone Stripe removed');
+verifyR7($class::checkout_preflight(null,null,new WP_REST_Request(
+    'GET','/wc/store/v1/checkout'))===null,
+    'GET checkout not affected');
+verifyR7($class::checkout_preflight(null,null,new WP_REST_Request(
+    'POST','/wc/store/v1/cart',['payment_method'=>'stripe']))===null,
+    'other Store API routes not affected');
+
 echo 'R7_STRIPE_TEST_ACCOUNT_GATE_PASS='.$GLOBALS['r7_count'].PHP_EOL;
