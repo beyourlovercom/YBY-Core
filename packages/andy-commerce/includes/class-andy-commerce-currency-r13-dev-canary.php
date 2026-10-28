@@ -106,11 +106,21 @@ final class Andy_Commerce_Currency_R13_Dev_Canary {
             wc_add_notice('This R13 Dev canary supports Blocks Checkout only. No payment was attempted.','error');
     }
     public static function gateways($gateways): array {
+        if(!self::site())return (array)$gateways;
         $active=self::armed();
         // Expired authorization must not re-enable WooPayments in an old CAD cart.
-        if(!$active) return self::foreign_session()!==null?[]:(array)$gateways;
-        if(Andy_Commerce_Currency_Runtime_C1::test_currency()==='USD')
-          return (array)$gateways;
+        if(!$active) {
+            if(self::foreign_session()!==null) return [];
+            $gateways=(array)$gateways;
+            // The independent Stripe TEST gateway is only a named canary checkout.
+            unset($gateways['stripe']);
+            return $gateways;
+        }
+        if(Andy_Commerce_Currency_Runtime_C1::test_currency()==='USD') {
+            $gateways=(array)$gateways;
+            unset($gateways['stripe']);
+            return $gateways;
+        }
         return self::payment_ready() && isset($gateways['stripe'])
           ? ['stripe'=>$gateways['stripe']] : [];
     }

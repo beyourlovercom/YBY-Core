@@ -133,6 +133,6 @@ $expired=Andy_Commerce_Currency_R13_Dev_Canary::checkout_preflight(null,[],$req)
 $check($expired instanceof WP_Error&&$expired->code==='aicc_r13_dev_session_expired'
  &&$expired->data['status']===503,'expired CAD cannot submit payment');
 $GLOBALS['r13_wc']->session->currency='USD';
-$check(Andy_Commerce_Currency_R13_Dev_Canary::gateways($gateway)===$gateway,
- 'ordinary USD Dev gateway survives retired canary');
+$check(array_keys(Andy_Commerce_Currency_R13_Dev_Canary::gateways($gateway))===['woocommerce_payments'],
+ 'ordinary USD Dev shopper cannot see independent Stripe TEST gateway');
 echo 'R13_DEV_CANARY_STRICT_HOST_USER_SESSION_STRIPE_TEST_GATE_PASS assertions=27'.PHP_EOL;
