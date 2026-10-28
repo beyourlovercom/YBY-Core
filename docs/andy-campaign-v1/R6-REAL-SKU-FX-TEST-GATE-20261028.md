@@ -20,6 +20,7 @@ These are current Dev product records, **not approved promotions**:
 | `40027` | `AICC-UAT-MKT-REWARD` | UAT reward, DO NOT FULFILL | 45.00 | Managed stock 40; hidden | **TEST FIXTURE ONLY** |
 
 Other misleading low-price records (e.g. fee item `GIFT-SELECTION`, hidden `Sticker Design`) were deliberately excluded. **Woo “instock” with untracked quantity is not proof of available ERP/warehouse inventory.** Require owner confirmation of ≥2 free product choices, costs, country reachability, inventory reservation, and premium upcharge before any reviewed PHP gift catalog is deployed and before master ON.
+- Follow-on read-only product metadata: all six candidate/fixture products show **blank Woo product weight and no shipping class**; all are taxable. Both UAT fixtures have managed quantities, but the four real candidates do **not** manage Woo stock. Do not use Woo product weight or `instock` as the final gift freight/warehouse cost basis; reconcile with approved packaging weights, ERP stock and destination-specific shipping policy before publishing any gift offer.
 
 ## Current Dev FX snapshot verified read-only
 `Andy_Commerce_Currency_Runtime_Dev_V1::rates()` returned a valid fresh USD snapshot during the audit (age 6,438 s, max 72 h):
