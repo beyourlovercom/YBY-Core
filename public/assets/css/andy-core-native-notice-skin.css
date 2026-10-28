@@ -114,13 +114,15 @@ body :is(.woocommerce-error,.woocommerce-message,.woocommerce-info,.wc-block-com
   outline:2px solid #a54155!important;
   outline-offset:3px!important;
 }
-body :is(.woocommerce-error,.woocommerce-message,.woocommerce-info,.coupon-error-notice,.wc-block-components-notice-banner):focus:not(:focus-visible) {
-  outline:none!important;
+/* WooCommerce may focus a tabindex=-1 notice after validation. Preserve
+ * semantic focus for assistive technology, but never draw a large visual
+ * focus ring around the noninteractive message container. Only real
+ * links/buttons receive the visible keyboard focus ring above. */
+body :is(.woocommerce-error,.woocommerce-message,.woocommerce-info,.coupon-error-notice,.wc-block-components-notice-banner):is(:focus,:focus-visible) {
+  outline:0 none transparent!important;
+  outline-offset:0!important;
   box-shadow:none!important;
-}
-body :is(.woocommerce-error,.woocommerce-message,.woocommerce-info,.coupon-error-notice,.wc-block-components-notice-banner):focus-visible {
-  outline:2px solid #a54155!important;
-  outline-offset:3px!important;
+  border:0!important;
 }
 body :is(.woocommerce-error,.woocommerce-message,.woocommerce-info,.coupon-error-notice,.wc-block-components-notice-banner)[hidden],
 body :is(.woocommerce-error,.woocommerce-message,.woocommerce-info,.coupon-error-notice,.wc-block-components-notice-banner)[data-andy-core-notice-suppressed] {

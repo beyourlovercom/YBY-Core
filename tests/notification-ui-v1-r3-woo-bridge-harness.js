@@ -67,4 +67,8 @@ assert.equal(after.hidden,false,'fail open after JS error');
 const off=setup(false);
 assert.equal(off.nodes.every(n=>!n.hidden),true,'engine unavailable native remains');
 assert.doesNotMatch(source,/fetch\(|XMLHttpRequest|wc_add_notice|WC\(\)->cart/);
+const nativeSkin=fs.readFileSync(path.resolve(__dirname,'../public/assets/css/andy-core-native-notice-skin.css'),'utf8');
+assert.ok(nativeSkin.includes(':is(:focus,:focus-visible) {') && nativeSkin.includes('outline:0 none transparent!important;'), 'noninteractive notice suppresses large focus rectangle');
+assert.ok(nativeSkin.includes(':is(a,.button,button):focus-visible') && nativeSkin.includes('outline:2px solid #a54155!important;'), 'action links keep visible keyboard focus');
+console.log('PASS native-notice-focus-contract (no selected container rectangle, links accessible)');
 console.log('PASS notification-ui-v1-r3-woo-bridge-harness (success/info island, errors native, actions, fail-open)');
