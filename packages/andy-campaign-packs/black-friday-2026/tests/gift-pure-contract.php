@@ -112,7 +112,53 @@ BYL_BF2026_Gifts::validate_store_api(null,$valid);
 yes(count($valid->errors)===0,
     'Store API accepts valid stock and allowance');
 $GLOBALS['c3_currency']='EUR';
-yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,'foreign currency fail closed');
+yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,'foreign currency fails closed without Commerce quote contract');
+class Andy_Commerce_Currency_Runtime_Dev_V1 {
+    public static bool $enabled = true;
+    public static function allowed(): bool { return self::$enabled; }
+    public static function selected(): string { return get_woocommerce_currency(); }
+    public static function convert(string $amount): string {
+        $rates=['USD'=>1000000,'EUR'=>894610,'GBP'=>749160,'AUD'=>1423900,'CAD'=>1400900];
+        $rate=$rates[self::selected()]??1000000;
+        return number_format(round((float)$amount*$rate/1000000,2),2,'.','');
+    }
+}
+class Andy_Commerce_Campaign_USD_Basis_V1 {
+    public static bool $verified = true;
+    public static int $basis = 19900;
+    public static function quote($cart): array {
+        return self::$verified
+            ? ['ok'=>true,'basis_minor'=>self::$basis,'provenance'=>'source-usd']
+            : ['ok'=>false,'reason'=>'foreign_coupon_unverified','basis_minor'=>0];
+    }
+}
+foreach(['EUR','GBP','AUD','CAD'] as $code) {
+    $GLOBALS['c3_currency']=$code;
+    $e=BYL_BF2026_Gifts::eligibility($c);
+    yes($e['slots']===2 && $e['basis_minor']===19900,
+        $code.' verified source USD199 qualifies for two gifts');
+    Andy_Commerce_Campaign_USD_Basis_V1::$basis=19899;
+    yes(BYL_BF2026_Gifts::eligibility($c)['slots']===1,
+        $code.' verified source USD198.99 grants one gift');
+    Andy_Commerce_Campaign_USD_Basis_V1::$basis=19900;
+    Andy_Commerce_Campaign_USD_Basis_V1::$verified=false;
+    yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,
+        $code.' failed quote grants zero gifts');
+    Andy_Commerce_Campaign_USD_Basis_V1::$verified=true;
+}
+$GLOBALS['c3_currency']='GBP';
+$GLOBALS['products'][1002]->stock=true;
+BYL_BF2026_Gifts::reprice($c);
+yes(abs($premium['data']->price-7.48)<0.001,
+    'GBP premium upgrade converted to local price using Commerce runtime');
+Andy_Commerce_Currency_Runtime_Dev_V1::$enabled=false;
+yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,
+    'disabled foreign currency runtime blocks Commerce bridge');
+Andy_Commerce_Currency_Runtime_Dev_V1::$enabled=true;
+$GLOBALS['c3_currency']='JPY';
+yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,
+    'unreviewed foreign currency still fails closed without quote');
+$GLOBALS['c3_currency']='EUR';
 // A real Dev GBP rate can collapse adjacent $198.99/$199.00 thresholds into
 // the SAME pence; inverse-FX entitlements therefore require verified base USD.
 $dev_gbp_rate_micros=749160;
