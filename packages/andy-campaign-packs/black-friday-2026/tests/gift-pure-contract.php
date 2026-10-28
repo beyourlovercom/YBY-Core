@@ -4,10 +4,11 @@ declare(strict_types=1);
 define('ABSPATH','/');
 define('WC_VERSION','11.2.1');
 class WC_Cart {
+    public static int $calculations = 0;
     public function __construct(private array $items) {}
     public function get_cart(): array { return $this->items; }
     public function remove_cart_item($key): void { unset($this->items[$key]); }
-    public function calculate_totals(): void {}
+    public function calculate_totals(): void { self::$calculations++; }
 }
 class WooCommerce {}
 class WC_Product {
@@ -112,4 +113,14 @@ yes(count($valid->errors)===0,
     'Store API accepts valid stock and allowance');
 $GLOBALS['c3_currency']='EUR';
 yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,'foreign currency fail closed');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=24\n";
+class Andy_Campaign_Lite {
+    public static function boot() { return new self(); }
+    public function decisions(): array { return array(BYL_BF2026_Gifts::ID=>'master_off'); }
+}
+$before = WC_Cart::$calculations;
+$inactive = BYL_BF2026_Gifts::render();
+yes(str_contains($inactive,'not currently available') && !str_contains($inactive,'<form'),
+    'OFF campaign renders a harmless landing preview without gift selection controls');
+yes(WC_Cart::$calculations === $before,
+    'OFF shortcode rendering never touches Woo cart calculation');
+echo "BYL_BF2026_PURE_CONTRACT_PASS=26\n";
