@@ -395,9 +395,17 @@ final class YBY_Andy_OS_Navigation {
 				$add( $label, 'admin.php?page=andy-campaign&tab='.$tab, 'manage_woocommerce' );
 			}
 		} elseif ( 'andy-commerce' === $page ) {
-			foreach ( array( 'overview'=>'总览', 'order-export'=>'订单导出',
-				'checkout-shipping'=>'结账运费', 'marketing-promotions'=>'促销',
-				'settings'=>'设置' ) as $tab=>$label ) {
+			// Marketing V1 remains reachable via its original Dev-only URL for
+			// archives and rollback, but stops advertising a duplicate menu
+			// once the independent Andy Campaign controller is installed.
+			$commerce_tabs = array(
+				'overview'=>'总览', 'order-export'=>'订单导出',
+				'checkout-shipping'=>'结账运费', 'settings'=>'设置',
+			);
+			if ( ! class_exists( 'Andy_Campaign_Lite' ) ) {
+				$commerce_tabs['marketing-promotions'] = '促销';
+			}
+			foreach ( $commerce_tabs as $tab=>$label ) {
 				$add( $label, 'admin.php?page=andy-commerce&tab='.$tab, 'manage_woocommerce' );
 			}
 		} elseif ( in_array( $page, array( 'yby-core', 'yby-brand-os', 'yby-social-login' ), true ) ) {
