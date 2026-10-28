@@ -33,6 +33,8 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r13-stripe-refund-ledger.php';
 // R8-R10 separate real Dev runtime, default OFF; never loaded as active WWW runtime.
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-dev-v1.php';
+// R6 read-only, no-hook authoritative USD basis for Campaign gift thresholds.
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-campaign-usd-basis-v1.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-order-coupon-column.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m4-shipping-shadow.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m5-progress-projection.php';
