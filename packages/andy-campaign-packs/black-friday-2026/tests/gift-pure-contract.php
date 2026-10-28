@@ -30,7 +30,7 @@ function get_woocommerce_currency(): string { return $GLOBALS['c3_currency'] ?? 
 function wc_get_price_decimals(): int { return 2; }
 function wc_format_decimal($v) { return number_format((float)$v,2,'.',''); }
 function apply_filters($name,$value) { return $GLOBALS['gift_catalog'] ?? $value; }
-function yes($v,$msg) { if (!$v) throw new RuntimeException('BF_FAIL:'.$msg); }
+function yes($v,$msg) { if (!$v) throw new RuntimeException('BF_FAIL:'.$msg); $GLOBALS['bf_assertions'] = ($GLOBALS['bf_assertions'] ?? 0) + 1; }
 require dirname(__DIR__).'/includes/class-byl-bf2026-gifts.php';
 $GLOBALS['gift_catalog']=array(1001=>array('upgrade_minor'=>0),1002=>array('upgrade_minor'=>999),1003=>array('upgrade_minor'=>-10),1004=>array('upgrade_minor'=>100001));
 $catalog=BYL_BF2026_Gifts::catalog();
@@ -132,18 +132,23 @@ foreach(['EUR'=>894800,'GBP'=>749200,'AUD'=>1424000,'CAD'=>1400800] as $code=>$r
     $above=BYL_BF2026_Gifts::eligibility(new WC_Cart([
         ['product_id'=>10,'line_total'=>$to_local(20500)]
     ]));
-    yes($above['basis_minor']===20500 && $above['slots']===2,
-        $code.' conversion preserves USD205 threshold');
+    yes(abs($above['basis_minor']-20500)<=1 && $above['slots']===2,
+        $code.' conversion preserves USD205 threshold within one cent');
     $exact=BYL_BF2026_Gifts::eligibility(new WC_Cart([
         ['product_id'=>10,'line_total'=>$to_local(19900)]
     ]));
-    yes($exact['basis_minor']===19900 && $exact['slots']===2,
-        $code.' exact USD199 threshold');
+    yes(abs($exact['basis_minor']-19900)<=1 && $exact['slots']===2,
+        $code.' exact USD199 local threshold despite reverse FX cent rounding');
     $under=BYL_BF2026_Gifts::eligibility(new WC_Cart([
         ['product_id'=>10,'line_total'=>$to_local(18500)]
     ]));
-    yes($under['basis_minor']===18500 && $under['slots']===1,
+    yes(abs($under['basis_minor']-18500)<=1 && $under['slots']===1,
         $code.' coupon-below-threshold retains one gift');
+    $one_cent_below=BYL_BF2026_Gifts::eligibility(new WC_Cart([
+        ['product_id'=>10,'line_total'=>$to_local(19899)]
+    ]));
+    yes($one_cent_below['slots']===1,
+        $code.' USD198.99 never crosses local USD199 threshold');
     yes(BYL_BF2026_Gifts::ready(),$code.' fresh verified Dev FX allows stocked gifts');
 }
 Andy_Commerce_Currency_Runtime_Dev_V1::$fresh=false;
@@ -164,4 +169,4 @@ yes(str_contains($inactive,'not currently available') && !str_contains($inactive
     'OFF campaign renders a harmless landing preview without gift selection controls');
 yes(WC_Cart::$calculations === $before,
     'OFF shortcode rendering never touches Woo cart calculation');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=44\n";
+echo "BYL_BF2026_PURE_CONTRACT_PASS=".($GLOBALS['bf_assertions']??0)."\n";
