@@ -23,6 +23,49 @@ final class Andy_Commerce_Campaign_USD_Basis_V1 {
         return (int)$whole*100+(int)str_pad($dec,2,'0');
     }
 
+    /**
+     * Audited *single* native fixed-cart coupon on one merchandise line.
+     *
+     * All figures are read from the current Woo cart and persisted Woo coupon.
+     * This is intentionally NOT a general coupon calculator: any mismatch,
+     * extra line, limits/restrictions or extra promotions refuses entitlement.
+     */
+    private static function single_fixed_cart_coupon_usd(
+        $cart, string $code, array $line, int $usd_pre, int $local_pre,
+        int $local_net, int $rate
+    ): array {
+        if (!class_exists('WC_Coupon') || !method_exists($cart,'get_coupon_discount_amount'))
+            return ['ok'=>false,'reason'=>'coupon_api_missing'];
+        try {
+            $coupon=new WC_Coupon($code);
+            if (!$coupon->get_id() || $coupon->get_discount_type('edit')!=='fixed_cart')
+                return ['ok'=>false,'reason'=>'foreign_coupon_type_unverified'];
+            if (!empty($coupon->get_product_ids('edit'))
+                || !empty($coupon->get_excluded_product_ids('edit'))
+                || !empty($coupon->get_product_categories('edit'))
+                || !empty($coupon->get_excluded_product_categories('edit'))
+                || $coupon->get_exclude_sale_items('edit')
+                || null!==$coupon->get_limit_usage_to_x_items('edit'))
+                return ['ok'=>false,'reason'=>'foreign_coupon_restrictions_unverified'];
+            $usd_discount=self::minor($coupon->get_amount('edit'));
+            $native_discount=self::minor($cart->get_coupon_discount_amount($code,true));
+        } catch (\\Throwable $e) {
+            return ['ok'=>false,'reason'=>'coupon_read_failed'];
+        }
+        if ($usd_discount===null || $usd_discount<1 || $native_discount===null)
+            return ['ok'=>false,'reason'=>'coupon_amount_invalid'];
+        // Require Woo's actual pre-discount subtotal and post-discount line.
+        $native_pre=self::minor($line['line_subtotal']??null);
+        if ($native_pre===null || $native_pre!==$local_pre)
+            return ['ok'=>false,'reason'=>'coupon_subtotal_mismatch'];
+        $local_discount=intdiv($usd_discount*$rate+500000,1000000);
+        $expected_local_discount=min($local_pre,$local_discount);
+        if ($native_discount!==$expected_local_discount
+            || $local_net!==$local_pre-$native_discount)
+            return ['ok'=>false,'reason'=>'coupon_native_allocation_mismatch'];
+        return ['ok'=>true,'usd_discount_minor'=>min($usd_pre,$usd_discount)];
+    }
+
     /** Quoted value is meaningful only for the *current* post-calculate Woo cart. */
     public static function quote($cart): array {
         if (!class_exists('WC_Cart') || !($cart instanceof WC_Cart)
@@ -55,7 +98,11 @@ final class Andy_Commerce_Campaign_USD_Basis_V1 {
 
         $coupons=$cart->get_applied_coupons();
         if (!is_array($coupons)) return self::fail('coupon_state_invalid');
-        if ($currency!=='USD' && count($coupons)>0)
+        // Only one native fixed-cart coupon and exactly one merchandise unit
+        // is eligible for the strict foreign-coupon bridge. All other combinations
+        // remain fail-closed to avoid guessing Woo line discount allocation.
+        $foreign_coupon=$currency!=='USD' && count($coupons)>0;
+        if ($foreign_coupon && count($coupons)!==1)
             return self::fail('foreign_coupon_unverified');
 
         $base=0;
@@ -68,6 +115,10 @@ final class Andy_Commerce_Campaign_USD_Basis_V1 {
                 if (($line['andy_campaign_pack_id']??null)!=='byl-black-friday-2026'
                     || ($line['_byl_bf2026_gift']??null)!==true)
                     return self::fail('unknown_campaign_line');
+                if ($foreign_coupon &&
+                    (self::minor($line['line_subtotal']??null)===null ||
+                     self::minor($line['line_subtotal'])!==self::minor($line['line_total']??null)))
+                    return self::fail('coupon_discounted_gift');
                 continue;
             }
             $qty=$line['quantity']??null;
@@ -85,18 +136,33 @@ final class Andy_Commerce_Campaign_USD_Basis_V1 {
                 $unit_usd=self::minor($product->get_price('edit'));
                 if ($unit_usd===null)return self::fail('source_usd_invalid');
                 $local_unit=intdiv($unit_usd*$rate+500000,1000000);
-                if (abs($net-$local_unit*$qty)>1)
-                    return self::fail('local_price_mismatch');
-                $amount=$unit_usd*$qty;
+                if ($foreign_coupon) {
+                    if ($qty!==1 || $items>0)
+                        return self::fail('foreign_coupon_cart_shape_unverified');
+                    $coupon_quote=self::single_fixed_cart_coupon_usd(
+                        $cart, (string)$coupons[0], $line, $unit_usd,
+                        $local_unit, $net, $rate
+                    );
+                    if (!$coupon_quote['ok'])return self::fail($coupon_quote['reason']);
+                    $amount=$unit_usd-$coupon_quote['usd_discount_minor'];
+                } else {
+                    if (abs($net-$local_unit*$qty)>1)
+                        return self::fail('local_price_mismatch');
+                    $amount=$unit_usd*$qty;
+                }
             }
             $base+=$amount;
             if ($base>100000000 || ++$items>200)
                 return self::fail('cart_limits');
         }
+        if ($foreign_coupon && $items!==1)
+            return self::fail('foreign_coupon_cart_shape_unverified');
         return [
             'ok'=>true,'reason'=>'verified','basis_minor'=>$base,
             'currency'=>$currency,
-            'provenance'=>$currency==='USD'?'woo_coupon_allocated_net':'woo_unfiltered_sale_price_and_local_line_verified',
+            'provenance'=>$currency==='USD'?'woo_coupon_allocated_net':
+                ($foreign_coupon?'woo_one_line_fixed_cart_source_usd_and_native_coupon_verified':
+                'woo_unfiltered_sale_price_and_local_line_verified'),
             'fx_rate_micros'=>$rate,
             'fx_snapshot_hash'=>(string)($rates['snapshot_hash']??''),
             'coupon_count'=>count($coupons),
