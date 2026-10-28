@@ -6,9 +6,18 @@
  *   php tests/andy-campaign-r5-live-nav-harness.php present
  * No database, WP admin writes, or real checkout calls.
  */
-define('ABSPATH','/');
-$mode=$argv[1]??'';
+// The canonical Core Regression runner invokes tests with no arguments.
+$mode=$argv[1]??'both';
+if($mode==='both'){
+ foreach(array('absent','present') as $case){
+  $status=0;
+  passthru(escapeshellarg(PHP_BINARY).' '.escapeshellarg(__FILE__).' '.escapeshellarg($case),$status);
+  if($status!==0)exit($status);
+ }
+ exit(0);
+}
 if(!in_array($mode,array('absent','present'),true))exit(3);
+define('ABSPATH','/');
 class Andy_Commerce_Admin {}
 if($mode==='present'){ class Andy_Campaign_Lite {} class WooCommerce {} }
 class YBY_Module_Registry { public static function is_enabled($key):bool{return $key==='landing_pages';} }
