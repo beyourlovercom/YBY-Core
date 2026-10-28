@@ -1,3 +1,12 @@
+## v2.3.1 - 2026-10-28 (Notification R7 signed release candidate only)
+
+- Success/info use Dynamic Island with scoped 2500ms fail-open first-paint gate to prevent legacy banner flash and layout shifts.
+- Errors/warnings, including login, payment, checkout, stock, invalid coupon, repeated cart add, are native-only, exactly one notice.
+- Compact Native Notice Minimal Style A: transparent background, no border/shadow, no focus rectangle on noninteractive notice.
+- Preserve screen-reader semantics, validation context, and actionable links with visible keyboard focus.
+- Real isolated WordPress product and login tests and R7 Owner visual UAT PASS; source merged via PR #247.
+- Runtime schema 1.5.0 and updater compatibility 1.4.0 unchanged; preserve yby_lead_notifications, mail and Woo records.
+- Candidate only, not a public Stable release or site deployment.
 ## v2.3.0 - 2026-10-27 (Notification UI release candidate only)
 
 - Andy Core independent All-Notice Dynamic Island for WooCommerce success, information, warning, error and some Block-style banners.
