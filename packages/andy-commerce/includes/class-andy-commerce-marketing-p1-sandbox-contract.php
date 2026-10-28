@@ -14,6 +14,16 @@ require_once __DIR__.'/class-andy-commerce-m7-draft-studio.php';
 final class Andy_Commerce_Marketing_P1_Sandbox_Contract {
     public const APPROVAL_OPTION = 'andy_commerce_marketing_p1_approved_snapshot';
     public const SWITCH_OPTION = 'andy_commerce_marketing_p1_sandbox_enabled';
+
+    /**
+     * Transitional two-engine safety veto. This legacy Dev-only executor may
+     * never calculate a new promotion while Andy Campaign master is ON.
+     * Do not delete read-only drafts, previews, or existing M15/M16 evidence.
+     */
+    public static function legacy_runtime_allowed(): bool {
+        return function_exists( 'get_option' )
+            && get_option( 'andy_campaign_lite_master', 'no' ) !== 'yes';
+    }
     private const LOCAL_URL = 'http://127.0.0.1:18973';
     private const LOCAL_DB = 'aicc_commerce_p5_20261023';
 
@@ -154,7 +164,8 @@ final class Andy_Commerce_Marketing_P1_Sandbox_Contract {
      * A modification, deletion, malformed snapshot or absent opt-in stops it.
      */
     public static function current(): ?array {
-        if (!self::isolated()
+        if (!self::legacy_runtime_allowed()
+            || !self::isolated()
             || !function_exists('get_option')
             || get_option(self::SWITCH_OPTION,'no')!=='yes') return null;
         $stored=get_option(self::APPROVAL_OPTION,null);
