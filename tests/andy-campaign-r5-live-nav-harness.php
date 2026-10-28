@@ -12,14 +12,23 @@ if(!in_array($mode,array('absent','present'),true))exit(3);
 class Andy_Commerce_Admin {}
 if($mode==='present'){ class Andy_Campaign_Lite {} class WooCommerce {} }
 class YBY_Module_Registry { public static function is_enabled($key):bool{return $key==='landing_pages';} }
-class YBY_Andy_L3_Registry_V1 {
- public static function extend($entries,$page) {
-  if($page==='andy-commerce') {
-   $entries[]=array('url'=>'https://dev.example/wp-admin/admin.php?page=andy-commerce&tab=marketing-create','title'=>'新建活动');
-   $entries[]=array('url'=>'https://dev.example/wp-admin/admin.php?page=andy-commerce&tab=currency-os','title'=>'多币种');
-  }
-  return $entries;
- }
+// Load the real Core registry and exercise its public extension contract.
+function is_admin(){return true;}
+function did_action($hook){return $hook==='admin_menu'?1:0;}
+function get_plugin_page_hookname($slug,$parent=''){return 'toplevel_page_'.$slug;}
+function has_action($hook){return $hook==='toplevel_page_andy-commerce'?10:false;}
+function wp_strip_all_tags($s){return strip_tags($s);}
+function r5_route_valid($tab,$page){return $page==='andy-commerce';}
+function apply_filters($hook,$native,$page) {
+ if($hook!=='andy_core_l3_external_items' || $page!=='andy-commerce')return $native;
+ return array(
+  array('id'=>'andy-commerce.marketing-create','parent'=>$page,'page'=>$page,
+     'title'=>'新建活动','tab'=>'marketing-create','capability'=>'manage_woocommerce',
+     'after'=>'marketing-promotions','route_check'=>'r5_route_valid'),
+  array('id'=>'andy-commerce.currency-os','parent'=>$page,'page'=>$page,
+     'title'=>'多币种','tab'=>'currency-os','capability'=>'manage_woocommerce',
+     'route_check'=>'r5_route_valid'),
+ );
 }
 function current_user_can($cap){return in_array($cap,array('manage_woocommerce','manage_options','edit_pages','andy_core_settings_manage'),true);}
 function admin_url($path=''){return 'https://dev.example/wp-admin/'.$path;}
