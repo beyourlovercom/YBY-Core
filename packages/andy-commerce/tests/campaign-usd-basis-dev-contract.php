@@ -171,6 +171,7 @@ foreach(['EUR','GBP','AUD','CAD'] as $code) {
        $code.' detects one-cent line allocation mutation');
 }
 $GLOBALS['r6_cur']='GBP';
+$rate=$GLOBALS['r6_rate']['GBP'];
 $GLOBALS['r6_coupon_data']['fix20']['type']='fixed_cart';
 
 ok($round(19899,$rate)===$round(19900,$rate),
