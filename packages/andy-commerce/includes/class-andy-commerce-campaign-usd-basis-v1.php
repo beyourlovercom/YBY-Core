@@ -49,7 +49,7 @@ final class Andy_Commerce_Campaign_USD_Basis_V1 {
                 return ['ok'=>false,'reason'=>'foreign_coupon_restrictions_unverified'];
             $usd_discount=self::minor($coupon->get_amount('edit'));
             $native_discount=self::minor($cart->get_coupon_discount_amount($code,true));
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             return ['ok'=>false,'reason'=>'coupon_read_failed'];
         }
         if ($usd_discount===null || $usd_discount<1 || $native_discount===null)
