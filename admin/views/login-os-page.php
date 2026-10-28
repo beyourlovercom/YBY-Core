@@ -59,6 +59,9 @@ defined( 'ABSPATH' ) || exit;
 	<?php elseif ( 'url' === $tab ) : ?>
 		<h2>登录 URL</h2>
 		<p class="description">V1 安全别名：提供新的后台登录入口，始终保留原始 wp-login.php 作为管理员恢复入口。</p>
+		<?php if ( is_multisite() ) : ?>
+			<div class="notice notice-warning inline"><p>Multisite 站点暂不支持 Login OS V1 自定义 URL；请继续使用原生登录地址。</p></div>
+		<?php endif; ?>
 		<?php if ( $conflicts ) : ?>
 			<div class="notice notice-warning inline"><p>发现其他登录 URL 插件：<?php echo esc_html( implode( '、', $conflicts ) ); ?>。不能同时接管登录地址。</p></div>
 		<?php endif; ?>
@@ -67,7 +70,7 @@ defined( 'ABSPATH' ) || exit;
 			<table class="form-table" role="presentation">
 				<tr><th scope="row">启用登录别名</th><td>
 					<input type="hidden" name="yby_login_os[url_enabled]" value="0">
-					<label><input type="checkbox" name="yby_login_os[url_enabled]" value="1" <?php checked( $options['url_enabled'] ); ?> <?php disabled( ! empty( $conflicts ) ); ?>> 启用新的登录地址</label></td></tr>
+					<label><input type="checkbox" name="yby_login_os[url_enabled]" value="1" <?php checked( $options['url_enabled'] ); ?> <?php disabled( ! empty( $conflicts ) || is_multisite() ); ?>> 启用新的登录地址</label></td></tr>
 				<tr><th scope="row"><label for="yby-login-os-slug">自定义路径</label></th><td>
 					<code><?php echo esc_html( trailingslashit( home_url( '/' ) ) ); ?></code>
 					<input id="yby-login-os-slug" name="yby_login_os[slug]" type="text"

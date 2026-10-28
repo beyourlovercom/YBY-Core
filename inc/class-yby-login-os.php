@@ -25,7 +25,7 @@ final class YBY_Login_OS {
 	}
 
 	public static function valid_slug( $slug ) {
-		$slug = trim( (string) $slug, '/' );
+		$slug = is_scalar( $slug ) ? trim( (string) $slug, '/' ) : '';
 		if ( ! preg_match( '/^[a-z0-9][a-z0-9-]{2,49}$/D', $slug ) ) {
 			return false;
 		}
@@ -98,9 +98,13 @@ final class YBY_Login_OS {
 			$before[ $key ] = isset( $input[ $key ] ) ? $input[ $key ] : '';
 		}
 		if ( 'url' === $section ) {
-			$slug = strtolower( trim( (string) $before['slug'], '/' ) );
+			$slug = is_scalar( $before['slug'] )
+				? strtolower( trim( (string) $before['slug'], '/' ) ) : '';
 			if ( ! self::slug_available( $slug ) ) {
 				return new WP_Error( 'invalid_slug', __( 'Choose another available login path.', 'yby-core' ) );
+			}
+			if ( ! empty( $before['url_enabled'] ) && is_multisite() ) {
+				return new WP_Error( 'multisite_unsupported', __( 'Login URL alias is not supported on Multisite in V1.', 'yby-core' ) );
 			}
 			if ( ! empty( $before['url_enabled'] ) && self::conflicting_plugins() ) {
 				return new WP_Error( 'login_conflict', __( 'Disable the other login URL plugin before enabling this alias.', 'yby-core' ) );
@@ -113,7 +117,8 @@ final class YBY_Login_OS {
 
 	public static function alias_active() {
 		$options = self::get_options();
-		return ! empty( $options['url_enabled'] )
+		return ! is_multisite()
+			&& ! empty( $options['url_enabled'] )
 			&& self::slug_available( $options['slug'] )
 			&& ! self::conflicting_plugins();
 	}
@@ -206,7 +211,8 @@ final class YBY_Login_OS {
 			$logo = YBY_Brand_OS::get_logo_default();
 		}
 		if ( ! $logo ) {
-			return $message;
+			return '<div class="andy-login-os-logo andy-login-os-logo--text">'
+				. esc_html( get_bloginfo( 'name' ) ) . '</div>' . $message;
 		}
 		return '<div class="andy-login-os-logo"><img src="' . esc_url( $logo ) .
 			'" alt="' . esc_attr( get_bloginfo( 'name' ) ) . '"></div>' . $message;

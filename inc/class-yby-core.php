@@ -213,11 +213,12 @@ $this->loader->add_action( 'andy_core_register_modules', 'YBY_Business_OS_Module
 			$social_login = new YBY_Social_Login_Admin();
 			$this->loader->add_action( 'admin_menu', $social_login, 'add_admin_menu' );
 			$this->loader->add_action( 'admin_enqueue_scripts', $social_login, 'enqueue_assets' );
-			if ( YBY_Module_Registry::is_enabled( 'login_os' ) ) {
-				$login_os_admin = new YBY_Login_OS_Admin();
-				$this->loader->add_action( 'admin_menu', $login_os_admin, 'add_admin_menu' );
-			}
 
+		}
+		// Backend Login OS can be configured independently of Google Social Login.
+		if ( YBY_Module_Registry::is_enabled( 'login_os' ) ) {
+			$login_os_admin = new YBY_Login_OS_Admin();
+			$this->loader->add_action( 'admin_menu', $login_os_admin, 'add_admin_menu' );
 		}
 		$this->loader->add_action( 'admin_menu', $admin, 'add_admin_menu' );
 		if ( $docs_enabled ) {

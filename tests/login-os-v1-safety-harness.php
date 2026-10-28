@@ -23,6 +23,7 @@ check( $default['enabled'] === false, 'default styles OFF' );
 check( $default['url_enabled'] === false, 'default URL OFF' );
 check( ! YBY_Login_OS::valid_slug( 'wp-admin' ), 'reserved slug rejected' );
 check( ! YBY_Login_OS::valid_slug( '../hack' ), 'path traversal rejected' );
+check( ! YBY_Login_OS::valid_slug( array( 'unexpected' ) ), 'non-scalar slug rejected without PHP notice' );
 check( ! YBY_Login_OS::valid_slug( 'x' ), 'short slug rejected' );
 check( YBY_Login_OS::valid_slug( 'owner-login-007' ), 'valid slug accepted' );
 check( ! YBY_Login_OS::slug_available( 'my-account' ), 'commerce slug protected' );
@@ -40,6 +41,7 @@ check( ! $result['url_enabled'], 'style save cannot activate URL' );
 
 check( YBY_Login_OS::save_section( 'url', array( 'url_enabled'=>'1', 'slug'=>'wp-json' ) ) instanceof WP_Error, 'invalid URL rejected' );
 check( YBY_Login_OS::save_section( 'url', array( 'url_enabled'=>'1', 'slug'=>'real-page' ) ) instanceof WP_Error, 'page collision rejected' );
+check( YBY_Login_OS::save_section( 'url', array( 'url_enabled'=>'1', 'slug'=>array('unsafe') ) ) instanceof WP_Error, 'bad input type rejected' );
 $GLOBALS['opts']['active_plugins'] = array( 'wps-hide-login/wps-hide-login.php' );
 check( YBY_Login_OS::save_section( 'url', array( 'url_enabled'=>'1', 'slug'=>'secure-login' ) ) instanceof WP_Error, 'conflict blocked' );
 check( ! YBY_Login_OS::alias_active(), 'conflict remains fail-open' );

@@ -52,3 +52,5 @@ body.login.andy-login-os-enabled .message {
 @media (prefers-reduced-motion: reduce) {
   body.login.andy-login-os-enabled * { transition: none !important; }
 }
+
+body.login.andy-login-os-enabled .andy-login-os-logo--text { color: #20232a; font-size: 24px; font-weight: 650; line-height: 1.25; }
