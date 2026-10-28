@@ -400,10 +400,11 @@ final class YBY_Andy_OS_Navigation {
 			// once the independent Andy Campaign controller is installed.
 			$commerce_tabs = array(
 				'overview'=>'总览', 'order-export'=>'订单导出',
-				'checkout-shipping'=>'结账运费', 'settings'=>'设置',
+				'checkout-shipping'=>'结账运费',
+				'marketing-promotions'=>'促销', 'settings'=>'设置',
 			);
-			if ( ! class_exists( 'Andy_Campaign_Lite' ) ) {
-				$commerce_tabs['marketing-promotions'] = '促销';
+			if ( class_exists( 'Andy_Campaign_Lite' ) ) {
+				unset( $commerce_tabs['marketing-promotions'] );
 			}
 			foreach ( $commerce_tabs as $tab=>$label ) {
 				$add( $label, 'admin.php?page=andy-commerce&tab='.$tab, 'manage_woocommerce' );
