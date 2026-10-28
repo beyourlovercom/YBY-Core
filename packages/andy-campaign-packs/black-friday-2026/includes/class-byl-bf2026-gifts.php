@@ -72,37 +72,16 @@ final class BYL_BF2026_Gifts {
     }
 
     /**
-     * Store-base USD rules, with a strictly verified Dev Commerce FX snapshot.
-     * Never infer rates from display symbols or hand-entered browser currency.
-     * Production/other providers fail closed until independently certified.
+     * Deliberately USD-only until Commerce can supply an audited post-coupon
+     * base-USD entitlement. FX display totals alone cannot prove the $199
+     * threshold: Dev GBP rate 0.749160 rounds USD198.99 and 199.00 to the
+     * same local penny. Never infer gift entitlements from inverse FX.
      */
-    private static function currency_rate_micros(): ?int {
-        if ( ! function_exists( 'get_woocommerce_currency' )
-             || ! function_exists( 'wc_get_price_decimals' )
-             || 2 !== wc_get_price_decimals() ) { return null; }
-        $code = get_woocommerce_currency();
-        if ( 'USD' === $code ) { return 1000000; }
-        if ( ! in_array( $code, array( 'EUR', 'GBP', 'AUD', 'CAD' ), true )
-             || ! class_exists( 'Andy_Commerce_Currency_Runtime_Dev_V1' )
-             || ! Andy_Commerce_Currency_Runtime_Dev_V1::allowed()
-             || Andy_Commerce_Currency_Runtime_Dev_V1::selected() !== $code ) { return null; }
-        $rates = Andy_Commerce_Currency_Runtime_Dev_V1::rates();
-        $rate = is_array( $rates ) ? ( $rates['rate_micros'][ $code ] ?? null ) : null;
-        return is_int( $rate ) && $rate >= 100000 && $rate <= 10000000 ? $rate : null;
-    }
-
     private static function valid_currency(): bool {
-        return null !== self::currency_rate_micros();
-    }
-
-    /** Integer-only currency rounding; the source upgrade fee remains USD cents. */
-    private static function local_minor( int $usd_minor, int $rate ): int {
-        return intdiv( $usd_minor * $rate + 500000, 1000000 );
-    }
-
-    /** Convert *aggregate* post-coupon merchandise back to base USD cents. */
-    private static function usd_minor( int $local_minor, int $rate ): int {
-        return intdiv( $local_minor * 1000000 + intdiv( $rate, 2 ), $rate );
+        return function_exists( 'get_woocommerce_currency' )
+            && get_woocommerce_currency() === 'USD'
+            && function_exists( 'wc_get_price_decimals' )
+            && wc_get_price_decimals() === 2;
     }
 
     public static function is_gift( array $line ): bool {
@@ -115,28 +94,16 @@ final class BYL_BF2026_Gifts {
         if ( ! $cart instanceof WC_Cart || ! self::valid_currency() ) {
             return array( 'basis_minor' => 0, 'slots' => 0 );
         }
-        $rate = self::currency_rate_micros();
-        if ( null === $rate ) { return array( 'basis_minor' => 0, 'slots' => 0 ); }
-        $local_minor = 0;
+        $basis = 0;
         foreach ( $cart->get_cart() as $line ) {
             if ( self::is_gift( $line ) ) { continue; }
             $value = $line['line_total'] ?? null;
-            if ( ! is_numeric( $value ) || (float) $value < 0 || (float) $value > 1000000 ) {
+            if ( ! is_numeric( $value ) || (float) $value < 0 ) {
                 return array( 'basis_minor' => 0, 'slots' => 0 );
             }
-            $local_minor += (int) round( (float) $value * 100 );
-            if ( $local_minor > 100000000 ) {
-                return array( 'basis_minor' => 0, 'slots' => 0 );
-            }
+            $basis += (int) round( (float) $value * 100 );
         }
-        // The USD basis is informational after FX rounding. Compare the
-        // threshold in native currency using the identical USD->local cents
-        // conversion as Commerce. A USD199 amount can round-trip to USD199.01
-        // (e.g. EUR), and must not change reward entitlement.
-        $basis = self::usd_minor( $local_minor, $rate );
-        $local_threshold = self::local_minor( 19900, $rate );
-        return array( 'basis_minor' => $basis, 'slots' => $local_minor <= 0 ? 0
-            : ( $local_minor >= $local_threshold ? 2 : 1 ) );
+        return array( 'basis_minor' => $basis, 'slots' => $basis <= 0 ? 0 : ( $basis >= 19900 ? 2 : 1 ) );
     }
 
     public static function reprice( $cart ): void {
@@ -328,14 +295,7 @@ final class BYL_BF2026_Gifts {
                 wp_nonce_field( 'byl_bf2026_gifts', 'byl_bf2026_nonce' );
                 echo '<input type="hidden" name="byl_bf2026_action" value="select">';
                 echo '<input type="hidden" name="gift_product_id" value="' . esc_attr( (string) $id ) . '">';
-                $rate = self::currency_rate_micros();
-                $local_upgrade = $rate ? self::local_minor( (int) $upgrade, $rate ) : 0;
-                $symbol = function_exists( 'get_woocommerce_currency_symbol' )
-                    ? get_woocommerce_currency_symbol( get_woocommerce_currency() ) : '';
-                $price_label = $upgrade > 0
-                    ? ' · Upgrade +' . $symbol . number_format( $local_upgrade / 100, 2 )
-                    : ' · FREE';
-                echo '<span>' . esc_html( $p->get_name() . $price_label ) . '</span> ';
+                echo '<span>' . esc_html( $p->get_name() ) . ( $upgrade > 0 ? ' · Upgrade +$' . esc_html( number_format( $upgrade / 100, 2 ) ) : ' · FREE' ) . '</span> ';
                 $blocked = $selected >= $eligible['slots'] || in_array( $id, $selected_ids, true );
                 echo '<button type="submit"' . ( $blocked ? ' disabled' : '' ) . '>'
                     . ( in_array( $id, $selected_ids, true ) ? 'Selected' : 'Choose' ) . '</button></form>';
