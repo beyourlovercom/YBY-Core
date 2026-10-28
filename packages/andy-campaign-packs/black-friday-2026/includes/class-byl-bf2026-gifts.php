@@ -43,6 +43,21 @@ final class BYL_BF2026_Gifts {
         return ( $review['rows'][0]['status'] ?? 'BLOCKED' ) === 'APPROVED';
     }
 
+    /** Shipping destination is verified at checkout, after shopper supplies
+     * an address; do not guess from browser locale or billing IP.
+     */
+    private static function destination_allowed( int $id ): bool {
+        $customer = function_exists( 'WC' ) && WC() ? WC()->customer : null;
+        if ( ! $customer || ! method_exists( $customer, 'get_shipping_country' ) ) {
+            return false;
+        }
+        $country = strtoupper( trim( (string) $customer->get_shipping_country() ) );
+        if ( ! preg_match( '/^[A-Z]{2}$/D', $country ) ) { return false; }
+        $approved = self::gift_approvals();
+        $allowed = $approved[ $id ]['allowed_countries'] ?? null;
+        return is_array( $allowed ) && in_array( $country, $allowed, true );
+    }
+
     private static function gift_product( int $id ) {
         if ( ! function_exists( 'wc_get_product' ) || $id <= 0 ) { return false; }
         $product = wc_get_product( $id );
@@ -215,6 +230,9 @@ final class BYL_BF2026_Gifts {
                  || isset( $seen[ $id ] ) || ! self::gift_product( $id )
                  || null === self::local_upgrade_price( (int) ( $catalog[ $id ] ?? 0 ) ) ) {
                 return 'Invalid promotional gift; please update your cart.';
+            }
+            if ( ! self::destination_allowed( $id ) ) {
+                return 'This promotional gift cannot ship to the selected country.';
             }
             $seen[ $id ] = true;
         }
