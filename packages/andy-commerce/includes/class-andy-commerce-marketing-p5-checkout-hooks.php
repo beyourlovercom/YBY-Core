@@ -17,7 +17,8 @@ final class Andy_Commerce_Marketing_P5_Checkout_Hooks {
     private static bool $registered=false;
 
     private static function enabled(): bool {
-        return Andy_Commerce_Marketing_P1_Sandbox_Contract::isolated()
+        return Andy_Commerce_Marketing_P1_Sandbox_Contract::legacy_runtime_allowed()
+            && Andy_Commerce_Marketing_P1_Sandbox_Contract::isolated()
             && get_option('andy_commerce_marketing_p4_order_cap_enabled','no')==='yes';
     }
 
