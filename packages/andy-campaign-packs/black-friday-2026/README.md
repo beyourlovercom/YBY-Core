@@ -17,3 +17,9 @@ Rules:
 - **Known release blockers:** Currency OS live non-USD orders unsupported (gift selector fails closed); native Blocks/Classic Checkout, coupons, taxes, FX, shipping, stock race, order refunds, role negatives and frontend mobile visual UAT require isolated Woo tests. Current implementation is an engineering baseline, **not** permission to enable customer gifting.
 - No required automated gift redemption; a customer may checkout without selecting gifts. This is a deliberate nonblocking policy subject to Owner acceptance.
 - No clawback of a gift on refunds after purchase; resolve refund policy before Production.
+
+### Safe OFF-state draft preview (R6)
+- The `[byl_bf2026_gifts]` shortcode is now registered from the independently installed pack's `init` display hook regardless of the campaign's master switch, **without** booting any cart mutation hooks.
+- When the host decision is not `eligible`, the shortcode only renders a neutral *not currently available* message; no gift buttons, no total recalculation and no coupon/checkout/POST hooks.
+- Gift selection is only interactive after the pack is explicitly enabled and its >=2 free in-stock SKU readiness gate succeeds. A draft `/gift` page can be reviewed with marketing OFF. This does **not** authorize publishing the page or opening the promotion.
+- Five-currency purchase is still **NOT** supported by this USD-only BF pack. The real Dev currency selector correctly updates five Store API cart amounts, but non-USD payment providers remain blocked in Commerce until their separate gateway/refund UAT. Do not misrepresent display/cart UAT as paid checkout.
