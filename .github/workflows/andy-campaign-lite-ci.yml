@@ -37,5 +37,7 @@ jobs:
         run: php packages/andy-campaign/tests/core-navigation-harness.php
       - name: Black Friday pure gift contract
         run: php packages/andy-campaign-packs/black-friday-2026/tests/gift-pure-contract.php
+      - name: Draft gift Dev-only canonical redirect contract
+        run: php packages/andy-campaign-packs/black-friday-2026/tests/draft-gift-redirect-contract.php
       - name: Existing Andy Core navigation regression
         run: php tests/andy-os-unified-nav-v1-harness.php
