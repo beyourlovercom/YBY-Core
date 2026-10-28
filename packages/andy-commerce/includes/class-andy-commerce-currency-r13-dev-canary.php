@@ -7,7 +7,8 @@ if(!defined('ABSPATH'))exit;
 final class Andy_Commerce_Currency_R13_Dev_Canary {
     const OPTION='andy_commerce_currency_r13_dev_canary';
     const ACCOUNT_PROOF='andy_commerce_currency_r13_dev_stripe_test_proof';
-    const EXPECTED_ACCOUNT='acct_1R57M7GR9MwFzg43';
+    // Owner elected to reuse the TEST account already connected inside Woo Dev.
+    const EXPECTED_ACCOUNT='acct_1RdAGvPKD6QEqtsG';
     public static function site(): bool {
         return function_exists('home_url')
           && wp_parse_url(home_url('/'),PHP_URL_HOST)==='dev.beyourlover.com'
@@ -231,7 +232,7 @@ final class Andy_Commerce_Currency_R13_Dev_Canary {
             wp_nonce_field('aicc_r13_dev_admin');
             echo '<button class="button" type="submit">'.esc_html($label).'</button></form>';
         }
-        echo '<p>Foreign-currency Stripe payment is unavailable unless Gateway TEST is enabled and account A has been reverified within 15 minutes.</p>';
+        echo '<p>Foreign-currency Stripe payment is unavailable unless Dev Stripe TEST is enabled and the existing Dev account has been reverified within 15 minutes.</p>';
         echo '</div>';
     }
 }
