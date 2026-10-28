@@ -121,7 +121,12 @@ class WP_Error {
     public function add($code,$message): void { $this->errors[$code]=$message; }
 }
 function WC() { return $GLOBALS['bf_woo']; }
-$GLOBALS['bf_woo']=(object)array('cart'=>new WC_Cart(array($normal,$premium)));
+class R8CheckoutCustomer {
+    public string $country = 'US';
+    public function get_shipping_country(): string { return $this->country; }
+}
+$GLOBALS['bf_woo']=(object)array('cart'=>new WC_Cart(array($normal,$premium)),
+    'customer'=>new R8CheckoutCustomer());
 $invalid=new WP_Error();
 BYL_BF2026_Gifts::validate_store_api(null,$invalid);
 yes(isset($invalid->errors['byl_bf2026_invalid_gift']),
@@ -131,6 +136,13 @@ $valid = new WP_Error();
 BYL_BF2026_Gifts::validate_store_api(null,$valid);
 yes(count($valid->errors)===0,
     'Store API accepts valid stock and allowance');
+$GLOBALS['bf_woo']->customer->country='FR';
+$blockedRegion=new WP_Error();
+BYL_BF2026_Gifts::validate_store_api(null,$blockedRegion);
+yes(isset($blockedRegion->errors['byl_bf2026_invalid_gift'])
+     && str_contains($blockedRegion->errors['byl_bf2026_invalid_gift'],'cannot ship'),
+    'Store API blocks reviewed gift to excluded destination before payment');
+$GLOBALS['bf_woo']->customer->country='US';
 $GLOBALS['c3_currency']='EUR';
 yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,'foreign currency fails closed without Commerce quote contract');
 class Andy_Commerce_Currency_Runtime_Dev_V1 {
@@ -198,4 +210,4 @@ yes(str_contains($inactive,'not currently available') && !str_contains($inactive
     'OFF campaign renders a harmless landing preview without gift selection controls');
 yes(WC_Cart::$calculations === $before,
     'OFF shortcode rendering never touches Woo cart calculation');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=30\n";
+echo "BYL_BF2026_PURE_CONTRACT_PASS=31\n";
