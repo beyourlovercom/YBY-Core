@@ -71,6 +71,8 @@ final class Andy_Commerce_Marketing_Dev_UAT {
             if(!self::tables_exist())
                 wp_die('M15 schema verification failed','',['response'=>500]);
         } elseif($mode==='arm'){
+            if(!Andy_Commerce_Marketing_P1_Sandbox_Contract::legacy_runtime_allowed())
+                wp_die('Andy Campaign must be OFF before arming legacy Marketing V1','',['response'=>409]);
             if(!defined('AICC_MARKETING_DEV_UAT') || AICC_MARKETING_DEV_UAT!==true)
                 wp_die('Runtime UAT is disabled by server configuration','',['response'=>403]);
             if(!self::tables_exist())
