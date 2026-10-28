@@ -145,9 +145,10 @@ final class BYL_BF2026_Gifts {
                  || ! isset( $line['data'] ) || ! $line['data'] instanceof WC_Product ) {
                 continue; // reconcile removes invalid/unsupported gift lines.
             }
-            $price = self::local_upgrade_price( $catalog[ $id ] );
-            if ( null === $price ) { continue; } // Reconcile will revoke invalid currencies.
-            $line['data']->set_price( wc_format_decimal( $price ) );
+            // Currency Runtime's Woo price getter converts source USD once.
+            // Writing local currency here would cause a second FX conversion.
+            if ( null === self::local_upgrade_price( $catalog[ $id ] ) ) { continue; }
+            $line['data']->set_price( wc_format_decimal( $catalog[ $id ] / 100 ) );
         }
     }
 
@@ -162,7 +163,8 @@ final class BYL_BF2026_Gifts {
             $id = (int) ( $line['product_id'] ?? 0 );
             if ( ! isset( $catalog[ $id ] ) || ! self::valid_currency()
                  || (int) ( $line['quantity'] ?? 0 ) !== 1 || $kept >= $slots
-                 || isset( $seen[ $id ] ) || ! self::gift_product( $id ) ) {
+                 || isset( $seen[ $id ] ) || ! self::gift_product( $id )
+                 || null === self::local_upgrade_price( (int) ( $catalog[ $id ] ?? 0 ) ) ) {
                 $remove[] = $key;
             } else { ++$kept; $seen[ $id ] = true; }
         }
@@ -185,7 +187,8 @@ final class BYL_BF2026_Gifts {
             $id = (int) ( $line['product_id'] ?? 0 );
             ++$count;
             if ( ! isset( $catalog[ $id ] ) || (int) ( $line['quantity'] ?? 0 ) !== 1
-                 || isset( $seen[ $id ] ) || ! self::gift_product( $id ) ) {
+                 || isset( $seen[ $id ] ) || ! self::gift_product( $id )
+                 || null === self::local_upgrade_price( (int) ( $catalog[ $id ] ?? 0 ) ) ) {
                 return 'Invalid promotional gift; please update your cart.';
             }
             $seen[ $id ] = true;
@@ -327,6 +330,7 @@ final class BYL_BF2026_Gifts {
                 echo '<input type="hidden" name="byl_bf2026_action" value="select">';
                 echo '<input type="hidden" name="gift_product_id" value="' . esc_attr( (string) $id ) . '">';
                 $local = self::local_upgrade_price( (int) $upgrade );
+                if ( null === $local ) { continue; }
                 $symbol = function_exists( 'get_woocommerce_currency_symbol' )
                     ? get_woocommerce_currency_symbol( get_woocommerce_currency() ) : '';
                 $label = $upgrade > 0 && null !== $local
