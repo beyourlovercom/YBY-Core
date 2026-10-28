@@ -150,8 +150,10 @@ foreach(['EUR','GBP','AUD','CAD'] as $code) {
 $GLOBALS['c3_currency']='GBP';
 $GLOBALS['products'][1002]->stock=true;
 BYL_BF2026_Gifts::reprice($c);
-yes(abs($premium['data']->price-7.48)<0.001,
-    'GBP premium upgrade converted to local price using Commerce runtime');
+yes(abs($premium['data']->price-9.99)<0.001,
+    'GBP premium gift stores original USD9.99 to prevent double FX conversion');
+yes(Andy_Commerce_Currency_Runtime_Dev_V1::convert(number_format($premium['data']->price,2,'.',''))==='7.48',
+    'GBP Woo product getter will convert USD9.99 exactly once to GBP7.48');
 Andy_Commerce_Currency_Runtime_Dev_V1::$enabled=false;
 yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,
     'disabled foreign currency runtime blocks Commerce bridge');
