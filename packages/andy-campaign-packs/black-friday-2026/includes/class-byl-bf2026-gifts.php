@@ -68,7 +68,6 @@ final class BYL_BF2026_Gifts {
         // Woo 8.8+ exposes the correct pre-allocation item list for all coupon types.
         add_filter( 'woocommerce_coupon_get_items_to_apply', array( __CLASS__, 'exclude_gift_discount_items' ), 90, 3 );
         add_action( 'woocommerce_checkout_create_order_line_item', array( __CLASS__, 'order_line' ), 80, 4 );
-        add_shortcode( 'byl_bf2026_gifts', array( __CLASS__, 'render' ) );
         add_action( 'wp_loaded', array( __CLASS__, 'handle_post' ), 25 );
     }
 
@@ -252,6 +251,15 @@ final class BYL_BF2026_Gifts {
     }
 
     public static function render(): string {
+        // Rendering a draft or preview must not activate promotional hooks or
+        // mutate the cart when the approved Campaign runtime is OFF.
+        $state = class_exists( 'Andy_Campaign_Lite' )
+            ? ( Andy_Campaign_Lite::boot()->decisions()[ self::ID ] ?? 'unregistered' )
+            : 'unregistered';
+        if ( 'eligible' !== $state ) {
+            return '<section class="byl-bf2026-gifts"><h2>Choose your Black Friday gift</h2>'
+                . '<p>Gift selection is not currently available.</p></section>';
+        }
         if ( ! function_exists( 'WC' ) || ! WC()->cart ) { return ''; }
         WC()->cart->calculate_totals();
         $eligible = self::eligibility( WC()->cart );
