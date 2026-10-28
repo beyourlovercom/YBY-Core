@@ -83,6 +83,14 @@ jobs:
         run: |
           set -euo pipefail
           wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/p5-disposable-compatibility.php" --path="$RUNNER_TEMP/woo"
+      - name: R6 native Woo fixed-cart five-currency USD199 gift gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Strictly one-use disposable DB; test itself verifies DB_NAME/host.
+          R6_DISPOSABLE_WOO=1 wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/campaign-usd-basis-native-fixed-cart-woo.php" --path="$RUNNER_TEMP/woo"
+          echo 'R6_NATIVE_WOO_FIVE_CURRENCY_COUPON_BOUNDARIES=PASS; NO_PROVIDER_CHARGE'
+
       - name: P6-F disposable Commerce deactivate/reactivate smoke
         shell: bash
         run: |
