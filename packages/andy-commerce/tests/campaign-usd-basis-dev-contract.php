@@ -92,7 +92,7 @@ foreach(['EUR','GBP','AUD','CAD'] as $code) {
         ],['fix20'],['fix20'=>number_format($localCoupon/100,2,'.','')]);
         $q=Andy_Commerce_Campaign_USD_Basis_V1::quote($cart);
         ok($q['ok'] && $q['basis_minor']===$netUsd &&
-           $q['provenance']==='woo_one_line_fixed_cart_source_usd_and_native_coupon_verified',
+           $q['provenance']==='woo_multi_line_fixed_cart_source_usd_and_native_coupon_verified',
            $code.' one native fixed-cart coupon USD net '. $netUsd);
     }
     $q=Andy_Commerce_Campaign_USD_Basis_V1::quote(new WC_Cart([
@@ -126,8 +126,51 @@ $gift=['quantity'=>1,'line_subtotal'=>'9.99','line_total'=>'9.00','data'=>new WC
 ok(Andy_Commerce_Campaign_USD_Basis_V1::quote($makeFixed([],null,$gift))['reason']==='coupon_discounted_gift',
    'gift discounted by fixed cart coupon fails closed');
 $another=['quantity'=>1,'line_subtotal'=>'10.00','line_total'=>'10.00','data'=>new WC_Product('10.00')];
-ok(Andy_Commerce_Campaign_USD_Basis_V1::quote($makeFixed([],null,$another))['reason']==='foreign_coupon_cart_shape_unverified',
-   'two merchandise lines still fail closed');
+ok(Andy_Commerce_Campaign_USD_Basis_V1::quote($makeFixed([],null,$another))['reason']==='coupon_subtotal_mismatch',
+   'unverified second merchandise subtotal still fails closed');
+foreach(['EUR','GBP','AUD','CAD'] as $code) {
+    $GLOBALS['r6_cur']=$code;
+    $rate=$GLOBALS['r6_rate'][$code];
+    // USD109.50 x 2, coupon USD20; one native quantity-two line.
+    $usdUnit=10950;
+    $localUnit=intdiv($usdUnit*$rate+500000,1000000);
+    $localCoupon=intdiv(2000*$rate+500000,1000000);
+    $cart=new WC_Cart([
+      ['quantity'=>2,'line_subtotal'=>number_format(2*$localUnit/100,2,'.',''),
+       'line_total'=>number_format((2*$localUnit-$localCoupon)/100,2,'.',''),
+       'data'=>new WC_Product('109.50')]
+    ],['fix20'],['fix20'=>number_format($localCoupon/100,2,'.','')]);
+    $q=Andy_Commerce_Campaign_USD_Basis_V1::quote($cart);
+    ok($q['ok']&&$q['basis_minor']===19900,$code.' quantity 2 aggregate USD199');
+    // USD119 + USD100, native discount split across two lines.
+    $aUsd=11900; $bUsd=10000;
+    $aLocal=intdiv($aUsd*$rate+500000,1000000);
+    $bLocal=intdiv($bUsd*$rate+500000,1000000);
+    $dA=intdiv($localCoupon*119,219);
+    $dB=$localCoupon-$dA;
+    $cart=new WC_Cart([
+      ['quantity'=>1,'line_subtotal'=>number_format($aLocal/100,2,'.',''),
+       'line_total'=>number_format(($aLocal-$dA)/100,2,'.',''),
+       'data'=>new WC_Product('119.00')],
+      ['quantity'=>1,'line_subtotal'=>number_format($bLocal/100,2,'.',''),
+       'line_total'=>number_format(($bLocal-$dB)/100,2,'.',''),
+       'data'=>new WC_Product('100.00')]
+    ],['fix20'],['fix20'=>number_format($localCoupon/100,2,'.','')]);
+    $q=Andy_Commerce_Campaign_USD_Basis_V1::quote($cart);
+    ok($q['ok']&&$q['basis_minor']===19900&&$q['merchandise_lines']===2,
+       $code.' two product lines aggregate USD199');
+    $mismatch=new WC_Cart([
+      ['quantity'=>1,'line_subtotal'=>number_format($aLocal/100,2,'.',''),
+       'line_total'=>number_format(($aLocal-$dA+1)/100,2,'.',''),
+       'data'=>new WC_Product('119.00')],
+      ['quantity'=>1,'line_subtotal'=>number_format($bLocal/100,2,'.',''),
+       'line_total'=>number_format(($bLocal-$dB)/100,2,'.',''),
+       'data'=>new WC_Product('100.00')]
+    ],['fix20'],['fix20'=>number_format($localCoupon/100,2,'.','')]);
+    ok(Andy_Commerce_Campaign_USD_Basis_V1::quote($mismatch)['reason']==='coupon_native_allocation_mismatch',
+       $code.' detects one-cent line allocation mutation');
+}
+$GLOBALS['r6_cur']='GBP';
 $GLOBALS['r6_coupon_data']['fix20']['type']='fixed_cart';
 
 ok($round(19899,$rate)===$round(19900,$rate),
