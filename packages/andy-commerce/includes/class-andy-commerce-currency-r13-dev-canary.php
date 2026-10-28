@@ -24,8 +24,10 @@ final class Andy_Commerce_Currency_R13_Dev_Canary {
          &&($o['user_id']??null)===get_current_user_id()
          &&is_int($o['expires_at']??null)
          &&$o['expires_at']>=time() && $o['expires_at']<=time()+900
+         // The legacy Dev runtime remains globally enabled for other shoppers.
+         // Runtime_Dev_V1::allowed() yields only inside THIS admin canary session.
          &&(!class_exists('Andy_Commerce_Currency_Runtime_Dev_V1')
-             || !Andy_Commerce_Currency_Runtime_Dev_V1::settings()['enabled']);
+             || !Andy_Commerce_Currency_Runtime_Dev_V1::legacy_conflict());
     }
     public static function quote(string $currency): array {
         if(!self::armed() || !class_exists('Andy_Commerce_Currency_R13_FX_Quote_Guard'))
@@ -173,8 +175,8 @@ final class Andy_Commerce_Currency_R13_Dev_Canary {
                 'verified_at'=>time()],false);
         } elseif($operation==='arm_preview') {
             if(class_exists('Andy_Commerce_Currency_Runtime_Dev_V1')
-              &&Andy_Commerce_Currency_Runtime_Dev_V1::settings()['enabled'])
-              wp_die('Disable the older Currency Dev runtime before R13 canary','',['response'=>409]);
+              &&Andy_Commerce_Currency_Runtime_Dev_V1::legacy_conflict())
+              wp_die('A separate currency plugin conflicts with the R13 canary','',['response'=>409]);
             $fx=get_option('andy_commerce_currency_runtime_fx_snapshot_v1',[]);
             if(!is_array($fx))wp_die('Reference FX not ready','',['response'=>409]);
             Andy_Commerce_Currency_R13_FX_Quote_Guard::validate($fx,time());

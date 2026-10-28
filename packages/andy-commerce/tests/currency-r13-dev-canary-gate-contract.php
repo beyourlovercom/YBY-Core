@@ -17,6 +17,7 @@ function get_current_user_id(){return $GLOBALS['devtest']['uid'];}
 function wp_salt($type='auth'){return 'PURE_UNIT_KEY_NOT_WORDPRESS_SECRET';}
 class Andy_Commerce_Currency_Runtime_Dev_V1 {
  public static function settings(){return ['enabled'=>$GLOBALS['devtest']['legacy']];}
+ public static function legacy_conflict(){return $GLOBALS['devtest']['external_conflict']??false;}
 }
 class Andy_Commerce_Currency_Runtime_C1 {
  public static function test_currency(){return $GLOBALS['devtest']['currency'];}
@@ -67,7 +68,10 @@ $opts[Andy_Commerce_Currency_R13_Dev_Canary::OPTION]['expires_at']=$now+940;
 $check(!Andy_Commerce_Currency_R13_Dev_Canary::armed(),'excessive window denied');
 $opts=$optbase;
 $GLOBALS['devtest']['legacy']=true;
-$check(!Andy_Commerce_Currency_R13_Dev_Canary::armed(),'legacy currency overlap denied');
+$check(Andy_Commerce_Currency_R13_Dev_Canary::armed(),'global legacy Dev mode coexists outside administrator canary');
+$GLOBALS['devtest']['external_conflict']=true;
+$check(!Andy_Commerce_Currency_R13_Dev_Canary::armed(),'external currency plugin overlap denied');
+$GLOBALS['devtest']['external_conflict']=false;
 $GLOBALS['devtest']['legacy']=false;
 $opts['woocommerce_stripe_settings']=[
  'enabled'=>'no','testmode'=>'yes','test_secret_key'=>'sk_test_PURE_FIXTURE_NOT_REAL'];
