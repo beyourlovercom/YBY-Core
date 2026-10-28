@@ -38,6 +38,7 @@ jobs:
           php -l packages/andy-commerce/includes/class-andy-commerce-marketing-p5-checkout-hooks.php
           php -l packages/andy-commerce/includes/class-andy-commerce-marketing-dev-uat.php
           php packages/andy-commerce/tests/marketing-v1-campaign-mutual-exclusion-harness.php
+          php packages/andy-commerce/tests/marketing-v1-campaign-menu-contract.php
       - name: Currency C2–C3 and Footer-only regression
         run: |
           php packages/andy-commerce/tests/currency-os-v2-admin-shortcode-harness.php
