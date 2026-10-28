@@ -60,8 +60,11 @@ final class YBY_Andy_OS_Navigation {
 		if ( $content_cap ) {
 			$items['andy-core-content'] = array( '内容', $content_cap, 'content' );
 		}
-		if ( class_exists( 'Andy_Commerce_Admin' ) ) {
+		if ( class_exists( 'Andy_Commerce_Admin' ) ||
+			( class_exists( 'Andy_Campaign_Lite' ) && class_exists( 'WooCommerce' ) ) ) {
 			$items['andy-core-marketing'] = array( '营销', 'manage_woocommerce', 'marketing' );
+		}
+		if ( class_exists( 'Andy_Commerce_Admin' ) ) {
 			$items['andy-core-commerce'] = array( '交易', 'manage_woocommerce', 'commerce' );
 		}
 		if ( current_user_can( 'andy_core_settings_manage' ) ) {
@@ -94,7 +97,10 @@ final class YBY_Andy_OS_Navigation {
 					return 'admin.php?page=yby-docs-all';
 				}
 				return '';
-			case 'andy-core-marketing': return 'admin.php?page=andy-commerce&tab=marketing-promotions';
+			case 'andy-core-marketing':
+				return class_exists( 'Andy_Campaign_Lite' ) && class_exists( 'WooCommerce' )
+					? 'admin.php?page=andy-campaign&tab=campaigns'
+					: 'admin.php?page=andy-commerce&tab=marketing-promotions';
 			case 'andy-core-commerce': return 'admin.php?page=andy-commerce';
 			case 'andy-core-system': return 'admin.php?page=yby-core&tab=modules';
 			case 'andy-core-leads': return 'admin.php?page=andy-core-leads';
@@ -368,6 +374,10 @@ final class YBY_Andy_OS_Navigation {
 			$add( '新建落地页', 'post-new.php?post_type=landing_page', 'edit_pages', 'landing_pages', '落地页' );
 			$add( '项目列表', 'edit.php?post_type=yby_project', 'edit_posts', 'project_studio', '项目' );
 			$add( '项目工作台', 'admin.php?page=yby-project-studio', 'manage_options', 'project_studio', '项目' );
+		} elseif ( 'andy-campaign' === $page && class_exists( 'Andy_Campaign_Lite' ) ) {
+			foreach ( array( 'campaigns'=>'活动列表', 'logs'=>'执行记录', 'settings'=>'系统设置' ) as $tab=>$label ) {
+				$add( $label, 'admin.php?page=andy-campaign&tab='.$tab, 'manage_woocommerce' );
+			}
 		} elseif ( 'andy-commerce' === $page ) {
 			foreach ( array( 'overview'=>'总览', 'order-export'=>'订单导出',
 				'checkout-shipping'=>'结账运费', 'marketing-promotions'=>'促销',
@@ -387,6 +397,18 @@ final class YBY_Andy_OS_Navigation {
 			$add( '社交登录', 'admin.php?page=yby-social-login', 'manage_options', 'social_login' );
 		}
 		$items = YBY_Andy_L3_Registry_V1::extend( $items, $page );
+		// The existing Core L3 registry (Currency and other extensions) remains
+		// authoritative. When Campaign is present, remove only the old
+		// Commerce marketing entries; all old direct URLs remain valid.
+		if ( 'andy-commerce' === $page && class_exists( 'Andy_Campaign_Lite' ) ) {
+			$items = array_values( array_filter( $items, static function ( $entry ) {
+				$query = parse_url( $entry['url'] ?? '', PHP_URL_QUERY );
+				parse_str( is_string( $query ) ? $query : '', $params );
+				$tab = $params['tab'] ?? '';
+				return ! is_string( $tab ) || ( 'marketing-promotions' !== $tab &&
+					0 !== strpos( $tab, 'marketing-' ) );
+			} ) );
+		}
 		// Marketing is a Core-owned L2 group; Commerce only supplies validated
 		// marketing-* L3 routes. Preserve all Commerce native tabs elsewhere.
 		if ( 'andy-commerce' === $page && 'andy-core-marketing' === self::active_second_level() ) {
@@ -454,10 +476,14 @@ final class YBY_Andy_OS_Navigation {
 		if ( 'andy-core-leads' === $page ) { return 'andy-core-leads'; }
 		if ( 'andy-core-newsletter' === $page ) { return 'andy-core-newsletter'; }
 		if ( 'andy-core-email' === $page ) { return 'andy-core-email'; }
+		if ( 'andy-campaign' === $page && class_exists( 'Andy_Campaign_Lite' ) ) {
+			return 'andy-core-marketing';
+		}
 		if ( 'andy-commerce' === $page ) {
 			$tab = isset( $_GET['tab'] ) && is_scalar( $_GET['tab'] )
 				? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
-			return ( 'marketing-promotions' === $tab || 0 === strpos( $tab, 'marketing-' ) )
+			return ! class_exists( 'Andy_Campaign_Lite' ) &&
+				( 'marketing-promotions' === $tab || 0 === strpos( $tab, 'marketing-' ) )
 				? 'andy-core-marketing' : 'andy-core-commerce';
 		}
 		if ( in_array( $page, array( 'andy-business','andy-business-programs',
