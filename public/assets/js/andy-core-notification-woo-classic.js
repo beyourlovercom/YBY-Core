@@ -5,13 +5,11 @@
 (function (win, doc) {
   'use strict';
   if (win.AndyCoreWooNoticeBridge) { return; }
+  // Critical and business-validation errors are native-only by Owner decision.
   var SELECTOR = [
-    '.woocommerce-message', '.woocommerce-error', '.woocommerce-info',
+    '.woocommerce-message', '.woocommerce-info',
     '.wc-block-components-notice-banner.is-success',
-    '.wc-block-components-notice-banner.is-error',
-    '.wc-block-components-notice-banner.is-warning',
-    '.wc-block-components-notice-banner.is-info',
-    '.coupon-error-notice'
+    '.wc-block-components-notice-banner.is-info'
   ].join(', ');
   var watched = new Map(), timer = 0, observer = null, disposed = false, attempts = 0;
   var stats = {accepted:0, duplicates:0, skipped:0, contextual:0};
@@ -48,6 +46,7 @@
       } catch (e) { return {text:text, action:null, suppressible:false}; }
       // Deduplicate the transferred call-to-action label from the title.
       if (text.indexOf(action.label) === 0) text = text.slice(action.label.length).trim();
+      else if (text.endsWith(action.label)) text = text.slice(0, -action.label.length).trim();
     }
     return {text:text,action:action,suppressible:full.length <= 500};
   }
@@ -58,7 +57,9 @@
     // Do not process elements inside another already-handled notice.
     if (node.parentElement && node.parentElement.closest(SELECTOR)) return false;
     var css = win.getComputedStyle(node);
-    return css.display !== 'none' && css.visibility !== 'hidden' &&
+    var gate=win.__andyCoreNoticePreflight;
+    var heldByUs=!!(gate && gate.active && doc.documentElement && doc.documentElement.classList.contains('andy-core-notice-preflight') && node.parentElement && typeof node.parentElement.matches === 'function' && node.parentElement.matches('.woocommerce-notices-wrapper, .woocommerce'));
+    return (css.display !== 'none' || heldByUs) && css.visibility !== 'hidden' &&
       !!String(node.textContent || '').trim();
   }
   function suppress(node) {
@@ -97,6 +98,8 @@
     var type=kind(node),d=details(node);
     if (!d.text) return false;
     var contextual=isContextual(node);
+    // Complex/untransferable actions are native-only, never double-render.
+    if (!contextual && !d.suppressible) {stats.skipped++;return false;}
     var key='woo:'+type+':'+((win.location&&win.location.pathname)||'/').slice(0,60)+':'+d.text.slice(0,75).toLowerCase();
     var old=api.getState(),ok=false;
     try {
@@ -119,6 +122,8 @@
   }
   function scan() {
     if (disposed || !doc.body) return;
+    var gate=win.__andyCoreNoticePreflight;
+    if (gate && gate.timedOut) return;
     if (!engine()) {
       if (++attempts>45) return;
       win.clearTimeout(timer);
@@ -127,7 +132,8 @@
     }
     attempts=0;
     watched.forEach(function(v,node){if(!node.isConnected)watched.delete(node);});
-    Array.prototype.forEach.call(doc.querySelectorAll(SELECTOR),bridge);
+    try { Array.prototype.forEach.call(doc.querySelectorAll(SELECTOR),bridge); }
+    finally { if (gate && gate.active) gate.release(); }
   }
   function onError() {dispose();}
   function start() {
@@ -142,6 +148,8 @@
   }
   function dispose() {
     disposed=true;win.clearTimeout(timer);
+    var gate=win.__andyCoreNoticePreflight;
+    if (gate && gate.active) { gate.timedOut=true;gate.release(); }
     if (observer) {observer.disconnect();observer=null;}
     restoreNative();
     win.removeEventListener('error',onError);
