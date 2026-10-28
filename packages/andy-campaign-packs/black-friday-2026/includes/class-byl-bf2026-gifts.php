@@ -78,10 +78,26 @@ final class BYL_BF2026_Gifts {
      * same local penny. Never infer gift entitlements from inverse FX.
      */
     private static function valid_currency(): bool {
-        return function_exists( 'get_woocommerce_currency' )
-            && get_woocommerce_currency() === 'USD'
-            && function_exists( 'wc_get_price_decimals' )
-            && wc_get_price_decimals() === 2;
+        if ( ! function_exists( 'get_woocommerce_currency' )
+             || ! function_exists( 'wc_get_price_decimals' )
+             || wc_get_price_decimals() !== 2 ) { return false; }
+        $currency = get_woocommerce_currency();
+        if ( 'USD' === $currency ) { return true; }
+        // Only the Commerce-owned, read-only, source-USD quote may approve
+        // foreign entitlement. Never reverse-convert shopper-visible totals.
+        return class_exists( 'Andy_Commerce_Campaign_USD_Basis_V1' )
+            && class_exists( 'Andy_Commerce_Currency_Runtime_Dev_V1' )
+            && Andy_Commerce_Currency_Runtime_Dev_V1::allowed()
+            && Andy_Commerce_Currency_Runtime_Dev_V1::selected() === $currency;
+    }
+
+    private static function local_upgrade_price( int $usd_minor ): ?string {
+        $base = number_format( $usd_minor / 100, 2, '.', '' );
+        if ( 'USD' === get_woocommerce_currency() ) { return $base; }
+        if ( ! self::valid_currency() ) { return null; }
+        try {
+            return Andy_Commerce_Currency_Runtime_Dev_V1::convert( $base );
+        } catch ( Throwable $error ) { return null; }
     }
 
     public static function is_gift( array $line ): bool {
@@ -93,6 +109,16 @@ final class BYL_BF2026_Gifts {
     public static function eligibility( $cart ): array {
         if ( ! $cart instanceof WC_Cart || ! self::valid_currency() ) {
             return array( 'basis_minor' => 0, 'slots' => 0 );
+        }
+        if ( 'USD' !== get_woocommerce_currency() ) {
+            $quote = Andy_Commerce_Campaign_USD_Basis_V1::quote( $cart );
+            if ( ( $quote['ok'] ?? false ) !== true
+                || ! is_int( $quote['basis_minor'] ?? null ) ) {
+                return array( 'basis_minor' => 0, 'slots' => 0 );
+            }
+            $basis = $quote['basis_minor'];
+            return array( 'basis_minor' => $basis,
+                'slots' => $basis <= 0 ? 0 : ( $basis >= 19900 ? 2 : 1 ) );
         }
         $basis = 0;
         foreach ( $cart->get_cart() as $line ) {
@@ -116,7 +142,9 @@ final class BYL_BF2026_Gifts {
                  || ! isset( $line['data'] ) || ! $line['data'] instanceof WC_Product ) {
                 continue; // reconcile removes invalid/unsupported gift lines.
             }
-            $line['data']->set_price( wc_format_decimal( $catalog[ $id ] / 100 ) );
+            $price = self::local_upgrade_price( $catalog[ $id ] );
+            if ( null === $price ) { continue; } // Reconcile will revoke invalid currencies.
+            $line['data']->set_price( wc_format_decimal( $price ) );
         }
     }
 
@@ -295,7 +323,12 @@ final class BYL_BF2026_Gifts {
                 wp_nonce_field( 'byl_bf2026_gifts', 'byl_bf2026_nonce' );
                 echo '<input type="hidden" name="byl_bf2026_action" value="select">';
                 echo '<input type="hidden" name="gift_product_id" value="' . esc_attr( (string) $id ) . '">';
-                echo '<span>' . esc_html( $p->get_name() ) . ( $upgrade > 0 ? ' · Upgrade +$' . esc_html( number_format( $upgrade / 100, 2 ) ) : ' · FREE' ) . '</span> ';
+                $local = self::local_upgrade_price( (int) $upgrade );
+                $symbol = function_exists( 'get_woocommerce_currency_symbol' )
+                    ? get_woocommerce_currency_symbol( get_woocommerce_currency() ) : '';
+                $label = $upgrade > 0 && null !== $local
+                    ? ' · Upgrade +' . $symbol . $local : ' · FREE';
+                echo '<span>' . esc_html( $p->get_name() . $label ) . '</span> ';
                 $blocked = $selected >= $eligible['slots'] || in_array( $id, $selected_ids, true );
                 echo '<button type="submit"' . ( $blocked ? ' disabled' : '' ) . '>'
                     . ( in_array( $id, $selected_ids, true ) ? 'Selected' : 'Choose' ) . '</button></form>';
