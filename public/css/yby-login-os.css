@@ -1,0 +1,54 @@
+/* Login OS V1: styles are loaded only on WordPress's native login screen. */
+body.login.andy-login-os-enabled {
+  background: var(--andy-login-background, #f6f7fb);
+  color: #20232a;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+body.login.andy-login-os-enabled #login { width: min(360px, calc(100% - 36px)); padding-top: min(9vh, 72px); }
+body.login.andy-login-os-enabled #login h1 a { background-image: none; width: auto; height: auto; margin: 0 0 22px; }
+body.login.andy-login-os-enabled .andy-login-os-logo { text-align: center; margin: 0 auto 18px; }
+body.login.andy-login-os-enabled .andy-login-os-logo img { max-width: 184px; max-height: 82px; object-fit: contain; }
+body.login.andy-login-os-enabled .andy-login-os-logo ~ #loginform { margin-top: 0; }
+body.login.andy-login-os-enabled #loginform,
+body.login.andy-login-os-enabled #registerform,
+body.login.andy-login-os-enabled #lostpasswordform {
+  background: #fff;
+  border: 1px solid #e6e7ea;
+  border-radius: 16px;
+  box-shadow: 0 14px 40px rgb(24 26 35 / 5%);
+  padding: 24px;
+}
+body.login.andy-login-os-enabled .input,
+body.login.andy-login-os-enabled input[type="text"],
+body.login.andy-login-os-enabled input[type="password"] {
+  border: 1px solid #d4d6db;
+  border-radius: 8px;
+  box-shadow: none;
+  min-height: 42px;
+}
+body.login.andy-login-os-enabled input:focus,
+body.login.andy-login-os-enabled a:focus-visible,
+body.login.andy-login-os-enabled button:focus-visible {
+  border-color: var(--andy-login-brand, #9b3749);
+  outline: 2px solid var(--andy-login-brand, #9b3749);
+  outline-offset: 2px;
+}
+body.login.andy-login-os-enabled .button-primary {
+  background: var(--andy-login-brand, #9b3749);
+  border-color: var(--andy-login-brand, #9b3749);
+  border-radius: 8px;
+  min-height: 40px;
+  padding: 0 20px;
+}
+body.login.andy-login-os-enabled .button-primary:hover,
+body.login.andy-login-os-enabled .button-primary:focus { filter: brightness(.88); }
+body.login.andy-login-os-enabled a { color: var(--andy-login-brand, #9b3749); }
+body.login.andy-login-os-enabled .notice,
+body.login.andy-login-os-enabled #login_error,
+body.login.andy-login-os-enabled .message {
+  border-radius: 8px;
+  box-shadow: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  body.login.andy-login-os-enabled * { transition: none !important; }
+}
