@@ -124,7 +124,7 @@ class Andy_Commerce_Currency_Runtime_Dev_V1 {
     }
 }
 class Andy_Commerce_Campaign_USD_Basis_V1 {
-    public static bool $verified = true;
+    public static bool $verified = false;
     public static int $basis = 19900;
     public static function quote($cart): array {
         return self::$verified
@@ -132,6 +132,7 @@ class Andy_Commerce_Campaign_USD_Basis_V1 {
             : ['ok'=>false,'reason'=>'foreign_coupon_unverified','basis_minor'=>0];
     }
 }
+Andy_Commerce_Campaign_USD_Basis_V1::$verified=true;
 foreach(['EUR','GBP','AUD','CAD'] as $code) {
     $GLOBALS['c3_currency']=$code;
     $e=BYL_BF2026_Gifts::eligibility($c);
