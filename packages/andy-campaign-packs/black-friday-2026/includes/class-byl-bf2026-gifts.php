@@ -129,8 +129,14 @@ final class BYL_BF2026_Gifts {
                 return array( 'basis_minor' => 0, 'slots' => 0 );
             }
         }
+        // The USD basis is informational after FX rounding. Compare the
+        // threshold in native currency using the identical USD->local cents
+        // conversion as Commerce. A USD199 amount can round-trip to USD199.01
+        // (e.g. EUR), and must not change reward entitlement.
         $basis = self::usd_minor( $local_minor, $rate );
-        return array( 'basis_minor' => $basis, 'slots' => $basis <= 0 ? 0 : ( $basis >= 19900 ? 2 : 1 ) );
+        $local_threshold = self::local_minor( 19900, $rate );
+        return array( 'basis_minor' => $basis, 'slots' => $local_minor <= 0 ? 0
+            : ( $local_minor >= $local_threshold ? 2 : 1 ) );
     }
 
     public static function reprice( $cart ): void {
