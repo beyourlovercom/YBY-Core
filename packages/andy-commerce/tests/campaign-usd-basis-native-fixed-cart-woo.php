@@ -7,7 +7,7 @@
  *
  * CI: R6_DISPOSABLE_WOO=1 wp eval-file <this-file> --path=$RUNNER_TEMP/woo
  */
-declare(strict_types=1);
+// WP-CLI eval-file wraps the source in eval(); strict_types cannot appear here.
 if (!defined('ABSPATH') || !defined('DB_NAME') || getenv('R6_DISPOSABLE_WOO') !== '1'
     || !in_array(DB_NAME, ['commerce_p5_isolated', 'aicc_campaign_c3_20261027'], true)
     || !in_array(wp_parse_url(home_url('/'), PHP_URL_HOST), ['commerce-p5.invalid', '127.0.0.1'], true)
