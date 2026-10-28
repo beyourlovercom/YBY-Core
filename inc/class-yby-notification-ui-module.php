@@ -37,6 +37,8 @@ class YBY_Notification_UI_Module {
 		// Native notice presentation must be compact even when the island is OFF.
 		if ( function_exists( 'add_action' ) ) {
 			add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_native_skin' ), 40 );
+			// Hide global Woo banners before first paint on opted-in pages only.
+			add_action( 'wp_head', array( __CLASS__, 'print_notice_preflight' ), 2 );
 		}
 		return $registered;
 	}
@@ -70,6 +72,37 @@ class YBY_Notification_UI_Module {
 			array(),
 			YBY_CORE_VERSION
 		);
+	}
+
+	/** First paint: temporarily defer only top-level Woo notices while the island initializes. */
+	public static function print_notice_preflight() {
+		if ( ! self::should_enqueue_woo_classic() ) { return; }
+		?>
+		<style id="andy-core-notice-preflight-css">
+		html.andy-core-notice-preflight .woocommerce-notices-wrapper > :is(.woocommerce-message,.woocommerce-info,.wc-block-components-notice-banner.is-success,.wc-block-components-notice-banner.is-info),
+		html.andy-core-notice-preflight .woocommerce > :is(.woocommerce-message,.woocommerce-info,.wc-block-components-notice-banner.is-success,.wc-block-components-notice-banner.is-info) { display:none!important; }
+		</style>
+		<script id="andy-core-notice-preflight-js">
+		(function (w,d) {
+			'use strict';
+			var root=d.documentElement;
+			if (!root || w.__andyCoreNoticePreflight) return;
+			var gate={active:true,timedOut:false};
+			gate.release=function () {
+				if (!gate.active) return;
+				gate.active=false;
+				root.classList.remove('andy-core-notice-preflight');
+				w.clearTimeout(gate.timeoutId);
+			};
+			root.classList.add('andy-core-notice-preflight');
+			w.__andyCoreNoticePreflight=gate;
+			gate.timeoutId=w.setTimeout(function () {
+				gate.timedOut=true;
+				gate.release();
+			},2500);
+		})(window,document);
+		</script>
+		<?php
 	}
 
 	public static function enqueue_assets( $module ) {
