@@ -24,8 +24,15 @@ $content=YBY_Andy_OS_Navigation::tertiary_items('andy-business');
 $urls=array_column($content,'url');
 test_true(in_array(admin_url('edit.php?post_type=landing_page'),$urls,true),'native landing page list unchanged');
 test_true(in_array(admin_url('post-new.php?post_type=landing_page'),$urls,true),'native create landing page unchanged');
+$commerceTabs=YBY_Andy_OS_Navigation::tertiary_items('andy-commerce');
+$commerceUrls=array_column($commerceTabs,'url');
+test_true(!in_array('admin.php?page=andy-commerce&tab=marketing-promotions',$commerceUrls,true),
+    'Commerce no longer advertises duplicate Marketing L3 when Campaign installed');
+test_true(in_array(admin_url('admin.php?page=andy-commerce&tab=checkout-shipping'),$commerceUrls,true),
+    'Commerce checkout and shipping tertiary remain intact');
+
 $_GET=array('page'=>'andy-campaign','tab'=>'campaigns');
 test_true(YBY_Andy_OS_Navigation::active_second_level()==='andy-core-marketing','Campaign highlights Marketing');
 $_GET=array('post_type'=>'landing_page');
 test_true(YBY_Andy_OS_Navigation::active_second_level()==='andy-core-content','landing CPT stays Content');
-echo "ANDY_CAMPAIGN_CORE_NAV_PASS=8\n";
+echo "ANDY_CAMPAIGN_CORE_NAV_PASS=10\n";
