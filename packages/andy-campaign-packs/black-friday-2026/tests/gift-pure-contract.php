@@ -15,6 +15,8 @@ class WC_Product {
     public float $price=100;
     public function __construct(public string $type='simple',public bool $stock=true) {}
     public function set_price($p): void { $this->price=(float)$p; }
+    public function get_sku(): string { return 'BYL-APPROVED-GIFT'; }
+    public function get_name(): string { return 'Approved gift fixture'; }
     public function is_type($name): bool { return $name===$this->type; }
     public function is_purchasable(): bool { return $this->type==='simple'; }
     public function is_in_stock(): bool { return $this->stock; }
@@ -29,13 +31,22 @@ function wc_get_product($id) { return $GLOBALS['products'][(int)$id]??false; }
 function get_woocommerce_currency(): string { return $GLOBALS['c3_currency'] ?? 'USD'; }
 function wc_get_price_decimals(): int { return 2; }
 function wc_format_decimal($v) { return number_format((float)$v,2,'.',''); }
-function apply_filters($name,$value) { return $GLOBALS['gift_catalog'] ?? $value; }
+function apply_filters($name,$value) {
+    if($name==='byl_bf2026_gift_approvals')return $GLOBALS['gift_approvals']??$value;
+    return $GLOBALS['gift_catalog']??$value;
+}
 function yes($v,$msg) { if (!$v) throw new RuntimeException('BF_FAIL:'.$msg); }
+require dirname(__DIR__).'/includes/class-byl-bf2026-r8-readiness.php';
 require dirname(__DIR__).'/includes/class-byl-bf2026-gifts.php';
 $GLOBALS['gift_catalog']=array(1001=>array('upgrade_minor'=>0),1002=>array('upgrade_minor'=>999),1003=>array('upgrade_minor'=>-10),1004=>array('upgrade_minor'=>100001));
 $catalog=BYL_BF2026_Gifts::catalog();
 yes(count($catalog)===2 && $catalog[1001]===0 && $catalog[1002]===999,'catalog validates prices');
 $GLOBALS['products']=array(1001=>new WC_Product(),1002=>new WC_Product());
+$validApproval=['approved'=>true,'warehouse_available_qty'=>30,
+ 'landed_cost_usd_minor'=>350,'packed_weight_g'=>125,
+ 'allowed_countries'=>['US','GB']];
+$GLOBALS['gift_approvals']=[1001=>$validApproval,1002=>$validApproval,1005=>$validApproval];
+
 yes(!BYL_BF2026_Gifts::ready(),'one free item is insufficient for two-free-gift promise');
 $GLOBALS['gift_catalog'][1005]=array('upgrade_minor'=>0);
 $GLOBALS['products'][1005]=new WC_Product();
@@ -50,6 +61,15 @@ $GLOBALS['products'][1005]->qty=0;
 yes(!BYL_BF2026_Gifts::ready(),'zero managed stock blocks promotion even with instock flag');
 $GLOBALS['products'][1005]->qty=10;
 yes(BYL_BF2026_Gifts::ready(),'physical available free gift stock restored');
+unset($GLOBALS['gift_approvals'][1001]);
+yes(!BYL_BF2026_Gifts::ready(),'revoked warehouse approval closes campaign');
+$GLOBALS['gift_approvals'][1001]=$validApproval;
+$missingWeight=$validApproval; unset($missingWeight['packed_weight_g']);
+$GLOBALS['gift_approvals'][1005]=$missingWeight;
+yes(!BYL_BF2026_Gifts::ready(),'missing packed weight blocks gift launch');
+$GLOBALS['gift_approvals'][1005]=$validApproval;
+yes(BYL_BF2026_Gifts::ready(),'restored approved manifests permit campaign readiness');
+
 $normal=['product_id'=>10,'quantity'=>1,'line_total'=>205.0];
 $free=['product_id'=>1001,'quantity'=>1,'line_total'=>0.0,'data'=>new WC_Product(),
     'andy_campaign_pack_id'=>BYL_BF2026_Gifts::ID,'_byl_bf2026_gift'=>true];
@@ -178,4 +198,4 @@ yes(str_contains($inactive,'not currently available') && !str_contains($inactive
     'OFF campaign renders a harmless landing preview without gift selection controls');
 yes(WC_Cart::$calculations === $before,
     'OFF shortcode rendering never touches Woo cart calculation');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=27\n";
+echo "BYL_BF2026_PURE_CONTRACT_PASS=30\n";
