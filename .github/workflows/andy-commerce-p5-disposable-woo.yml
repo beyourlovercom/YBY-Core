@@ -91,6 +91,13 @@ jobs:
           R6_DISPOSABLE_WOO=1 wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/campaign-usd-basis-native-fixed-cart-woo.php" --path="$RUNNER_TEMP/woo"
           echo 'R6_NATIVE_WOO_FIVE_CURRENCY_COUPON_BOUNDARIES=PASS; NO_PROVIDER_CHARGE'
 
+      - name: R6 native Woo multi-SKU and quantity-two fixed-cart USD199 gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          R6_DISPOSABLE_WOO=1 wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/campaign-usd-basis-native-multiline-woo.php" --path="$RUNNER_TEMP/woo"
+          echo 'R6_NATIVE_WOO_MULTI_LINE_20_CASES=PASS; NO_PROVIDER_CHARGE'
+
       - name: P6-F disposable Commerce deactivate/reactivate smoke
         shell: bash
         run: |
