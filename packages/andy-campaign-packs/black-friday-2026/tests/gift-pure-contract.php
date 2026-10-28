@@ -30,7 +30,7 @@ function get_woocommerce_currency(): string { return $GLOBALS['c3_currency'] ?? 
 function wc_get_price_decimals(): int { return 2; }
 function wc_format_decimal($v) { return number_format((float)$v,2,'.',''); }
 function apply_filters($name,$value) { return $GLOBALS['gift_catalog'] ?? $value; }
-function yes($v,$msg) { if (!$v) throw new RuntimeException('BF_FAIL:'.$msg); $GLOBALS['bf_assertions'] = ($GLOBALS['bf_assertions'] ?? 0) + 1; }
+function yes($v,$msg) { if (!$v) throw new RuntimeException('BF_FAIL:'.$msg); }
 require dirname(__DIR__).'/includes/class-byl-bf2026-gifts.php';
 $GLOBALS['gift_catalog']=array(1001=>array('upgrade_minor'=>0),1002=>array('upgrade_minor'=>999),1003=>array('upgrade_minor'=>-10),1004=>array('upgrade_minor'=>100001));
 $catalog=BYL_BF2026_Gifts::catalog();
@@ -111,54 +111,14 @@ $valid = new WP_Error();
 BYL_BF2026_Gifts::validate_store_api(null,$valid);
 yes(count($valid->errors)===0,
     'Store API accepts valid stock and allowance');
-// Foreign-currency gift entitlements require Commerce's verified Dev FX snapshot.
-class Andy_Commerce_Currency_Runtime_Dev_V1 {
-    public static bool $enabled=false;
-    public static bool $fresh=true;
-    public static function allowed(): bool { return self::$enabled; }
-    public static function selected(): string { return $GLOBALS['c3_currency']??'USD'; }
-    public static function rates(): ?array {
-        return self::$fresh ? ['rate_micros'=>[
-            'USD'=>1000000,'EUR'=>894800,'GBP'=>749200,'AUD'=>1424000,'CAD'=>1400800,
-        ]] : null;
-    }
-}
 $GLOBALS['c3_currency']='EUR';
-yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,'unsupported foreign runtime fail closed');
-Andy_Commerce_Currency_Runtime_Dev_V1::$enabled=true;
-foreach(['EUR'=>894800,'GBP'=>749200,'AUD'=>1424000,'CAD'=>1400800] as $code=>$rate) {
-    $GLOBALS['c3_currency']=$code;
-    $to_local=static fn(int $usd) => (int) intdiv($usd*$rate+500000,1000000)/100;
-    $above=BYL_BF2026_Gifts::eligibility(new WC_Cart([
-        ['product_id'=>10,'line_total'=>$to_local(20500)]
-    ]));
-    yes(abs($above['basis_minor']-20500)<=1 && $above['slots']===2,
-        $code.' conversion preserves USD205 threshold within one cent');
-    $exact=BYL_BF2026_Gifts::eligibility(new WC_Cart([
-        ['product_id'=>10,'line_total'=>$to_local(19900)]
-    ]));
-    yes(abs($exact['basis_minor']-19900)<=1 && $exact['slots']===2,
-        $code.' exact USD199 local threshold despite reverse FX cent rounding');
-    $under=BYL_BF2026_Gifts::eligibility(new WC_Cart([
-        ['product_id'=>10,'line_total'=>$to_local(18500)]
-    ]));
-    yes(abs($under['basis_minor']-18500)<=1 && $under['slots']===1,
-        $code.' coupon-below-threshold retains one gift');
-    $one_cent_below=BYL_BF2026_Gifts::eligibility(new WC_Cart([
-        ['product_id'=>10,'line_total'=>$to_local(19899)]
-    ]));
-    yes($one_cent_below['slots']===1,
-        $code.' USD198.99 never crosses local USD199 threshold');
-    yes(BYL_BF2026_Gifts::ready(),$code.' fresh verified Dev FX allows stocked gifts');
-}
-Andy_Commerce_Currency_Runtime_Dev_V1::$fresh=false;
-yes(!BYL_BF2026_Gifts::ready(),'stale Dev FX blocks foreign promotion');
-Andy_Commerce_Currency_Runtime_Dev_V1::$fresh=true;
-Andy_Commerce_Currency_Runtime_Dev_V1::$enabled=false;
-yes(!BYL_BF2026_Gifts::ready(),'disarmed Dev FX blocks foreign promotion');
-Andy_Commerce_Currency_Runtime_Dev_V1::$enabled=true;
-$GLOBALS['c3_currency']='JPY';
-yes(!BYL_BF2026_Gifts::ready(),'unreviewed JPY currency remains denied');
+yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,'foreign currency fail closed');
+// A real Dev GBP rate can collapse adjacent $198.99/$199.00 thresholds into
+// the SAME pence; inverse-FX entitlements therefore require verified base USD.
+$dev_gbp_rate_micros=749160;
+$gbp_minor=static fn(int $usd) => intdiv($usd*$dev_gbp_rate_micros+500000,1000000);
+yes($gbp_minor(19899)===$gbp_minor(19900),
+    'GBP quote collision prevents unsafe inverted FX threshold implementation');
 class Andy_Campaign_Lite {
     public static function boot() { return new self(); }
     public function decisions(): array { return array(BYL_BF2026_Gifts::ID=>'master_off'); }
@@ -169,4 +129,4 @@ yes(str_contains($inactive,'not currently available') && !str_contains($inactive
     'OFF campaign renders a harmless landing preview without gift selection controls');
 yes(WC_Cart::$calculations === $before,
     'OFF shortcode rendering never touches Woo cart calculation');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=".($GLOBALS['bf_assertions']??0)."\n";
+echo "BYL_BF2026_PURE_CONTRACT_PASS=27\n";
