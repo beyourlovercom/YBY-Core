@@ -31,32 +31,77 @@ if(!is_file($source) ||
    hash_file('sha256',$candidate)!=='9111c0cb31605ff1111a40586b399218d84ec5c70f2d3c15ec55a68ea017f58a'){
     throw new RuntimeException('BF_DEV_UAT_EXACT_HASH_GATE_DENIED');
 }
-if(!class_exists('Andy_Commerce_Campaign_Yay_USD_Basis_V1',false)) {
-    require_once $path.'/includes/class-andy-commerce-campaign-yay-usd-basis-v1.php';
+/**
+ * A prior Andy Commerce build may already define the same public class.
+ * This test loads the new source under a private class name and never
+ * replaces the running site's class, plugin hooks or currency engine.
+ */
+$expected=[
+ 'discounts'=>[
+     'file'=>$path.'/includes/class-andy-commerce-campaign-source-usd-discounts-v1.php',
+     'sha'=>'3122ce21279c40dddc1fd59fb27fba1ffc4e8ce7e0c52186e54542f7abe71059',
+ ],
+ 'adapter'=>[
+     'file'=>$path.'/includes/class-andy-commerce-campaign-yay-usd-basis-v1.php',
+     'sha'=>'4957fca5933482d2f0555b60a77cda459290c42fb0dfd86d27c8501865d54be3',
+ ],
+];
+foreach($expected as $kind=>$row){
+    if(!is_file($row['file']) || hash_file('sha256',$row['file'])!==$row['sha'])
+        throw new RuntimeException('BF_DEV_UAT_SOURCE_SHA_NOT_MATCHED_'.$kind);
 }
-if(!class_exists('Andy_Commerce_Campaign_Yay_USD_Basis_V1',false))
-    throw new RuntimeException('BF_DEV_UAT_ADAPTER_NOT_LOADED');
+$isolatedLoad=static function(string $body) {
+    $tmp=tempnam(sys_get_temp_dir(),'aicc-uat-');
+    if(!$tmp)throw new RuntimeException('BF_DEV_UAT_NO_TEMP');
+    try{
+        if(file_put_contents($tmp,$body)===false)
+            throw new RuntimeException('BF_DEV_UAT_TEMP_WRITE_ERROR');
+        require $tmp;
+    } finally { @unlink($tmp); }
+};
+$discounts=file_get_contents($expected['discounts']['file']);
+$discountNeedle='final class Andy_Commerce_Campaign_Source_USD_Discounts_V1 {';
+if(substr_count($discounts,$discountNeedle)!==1)
+    throw new RuntimeException('BF_DEV_UAT_DISCOUNTS_RENAME_DENIED');
+$discounts=str_replace($discountNeedle,
+    'final class Andy_Commerce_Campaign_Source_USD_Discounts_Candidate_UAT {',
+    $discounts);
+$aiccPhase='load_isolated_discounts';
+$isolatedLoad($discounts);
+
+$adapter=file_get_contents($expected['adapter']['file']);
+$requireNeedle="require_once __DIR__ . '/class-andy-commerce-campaign-source-usd-discounts-v1.php';";
+if(substr_count($adapter,$requireNeedle)!==1)
+    throw new RuntimeException('BF_DEV_UAT_ADAPTER_REQUIRE_ANCHOR_MISSING');
+$adapter=str_replace($requireNeedle,'/* independent private USD discount class loaded above */',$adapter);
+$adapter=str_replace('Andy_Commerce_Campaign_Source_USD_Discounts_V1',
+    'Andy_Commerce_Campaign_Source_USD_Discounts_Candidate_UAT',$adapter);
+$adapterNeedle='final class Andy_Commerce_Campaign_Yay_USD_Basis_V1 {';
+if(substr_count($adapter,$adapterNeedle)!==1)
+    throw new RuntimeException('BF_DEV_UAT_ADAPTER_RENAME_DENIED');
+$adapter=str_replace('Andy_Commerce_Campaign_Yay_USD_Basis_V1',
+    'Andy_Commerce_Campaign_Yay_USD_Basis_Candidate_UAT',$adapter);
+$aiccPhase='load_isolated_adapter';
+$isolatedLoad($adapter);
+if(!class_exists('Andy_Commerce_Campaign_Yay_USD_Basis_Candidate_UAT',false))
+    throw new RuntimeException('BF_DEV_UAT_PRIVATE_ADAPTER_NOT_LOADED');
+
 $ids=[40058=>'USD',40060=>'EUR',40062=>'GBP',40063=>'AUD',40064=>'CAD'];
 $wanted=$ids[(int)getenv('AICC_YAY_TEST_CURRENCY_ID')]??null;
-if(!$wanted || Andy_Commerce_Campaign_Yay_USD_Basis_V1::storefront_currency()!==$wanted)
+if(!$wanted || Andy_Commerce_Campaign_Yay_USD_Basis_Candidate_UAT::storefront_currency()!==$wanted)
     throw new RuntimeException('BF_DEV_UAT_YAY_CONTEXT_MISMATCH');
 
-// Avoid suppressing the real active plugin or changing any WP registration.
-// Load the candidate as a separate class with no hook registration.
 $needle='final class BYL_BF2026_Gifts {';
 $body=file_get_contents($candidate);
 if(substr_count($body,$needle)!==1)
     throw new RuntimeException('BF_DEV_UAT_CANDIDATE_CLASS_NOT_FOUND');
 $body=str_replace($needle,'final class BYL_BF2026_Gifts_Candidate_UAT {',$body);
-$temp=tempnam(sys_get_temp_dir(),'bf-yay-uat-');
-if(!$temp)throw new RuntimeException('BF_DEV_UAT_TEMP_FAILED');
-try {
-    if(file_put_contents($temp,$body)===false)throw new RuntimeException('BF_DEV_UAT_FILE_WRITE_FAILED');
-    $aiccPhase='require_candidate';
-    require $temp;
-} finally { @unlink($temp); }
+$body=str_replace('Andy_Commerce_Campaign_Yay_USD_Basis_V1',
+    'Andy_Commerce_Campaign_Yay_USD_Basis_Candidate_UAT',$body);
+$aiccPhase='load_isolated_bf_candidate';
+$isolatedLoad($body);
 if(!class_exists('BYL_BF2026_Gifts_Candidate_UAT',false))
-    throw new RuntimeException('BF_DEV_UAT_CLASS_NOT_LOADED');
+    throw new RuntimeException('BF_DEV_UAT_CANDIDATE_NOT_LOADED');
 echo 'BF_DEV_LOADER_PASS=1 currency='.$wanted.' original_plugin_active=YES candidate_hooks_not_booted=YES'.PHP_EOL;
 
 $aiccPhase='cart_checks';
