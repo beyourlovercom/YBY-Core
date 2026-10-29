@@ -20,7 +20,13 @@ function get_option($k,$fallback='') {
     if($k==='woocommerce_prices_include_tax')return 'no';
     return $fallback;
 }
-function get_woocommerce_currency(){return $GLOBALS['currency'];}
+function get_woocommerce_currency(){return $GLOBALS['woo_effective_currency']??$GLOBALS['currency'];}
+class Fake_Yay_Pro_Selected_Currency {
+    public static function detect_current_currency(){
+        return ['currency'=>$GLOBALS['currency'],'status'=>1];
+    }
+}
+class_alias('Fake_Yay_Pro_Selected_Currency','Yay_Currency\\Helpers\\YayCurrencyHelper');
 function wc_get_price_decimals(){return 2;}
 function has_filter($hook){return $hook==='yay_currency_convert_price'?10:false;}
 function apply_filters($hook,$value){
@@ -211,5 +217,14 @@ $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::threshold(
     ['ok'=>false,'basis_minor'=>19900],19900);
 assert_true(!$r['ok'],'unverified coupon must not qualify for 199 USD gift');
 $passes++;
-assert_true($passes===72,'expected 72 checks');
+// Yay Pro may display EUR while Woo checkout is configured to settle USD.
+$GLOBALS['currency']='EUR';
+$GLOBALS['woo_effective_currency']='USD';
+$q=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch('199.00')]));
+assert_true($q['ok'] && $q['currency']==='EUR'
+    && $q['woo_effective_currency']==='USD' && $q['gift_slots']===2,
+    'shopper currency from Yay is independent from Woo checkout fallback');
+unset($GLOBALS['woo_effective_currency']);
+$passes++;
+assert_true($passes===73,'expected 73 checks');
 echo 'YAY_USD_BASIS_SYNTHETIC_CONTRACT_PASS='.$passes.PHP_EOL;
