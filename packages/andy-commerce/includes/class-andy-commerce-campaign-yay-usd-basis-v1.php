@@ -38,6 +38,44 @@ final class Andy_Commerce_Campaign_Yay_USD_Basis_V1 {
         ];
     }
 
+    /** Public read-only bridge for consuming Campaign plugins. */
+    public static function storefront_currency(): ?string {
+        if(!function_exists('get_option')
+            || get_option('woocommerce_currency','')!=='USD'
+            || !function_exists('is_plugin_active'))
+            return null;
+        if(!is_plugin_active('yaycurrency-pro/yay-currency.php')
+            || is_plugin_active('yaycurrency/yay-currency.php')
+            || is_plugin_active('yaycurrency/yaycurrency.php'))
+            return null;
+        if(class_exists('Andy_Commerce_Currency_Runtime_Dev_V1')
+            && Andy_Commerce_Currency_Runtime_Dev_V1::allowed())
+            return null;
+        $helper='Yay_Currency\\Helpers\\YayCurrencyHelper';
+        if(!class_exists($helper)
+            || !method_exists($helper,'detect_current_currency'))
+            return null;
+        try {$selected=$helper::detect_current_currency();}
+        catch(Throwable $e){return null;}
+        if(!is_array($selected) || (int)($selected['status']??0)!==1
+           || !in_array($selected['currency']??null,self::CURRENCIES,true))
+            return null;
+        return $selected['currency'];
+    }
+
+    /**
+     * Storefront price label only, NEVER the authoritative USD eligibility.
+     * If settlement currency differs, the consumer must label the result
+     * as an approximate local equivalent, not the amount payable.
+     */
+    public static function display_usd_minor(int $amount): ?string {
+        if($amount<0 || $amount>100000000 || self::storefront_currency()===null)
+            return null;
+        $currency=self::storefront_currency();
+        $converted=self::local_unit($amount,$currency);
+        return is_int($converted) ? number_format($converted/100,2,'.','') : null;
+    }
+
     private static function fail(string $reason): array {
         return ['ok'=>false,'reason'=>$reason,'basis_minor'=>null,'currency'=>null];
     }
