@@ -24,7 +24,8 @@ REQUIRES = (
 )
 
 
-def check(zip_path: str, source_root: str | None = None) -> list[str]:
+def check(zip_path: str, source_root: str | None = None,
+          installed_root: str | None = None) -> list[str]:
     failures: list[str] = []
     with ZipFile(zip_path) as z:
         paths = z.namelist()
@@ -49,6 +50,15 @@ def check(zip_path: str, source_root: str | None = None) -> list[str]:
                     failures.append("source_missing:" + relative)
                 elif name in names and z.read(name) != file.read_bytes():
                     failures.append("source_mismatch:" + name)
+        # Read-only post-install attestation: verify all three exact PHP bytes
+        # against the reviewed ZIP. Never modify installed plugin files.
+        if installed_root:
+            for name, relative in SOURCE_RELATIVE.items():
+                file = Path(installed_root) / relative
+                if not file.is_file():
+                    failures.append("installed_missing:" + relative)
+                elif name in names and z.read(name) != file.read_bytes():
+                    failures.append("installed_mismatch:" + relative)
     return failures
 
 
@@ -56,9 +66,10 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("zip", help="local Black Friday preview ZIP; never a live plugin")
     p.add_argument("--source-root", help="reviewed packages/andy-campaign-packs/black-friday-2026")
+    p.add_argument("--installed-root", help="read-only path to installed Black Friday plugin folder")
     args = p.parse_args()
     try:
-        errors = check(args.zip, args.source_root)
+        errors = check(args.zip, args.source_root, args.installed_root)
     except (OSError, BadZipFile, UnicodeDecodeError) as exc:
         print("R8_GIFT_BUNDLE_FAIL=" + type(exc).__name__, file=sys.stderr)
         return 2
@@ -67,7 +78,8 @@ def main() -> int:
             print("R8_GIFT_BUNDLE_FAIL=" + e, file=sys.stderr)
         return 1
     print("R8_GIFT_BUNDLE_PASS=3_FILES_2_REQUIRES"
-          + ("_SOURCE_PARITY" if args.source_root else ""))
+          + ("_SOURCE_PARITY" if args.source_root else "")
+          + ("_INSTALLED_PARITY" if args.installed_root else ""))
     return 0
 
 
