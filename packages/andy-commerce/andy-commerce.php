@@ -46,6 +46,7 @@ function andy_commerce_register_migration_cli(): void {
 add_action( 'plugins_loaded', 'andy_commerce_register_migration_cli', 35 );
 
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-promotion-policy.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-usd-source-v1.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-promotion-runtime.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-orders-features.php';
 

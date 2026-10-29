@@ -55,6 +55,11 @@ jobs:
           php -l packages/andy-commerce/tests/campaign-yay-bf-dev-native-cart-uat.php
           php -l packages/andy-commerce/tests/campaign-yay-bf-dev-native-coupon-uat.php
           php packages/andy-commerce/tests/r7-stripe-account-proof-contract.php
+      - name: P0 verified USD-source shipping five-currency contract (no WP writes)
+        run: |
+          php -l packages/andy-commerce/includes/class-andy-commerce-shipping-usd-source-v1.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-shipping-promotion-runtime.php
+          php packages/andy-commerce/tests/shipping-usd-source-five-currency-harness.php
       - name: Currency C2–C3 and Footer-only regression
         run: |
           php packages/andy-commerce/tests/currency-os-v2-admin-shortcode-harness.php
