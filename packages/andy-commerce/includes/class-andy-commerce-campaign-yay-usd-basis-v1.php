@@ -33,7 +33,7 @@ final class Andy_Commerce_Campaign_Yay_USD_Basis_V1 {
     /** This is a UI decision only after source USD evidence has been verified. */
     public static function gift_slots_from_usd_minor(int $sourceNet): int {
         if($sourceNet<0 || $sourceNet>100000000) throw new InvalidArgumentException('invalid_usd_basis');
-        return $sourceNet>=self::GIFT_THRESHOLD_MINOR ? 2 : 1;
+        return $sourceNet===0 ? 0 : ($sourceNet>=self::GIFT_THRESHOLD_MINOR ? 2 : 1);
     }
 
     private static function coupon_source(string $code): ?int {
