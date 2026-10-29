@@ -47,6 +47,9 @@ jobs:
           php -l packages/andy-commerce/includes/class-andy-commerce-campaign-yay-usd-basis-v1.php
           php -l packages/andy-commerce/tests/campaign-yay-usd-basis-synthetic.php
           php packages/andy-commerce/tests/campaign-yay-usd-basis-synthetic.php
+          python3 packages/andy-commerce/tests/bf2026-yay-patch-fixture.py
+          php -l "$RUNNER_TEMP/bf2026-yay-ci-candidate.php"
+          php packages/andy-commerce/tests/campaign-yay-bf-bridge-synthetic.php
           php packages/andy-commerce/tests/r7-stripe-account-proof-contract.php
       - name: Currency C2–C3 and Footer-only regression
         run: |
