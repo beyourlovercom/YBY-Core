@@ -1,3 +1,13 @@
+## v2.3.2 - 2026-10-29 (Login OS V1.1 signed Stable)
+
+- New independent Andy Core system tertiary entry: 后台登录, after 社交登录; Google settings unaffected.
+- Optional brand styling, custom login alias, and explicit opt-in concealment of legacy login routes for guest users.
+- Legacy /wp-login.php, /admin and unauthenticated /wp-admin/ return 404 without redirect to the private path.
+- Private login sets noindex/nofollow/noarchive and no-store, without disclosing the slug in robots.txt.
+- Preserve logged-in admin, WooCommerce My Account, admin-ajax/admin-post and password reset UI.
+- Two-factor auth deferred by Owner; no auth credentials or database schema changed.
+- All existing yby_lead_notifications, Woo customer/order/payment data preserved; updater DB 1.4.0 and runtime DB 1.5.0 unchanged.
+
 ## v2.3.1 - 2026-10-28 (Notification R7 signed release candidate only)
 
 - Success/info use Dynamic Island with scoped 2500ms fail-open first-paint gate to prevent legacy banner flash and layout shifts.

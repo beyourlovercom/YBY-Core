@@ -12,7 +12,10 @@ $nav = file_get_contents( $root . '/admin/class-yby-andy-os-navigation.php' );
 $assert = static function ( $ok, $label ) {
     if ( ! $ok ) { fwrite( STDERR, 'FAIL V2211_COMBINED ' . $label . PHP_EOL ); exit( 1 ); }
 };
-$assert( strpos( $plugin, "define( 'YBY_CORE_VERSION', '2.3.1' );" ) !== false, 'candidate_version' );
+$assert( preg_match( '/^\\s*\\* Version:\\s+([0-9]+\\.[0-9]+\\.[0-9]+)$/m', $plugin, $matches ) === 1, 'version_header_valid' );
+$version = $matches[1];
+$assert( version_compare( $version, '2.2.11', '>=' ), 'version_supports_v2211_contract' );
+$assert( strpos( $plugin, "define( 'YBY_CORE_VERSION', '" . $version . "' );" ) !== false, 'header_and_runtime_version_match' );
 $assert( strpos( $core, "'inc/class-yby-update-control.php'" ) !== false, 'control_loaded_by_single_plugin' );
 $assert( strpos( $core, 'YBY_Update_Control( $updater )' ) !== false, 'shared_existing_updater' );
 foreach ( array( 'hide_plugin_notices', 'block_plugin_auto', 'prune_update_cron' ) as $key ) {
