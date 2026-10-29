@@ -172,6 +172,31 @@ $overrideMissing=new WP_Error();
 BYL_BF2026_Gifts::validate_store_api(new R8_SubmittedOrder(''),$overrideMissing);
 yes(isset($overrideMissing->errors['byl_bf2026_invalid_gift']),
     'missing submitted shipping country fails closed despite stale session US');
+// Classic Woo 11.2+ passes normalized posted_data to after_checkout_validation;
+// submitted country (not current session) is the payment gate authority.
+$GLOBALS['bf_woo']->customer->country='US';
+$classicFrance=new WP_Error();
+BYL_BF2026_Gifts::validate_classic(['shipping_country'=>'FR'],$classicFrance);
+yes(isset($classicFrance->errors['byl_bf2026_invalid_gift'])
+    && str_contains($classicFrance->errors['byl_bf2026_invalid_gift'],'cannot ship'),
+    'Classic Checkout submitted France rejects old session US');
+$GLOBALS['bf_woo']->customer->country='FR';
+$classicUS=new WP_Error();
+BYL_BF2026_Gifts::validate_classic(['shipping_country'=>'US'],$classicUS);
+yes($classicUS->errors===[],'Classic Checkout submitted US overrides old session France');
+$classicMissing=new WP_Error();
+BYL_BF2026_Gifts::validate_classic([],$classicMissing);
+yes(isset($classicMissing->errors['byl_bf2026_invalid_gift']),
+    'Classic Checkout missing submitted country blocks promotional gift');
+$classicArray=new WP_Error();
+BYL_BF2026_Gifts::validate_classic(['shipping_country'=>['US']],$classicArray);
+yes(isset($classicArray->errors['byl_bf2026_invalid_gift']),
+    'Classic Checkout malformed array country fails closed');
+$GLOBALS['bf_woo']->cart=new WC_Cart([$normal]);
+$classicPlain=new WP_Error();
+BYL_BF2026_Gifts::validate_classic([],$classicPlain);
+yes($classicPlain->errors===[],'ordinary Classic merchandise checkout does not require gift country');
+$GLOBALS['bf_woo']->cart = new WC_Cart(array($normal,$free));
 $GLOBALS['c3_currency']='EUR';
 yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,'foreign currency fails closed without Commerce quote contract');
 class Andy_Commerce_Currency_Runtime_Dev_V1 {
@@ -263,4 +288,4 @@ yes(str_contains($inactive,'not currently available') && !str_contains($inactive
     'OFF campaign renders a harmless landing preview without gift selection controls');
 yes(WC_Cart::$calculations === $before,
     'OFF shortcode rendering never touches Woo cart calculation');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=40\n";
+echo "BYL_BF2026_PURE_CONTRACT_PASS=45\n";
