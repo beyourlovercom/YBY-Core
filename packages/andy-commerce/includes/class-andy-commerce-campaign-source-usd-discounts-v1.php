@@ -63,7 +63,7 @@ final class Andy_Commerce_Campaign_Source_USD_Discounts_V1 {
                 'object'=>$row['cart_item'],
                 'product'=>$row['product'],
                 'quantity'=>$row['quantity'],
-                'price'=>wc_add_number_precision(number_format($lineMinor/100,2,'.','')),
+                'price'=>$lineMinor,
             ];
         }
 
