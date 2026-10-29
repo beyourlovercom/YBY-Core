@@ -92,9 +92,17 @@ do
   php "$repo/packages/andy-commerce/tests/$harness.php" >/dev/null
 done
 bash "$repo/scripts/build-andy-commerce-dev-candidate.sh" "$dest"
+# R7 release invariant: successful tests are insufficient if a packaging or
+# overwrite step silently removes R13/verified USD basis source files.
+# This gate is read-only; it never installs or changes Dev, Woo or Stripe.
+if ! python3 "$repo/scripts/check-commerce-r7-bundle.py" "$dest"; then
+  echo "RELEASE_DENIED: R13/Commerce USD basis payload or bootstrap missing" >&2
+  rm -f "$dest"
+  exit 5
+fi
 zip_sha="$(shasum -a 256 "$dest" | awk '{print $1}')"
 controller_sha="$(unzip -p "$dest" andy-commerce/admin/class-andy-commerce-admin.php | shasum -a 256 | awk '{print $1}')"
-printf 'mode=DEV_ONLY_INSTALL_PREPARED\nsource_HEAD=%s\nCurrency_PR207_HEAD=%s\nzip_SHA256=%s\ncontroller_SHA256=%s\nDev_Installed=NOT_VERIFIED\n' \
+printf 'mode=DEV_ONLY_INSTALL_PREPARED\nsource_HEAD=%s\nCurrency_PR207_HEAD=%s\nzip_SHA256=%s\ncontroller_SHA256=%s\nR7_R13_Bundle_Contract=PASS\nDev_Installed=NOT_VERIFIED\n' \
  "$head" "$currency_head" "$zip_sha" "$controller_sha" > "$dest.attestation.txt"
 echo "DEV_RELEASE_PREPARED head=$head currency=$currency_head sha256=$zip_sha"
 echo "INSTALL_AND_UAT_STILL_REQUIRED: Dev upload and readback are separate authorized actions"
