@@ -43,15 +43,22 @@ final class BYL_BF2026_Gifts {
         return ( $review['rows'][0]['status'] ?? 'BLOCKED' ) === 'APPROVED';
     }
 
-    /** Shipping destination is verified at checkout, after shopper supplies
-     * an address; do not guess from browser locale or billing IP.
+    /** Known country for preview/POST only. Checkout must prefer the
+     * submitted WC_Order country rather than potentially stale WC()->customer.
+     * Empty/invalid countries are not silently inferred from IP or billing.
      */
-    private static function destination_allowed( int $id ): bool {
-        $customer = function_exists( 'WC' ) && WC() ? WC()->customer : null;
+    private static function shipping_country(): string {
+        $customer = function_exists( 'WC' ) && WC() ? ( WC()->customer ?? null ) : null;
         if ( ! $customer || ! method_exists( $customer, 'get_shipping_country' ) ) {
-            return false;
+            return '';
         }
         $country = strtoupper( trim( (string) $customer->get_shipping_country() ) );
+        return preg_match( '/^[A-Z]{2}$/D', $country ) ? $country : '';
+    }
+
+    private static function destination_allowed( int $id, ?string $checkout_country = null ): bool {
+        $country = null === $checkout_country
+            ? self::shipping_country() : strtoupper( trim( $checkout_country ) );
         if ( ! preg_match( '/^[A-Z]{2}$/D', $country ) ) { return false; }
         $approved = self::gift_approvals();
         $allowed = $approved[ $id ]['allowed_countries'] ?? null;
@@ -220,7 +227,7 @@ final class BYL_BF2026_Gifts {
     }
 
     /** One server-side validation result shared by Classic and Store API. */
-    private static function cart_validation_issue( $cart ): string {
+    private static function cart_validation_issue( $cart, ?string $shipping_country = null ): string {
         if ( ! $cart instanceof WC_Cart ) { return ''; }
         $catalog = self::catalog();
         // Nothing to validate if no gift is selected; ordinary merchandise
@@ -243,7 +250,7 @@ final class BYL_BF2026_Gifts {
                  || null === self::local_upgrade_price( (int) ( $catalog[ $id ] ?? 0 ) ) ) {
                 return 'Invalid promotional gift; please update your cart.';
             }
-            if ( ! self::destination_allowed( $id ) ) {
+            if ( ! self::destination_allowed( $id, $shipping_country ) ) {
                 return 'This promotional gift cannot ship to the selected country.';
             }
             $seen[ $id ] = true;
@@ -261,7 +268,11 @@ final class BYL_BF2026_Gifts {
     /** Store API checkout uses WP_Error before payment, not Classic cart notices. */
     public static function validate_store_api( $order, $errors ): void {
         if ( ! $errors instanceof WP_Error || ! function_exists( 'WC' ) || ! WC()->cart ) { return; }
-        $reason = self::cart_validation_issue( WC()->cart );
+        // Store API may submit a different address from the last cart session.
+        // Use the order being validated as the authoritative destination.
+        $country = is_object( $order ) && method_exists( $order, 'get_shipping_country' )
+            ? (string) $order->get_shipping_country() : null;
+        $reason = self::cart_validation_issue( WC()->cart, $country );
         if ( '' !== $reason ) { $errors->add( 'byl_bf2026_invalid_gift', $reason ); }
     }
 
@@ -332,7 +343,11 @@ final class BYL_BF2026_Gifts {
             ++$selected;
         }
         $product = self::ready() && isset( $catalog[ $id ] ) ? self::gift_product( $id ) : false;
-        if ( $slots <= $selected || ! $product ) {
+        // If a country is known, do not add an unusable gift to the cart.
+        // An unknown country is checked strictly from the final order instead.
+        $country = self::shipping_country();
+        if ( $slots <= $selected || ! $product
+             || ( '' !== $country && ! self::destination_allowed( $id, $country ) ) ) {
             wc_add_notice( 'This promotional gift is unavailable or you have reached the gift limit.', 'error' );
         } else {
             $key = WC()->cart->add_to_cart( $id, 1, 0, array(), array(
@@ -395,7 +410,13 @@ final class BYL_BF2026_Gifts {
                 $label = $upgrade > 0 && null !== $local
                     ? ' · Upgrade +' . $symbol . $local : ' · FREE';
                 echo '<span>' . esc_html( $p->get_name() . $label ) . '</span> ';
-                $blocked = $selected >= $eligible['slots'] || in_array( $id, $selected_ids, true );
+                $country = self::shipping_country();
+                $restricted = '' !== $country && ! self::destination_allowed( (int) $id, $country );
+                $blocked = $selected >= $eligible['slots'] || in_array( $id, $selected_ids, true )
+                    || $restricted;
+                if ( $restricted ) {
+                    echo '<span class="byl-bf2026-region-blocked">Unavailable for your shipping country</span> ';
+                }
                 echo '<button type="submit"' . ( $blocked ? ' disabled' : '' ) . '>'
                     . ( in_array( $id, $selected_ids, true ) ? 'Selected' : 'Choose' ) . '</button></form>';
             }
