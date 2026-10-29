@@ -12,6 +12,7 @@
  */
 declare(strict_types=1);
 if (!defined('ABSPATH')) exit;
+require_once __DIR__ . '/class-andy-commerce-campaign-source-usd-discounts-v1.php';
 
 final class Andy_Commerce_Campaign_Yay_USD_Basis_V1 {
     private const CURRENCIES = ['USD','EUR','GBP','AUD','CAD'];
@@ -34,22 +35,6 @@ final class Andy_Commerce_Campaign_Yay_USD_Basis_V1 {
     public static function gift_slots_from_usd_minor(int $sourceNet): int {
         if($sourceNet<0 || $sourceNet>100000000) throw new InvalidArgumentException('invalid_usd_basis');
         return $sourceNet===0 ? 0 : ($sourceNet>=self::GIFT_THRESHOLD_MINOR ? 2 : 1);
-    }
-
-    private static function coupon_source(string $code): ?int {
-        if(!class_exists('WC_Coupon')) return null;
-        try {
-            $c=new WC_Coupon($code);
-            if(!$c->get_id()
-              || $c->get_discount_type('edit')!=='fixed_cart'
-              || $c->get_product_ids('edit')
-              || $c->get_excluded_product_ids('edit')
-              || $c->get_product_categories('edit')
-              || $c->get_excluded_product_categories('edit')
-              || $c->get_exclude_sale_items('edit')
-              || null!==$c->get_limit_usage_to_x_items('edit')) return null;
-            return self::minor($c->get_amount('edit'));
-        } catch (Throwable $e) { return null; }
     }
 
     /**
@@ -111,18 +96,12 @@ final class Andy_Commerce_Campaign_Yay_USD_Basis_V1 {
         $coupons=$cart->get_applied_coupons();
         if(!is_array($coupons)||count($coupons)>1)
             return self::fail('coupon_stack_not_verified');
-        $couponUsd=null;
-        if(count($coupons)===1){
-            $couponUsd=self::coupon_source((string)$coupons[0]);
-            if($couponUsd===null) return self::fail('coupon_type_or_restrictions_not_verified');
-        }
 
-        $basis=0;
-        $localMerchBefore=0;
-        $localMerchAfter=0;
         $lines=0;
         $units=0;
-        foreach($cart->get_cart() as $line){
+        $sourceLines=[];
+        $actualLines=[];
+        foreach($cart->get_cart() as $key=>$line){
             if(!is_array($line))return self::fail('line_missing');
             $gift=($line['_byl_bf2026_gift']??null)===true;
             $upgrade=($line['_byl_bf2026_upgrade']??null)===true;
@@ -134,7 +113,7 @@ final class Andy_Commerce_Campaign_Yay_USD_Basis_V1 {
                    || (!$gift && !$upgrade)
                    || ($gift && $upgrade))
                     return self::fail('unknown_promotion_line');
-                if($couponUsd!==null &&
+                if(count($coupons)>0 &&
                     self::minor($line['line_subtotal']??null)!==self::minor($line['line_total']??null))
                     return self::fail('coupon_applied_to_gift_or_upgrade');
                 continue;
@@ -154,37 +133,51 @@ final class Andy_Commerce_Campaign_Yay_USD_Basis_V1 {
             // Fixed per-currency prices or extra price filters require separate proof.
             if($localBefore!==$localUnit*$q)
                 return self::fail('native_yay_price_mismatch');
-            $basis+=$usdUnit*$q;
-            $localMerchBefore+=$localBefore;
-            $localMerchAfter+=$localAfter;
+            // Never trust a browser-supplied USD amount or reconstruct USD
+            // by inverting a rounded storefront total.
+            $sourceLines[(string)$key]=[
+                'product'=>$p, 'quantity'=>$q,
+                'usd_unit_minor'=>$usdUnit, 'cart_item'=>$line,
+            ];
+            $actualLines[(string)$key]=[
+                'pre_minor'=>$localBefore,'net_minor'=>$localAfter,'quantity'=>$q,
+            ];
             $units+=$q;
-            if(++$lines>200||$basis>100000000||$units>500)
+            if(++$lines>200||$units>500)
                 return self::fail('cart_limits');
         }
         if($lines<1)return self::fail('empty_eligible_merchandise');
 
-        if($couponUsd!==null) {
-            $sourceDiscount=min($basis,$couponUsd);
-            $expectedLocal=self::local_unit($sourceDiscount,$currency);
-            if($expectedLocal===null) return self::fail('coupon_conversion_unverified');
-            $actualLocal=$localMerchBefore-$localMerchAfter;
-            if(!method_exists($cart,'get_coupon_discount_amount'))
-                return self::fail('coupon_api_missing');
-            $wooCoupon=self::minor($cart->get_coupon_discount_amount((string)$coupons[0],true));
-            if($wooCoupon===null||$wooCoupon!==$actualLocal
-               ||abs($actualLocal-min($localMerchBefore,$expectedLocal))>$units)
-                return self::fail('coupon_allocation_unverified');
-            $basis-=$sourceDiscount;
-        } elseif($localMerchBefore!==$localMerchAfter) {
-            return self::fail('unattributed_native_discount');
+        $source=Andy_Commerce_Campaign_Source_USD_Discounts_V1::replay($sourceLines,$coupons);
+        if(!($source['ok']??false))
+            return self::fail('source_'.($source['reason']??'unverified'));
+        // The current local Woo cart is the authority for amounts actually
+        // owed. Compare its final line allocation to the same USD source
+        // after applying Woo's native coupon replay in memory, not to an
+        // independently guessed discount or reference FX snapshot.
+        foreach($actualLines as $key=>$actual){
+            $usdNet=$source['by_item_minor'][$key]['net_minor']??null;
+            if(!is_int($usdNet))return self::fail('source_line_not_found');
+            $localExpected=self::local_unit($usdNet,$currency);
+            if($localExpected===null)return self::fail('source_to_local_unverified');
+            // Woo rounds discounts per item/quantity, whereas currency
+            // conversion rounds each display unit. Bound that known
+            // per-item difference; never treat a large difference as PASS.
+            $tolerance=min(10,2*$actual['quantity']+1);
+            if(abs($localExpected-$actual['net_minor'])>$tolerance)
+                return self::fail('source_native_local_net_mismatch');
         }
+        $basis=$source['basis_minor'];
+        if(!is_int($basis)||$basis<0)return self::fail('source_usd_invalid');
 
         return [
             'ok'=>true, 'reason'=>'verified_native_woo_usd_source',
             'basis_minor'=>$basis,'currency'=>$currency,
             'gift_slots'=>self::gift_slots_from_usd_minor($basis),
             'coupon_count'=>count($coupons),'merchandise_lines'=>$lines,
-            'usd_source'=>'wc_product_edit_price_and_verified_native_coupon',
+            'source_discount_minor'=>$source['discount_minor'],
+            'source_subtotal_minor'=>$source['subtotal_minor'],
+            'usd_source'=>'wc_product_edit_price_and_native_wc_discounts_replay',
             'display_currency_never_grants_entitlement'=>true,
             'payment_or_cart_changed'=>false,
         ];
