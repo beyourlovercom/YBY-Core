@@ -41,6 +41,7 @@ jobs:
           php -l packages/andy-commerce-observer/andy-commerce-observer.php
           php packages/andy-commerce-observer/tests/observer-nohooks-harness.php
           php packages/andy-commerce-observer/tests/observer-admin-smoke.php
+          php packages/andy-commerce-observer/tests/observer-policy-provenance-harness.php
       - name: Build isolated plugin ZIP
         run: |
           set -euo pipefail
