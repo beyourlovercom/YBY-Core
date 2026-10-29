@@ -785,13 +785,31 @@ function testBottleThankYouVerifiedExactlyOnce() {
     "Reloading the same case in the same browser session must not fire a second conversion.");
 }
 
+function testBottleStudioConfirmedLeadOnce() {
+  const caseId = "YBY-YBC-20261014-ABC234";
+  const sessionStorage = new SessionStorageMock();
+  sessionStorage.setItem("yby_confirmed_lead_case_id", caseId);
+  sessionStorage.setItem("yby_confirmed_lead_preset", "site_bottle_wholesale_v2_uat");
+  const runtime = createRuntime({
+    documentBundle: { document: new MockDocument(), nodes: {} },
+    pathname: "/lp/thank-you-glass-bottle-oem/",
+    search: "?case_id=" + caseId,
+    sessionStorage
+  });
+  assert(runtime.dataLayer.filter(x => x.event === "generate_lead").length === 1,
+    "Confirmed Bottle Studio inquiry must count once.");
+  runtime.window.YBYThankYou.init();
+  assert(runtime.dataLayer.filter(x => x.event === "generate_lead").length === 1,
+    "Repeating Thank You init must not double-count the inquiry.");
+}
 function testBottleThankYouNoUnconfirmedConversions() {
   const caseId = "YBY-YBC-20261014-ABC234";
   for (const params of [
     { search: "?case_id=" + caseId },
     { search: "" },
     { search: "?case_id=YBY-YBC-20261014-NNN234", confirmed: caseId },
-    { search: "?case_id=" + caseId, confirmed: caseId, preset: "irrigation_quick_inquiry" }
+    { search: "?case_id=" + caseId, confirmed: caseId, preset: "irrigation_quick_inquiry" },
+    { search: "?case_id=" + caseId, confirmed: caseId, preset: "site_other_unapproved" }
   ]) {
     const sessionStorage = new SessionStorageMock();
     if (params.confirmed) {
@@ -984,6 +1002,7 @@ const tests = [
   ["bottle_template_isolation", testBottleRejectsIrrigationRuntimeTemplate],
   ["session_tracking", testSessionStorageHydrationAndTracking],
   ["bottle_verified_once", testBottleThankYouVerifiedExactlyOnce],
+  ["bottle_studio_confirmed_once", testBottleStudioConfirmedLeadOnce],
   ["bottle_no_unconfirmed", testBottleThankYouNoUnconfirmedConversions],
   ["bottle_no_failed_dedupe", testBottleTrackingFailureNeverMarksDedupe],
   ["tracking_pii", testTrackingPiiExclusion],

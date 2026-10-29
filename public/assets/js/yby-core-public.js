@@ -203,6 +203,11 @@
     return /^\/lp\/thank-you-glass-bottle-oem\/?$/.test(String(window.location.pathname || "").toLowerCase());
   }
 
+  // Bottle-only sanctioned presets, never arbitrary site-defined forms.
+  function isConfirmedBottleLeadPreset(preset) {
+    return preset === "bottle_oem_inquiry" ||
+      preset === "site_bottle_wholesale_v2_uat";
+  }
   function isThankYouPage() {
     return isBottleThankYouPage() || !!document.querySelector(
       [
@@ -1008,7 +1013,7 @@
       // server response, not a bookmark or a Case ID left by another inquiry.
       if (normalizeCaseId(getQueryParam("case_id")) !== caseId ||
           normalizeCaseId(getSessionItem("yby_confirmed_lead_case_id")) !== caseId ||
-          getSessionItem("yby_confirmed_lead_preset") !== "bottle_oem_inquiry") {
+          !isConfirmedBottleLeadPreset(getSessionItem("yby_confirmed_lead_preset"))) {
         return false;
       }
     }
