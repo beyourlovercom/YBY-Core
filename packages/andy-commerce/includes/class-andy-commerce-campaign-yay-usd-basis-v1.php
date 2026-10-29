@@ -113,13 +113,15 @@ final class Andy_Commerce_Campaign_Yay_USD_Basis_V1 {
         $units=0;
         foreach($cart->get_cart() as $line){
             if(!is_array($line))return self::fail('line_missing');
-            $gift=array_key_exists('_byl_bf2026_gift',$line)
-                || array_key_exists('andy_campaign_pack_id',$line);
-            $upgrade=array_key_exists('_byl_bf2026_upgrade',$line);
-            if($gift || $upgrade) {
+            $gift=($line['_byl_bf2026_gift']??null)===true;
+            $upgrade=($line['_byl_bf2026_upgrade']??null)===true;
+            $campaignLine=array_key_exists('andy_campaign_pack_id',$line)
+                || array_key_exists('_byl_bf2026_gift',$line)
+                || array_key_exists('_byl_bf2026_upgrade',$line);
+            if($campaignLine) {
                 if(($line['andy_campaign_pack_id']??null)!=='byl-black-friday-2026'
-                   || ($gift && ($line['_byl_bf2026_gift']??null)!==true)
-                   || ($upgrade && ($line['_byl_bf2026_upgrade']??null)!==true))
+                   || (!$gift && !$upgrade)
+                   || ($gift && $upgrade))
                     return self::fail('unknown_promotion_line');
                 if($couponUsd!==null &&
                     self::minor($line['line_subtotal']??null)!==self::minor($line['line_total']??null))
