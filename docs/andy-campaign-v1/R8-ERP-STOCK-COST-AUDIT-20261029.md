@@ -74,6 +74,19 @@ R8 Draft PR #255 now also refuses unsigned, stale, or untraceable inventory repo
 
 Source checks: `BYL_BF2026_R8_READINESS_PASS=18`; BF gift pure contract `PASS=33`; **15/15** isolated local WooCommerce shopper UAT with 4 temporary products deleted and local options restored. This change remains **Draft PR source-only** until controlled Dev deployment is separately approved; Dev master OFF, real gift catalog remains empty.
 
+## Checkout-wide gift revocation after stale alternate option (2026-10-29)
+A separate R8 code review found that **per-item approval alone was insufficient**: if a shopper had selected free gift A, but *another* required free option B expired or lost review approval, gift A could remain in the cart even though the two-free-options promise and `ready()` had failed.
+
+Fix in Draft PR #255 now checks overall `BYL_BF2026_Gifts::ready()` before **POST selection**, **picker rendering**, **cart reconciliation** and **Classic/Store API checkout gift validation**. Once the second approved free choice disappears:
+- All previously selected BF gift lines are revoked at cart reconciliation — even if the individual selected SKU is still in stock.
+- Checkout denies an existing BF gift until repaired, before payment; ordinary non-gift merchandise remains purchasable.
+- The picker returns a safe unavailable state, not a misleading list of partial reward choices.
+- Proof restored / at least two approved free SKU available again allows gift selection.
+
+Evidence: pure PHP `BYL_BF2026_PURE_CONTRACT_PASS=37`, provider expiry and approval checks `BYL_BF2026_R8_READINESS_PASS=18`, and a **real isolated WooCommerce 19/19 customer-cart acceptance** on US Mac mini, including stale unselected SKU revocation. Four disposable local products deleted, local master/config options restored; no live orders, gifts, payments or refunds. Both checkout paths have source-level negative tests, but full browser paid checkout still requires R7/R9.
+
+This revision is **source-only** at the R8 child Draft PR. The running Dev BF plugin remains OFF with no approved catalog, so the new global-revocation code is not claimed deployed. Do not enable public gifts on the old Dev revision.
+
 ## Blockers and next approved steps
 1. Confirm at least 2 free real gift SKUs and an optional paid upgrade; neither a UAT fixture nor the USD retail catalog price can be accepted as factory/landed gift cost. Existing records prove no production/packaging costs for the four candidates.
 2. For each approved SKU: signed factory/landed USD cost, current provider-verified warehouse available count after reservations, packaging weight in grams, total incremental international carrier cost, compliant allowed/excluded countries, responsible reviewer/approval date.
