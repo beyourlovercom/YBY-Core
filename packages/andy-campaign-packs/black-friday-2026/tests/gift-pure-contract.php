@@ -107,7 +107,7 @@ yes($empty['slots']===0,'gift-only cart no reward');
 $GLOBALS['products'][1002]->stock=false;
 $mock = new WC_Cart([$normal,$free,$premium]);
 BYL_BF2026_Gifts::reconcile($mock);
-yes(count($mock->get_cart())===2,'out-of-stock premium gift removed on cart reconcile');
+yes(count($mock->get_cart())===1,'out-of-stock premium invalidates catalog and removes all gift lines');
 $GLOBALS['products'][1002]->stock=true; // restore the reviewed premium item for later positive checkout tests.
 class BF_Order_Item_Stub {
     public array $meta = [];
