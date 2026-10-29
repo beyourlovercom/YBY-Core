@@ -58,7 +58,7 @@ defined( 'ABSPATH' ) || exit;
 		</form>
 	<?php elseif ( 'url' === $tab ) : ?>
 		<h2>登录 URL</h2>
-		<p class="description">V1 安全别名：提供新的后台登录入口，始终保留原始 wp-login.php 作为管理员恢复入口。</p>
+		<p class="description">自定义登录地址可以独立使用；启用隐藏模式后，未登录访客无法从旧地址访问登录表单。开启隐藏前，必须在无痕窗口确认安全地址能够登录。</p>
 		<?php if ( is_multisite() ) : ?>
 			<div class="notice notice-warning inline"><p>Multisite 站点暂不支持 Login OS V1 自定义 URL；请继续使用原生登录地址。</p></div>
 		<?php endif; ?>
@@ -71,6 +71,10 @@ defined( 'ABSPATH' ) || exit;
 				<tr><th scope="row">启用登录别名</th><td>
 					<input type="hidden" name="yby_login_os[url_enabled]" value="0">
 					<label><input type="checkbox" name="yby_login_os[url_enabled]" value="1" <?php checked( $options['url_enabled'] ); ?> <?php disabled( ! empty( $conflicts ) || is_multisite() ); ?>> 启用新的登录地址</label></td></tr>
+				<tr><th scope="row">隐藏默认登录入口</th><td>
+					<input type="hidden" name="yby_login_os[hide_legacy]" value="0">
+					<label><input type="checkbox" name="yby_login_os[hide_legacy]" value="1" <?php checked( $options['hide_legacy'] ); ?> <?php disabled( ! empty( $conflicts ) || is_multisite() ); ?>> 隐藏 /wp-login.php、/admin、未登录的 /wp-admin/</label>
+					<p class="description">隐藏后旧入口不会重定向泄露私密地址；已登录管理员仍可访问后台。先确认新登录地址正常，再启用隐藏；默认关闭，避免升级直接锁住管理员。</p></td></tr>
 				<tr><th scope="row"><label for="yby-login-os-slug">自定义路径</label></th><td>
 					<code><?php echo esc_html( trailingslashit( home_url( '/' ) ) ); ?></code>
 					<input id="yby-login-os-slug" name="yby_login_os[slug]" type="text"
@@ -81,7 +85,8 @@ defined( 'ABSPATH' ) || exit;
 			<?php submit_button( '保存登录 URL', 'primary', 'yby_login_os_submit' ); ?>
 		</form>
 		<p><strong>自定义登录入口：</strong> <code><?php echo esc_html( YBY_Login_OS::alias_url() ); ?></code></p>
-		<p><strong>原生恢复入口：</strong> <code><?php echo esc_html( site_url( 'wp-login.php', 'https' ) ); ?></code></p>
+		<p><strong>隐藏模式：</strong> <?php echo YBY_Login_OS::stealth_active() ? '已启用' : '未启用'; ?></p>
+		<p class="description">隐藏模式下，原生 wp-login.php 不再是公开恢复入口。可在此关闭隐藏，或在 Hostinger 文件管理器停用插件恢复。安全地址始终返回禁止收录的 HTTP 头；不会被写入公开 robots.txt。</p>
 	<?php elseif ( 'safety' === $tab ) : ?>
 		<h2>兼容与安全</h2>
 		<table class="widefat striped"><tbody>
@@ -89,7 +94,9 @@ defined( 'ABSPATH' ) || exit;
 			<tr><th scope="row">Google 登录</th><td>保留现有 REST 端点、One Tap 与社交登录配置</td></tr>
 			<tr><th scope="row">顾客登录</th><td>不覆盖 WooCommerce /my-account/</td></tr>
 			<tr><th scope="row">登录 URL 插件冲突</th><td><?php echo esc_html( $conflicts ? implode( '、', $conflicts ) : '未检测到已知插件冲突' ); ?></td></tr>
-			<tr><th scope="row">应急恢复</th><td>WordPress 原生 wp-login.php 始终可用；停用 Core 后亦可恢复</td></tr>
+			<tr><th scope="row">应急恢复</th><td>隐藏开启时可通过关闭隐藏设置或停用 Andy Core 恢复，旧入口不再公开</td></tr>
+			<tr><th scope="row">旧入口</th><td><?php echo YBY_Login_OS::stealth_active() ? '隐藏已启用' : '隐藏未启用'; ?></td></tr>
+			<tr><th scope="row">搜索收录</th><td>登录页 X-Robots-Tag: noindex, nofollow, noarchive；不在 robots.txt 公布地址</td></tr>
 			<tr><th scope="row">安全边界</th><td>隐藏地址并不代替限流、双因素验证或 WAF 防护</td></tr>
 		</tbody></table>
 	<?php endif; ?>

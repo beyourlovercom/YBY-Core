@@ -56,7 +56,7 @@ final class YBY_Login_OS_Admin {
 				$notice = $result->get_error_message();
 				$notice_type = 'error';
 			} else {
-				$notice = __( 'Login OS settings saved. Native wp-login.php remains available.', 'yby-core' );
+				$notice = __( 'Login OS settings saved. Verify the secure login URL before closing your admin session.', 'yby-core' );
 			}
 		}
 		$options = YBY_Login_OS::get_options();

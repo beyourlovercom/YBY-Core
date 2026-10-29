@@ -12,6 +12,7 @@ final class YBY_Login_OS {
 		return array(
 			'enabled' => false,
 			'url_enabled' => false,
+			'hide_legacy' => false,
 			'slug' => 'secure-login',
 			'logo_url' => '',
 			'accent_color' => '',
@@ -47,6 +48,7 @@ final class YBY_Login_OS {
 		return array(
 			'enabled' => ! empty( $input['enabled'] ),
 			'url_enabled' => ! empty( $input['url_enabled'] ) && self::valid_slug( $slug ),
+			'hide_legacy' => ! empty( $input['url_enabled'] ) && ! empty( $input['hide_legacy'] ) && self::valid_slug( $slug ),
 			'slug' => self::valid_slug( $slug ) ? $slug : $defaults['slug'],
 			'logo_url' => isset( $input['logo_url'] ) && is_scalar( $input['logo_url'] )
 				? esc_url_raw( (string) $input['logo_url'], array( 'https', 'http' ) ) : '',
@@ -90,7 +92,7 @@ final class YBY_Login_OS {
 		}
 		$allowed = 'appearance' === $section
 			? array( 'enabled', 'logo_url', 'accent_color', 'background_color' )
-			: ( 'url' === $section ? array( 'url_enabled', 'slug' ) : array() );
+			: ( 'url' === $section ? array( 'url_enabled', 'hide_legacy', 'slug' ) : array() );
 		if ( ! $allowed ) {
 			return new WP_Error( 'invalid_section', __( 'Unknown Login OS section.', 'yby-core' ) );
 		}
@@ -121,6 +123,98 @@ final class YBY_Login_OS {
 			&& ! empty( $options['url_enabled'] )
 			&& self::slug_available( $options['slug'] )
 			&& ! self::conflicting_plugins();
+	}
+
+	/** Hiding the old login route is explicitly opt-in for existing sites. */
+	public static function stealth_active() {
+		$options = self::get_options();
+		return ! empty( $options['hide_legacy'] ) && self::alias_active();
+	}
+
+	/** Decode encoded paths, without considering user-controlled query strings. */
+	public static function request_path() {
+		if ( empty( $_SERVER['REQUEST_URI'] ) || ! is_scalar( $_SERVER['REQUEST_URI'] ) ) {
+			return '';
+		}
+		$path = wp_parse_url( wp_unslash( (string) $_SERVER['REQUEST_URI'] ), PHP_URL_PATH );
+		if ( ! is_string( $path ) ) {
+			return '';
+		}
+		for ( $i = 0; $i < 3; $i++ ) {
+			$decoded = rawurldecode( $path );
+			if ( $decoded === $path ) {
+				break;
+			}
+			$path = $decoded;
+		}
+		return '/' . ltrim( $path, '/' );
+	}
+
+	/**
+	 * Only legacy login and non-authenticated admin paths are concealed.
+	 * Admin AJAX, admin-post and core asset endpoints stay operational.
+	 */
+	public static function blocked_legacy_route( $path, $logged_in = false ) {
+		$normalized = strtolower( preg_replace( '~/{2,}~', '/', '/' . ltrim( (string) $path, '/' ) ) );
+		$normalized = rtrim( $normalized, '/' );
+		if ( '/wp-login.php' === $normalized ) {
+			return true;
+		}
+		if ( '/admin' === $normalized ) {
+			return ! $logged_in;
+		}
+		if ( '/wp-admin' !== $normalized && 0 !== strpos( $normalized, '/wp-admin/' ) ) {
+			return false;
+		}
+		$public_endpoints = array(
+			'/wp-admin/admin-ajax.php',
+			'/wp-admin/admin-post.php',
+			'/wp-admin/load-scripts.php',
+			'/wp-admin/load-styles.php',
+		);
+		if ( in_array( $normalized, $public_endpoints, true ) ) {
+			return false;
+		}
+		return ! $logged_in;
+	}
+
+	/** A generic 404 must not disclose or redirect to the private login slug. */
+	public static function maybe_block_legacy() {
+		if ( ! self::stealth_active() ) {
+			return;
+		}
+		$path = self::request_path();
+		if ( ! $path || ! self::blocked_legacy_route( $path, is_user_logged_in() ) ) {
+			return;
+		}
+		status_header( 404 );
+		nocache_headers();
+		if ( ! headers_sent() ) {
+			header( 'X-Robots-Tag: noindex, nofollow, noarchive', true );
+			header( 'Content-Type: text/plain; charset=UTF-8', true );
+		}
+		echo '404 Not Found';
+		exit;
+	}
+
+	/** No public index or browser/proxy cache of the private login screen. */
+	public static function private_login_headers() {
+		if ( ! headers_sent() ) {
+			header( 'X-Robots-Tag: noindex, nofollow, noarchive', true );
+			header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0', true );
+		}
+	}
+
+	/** Password-reset emails generate login URLs via network_site_url. */
+	public static function filter_network_site_url( $url, $path, $scheme ) {
+		if ( ! self::alias_active() || ! in_array( $scheme, array( 'login', 'login_post' ), true ) ) {
+			return $url;
+		}
+		if ( ! preg_match( '~^/?wp-login\.php(?:\?|$)~', (string) $path ) ) {
+			return $url;
+		}
+		$query = wp_parse_url( $url, PHP_URL_QUERY );
+		return self::alias_url() . ( is_string( $query ) && '' !== $query ? '?' . $query : '' );
 	}
 
 	public static function alias_url() {
@@ -156,7 +250,7 @@ final class YBY_Login_OS {
 			return;
 		}
 		$method = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( (string) $_SERVER['REQUEST_METHOD'] ) : 'GET';
-		if ( ! in_array( $method, array( 'GET', 'POST' ), true ) ) {
+		if ( ! in_array( $method, array( 'GET', 'POST', 'HEAD' ), true ) ) {
 			return;
 		}
 		$request_path = wp_parse_url( wp_unslash( (string) $_SERVER['REQUEST_URI'] ), PHP_URL_PATH );
@@ -168,6 +262,7 @@ final class YBY_Login_OS {
 		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
 			define( 'DONOTCACHEPAGE', true );
 		}
+		self::private_login_headers();
 		if ( ! headers_sent() ) {
 			nocache_headers();
 		}

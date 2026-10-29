@@ -163,8 +163,11 @@ $this->loader->add_action( 'andy_core_register_modules', 'YBY_Business_OS_Module
 			$this->loader->add_action( 'login_enqueue_scripts', 'YBY_Login_OS', 'enqueue_login_style', 20, 0 );
 			$this->loader->add_filter( 'login_body_class', 'YBY_Login_OS', 'login_body_classes', 10, 1 );
 			$this->loader->add_filter( 'login_message', 'YBY_Login_OS', 'render_logo', 10, 1 );
+			$this->loader->add_action( 'init', 'YBY_Login_OS', 'maybe_block_legacy', 0, 0 );
+			$this->loader->add_action( 'login_init', 'YBY_Login_OS', 'private_login_headers', 0, 0 );
 			$this->loader->add_action( 'wp_loaded', 'YBY_Login_OS', 'maybe_load_alias', 0, 0 );
 			$this->loader->add_filter( 'site_url', 'YBY_Login_OS', 'filter_site_url', 10, 4 );
+			$this->loader->add_filter( 'network_site_url', 'YBY_Login_OS', 'filter_network_site_url', 10, 3 );
 			$this->loader->add_filter( 'login_url', 'YBY_Login_OS', 'filter_login_url', 10, 3 );
 		}
 
