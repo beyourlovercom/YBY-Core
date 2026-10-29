@@ -22,6 +22,8 @@ REQUIRED_FILES = (
     "class-andy-commerce-campaign-usd-basis-v1.php",
 )
 BOOTSTRAP = PREFIX + "class-andy-commerce.php"
+YAY_PRO_ADAPTER = PREFIX + "class-andy-commerce-campaign-yay-usd-basis-v1.php"
+YAY_PRO_REQUIRE = "require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-campaign-yay-usd-basis-v1.php';"
 CANARY_BOOT = "Andy_Commerce_Currency_R13_Dev_Canary::boot();"
 
 
@@ -49,12 +51,18 @@ def check_bundle(
                 problems.append("missing_or_duplicate_bootstrap_require:" + name)
         if bootstrap.count(CANARY_BOOT) != 1:
             problems.append("missing_or_duplicate_canary_boot")
+        if YAY_PRO_ADAPTER not in members:
+            problems.append("missing_yay_pro_adapter")
+        elif not z.read(YAY_PRO_ADAPTER).strip().startswith(b"<?php"):
+            problems.append("invalid_yay_pro_adapter_php")
+        if bootstrap.count(YAY_PRO_REQUIRE) != 1:
+            problems.append("missing_or_duplicate_yay_pro_require")
         # Prevent a correctly named, but stale/modified class from being
         # substituted while the main Commerce release ZIP is being built.
         # Source must be the exact reviewed checkout. No network calls.
         if source_root:
             root = Path(source_root)
-            for member in (BOOTSTRAP, *(PREFIX + n for n in REQUIRED_FILES)):
+            for member in (BOOTSTRAP, YAY_PRO_ADAPTER, *(PREFIX + n for n in REQUIRED_FILES)):
                 source = root / member.removeprefix("andy-commerce/")
                 if not source.is_file():
                     problems.append("source_file_missing:" + member)
@@ -67,7 +75,7 @@ def check_bundle(
             if not root.is_dir():
                 problems.append("installed_plugin_dir_missing")
             else:
-                for member in (BOOTSTRAP, *(PREFIX + n for n in REQUIRED_FILES)):
+                for member in (BOOTSTRAP, YAY_PRO_ADAPTER, *(PREFIX + n for n in REQUIRED_FILES)):
                     target = root / member.removeprefix("andy-commerce/")
                     if not target.is_file():
                         problems.append("installed_file_missing:" + member)
