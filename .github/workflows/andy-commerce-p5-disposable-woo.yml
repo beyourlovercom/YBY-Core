@@ -196,6 +196,13 @@ jobs:
           wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
           echo 'R13_STRIPE_TEST_QUOTE_FIVE_CURRENCY_COMPLETE_NO_EXTERNAL_GATEWAY=PASS'
 
+      - name: Currency YayCurrency native Woo source USD discount replay (no payments)
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/campaign-yay-usd-discounts-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          echo 'YAY_NATIVE_USD_PERCENT_FIXED_CART_FIXED_PRODUCT_REPLAY=PASS'
+
       - name: Currency R13 native Stripe HTTPS preflight scripts syntax
         shell: bash
         run: |
