@@ -45,6 +45,23 @@ The originally short-listed SKUs `chargerc`, `00W07`, and `414sleeve` have **no 
 
 **Data-access stop:** the already-open China Mac Chrome/ERP read-only inspection later encountered a platform safety block. No alternative access path used to bypass. No additional inventory for the four newly researched cheaper candidates can be claimed.
 
+## September US-NY physical-count evidence, historical only
+Previous uploaded source `美东仓库-库存9月.xlsx` shows warehouse count dated **2026-09-04** for the two genuine alias SKUs mapped to `BY489A-Lubes`:
+- `6971796990292` — **499 units**.
+- `BY489A` — **116 units**.
+- Both rows describe 35ml lubricant, warehouse `中塔-美东-NJ-01(US01)`, shared **13.970 × 12.700 × 1.524 cm** recorded dimensions (do not infer packed weight).
+- Historical NY combined **615 units**, consistent with more recent ERP NY `quantity_available=615` readback. This supports **SKU alias identity and arithmetic consistency only**; it does **not** prove a real-time 24-hour provider reconciliation, stock reservation, latest country policy or SKU packed grams.
+- The previously audited MorePlus/US-LA 726 units are a separate ERP record, **not** proven by this September NY snapshot.
+
+## New R8 code-only freshness gate
+R8 Draft PR #255 now also refuses unsigned, stale, or untraceable inventory reports, **even when a positive quantity is entered**. Every review manifest row must have:
+- `approved=true`, positive `warehouse_available_qty`, positive `landed_cost_usd_minor` and `packed_weight_g`.
+- A stable `warehouse_code`, one of `inventory_evidence_kind='provider_verified'` or `'erp_provider_reconciled'`, integer UTC Unix `warehouse_checked_at`, **within the last 86,400 seconds and never in the future**, and a nonblank `reviewed_by`.
+- Reviewed nonempty `allowed_countries` of ISO alpha-2 strings. The checkout country must be on this per-SKU allowlist.
+- Untrusted Woo `instock` alone, an old inbound/putaway date, and a historical stock spreadsheet **must not be used to populate** `warehouse_checked_at`.
+
+Source checks: `BYL_BF2026_R8_READINESS_PASS=18`; BF gift pure contract `PASS=33`; **15/15** isolated local WooCommerce shopper UAT with 4 temporary products deleted and local options restored. This change remains **Draft PR source-only** until controlled Dev deployment is separately approved; Dev master OFF, real gift catalog remains empty.
+
 ## Blockers and next approved steps
 1. Confirm at least 2 free real gift SKUs and an optional paid upgrade; neither a UAT fixture nor the USD retail catalog price can be accepted as factory/landed gift cost. Existing records prove no production/packaging costs for the four candidates.
 2. For each approved SKU: signed factory/landed USD cost, current provider-verified warehouse available count after reservations, packaging weight in grams, total incremental international carrier cost, compliant allowed/excluded countries, responsible reviewer/approval date.
