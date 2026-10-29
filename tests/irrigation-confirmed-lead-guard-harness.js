@@ -16,6 +16,10 @@ function extract(pattern, label) {
   return match[0];
 }
 
+const bottlePresetHelper = extract(
+  /  function isConfirmedBottleLeadPreset\(preset\) \{[\s\S]*?\n  \}/,
+  "sanctioned Bottle preset guard"
+);
 const irrigationHelper = extract(
   /  function isIrrigationThankYouPage\(\) \{[\s\S]*?\n  \}/,
   "irrigation route guard"
@@ -56,7 +60,7 @@ function runCase(name, options) {
     setSessionItem: (key, value) => session.set(key, value)
   };
   vm.createContext(context);
-  vm.runInContext(irrigationHelper + "\n" + leadHandler, context);
+  vm.runInContext(bottlePresetHelper + "\n" + irrigationHelper + "\n" + leadHandler, context);
   const first = win.YBYThankYou.trackGenerateLeadOnce();
   const second = opts.checkRepeat ? win.YBYThankYou.trackGenerateLeadOnce() : undefined;
   return { name, first, second, session, emissions };
@@ -71,7 +75,8 @@ const tests = [
   ["pre-counted lead", { urlCaseId: CASE_ID, session: { yby_confirmed_lead_case_id: CASE_ID, ["yby_generate_lead_counted_" + CASE_ID]: "1" } }, false, 0],
   ["tracking failure leaves no count flag", { urlCaseId: CASE_ID, session: { yby_confirmed_lead_case_id: CASE_ID }, trackingSuccess: false }, false, 1],
   ["Bottle still requires preset", { pathname: "/lp/thank-you-glass-bottle-oem/", urlCaseId: CASE_ID, session: { yby_confirmed_lead_case_id: CASE_ID } }, false, 0],
-  ["Bottle existing good flow", { pathname: "/lp/thank-you-glass-bottle-oem/", urlCaseId: CASE_ID, session: { yby_confirmed_lead_case_id: CASE_ID, yby_confirmed_lead_preset: "bottle_oem_inquiry" } }, true, 1],
+  ["Bottle site-local studio flow", { pathname: "/lp/thank-you-glass-bottle-oem/", urlCaseId: CASE_ID, session: { yby_confirmed_lead_case_id: CASE_ID, yby_confirmed_lead_preset: "site_bottle_wholesale_v2_uat" } }, true, 1],
+  ["Bottle disallowed site preset", { pathname: "/lp/thank-you-glass-bottle-oem/", urlCaseId: CASE_ID, session: { yby_confirmed_lead_case_id: CASE_ID, yby_confirmed_lead_preset: "site_irrigation_unapproved" } }, false, 0],  ["Bottle existing good flow", { pathname: "/lp/thank-you-glass-bottle-oem/", urlCaseId: CASE_ID, session: { yby_confirmed_lead_case_id: CASE_ID, yby_confirmed_lead_preset: "bottle_oem_inquiry" } }, true, 1],
   ["Other legacy thank-you unchanged", { pathname: "/lp/thank-you/", urlCaseId: CASE_ID }, true, 1]
 ];
 
