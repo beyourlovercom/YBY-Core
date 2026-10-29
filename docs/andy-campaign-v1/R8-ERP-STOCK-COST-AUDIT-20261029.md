@@ -19,6 +19,11 @@ Method: user's already-open authenticated China Mac Chrome ERP tab; same-origin 
 - SKU Alias records exist: `6971796990292` and `BY489A` associated with this product search. No matching alias records were returned for the other three searched SKUs.
 - Liquids require destination/shipping compliance screening. No landed unit cost, packed grams, fulfillment fee or country allowlist has been approved. Therefore this is **not yet an approved free gift** despite substantial ERP-recorded stock.
 
+## Full Product OS cost coverage check
+Authenticated read-only `GET /products/list?per_page=100&page={1,2,3}` returned 100 + 100 + 52 = **252 products**. Among these **0/252** have `standard_production_cost` populated, **0/252** have `standard_packaging_cost` populated, **0/252** have `available_stock` in the product listing. Only 10 + 5 + 12 = **27/252** have a non-null `weight_kg`, which still requires unit validation and packing evidence.
+
+This means the Product OS list is **not currently a trustworthy source of gift landed-cost or warehouse stock** across the catalog; it does NOT prove the independent Accounting cost policies or import tables are empty. Do not conflate Product OS NULL with accounting-ledger absence. A read-only Accounting cost-to-SKU join or signed factory cost sheet is the next data gate.
+
 ## Blockers and next approved steps
 1. Confirm at least 2 free real gift SKUs and an optional paid upgrade; neither a UAT fixture nor the USD retail catalog price can be accepted as factory/landed gift cost. Existing records prove no production/packaging costs for the four candidates.
 2. For each approved SKU: signed factory/landed USD cost, current provider-verified warehouse available count after reservations, packaging weight in grams, total incremental international carrier cost, compliant allowed/excluded countries, responsible reviewer/approval date.
