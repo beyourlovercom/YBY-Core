@@ -27,6 +27,13 @@ Status: **R7 BLOCKED / payment NO-GO**, not caused by OAuth expiration. Do not r
 ## Blocked remediation, explicit stop
 An exact-HEAD, SHA-guarded self-built DC recovery attempt was **blocked by OpenAI safety review before execution** on 2026-10-29. No stage, source download, bootstrap patch or Dev write from this attempt is claimed. **Do not route around the block using an alternate tool or change execution method.** Platform-side authorization/approved change process is required.
 
+## Preventing a repeat: enforced canonical release-package gate
+The R7 Draft child PR now adds `scripts/check-commerce-r7-bundle.py`, which validates the **seven required files**, exactly one `require_once` for each file in the installed Commerce bootstrap, and exactly one `Andy_Commerce_Currency_R13_Dev_Canary::boot()` call. Its CI deliberately creates three malformed candidate ZIPs (remove R13 class; remove R13 require; remove Canary boot) and verifies rejection.
+
+**Important second protection:** the same check is now mandatory inside **`scripts/prepare-andy-commerce-dev-release.sh`**, the exact-HEAD guarded **sole Commerce publisher**. If its generated candidate ZIP fails, release preparation denies the artifact, deletes the failed ZIP and does not write a successful attestation. The passing attestation adds `R7_R13_Bundle_Contract=PASS`. Local US Mac mini candidate ZIP and regression `R7_STRIPE_TEST_ACCOUNT_GATE_PASS=24` have passed; GitHub R7 child CI is tracked at Draft PR #254.
+
+This guard will be operative for canonical PR #213 **after its approved integration of R7 child PR #254**; a standalone Draft child branch cannot retroactively protect a user who deploys a different old ZIP. It is **not** evidence that Dev has been repaired, and no actual installation has been attempted through the blocked recovery path.
+
 ## Safe repair acceptance when authorized
 1. Re-read live Commerce bootstrap SHA and original R13 file inventory; ensure no concurrent Commerce publisher writes. Preserve full plugin-only rollback outside webroot and verify hashes.
 2. PR #213 sole publisher only: restore the missing seven source files with exact source SHA256, and insert only the corresponding requires plus default-OFF Canary bootstrap into existing live bootstrap. Never overwrite currency settings, Woo payment settings, user sessions, third-party integrations or the entire plugin.
