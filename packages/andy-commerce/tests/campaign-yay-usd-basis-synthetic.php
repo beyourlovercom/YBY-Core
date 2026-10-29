@@ -96,7 +96,7 @@ foreach(['USD','EUR','GBP','AUD','CAD'] as $currency){
     $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch('219.00')],['percent10']));
     assert_true(!$r['ok']&&$r['reason']==='coupon_type_or_restrictions_not_verified',$currency.' unsupported percent denied');
     $passes++;
-    $bad=merch('199.00');$bad['line_subtotal']='1.00';
+    $bad=merch('199.00');$bad['line_subtotal']='1.00';$bad['line_total']='1.00';
     $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([$bad]));
     assert_true(!$r['ok']&&$r['reason']==='native_yay_price_mismatch',$currency.' local mismatch denied');
     $passes++;
