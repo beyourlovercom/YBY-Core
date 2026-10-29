@@ -45,6 +45,7 @@ class WC_Product{
 }
 class WC_Coupon{
     public function __construct(private string $code){}
+    public function get_code(){return $this->code;}
     public function get_id(){return in_array($this->code,['fixed20','percent10','product10'],true)?7:0;}
     public function get_discount_type($ctx='edit'){return $this->code==='fixed20'?'fixed_cart':($this->code==='product10'?'fixed_product':'percent');}
     public function get_product_ids($ctx='edit'){return [];}
