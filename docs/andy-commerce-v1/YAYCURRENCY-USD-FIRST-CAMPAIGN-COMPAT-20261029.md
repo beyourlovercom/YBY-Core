@@ -2,6 +2,8 @@
 
 Status: **Draft / DEV-only, NO-GO for payment or WWW**. Source PR branch stacked on Commerce integrator PR #213; does not supersede the 2026-10-29 freeze on new self-built FX/payment features.
 
+**R7 review addendum:** the original synthetic adapter had incorrectly granted one free gift for an otherwise zero-dollar basket. The source now returns 0 eligible gifts when verified source USD merchandise is exactly 0; two dedicated regression assertions cover the pure basis function and a Woo-shaped zero-price cart. This is source-only and not proof of real Yay/HPOS/Stripe payments. The synthetic check count advances from 51 to 53. CI release provenance remains strict after PR #213 base updates; do not disable it to turn a failed check green.
+
 ## Owner-approved architecture
 - WooCommerce store base currency is **USD**, canonical promotion thresholds and budgets expressed as exact **integer USD cents**.
 - **YayCurrency is the sole storefront price/checkout currency engine.** Do not run the Andy Currency R8–R13 frontend converter, payment bridge, or checkout currency filter at the same time. Existing `Andy_Commerce_Currency_Runtime_Dev_V1::legacy_conflict()` already recognizes YayCurrency slugs.
