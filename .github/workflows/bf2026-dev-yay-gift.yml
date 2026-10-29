@@ -28,7 +28,7 @@ jobs:
           grep -Fq 'Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote($cart)' "$d/includes/class-byl-bf2026-gifts.php"
           grep -Fq 'Andy_Commerce_Campaign_Yay_USD_Basis_V1::storefront_currency()' "$d/includes/class-byl-bf2026-gifts.php"
           grep -Fq 'BYL_BF2026_R8_Readiness::inspect' "$d/includes/class-byl-bf2026-gifts.php"
-          grep -Fq "count($""rows) >= 2" "$d/includes/class-byl-bf2026-r8-readiness.php"
+          grep -Fq 'count($rows)>=2' "$d/includes/class-byl-bf2026-r8-readiness.php"
           if grep -Eq 'Andy_Commerce_Currency_Runtime_Dev_V1::convert\(|Andy_Commerce_Campaign_USD_Basis_V1::quote\(' "$d/includes/class-byl-bf2026-gifts.php"; then
             echo LEGACY_CURRENCY_BRIDGE_STILL_PRESENT; exit 2
           fi
