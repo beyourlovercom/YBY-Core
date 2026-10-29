@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""R7 regression: fail closed on missing Currency R13 files in a Commerce ZIP.
+"""R7 read-only release and installed-file parity audit for Commerce R13.
 
-Read-only build gate. Runs on a locally generated candidate only. Never touches a
-WordPress installation, Dev credentials, payment providers, or remote hosts.
+Never changes WordPress, credentials, payment providers, or hosts. The installed
+folder, if supplied, is examined read-only against the exact reviewed ZIP.
 """
 from __future__ import annotations
 
@@ -25,7 +25,11 @@ BOOTSTRAP = PREFIX + "class-andy-commerce.php"
 CANARY_BOOT = "Andy_Commerce_Currency_R13_Dev_Canary::boot();"
 
 
-def check_bundle(path: str, source_root: str | None = None) -> list[str]:
+def check_bundle(
+    path: str,
+    source_root: str | None = None,
+    installed_root: str | None = None,
+) -> list[str]:
     problems: list[str] = []
     with zipfile.ZipFile(path) as z:
         members = set(z.namelist())
@@ -56,6 +60,19 @@ def check_bundle(path: str, source_root: str | None = None) -> list[str]:
                     problems.append("source_file_missing:" + member)
                 elif member in members and z.read(member) != source.read_bytes():
                     problems.append("source_payload_mismatch:" + member)
+        # A valid ZIP does not prove the running plugin still has those files.
+        # Post-install proof is read-only and cannot activate or patch Woo.
+        if installed_root:
+            root = Path(installed_root)
+            if not root.is_dir():
+                problems.append("installed_plugin_dir_missing")
+            else:
+                for member in (BOOTSTRAP, *(PREFIX + n for n in REQUIRED_FILES)):
+                    target = root / member.removeprefix("andy-commerce/")
+                    if not target.is_file():
+                        problems.append("installed_file_missing:" + member)
+                    elif member in members and target.read_bytes() != z.read(member):
+                        problems.append("installed_payload_mismatch:" + member)
     return problems
 
 
@@ -63,9 +80,10 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("zip", help="local Commerce release ZIP, NOT a live plugin")
     parser.add_argument("--source-root", help="exact reviewed packages/andy-commerce source root")
+    parser.add_argument("--installed-root", help="read-only installed Commerce plugin root to verify")
     args = parser.parse_args()
     try:
-        problems = check_bundle(args.zip, args.source_root)
+        problems = check_bundle(args.zip, args.source_root, args.installed_root)
     except (zipfile.BadZipFile, OSError, UnicodeDecodeError) as exc:
         print("R7_COMMERCE_BUNDLE_FAIL=" + type(exc).__name__, file=sys.stderr)
         return 2
@@ -74,7 +92,8 @@ def main() -> int:
             print("R7_COMMERCE_BUNDLE_FAIL=" + p, file=sys.stderr)
         return 1
     print("R7_COMMERCE_BUNDLE_CONTRACT_PASS=7_FILES_7_REQUIRES_CANARY_BOOT"
-          + ("_AND_SOURCE_PARITY" if args.source_root else ""))
+          + ("_AND_SOURCE_PARITY" if args.source_root else "")
+          + ("_AND_INSTALLED_PARITY" if args.installed_root else ""))
     return 0
 
 
