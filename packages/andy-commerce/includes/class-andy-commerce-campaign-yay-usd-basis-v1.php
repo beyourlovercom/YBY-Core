@@ -88,14 +88,25 @@ final class Andy_Commerce_Campaign_Yay_USD_Basis_V1 {
             $path=ABSPATH.'wp-admin/includes/plugin.php';
             if(is_file($path)) require_once $path;
         }
-        $yay=false;
-        if(function_exists('is_plugin_active')) {
-            foreach(['yaycurrency/yaycurrency.php','yaycurrency-pro/yaycurrency.php',
-                     'yaycurrency-premium/yaycurrency.php','yaycurrency-pro/yaycurrency-pro.php'] as $slug){
-                if(is_plugin_active($slug)){$yay=true;break;}
-            }
+        // Owner policy: only licensed YayCurrency PRO may authorize currency-
+        // independent campaign entitlements. The Free build is not a fallback.
+        // Installation alone is NOT license verification: the Pro license and
+        // five enabled checkout currencies must also pass admin UAT.
+        if(!function_exists('is_plugin_active'))
+            return self::fail('yaycurrency_pro_required');
+        if(is_plugin_active('yaycurrency/yaycurrency.php')
+           || is_plugin_active('yaycurrency/yay-currency.php'))
+            return self::fail('yaycurrency_free_conflict');
+        $pro=false;
+        foreach([
+            'yaycurrency-pro/yay-currency.php',
+            'yaycurrency-pro/yaycurrency.php',
+            'yaycurrency-pro/yaycurrency-pro.php',
+            'yaycurrency-premium/yaycurrency.php'
+        ] as $slug){
+            if(is_plugin_active($slug)){$pro=true;break;}
         }
-        if(!$yay)return self::fail('yaycurrency_not_active');
+        if(!$pro)return self::fail('yaycurrency_pro_required');
 
         $coupons=$cart->get_applied_coupons();
         if(!is_array($coupons)||count($coupons)>1)
