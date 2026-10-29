@@ -107,6 +107,9 @@ final class BYL_BF2026_Gifts {
         add_action( 'woocommerce_before_calculate_totals', array( __CLASS__, 'reprice' ), 80 );
         add_action( 'woocommerce_after_calculate_totals', array( __CLASS__, 'reconcile' ), 80 );
         add_action( 'woocommerce_check_cart_items', array( __CLASS__, 'validate' ), 80 );
+        // Classic Checkout: sanitized Woo posted_data is authoritative, even
+        // when the cart session still retains a different shipping country.
+        add_action( 'woocommerce_after_checkout_validation', array( __CLASS__, 'validate_classic' ), 80, 2 );
         // Store API / Blocks validates an order through a separate WooCommerce hook.
         add_action( 'woocommerce_checkout_validate_order_before_payment', array( __CLASS__, 'validate_store_api' ), 80, 2 );
         // Native coupons may discount merchandise but never the promotional gift upgrade line.
@@ -261,8 +264,23 @@ final class BYL_BF2026_Gifts {
 
     public static function validate(): void {
         if ( ! function_exists( 'WC' ) || ! WC()->cart ) { return; }
+        // Classic Checkout has a dedicated, authoritative submitted-address
+        // validator. Do not emit duplicate notices from cart validation.
+        if ( defined( 'WOOCOMMERCE_CHECKOUT' ) && WOOCOMMERCE_CHECKOUT ) { return; }
         $reason = self::cart_validation_issue( WC()->cart );
         if ( '' !== $reason ) { wc_add_notice( $reason, 'error' ); }
+    }
+
+    /** Classic Checkout supplies sanitized, normalized posted_data, which
+     * already maps billing country to shipping country if same-address is set.
+     * A missing submitted country must NOT inherit WC()->customer or IP data.
+     */
+    public static function validate_classic( $data, $errors ): void {
+        if ( ! $errors instanceof WP_Error || ! function_exists( 'WC' ) || ! WC()->cart ) { return; }
+        $country = is_array( $data ) && is_string( $data['shipping_country'] ?? null )
+            ? $data['shipping_country'] : '';
+        $reason = self::cart_validation_issue( WC()->cart, $country );
+        if ( '' !== $reason ) { $errors->add( 'byl_bf2026_invalid_gift', $reason ); }
     }
 
     /** Store API checkout uses WP_Error before payment, not Classic cart notices. */
