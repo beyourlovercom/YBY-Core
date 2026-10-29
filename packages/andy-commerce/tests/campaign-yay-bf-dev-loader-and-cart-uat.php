@@ -11,6 +11,8 @@
  *   --require=campaign-yay-dev-pro-preboot.php \
  *   eval-file campaign-yay-bf-dev-loader-and-cart-uat.php
  */
+$aiccPhase='start';
+try {
 if(!defined('ABSPATH') || !defined('WP_CLI') || !WP_CLI
  || wp_parse_url(home_url('/'),PHP_URL_HOST)!=='dev.beyourlover.com'
  || get_option('woocommerce_currency')!=='USD'
@@ -50,12 +52,14 @@ $temp=tempnam(sys_get_temp_dir(),'bf-yay-uat-');
 if(!$temp)throw new RuntimeException('BF_DEV_UAT_TEMP_FAILED');
 try {
     if(file_put_contents($temp,$body)===false)throw new RuntimeException('BF_DEV_UAT_FILE_WRITE_FAILED');
+    $aiccPhase='require_candidate';
     require $temp;
 } finally { @unlink($temp); }
 if(!class_exists('BYL_BF2026_Gifts_Candidate_UAT',false))
     throw new RuntimeException('BF_DEV_UAT_CLASS_NOT_LOADED');
 echo 'BF_DEV_LOADER_PASS=1 currency='.$wanted.' original_plugin_active=YES candidate_hooks_not_booted=YES'.PHP_EOL;
 
+$aiccPhase='cart_checks';
 $passes=0;
 $assert=static function($value,$why) {
     if(!$value)throw new RuntimeException('BF_DEV_CART_UAT_FAIL_'.$why);
@@ -102,3 +106,11 @@ foreach([
 }
 echo 'BF_DEV_CANDIDATE_CART_PASS='.$passes.' currency='.$wanted.
      ' no_orders_no_payments=YES in_memory_only=YES'.PHP_EOL;
+
+} catch (Throwable $aiccCaught) {
+    // Only programmatic Dev-only status. No customer identifiers/keys/trace.
+    echo 'BF_DEV_UAT_DIAGNOSTIC_PHASE='.$aiccPhase.PHP_EOL;
+    echo 'BF_DEV_UAT_DIAGNOSTIC_CLASS='.get_class($aiccCaught).PHP_EOL;
+    echo 'BF_DEV_UAT_DIAGNOSTIC_REASON='.substr(preg_replace('/[^a-zA-Z0-9_.,:{}\- ]/','?',(string)$aiccCaught->getMessage()),0,280).PHP_EOL;
+    exit(23);
+}
