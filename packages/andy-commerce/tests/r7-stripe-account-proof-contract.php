@@ -23,7 +23,7 @@ function get_current_user_id(){return 11;}
 function get_option($n,$default=null){return $GLOBALS['r7_opts'][$n]??$default;}
 function wp_salt($n){return 'R7_FAKE_SALT_FOR_TESTS';}
 class Andy_Commerce_Currency_Runtime_Dev_V1 {
- public static function legacy_conflict():bool{return false;}
+ public static function legacy_conflict():bool{return $GLOBALS['r7_yay_conflict']??false;}
 }
 require dirname(__DIR__).'/includes/class-andy-commerce-currency-r13-dev-canary.php';
 function verifyR7($v,$label){
@@ -128,4 +128,27 @@ verifyR7($class::checkout_preflight(null,null,new WP_REST_Request(
     'POST','/wc/store/v1/cart',['payment_method'=>'stripe']))===null,
     'other Store API routes not affected');
 
+// YayCurrency owns the storefront FX/checkout path under the newer Owner-approved
+// architecture. A retained R13 administrator option or Stripe TEST proof must NOT
+// reactivate the old self-built currency canary or surface its gateway.
+$GLOBALS['r7_yay_conflict']=true;
+$GLOBALS['r7_currency']='EUR';
+$GLOBALS['r7_opts'][$class::OPTION]['expires_at']=time()+600;
+$GLOBALS['r7_opts'][$class::ACCOUNT_PROOF]=$correctProof;
+$GLOBALS['r7_opts']['woocommerce_stripe_settings']['enabled']='yes';
+$GLOBALS['r7_session']=['aicc_currency_runtime_selected'=>'CAD'];
+verifyR7(!$class::armed(),'YayCurrency conflict rejects stored R13 staff authorization');
+verifyR7(!$class::payment_ready(),'YayCurrency conflict rejects previous Stripe TEST proof');
+$err=$class::checkout_preflight(null,null,$r);
+verifyR7($err instanceof WP_Error && $err->get_error_code()==='aicc_r13_dev_session_expired',
+    'YayCurrency conflict rejects retained foreign Store API checkout');
+verifyR7($class::gateways(['stripe'=>'TEST_STRIPE','woocommerce_payments'=>'OTHER'])===[],
+    'YayCurrency conflict never exposes old R13 gateway on retained foreign cart');
+$GLOBALS['r7_session']=[];
+verifyR7($class::gateways(['stripe'=>'TEST_STRIPE','woocommerce_payments'=>'OTHER'])
+  ===['woocommerce_payments'=>'OTHER'],
+    'YayCurrency conflict keeps standard USD WooPayments gateway without R13 Stripe');
+// Do not claim that these old R13 mocked failures prove actual Yay+Woo payments.
+$GLOBALS['r7_yay_conflict']=false;
+echo 'R7_YAYCURRENCY_LEGACY_CANARY_NEGATIVE_PASS=5'.PHP_EOL;
 echo 'R7_STRIPE_TEST_ACCOUNT_GATE_PASS='.$GLOBALS['r7_count'].PHP_EOL;
