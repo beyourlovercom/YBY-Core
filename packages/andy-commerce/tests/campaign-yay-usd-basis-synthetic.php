@@ -45,15 +45,42 @@ class WC_Product{
 }
 class WC_Coupon{
     public function __construct(private string $code){}
-    public function get_id(){return $this->code==='fixed20'||$this->code==='percent10'?7:0;}
-    public function get_discount_type($ctx='edit'){return $this->code==='fixed20'?'fixed_cart':'percent';}
+    public function get_id(){return in_array($this->code,['fixed20','percent10','product10'],true)?7:0;}
+    public function get_discount_type($ctx='edit'){return $this->code==='fixed20'?'fixed_cart':($this->code==='product10'?'fixed_product':'percent');}
     public function get_product_ids($ctx='edit'){return [];}
     public function get_excluded_product_ids($ctx='edit'){return [];}
     public function get_product_categories($ctx='edit'){return [];}
     public function get_excluded_product_categories($ctx='edit'){return [];}
     public function get_exclude_sale_items($ctx='edit'){return false;}
     public function get_limit_usage_to_x_items($ctx='edit'){return null;}
-    public function get_amount($ctx='edit'){return $GLOBALS['coupon_amount'];}
+    public function get_amount($ctx='edit'){return $this->code==='percent10'?'10':($this->code==='product10'?'10.00':$GLOBALS['coupon_amount']);}
+    public function get_minimum_amount($ctx='edit'){return '0';}
+    public function get_maximum_amount($ctx='edit'){return '0';}
+    public function get_email_restrictions($ctx='edit'){return [];}
+    public function is_valid_for_cart(){return true;}
+    public function is_valid_for_product($p,$item){return true;}
+}
+function wc_add_number_precision($x){return (int)round(((float)$x)*100);}
+class WC_Discounts{
+    private array $items=[];private array $discounts=[];
+    public function set_items($items){$this->items=$items;$this->discounts=[];}
+    public function apply_coupon($coupon,$validate=true){
+        $type=$coupon->get_discount_type();
+        $amt=(float)$coupon->get_amount();
+        foreach($this->items as $key=>$item){
+            $used=array_sum(array_map(fn($arr)=>$arr[$key]??0,$this->discounts));
+            $available=max(0,(int)$item->price-$used);
+            if($type==='percent')$discount=(int)round($available*$amt/100);
+            elseif($type==='fixed_product')$discount=(int)round($amt*100*$item->quantity);
+            else $discount=(int)round($amt*100 / count($this->items));
+            $this->discounts[$coupon->get_code()][$key]=min($available,$discount);
+        }
+        return true;
+    }
+    public function get_discounts_by_item($minor=true){
+        $out=[];foreach($this->discounts as $coupon){foreach($coupon as $key=>$n){$out[$key]=($out[$key]??0)+$n;}}
+        return $out;
+    }
 }
 class WC_Cart{
     public function __construct(private array $lines,private array $coupons=[]){}
@@ -72,6 +99,17 @@ function merch(string $usd,int $qty=1):array{
     return ['data'=>new WC_Product($usd),'quantity'=>$qty,
         'line_subtotal'=>number_format($u*$qty,2,'.',''),
         'line_total'=>number_format($u*$qty,2,'.','')];
+}
+function percentCart(string $usd):WC_Cart {
+    $p=merch($usd);
+    $p['line_total']=number_format(round((float)$p['line_subtotal']*.90,2),2,'.','');
+    return new WC_Cart([$p],['percent10']);
+}
+function productCart(string $usd):WC_Cart {
+    $p=merch($usd);
+    $p['line_total']=number_format(max(0,(float)$p['line_subtotal']-
+         (float)apply_filters('yay_currency_convert_price','10.00')),2,'.','');
+    return new WC_Cart([$p],['product10']);
 }
 function fixedCart(string $usd):WC_Cart {
     $p=merch($usd);
@@ -101,8 +139,17 @@ foreach(['USD','EUR','GBP','AUD','CAD'] as $currency){
     $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch('198.99'),$upgrade]));
     assert_true($r['ok']&&$r['gift_slots']===1,$currency.' upgrade excluded');
     $passes++;
-    $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch('219.00')],['percent10']));
-    assert_true(!$r['ok']&&$r['reason']==='coupon_type_or_restrictions_not_verified',$currency.' unsupported percent denied');
+    $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(percentCart('220.00'));
+    assert_true($r['ok']&&$r['basis_minor']===19800&&$r['gift_slots']===1,
+        $currency.' percent10 native USD replay '.json_encode($r));
+    $passes++;
+    $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(productCart('209.00'));
+    assert_true($r['ok']&&$r['basis_minor']===19900&&$r['gift_slots']===2,
+        $currency.' fixed product10 native USD replay '.json_encode($r));
+    $passes++;
+    $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch('219.00')],['mystery']));
+    assert_true(!$r['ok']&&$r['reason']==='source_coupon_type_not_supported',
+        $currency.' unsupported coupon denied '.json_encode($r));
     $passes++;
     $bad=merch('199.00');$bad['line_subtotal']='1.00';$bad['line_total']='1.00';
     $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([$bad]));
@@ -149,5 +196,5 @@ $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch('199.00')])
 assert_true($r['ok'] && $r['gift_slots']===2,
     'Pro-only control still grants valid 199 USD threshold');
 $passes++;
-assert_true($passes===58,'expected 58 checks');
+assert_true($passes===68,'expected 68 checks');
 echo 'YAY_USD_BASIS_SYNTHETIC_CONTRACT_PASS='.$passes.PHP_EOL;
