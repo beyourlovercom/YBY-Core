@@ -88,8 +88,11 @@ final class Andy_Commerce_Campaign_Source_USD_Discounts_V1 {
                 // Woo has already accepted the native coupon in the actual cart.
                 // Re-check monetary threshold in ORIGINAL USD to prevent a
                 // displayed-local amount from becoming a source-USD threshold.
-                $minimum=self::minor($coupon->get_minimum_amount('edit'));
-                $maximum=self::minor($coupon->get_maximum_amount('edit'));
+                $minRaw=$coupon->get_minimum_amount('edit');
+                $maxRaw=$coupon->get_maximum_amount('edit');
+                // Woo stores an unset coupon spend limit as an empty string.
+                $minimum=($minRaw===''||$minRaw===null)?0:self::minor($minRaw);
+                $maximum=($maxRaw===''||$maxRaw===null)?0:self::minor($maxRaw);
                 if($minimum===null || $maximum===null) return self::fail('coupon_spend_limit_invalid');
                 if($subtotal<$minimum || ($maximum>0 && $subtotal>$maximum))
                     return self::fail('coupon_usd_spend_limit_not_met');
