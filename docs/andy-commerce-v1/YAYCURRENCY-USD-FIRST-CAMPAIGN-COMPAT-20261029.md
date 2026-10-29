@@ -2,6 +2,15 @@
 
 Status: **Draft / DEV-only, NO-GO for payment or WWW**. Source PR branch stacked on Commerce integrator PR #213; does not supersede the 2026-10-29 freeze on new self-built FX/payment features.
 
+## Owner decision 2026-10-29: **Pro-only, approved Dev tests**
+- **YayCurrency Pro is mandatory for the five-currency release** (USD, EUR, GBP, AUD, CAD); the Free plugin may not be used as a release substitute. Code now fails closed when Pro is absent, Free is active, or Free and Pro coexist. Synthetic contract now targets **58 assertions**, not actual five-currency payments.
+- Pro's installed/plugin-active status is not proof of a valid vendor **license**, configured five enabled currencies, real Woo/Yay checkout sessions, payment gateway support or webhook processing. Each remains a signed Dev UAT gate.
+- Official upgrade process: first obtain a legitimate YayCurrency Pro archive and authorization from YayCommerce or WooCommerce.com, preserve current Dev config and a rollback copy; **only then** deactivate Free, install/activate Pro, and verify license. Do not download a nulled ZIP, invent a license, silently purchase a subscription, or disable the existing working Free instance prematurely.
+- The official Pro plugin entry point can be `yaycurrency-pro/yay-currency.php`; the Pro-only adapter checks a small explicit allowlist of possible vendor file basenames. Verify the actual plugin basename against the licensed ZIP before runtime promotion; do not infer Pro from the current Free `Yay_Currency` shared PHP namespace alone.
+- Approved testing **only on dev.beyourlover.com**, with all test gateways still OFF until an authorized verified TEST merchant and prior platform safety requirements permit real payments; no WWW/main change.
+- Vendor docs: https://docs.yaycommerce.com/manual/getting-started/update-plugin ; https://docs.yaycommerce.com/yaycurrency/getting-started/enter-license-key ; https://docs.yaycommerce.com/yaycurrency/why-upgrade .
+
+
 **R7 review addendum:** the original synthetic adapter had incorrectly granted one free gift for an otherwise zero-dollar basket. The source now returns 0 eligible gifts when verified source USD merchandise is exactly 0; three dedicated regression assertions cover the pure basis function, a Woo-shaped zero-price cart, and a full-cart coupon reducing the USD merchandise basis to zero. This is source-only and not proof of real Yay/HPOS/Stripe payments. The synthetic check count advances from 51 to 54. CI release provenance remains strict after PR #213 base updates; do not disable it to turn a failed check green.
 
 ## Owner-approved architecture
