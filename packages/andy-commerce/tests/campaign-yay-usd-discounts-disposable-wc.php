@@ -85,7 +85,46 @@ try {
     $line=array_values($lines)[0];
     $bad=Andy_Commerce_Campaign_Source_USD_Discounts_V1::replay(['one'=>$line],['not-a-real-coupon']);
     $assert(($bad['ok']??true)===false,'unknown_coupon_fails_closed');++$passes;
-    $assert($passes===7,'count');
+    // Coupon minimum/maximum spend are stored in USD, not rounded foreign
+    // storefront amounts. Verify boundaries in the disposable Woo DB only.
+    $limited=new WC_Coupon($codes['fixed_cart']);
+    foreach([
+        ['min','200.00','199.99',false],
+        ['min','200.00','200.00',true],
+        ['max','200.00','200.00',true],
+        ['max','200.00','200.01',false],
+    ] as [$mode,$limit,$usd,$expected]) {
+        $limited->set_minimum_amount($mode==='min'?$limit:'');
+        $limited->set_maximum_amount($mode==='max'?$limit:'');
+        $limited->save();
+        $p=wc_get_product($p1);
+        $p->set_regular_price($usd);
+        $p->set_price($usd);
+        $p->save();
+        WC()->cart->empty_cart();
+        $assert((bool)WC()->cart->add_to_cart($p1,1),'boundary_add_product');
+        WC()->cart->calculate_totals();
+        $source=[];
+        foreach(WC()->cart->get_cart() as $key=>$line){
+            $source[(string)$key]=[
+                'product'=>$line['data'],
+                'quantity'=>(int)$line['quantity'],
+                'usd_unit_minor'=>(int)round((float)$line['data']->get_price('edit')*100),
+                'cart_item'=>$line,
+            ];
+        }
+        $q=Andy_Commerce_Campaign_Source_USD_Discounts_V1::replay(
+            $source,[$codes['fixed_cart']]);
+        $assert(($q['ok']??false)===$expected,
+            'USD_spend_'.$mode.'_'. $usd . '_'.($q['reason']??''));
+        if(!$expected) {
+            $assert(($q['reason']??null)==='coupon_usd_spend_limit_not_met',
+                'USD_spend_below_or_above_bound');
+        }
+        echo 'YAY_NATIVE_USD_COUPON_LIMIT_PASS='.$mode.' USD='.$usd.' accepted='.($expected?'YES':'NO').PHP_EOL;
+        ++$passes;
+    }
+    $assert($passes===11,'count');
     echo 'YAY_NATIVE_WOO_USD_DISCOUNT_REPLAY_PASS='.$passes.PHP_EOL;
 } finally {
     if(WC()->cart)WC()->cart->empty_cart();
