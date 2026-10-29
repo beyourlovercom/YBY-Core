@@ -203,6 +203,13 @@
     return /^\/lp\/thank-you-glass-bottle-oem\/?$/.test(String(window.location.pathname || "").toLowerCase());
   }
 
+  // Only the sanctioned Bottle form presets may count a confirmed OEM lead.
+  // This does not admit irrigation or arbitrary site-defined forms.
+  function isConfirmedBottleLeadPreset(preset) {
+    return preset === "bottle_oem_inquiry" ||
+      preset === "site_bottle_wholesale_v2_uat";
+  }
+
   function isIrrigationThankYouPage() {
     return /^\/lp\/thank-you-irrigation-solution\/?$/.test(String(window.location.pathname || "").toLowerCase());
   }
@@ -1021,7 +1028,7 @@
       if (normalizeCaseId(getQueryParam("case_id")) !== caseId ||
           normalizeCaseId(getSessionItem("yby_confirmed_lead_case_id")) !== caseId ||
           (isBottleThankYouPage() &&
-            getSessionItem("yby_confirmed_lead_preset") !== "bottle_oem_inquiry")) {
+            !isConfirmedBottleLeadPreset(getSessionItem("yby_confirmed_lead_preset")))) {
         return false;
       }
     }
