@@ -24,6 +24,27 @@ Authenticated read-only `GET /products/list?per_page=100&page={1,2,3}` returned 
 
 This means the Product OS list is **not currently a trustworthy source of gift landed-cost or warehouse stock** across the catalog; it does NOT prove the independent Accounting cost policies or import tables are empty. Do not conflate Product OS NULL with accounting-ledger absence. A read-only Accounting cost-to-SKU join or signed factory cost sheet is the next data gate.
 
+## Prior uploaded costbook reconciliation found in ChatGPT Library (2026-10-29)
+**Source:** `BYL-ERP-PRODUCT-COST-RECONCILIATION-2026-09-08.xlsx` (previously uploaded, **read-only**; original named `成本货本007组 7月进销存.xlsx`). Its READY tab has **55 uniquely matched product groups / 57 source rows**, with status `READY_NOT_APPLIED`; it explicitly warns that Product OS `standard_production_cost` is merely reference/estimate and that source rows must use a separately approved confirmed-cost contract. This is historical 2026-07 purchasing cost, **not** current product landed cost or authorization to write the Production ERP.
+
+**Exact confirmed historical SKU match for real candidate:**
+- ERP product **1346**, Woo SKU `BY489A-Lubes`, alias/match key **`BY489A`**, 35ml lubricant; `unit_cost_cny=1.20`, source long code `1BY489A5C0100`, provenance `confirmed_source_file`, status **`READY_NOT_APPLIED`**.
+- **Do NOT** treat ¥1.20 as final gift unit cost. It does not independently prove current batch purchase cost, packing material, merchant payment fee, 2026 FX rate, warehouse storage, liquid compliance or last-mile carrier fee. Requires Owner-reviewed current costing/fulfillment addendum before R8 approval.
+
+Other inexpensive source-matched historical costbook rows, **candidate research ONLY**:
+| ERP product ID | SKU | Historical source unit cost CNY | Caution |
+|---|---|---:|---|
+| 1475 | `CY615A` | 11.90 | Warehouse-only catalog name pending; current SKU stock/packing unverified |
+| 1466 | `VX219A` | 25.3764 | Current warehouse stock/packing unverified |
+| 1333 | `609A` (source key `VX609A`) | 26.1012 | Alias must be matched; current stock/packing unverified |
+| 1476 | `VX610A` | 26.4015 | Warehouse-only catalog name pending; current stock/packing unverified |
+
+The originally short-listed SKUs `chargerc`, `00W07`, and `414sleeve` have **no exact match in this reconciled costbook**. This does not prove a cost never existed; it means this evidence source cannot approve them.
+
+**Accounting reality check:** authenticated read-only ERP query for historic orders matching `BY489A-Lubes` returned 238 order-level records. Only **18/238** have a product-cost field populated; the others **220/238** do not. An *order-level cost*, often for a basket with multiple SKUs, is not usable as SKU unit cost. No order data was modified.
+
+**Data-access stop:** the already-open China Mac Chrome/ERP read-only inspection later encountered a platform safety block. No alternative access path used to bypass. No additional inventory for the four newly researched cheaper candidates can be claimed.
+
 ## Blockers and next approved steps
 1. Confirm at least 2 free real gift SKUs and an optional paid upgrade; neither a UAT fixture nor the USD retail catalog price can be accepted as factory/landed gift cost. Existing records prove no production/packaging costs for the four candidates.
 2. For each approved SKU: signed factory/landed USD cost, current provider-verified warehouse available count after reservations, packaging weight in grams, total incremental international carrier cost, compliant allowed/excluded countries, responsible reviewer/approval date.
