@@ -4,7 +4,7 @@ Andy Core is the shared WordPress foundation plugin for managed websites.
 
 ## Candidate status (2026-10-19)
 
-- Product version: `2.3.1` (All-Notice Notification UI signed candidate; unpublished)
+- Product version: `2.3.2` (Login OS V1.1 signed Stable release)
 - Database version: `1.5.0`
 - Updater compatibility database version: `1.4.0`
 - At release preparation, public Stable / Latest is `2.2.6`; the actual currently published Stable/Latest is determined by the GitHub release repository. Immutable Canary `2.2.9` remains a Prerelease.
