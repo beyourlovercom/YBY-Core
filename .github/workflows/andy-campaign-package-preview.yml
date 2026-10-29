@@ -76,6 +76,44 @@ jobs:
                   print('R8_UNSAFE_PREVIEW_REJECTED='+label)
           print('R8_GIFT_PREVIEW_NEGATIVE_MATRIX_PASS=3')
           R8_NEG
+          # Validate post-install parity against a disposable extracted folder.
+          # The check is read-only; no Dev installation or live files are read.
+          python3 - byl-black-friday-2026-0.1.0-preview.zip <<'R8_INSTALLED'
+          from pathlib import Path
+          import subprocess, sys, tempfile, zipfile
+          archive = Path(sys.argv[1]).resolve()
+          checker = '../scripts/check-campaign-r8-gift-bundle.py'
+          source = '../packages/andy-campaign-packs/black-friday-2026'
+          with tempfile.TemporaryDirectory() as dirname:
+              with zipfile.ZipFile(archive) as z:
+                  z.extractall(dirname)
+              root = Path(dirname) / 'black-friday-2026'
+              def check():
+                  return subprocess.run(
+                      [sys.executable, checker, str(archive),
+                       '--source-root', source, '--installed-root', str(root)],
+                      capture_output=True, text=True)
+              accepted = check()
+              if accepted.returncode != 0:
+                  raise SystemExit('R8_INSTALLED_GOOD_DENIED:' + accepted.stderr)
+              count = 1
+              for relative in ('black-friday-2026.php',
+                               'includes/class-byl-bf2026-r8-readiness.php',
+                               'includes/class-byl-bf2026-gifts.php'):
+                  file = root / relative
+                  original = file.read_bytes()
+                  file.write_bytes(original + b'\\n/*stale installed copy*/\\n')
+                  if check().returncode == 0:
+                      raise SystemExit('R8_INSTALLED_MUTATION_NOT_REJECTED:' + relative)
+                  count += 1
+                  file.unlink()
+                  if check().returncode == 0:
+                      raise SystemExit('R8_INSTALLED_MISSING_NOT_REJECTED:' + relative)
+                  count += 1
+                  file.parent.mkdir(parents=True, exist_ok=True)
+                  file.write_bytes(original)
+              print('R8_INSTALLED_PARITY_CHECK_PASS=' + str(count))
+          R8_INSTALLED
           sha256sum *preview.zip > SHA256SUMS
           cat SHA256SUMS
           unzip -l andy-campaign-0.1.0-preview.zip
