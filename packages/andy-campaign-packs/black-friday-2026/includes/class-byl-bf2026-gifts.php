@@ -196,7 +196,10 @@ final class BYL_BF2026_Gifts {
     public static function reconcile( $cart ): void {
         if ( self::$busy || ! $cart instanceof WC_Cart ) { return; }
         $catalog = self::catalog();
-        $slots = self::eligibility( $cart )['slots'];
+        // Revoking one of the two promised free options closes the entire
+        // campaign. A previously selected different gift must not survive.
+        $ready = self::ready();
+        $slots = $ready ? self::eligibility( $cart )['slots'] : 0;
         $kept = 0; $remove = array(); $seen = array();
         foreach ( $cart->get_cart() as $key => $line ) {
             if ( ! self::is_gift( $line ) ) { continue; }
@@ -220,6 +223,15 @@ final class BYL_BF2026_Gifts {
     private static function cart_validation_issue( $cart ): string {
         if ( ! $cart instanceof WC_Cart ) { return ''; }
         $catalog = self::catalog();
+        // Nothing to validate if no gift is selected; ordinary merchandise
+        // checkout must remain available while the campaign is OFF.
+        $any_gift = false;
+        foreach ( $cart->get_cart() as $line ) {
+            if ( self::is_gift( $line ) ) { $any_gift = true; break; }
+        }
+        if ( $any_gift && ! self::ready() ) {
+            return 'Promotional gifts are unavailable; please update your cart.';
+        }
         $slots = self::eligibility( $cart )['slots'];
         $count = 0; $seen = array();
         foreach ( $cart->get_cart() as $line ) {
@@ -319,7 +331,7 @@ final class BYL_BF2026_Gifts {
             if ( (int) ( $line['product_id'] ?? 0 ) === $id ) { $slots = 0; }
             ++$selected;
         }
-        $product = isset( $catalog[ $id ] ) ? self::gift_product( $id ) : false;
+        $product = self::ready() && isset( $catalog[ $id ] ) ? self::gift_product( $id ) : false;
         if ( $slots <= $selected || ! $product ) {
             wc_add_notice( 'This promotional gift is unavailable or you have reached the gift limit.', 'error' );
         } else {
@@ -344,6 +356,10 @@ final class BYL_BF2026_Gifts {
                 . '<p>Gift selection is not currently available.</p></section>';
         }
         if ( ! function_exists( 'WC' ) || ! WC()->cart ) { return ''; }
+        if ( ! self::ready() ) {
+            return '<section class="byl-bf2026-gifts"><h2>Choose your Black Friday gift</h2>'
+                . '<p>Gift selection is not currently available.</p></section>';
+        }
         WC()->cart->calculate_totals();
         $eligible = self::eligibility( WC()->cart );
         $catalog = self::catalog();
