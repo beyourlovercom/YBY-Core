@@ -34,6 +34,16 @@ The R7 Draft child PR now adds `scripts/check-commerce-r7-bundle.py`, which vali
 
 This guard will be operative for canonical PR #213 **after its approved integration of R7 child PR #254**; a standalone Draft child branch cannot retroactively protect a user who deploys a different old ZIP. It is **not** evidence that Dev has been repaired, and no actual installation has been attempted through the blocked recovery path.
 
+## Added R7 exact source-byte parity protection (2026-10-29)
+The package checker now accepts `--source-root packages/andy-commerce` and compares the **exact eight PHP byte payloads** in the installable ZIP — seven Currency R13/source-USD classes **plus the Commerce bootstrap** — against the exact reviewed branch source, *in addition to* checking the seven requires and Canary boot call. Source parity is required by both CI and the sole canonical publisher preparation script.
+
+- Local US Mac mini built the R7 candidate ZIP with `R7_COMMERCE_BUNDLE_CONTRACT_PASS=7_FILES_7_REQUIRES_CANARY_BOOT_AND_SOURCE_PARITY`.
+- A deliberately modified R13 payload, keeping its name, file existence, required boot call and all seven bootstrap requires intact, was rejected with `source_payload_mismatch:andy-commerce/includes/class-andy-commerce-currency-r13-dev-canary.php`.
+- CI now rejects **four** corrupted candidates: missing R13 file, missing require, missing Canary boot and a stale/modified R13 payload with valid file names.
+- Mocked TEST-only Stripe account proof negative contract remains `24 PASS`. No live Dev write, test charge or permission change was performed.
+
+**Important:** parity only compares a release candidate to the reviewed checkout; it does not prove that currently installed Dev matches the candidate. Installing this R7 child work into the canonical PR #213 remains a separately controlled release task. The previously blocked repair was **not** retried.
+
 ## Safe repair acceptance when authorized
 1. Re-read live Commerce bootstrap SHA and original R13 file inventory; ensure no concurrent Commerce publisher writes. Preserve full plugin-only rollback outside webroot and verify hashes.
 2. PR #213 sole publisher only: restore the missing seven source files with exact source SHA256, and insert only the corresponding requires plus default-OFF Canary bootstrap into existing live bootstrap. Never overwrite currency settings, Woo payment settings, user sessions, third-party integrations or the entire plugin.
