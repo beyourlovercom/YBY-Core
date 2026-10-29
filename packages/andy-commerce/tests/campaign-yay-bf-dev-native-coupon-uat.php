@@ -86,8 +86,7 @@ foreach($cases as $spec){
         throw $e;
     } finally {
         if($cid>0) {
-            $item=wc_get_product($cid);
-            // Woo coupons aren't WC products; delete only verified unique code.
+            // Delete only our own random Dev coupon fixture.
             $found=new WC_Coupon($cid);
             if($found->get_id()===$cid && $found->get_code()===$code) {
                 $found->delete(true);
