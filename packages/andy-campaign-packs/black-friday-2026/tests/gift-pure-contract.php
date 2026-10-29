@@ -44,7 +44,9 @@ yes(count($catalog)===2 && $catalog[1001]===0 && $catalog[1002]===999,'catalog v
 $GLOBALS['products']=array(1001=>new WC_Product(),1002=>new WC_Product());
 $validApproval=['approved'=>true,'warehouse_available_qty'=>30,
  'landed_cost_usd_minor'=>350,'packed_weight_g'=>125,
- 'allowed_countries'=>['US','GB']];
+ 'allowed_countries'=>['US','GB'],'warehouse_code'=>'us-ny',
+ 'warehouse_checked_at'=>time()-15,'inventory_evidence_kind'=>'provider_verified',
+ 'reviewed_by'=>'Sandbox reviewer'];
 $GLOBALS['gift_approvals']=[1001=>$validApproval,1002=>$validApproval,1005=>$validApproval];
 
 yes(!BYL_BF2026_Gifts::ready(),'one free item is insufficient for two-free-gift promise');
@@ -69,6 +71,13 @@ $GLOBALS['gift_approvals'][1005]=$missingWeight;
 yes(!BYL_BF2026_Gifts::ready(),'missing packed weight blocks gift launch');
 $GLOBALS['gift_approvals'][1005]=$validApproval;
 yes(BYL_BF2026_Gifts::ready(),'restored approved manifests permit campaign readiness');
+$staleApproval=$validApproval;
+$staleApproval['warehouse_checked_at']=time()-90000;
+$GLOBALS['gift_approvals'][1001]=$staleApproval;
+yes(!BYL_BF2026_Gifts::ready(),'stale provider stock closes gift picker');
+$GLOBALS['gift_approvals'][1001]=$validApproval;
+yes(BYL_BF2026_Gifts::ready(),'fresh provider stock restores ready');
+
 
 $normal=['product_id'=>10,'quantity'=>1,'line_total'=>205.0];
 $free=['product_id'=>1001,'quantity'=>1,'line_total'=>0.0,'data'=>new WC_Product(),
@@ -210,4 +219,4 @@ yes(str_contains($inactive,'not currently available') && !str_contains($inactive
     'OFF campaign renders a harmless landing preview without gift selection controls');
 yes(WC_Cart::$calculations === $before,
     'OFF shortcode rendering never touches Woo cart calculation');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=31\n";
+echo "BYL_BF2026_PURE_CONTRACT_PASS=33\n";
