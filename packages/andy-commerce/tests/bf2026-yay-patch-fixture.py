@@ -5,6 +5,12 @@ import os
 import pathlib
 import tempfile
 
+# CI fixture imports a standalone Python module by path. Prevent importlib
+# creating an untracked __pycache__ in the reviewed source checkout;
+# the canonical publisher correctly denies dirty release worktrees.
+import sys
+sys.dont_write_bytecode = True
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 BUILDER = ROOT / "integrations" / "black-friday-2026" / "build-dev-yay-gift-bridge.py"
 spec = importlib.util.spec_from_file_location("bf_yay_builder", BUILDER)
