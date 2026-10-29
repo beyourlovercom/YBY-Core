@@ -51,16 +51,34 @@ final class Andy_Commerce_Shipping_Promotion_Runtime {
 			'mode' => array( 'description' => 'Configured promotion mode.', 'type' => 'string' ),
 			'policy_code' => array( 'description' => 'Configured free-shipping code.', 'type' => 'string' ),
 			'zone_id' => array( 'description' => 'Matching WooCommerce shipping zone ID.', 'type' => 'integer' ),
-			'threshold' => array( 'description' => 'Effective promotion threshold.', 'type' => 'number' ),
-			'subtotal' => array( 'description' => 'Displayed pre-discount merchandise subtotal.', 'type' => 'number' ),
-			'remaining' => array( 'description' => 'Amount remaining before the threshold.', 'type' => 'number' ),
-			'eligible' => array( 'description' => 'Whether the displayed subtotal reaches the threshold.', 'type' => 'boolean' ),
+			'threshold' => array( 'description' => 'Converted shopper display threshold; eligibility always uses USD for BYL.', 'type' => 'number' ),
+			'subtotal' => array( 'description' => 'Shopper display subtotal (not an entitlement basis).', 'type' => 'number' ),
+			'remaining' => array( 'description' => 'Forward-converted remaining source-USD amount for display.', 'type' => 'number' ),
+			'eligible' => array( 'description' => 'Whether verified source USD subtotal reaches USD threshold.', 'type' => 'boolean' ),
 			'unlocked' => array( 'description' => 'Whether the promotion currently unlocks free shipping.', 'type' => 'boolean' ),
 			'applied_code' => array( 'description' => 'First applied coupon code, if any.', 'type' => 'string' ),
 			'has_code' => array( 'description' => 'Whether a coupon is applied.', 'type' => 'boolean' ),
 			'policy_code_applied' => array( 'description' => 'Whether the policy code is the first applied coupon.', 'type' => 'boolean' ),
+			'basis_currency' => array( 'description' => 'USD for authoritative BYL thresholds, blank for other sites.', 'type' => 'string' ),
+			'display_currency' => array( 'description' => 'Actual YayCurrency shopper display currency if verified.', 'type' => 'string' ),
+			'threshold_usd' => array( 'description' => 'Original USD threshold for BYL.', 'type' => 'number' ),
+			'subtotal_usd' => array( 'description' => 'Original verified USD merchandise subtotal for BYL.', 'type' => 'number' ),
+			'remaining_usd' => array( 'description' => 'Original USD amount needed for BYL eligibility.', 'type' => 'number' ),
 			'state' => array( 'description' => 'Promotion state.', 'type' => 'string' ),
 		);
+	}
+
+	/**
+	 * Preserve generic Commerce behavior. BYL's persisted thresholds are USD,
+	 * so only BYL needs a verified original-USD cart basis. No external writes.
+	 */
+	private static function verified_subtotal( $cart ): ?float {
+		$preset = Andy_Commerce_Site_Preset::current();
+		if ( ( $preset['id'] ?? '' ) === 'byl' ) {
+			return Andy_Commerce_Shipping_USD_Source_V1::subtotal( $cart );
+		}
+		return is_object( $cart ) && method_exists( $cart, 'get_displayed_subtotal' )
+			? (float) $cart->get_displayed_subtotal() : null;
 	}
 
 	public static function get_cart_presentation_state(): array {
@@ -69,6 +87,8 @@ final class Andy_Commerce_Shipping_Promotion_Runtime {
 			'threshold' => 0.0, 'subtotal' => 0.0, 'remaining' => 0.0,
 			'eligible' => false, 'unlocked' => false, 'applied_code' => '',
 			'has_code' => false, 'policy_code_applied' => false, 'state' => 'inactive',
+			'basis_currency' => '', 'display_currency' => '',
+			'threshold_usd' => 0.0, 'subtotal_usd' => 0.0, 'remaining_usd' => 0.0,
 		);
 		$settings = Andy_Commerce_Shipping_Promotion_Policy::get_persisted_settings();
 		if ( null === $settings || ! function_exists( 'WC' ) || ! WC() || ! WC()->cart ) { return $empty; }
@@ -86,9 +106,28 @@ final class Andy_Commerce_Shipping_Promotion_Runtime {
 		$threshold = Andy_Commerce_Shipping_Promotion_Policy::get_persisted_zone_effective_threshold( $zone_id );
 		if ( null === $threshold ) { return $empty; }
 		$decimals = function_exists( 'wc_get_price_decimals' ) ? wc_get_price_decimals() : 2;
-		$subtotal = round( (float) $cart->get_displayed_subtotal(), (int) $decimals );
+		$source = self::verified_subtotal( $cart );
+		if ( null === $source ) { $empty['state'] = 'unverified_usd_basis'; return $empty; }
 		$threshold = round( (float) $threshold, (int) $decimals );
-		$eligible = $subtotal >= $threshold;
+		$eligible = $source >= $threshold;
+		$byl = ( Andy_Commerce_Site_Preset::current()['id'] ?? '' ) === 'byl';
+		$displayCurrency = '';
+		$sourceRemaining = max( 0.0, round( $threshold - $source, (int) $decimals ) );
+		if ( $byl ) {
+			$displayCurrency = Andy_Commerce_Shipping_USD_Source_V1::display_currency();
+			$displayThreshold = Andy_Commerce_Shipping_USD_Source_V1::display_amount( $threshold );
+			$displayRemaining = Andy_Commerce_Shipping_USD_Source_V1::display_amount( $sourceRemaining );
+			if ( null === $displayCurrency || null === $displayThreshold
+				|| null === $displayRemaining ) {
+				$empty['state'] = 'unverified_display_currency';
+				return $empty;
+			}
+			$subtotal = round( (float) $cart->get_displayed_subtotal(), (int) $decimals );
+		} else {
+			$displayThreshold = $threshold;
+			$displayRemaining = $sourceRemaining;
+			$subtotal = $source;
+		}
 		$applied = method_exists( $cart, 'get_applied_coupons' ) ? array_values( (array) $cart->get_applied_coupons() ) : array();
 		$applied_code = isset( $applied[0] ) ? (string) $applied[0] : '';
 		$policy_code = Andy_Commerce_Shipping_Promotion_Policy::normalize_code( (string) $settings['free_shipping_code'] );
@@ -102,7 +141,12 @@ final class Andy_Commerce_Shipping_Promotion_Runtime {
 		else { $state = 'require_code_available'; }
 		return array(
 			'active' => true, 'mode' => $mode, 'policy_code' => $policy_code, 'zone_id' => $zone_id,
-			'threshold' => $threshold, 'subtotal' => $subtotal, 'remaining' => max( 0.0, round( $threshold - $subtotal, (int) $decimals ) ),
+			'threshold' => $displayThreshold, 'subtotal' => $subtotal, 'remaining' => $displayRemaining,
+			'basis_currency' => $byl ? 'USD' : '',
+			'display_currency' => $byl ? $displayCurrency : '',
+			'threshold_usd' => $byl ? $threshold : 0.0,
+			'subtotal_usd' => $byl ? $source : 0.0,
+			'remaining_usd' => $byl ? $sourceRemaining : 0.0,
 			'eligible' => $eligible, 'unlocked' => $unlocked, 'applied_code' => $applied_code,
 			'has_code' => '' !== $applied_code, 'policy_code_applied' => $policy_code_applied, 'state' => $state,
 		);
@@ -115,9 +159,10 @@ final class Andy_Commerce_Shipping_Promotion_Runtime {
 		$zone = WC_Shipping_Zones::get_zone_matching_package( (array) $package );
 		$zone_id = is_object( $zone ) && method_exists( $zone, 'get_id' ) ? (int) $zone->get_id() : 0;
 		$threshold = Andy_Commerce_Shipping_Promotion_Policy::get_persisted_zone_effective_threshold( $zone_id );
-		if ( null === $threshold || ! method_exists( $cart, 'get_displayed_subtotal' ) ) { return $is_available; }
+		if ( null === $threshold ) { return $is_available; }
 		$decimals = function_exists( 'wc_get_price_decimals' ) ? wc_get_price_decimals() : 2;
-		$eligible = round( (float) $cart->get_displayed_subtotal(), (int) $decimals );
+		$eligible = self::verified_subtotal( $cart );
+		if ( null === $eligible ) { return false; } // Unknown source: never grant unverified free shipping.
 		if ( $eligible < $threshold ) { return false; }
 		$settings = Andy_Commerce_Shipping_Promotion_Policy::get_persisted_settings();
 		if ( 'require_code' !== ( $settings['mode'] ?? '' ) ) { return true; }
