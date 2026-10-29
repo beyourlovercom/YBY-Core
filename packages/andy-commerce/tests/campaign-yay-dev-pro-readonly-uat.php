@@ -11,8 +11,14 @@ if (!defined('ABSPATH') || !defined('WP_CLI') || !WP_CLI
     || !class_exists('Yay_Currency\\Helpers\\YayCurrencyHelper')) {
     throw new RuntimeException('YAY_DEV_UAT_STRICT_DEV_ONLY');
 }
-require_once dirname(__DIR__).'/includes/class-andy-commerce-campaign-source-usd-discounts-v1.php';
-require_once dirname(__DIR__).'/includes/class-andy-commerce-campaign-yay-usd-basis-v1.php';
+// Dev may already load these from its active plugin folder. Avoid redefining
+// classes from a separate GitHub workspace copy during a read-only WP-CLI UAT.
+if(!class_exists('Andy_Commerce_Campaign_Source_USD_Discounts_V1', false)) {
+    require_once dirname(__DIR__).'/includes/class-andy-commerce-campaign-source-usd-discounts-v1.php';
+}
+if(!class_exists('Andy_Commerce_Campaign_Yay_USD_Basis_V1', false)) {
+    require_once dirname(__DIR__).'/includes/class-andy-commerce-campaign-yay-usd-basis-v1.php';
+}
 $testId=(int)getenv('AICC_YAY_TEST_CURRENCY_ID');
 $map=[40058=>'USD',40060=>'EUR',40062=>'GBP',40063=>'AUD',40064=>'CAD'];
 $wanted=$map[$testId]??null;
