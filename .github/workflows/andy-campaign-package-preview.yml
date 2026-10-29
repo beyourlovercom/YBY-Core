@@ -45,9 +45,9 @@ jobs:
           zip -q -r ../andy-campaign-0.1.0-preview.zip andy-campaign
           zip -q -r ../byl-black-friday-2026-0.1.0-preview.zip black-friday-2026
           cd ..
-          python3 ../../scripts/check-campaign-r8-gift-bundle.py \
+          python3 ../scripts/check-campaign-r8-gift-bundle.py \
             byl-black-friday-2026-0.1.0-preview.zip \
-            --source-root ../../packages/andy-campaign-packs/black-friday-2026
+            --source-root ../packages/andy-campaign-packs/black-friday-2026
           python3 - byl-black-friday-2026-0.1.0-preview.zip <<'R8_NEG'
           import pathlib, sys, tempfile, subprocess, zipfile
           source=sys.argv[1]
@@ -68,8 +68,8 @@ jobs:
                   with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED) as out:
                       for name,blob in contents.items():out.writestr(name,blob)
                   check=subprocess.run([sys.executable,
-                      '../../scripts/check-campaign-r8-gift-bundle.py',str(target),
-                      '--source-root','../../packages/andy-campaign-packs/black-friday-2026'],
+                      '../scripts/check-campaign-r8-gift-bundle.py',str(target),
+                      '--source-root','../packages/andy-campaign-packs/black-friday-2026'],
                       capture_output=True,text=True)
                   if check.returncode==0:
                       raise SystemExit('R8_UNSAFE_PREVIEW_NOT_REJECTED:'+label)
