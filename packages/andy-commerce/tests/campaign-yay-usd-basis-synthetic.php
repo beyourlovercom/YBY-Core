@@ -197,5 +197,19 @@ $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch('199.00')])
 assert_true($r['ok'] && $r['gift_slots']===2,
     'Pro-only control still grants valid 199 USD threshold');
 $passes++;
-assert_true($passes===68,'expected 68 checks');
+// Any USD-denominated offer can share the same exact basis: $69 shipping
+// progress, $199 gift tier, etc. The comparator NEVER changes Woo rates.
+$GLOBALS['currency']='USD';
+foreach([['68.99',false,1],['69.00',true,0],['69.01',true,0]] as [$usd,$eligible,$remain]){
+    $q=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch($usd)]));
+    $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::threshold($q,6900);
+    assert_true($r['ok']&&$r['eligible']===$eligible&&$r['remaining_minor']===$remain,
+       '69 USD threshold '.$usd.' '.json_encode($r));
+    $passes++;
+}
+$r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::threshold(
+    ['ok'=>false,'basis_minor'=>19900],19900);
+assert_true(!$r['ok'],'unverified coupon must not qualify for 199 USD gift');
+$passes++;
+assert_true($passes===72,'expected 72 checks');
 echo 'YAY_USD_BASIS_SYNTHETIC_CONTRACT_PASS='.$passes.PHP_EOL;
