@@ -23,7 +23,9 @@ function checkR8($v,$msg) {
  $GLOBALS['r8_checks']=($GLOBALS['r8_checks']??0)+1;
 }
 $valid=['approved'=>true,'warehouse_available_qty'=>20,'landed_cost_usd_minor'=>800,
-        'packed_weight_g'=>250,'allowed_countries'=>['US','GB']];
+        'packed_weight_g'=>250,'allowed_countries'=>['US','GB'],
+        'warehouse_code'=>'us-ny','warehouse_checked_at'=>time()-60,
+        'inventory_evidence_kind'=>'erp_provider_reconciled','reviewed_by'=>'R8 UAT owner'];
 $cat=[101=>['upgrade_minor'=>0],102=>['upgrade_minor'=>0],
       103=>['upgrade_minor'=>999]];
 $q=BYL_BF2026_R8_Readiness::inspect($cat);
@@ -56,4 +58,21 @@ $q=BYL_BF2026_R8_Readiness::inspect([101=>['upgrade_minor'=>0],102=>['upgrade_mi
 checkR8(!$q['release_ready'],'no countries fail closed');
 $q=BYL_BF2026_R8_Readiness::inspect([101=>['upgrade_minor'=>0],102=>['upgrade_minor'=>'9.99']],[101=>$valid,102=>$valid]);
 checkR8(!$q['release_ready']&&$q['rows'][1]['reasons']===['invalid_php_catalog_row'],'noninteger price rejected');
+$bad=$valid; $bad['warehouse_checked_at']=time()-86401;
+$q=BYL_BF2026_R8_Readiness::inspect([101=>['upgrade_minor'=>0],102=>['upgrade_minor'=>0]],[101=>$bad,102=>$valid]);
+checkR8(!$q['release_ready']&&in_array('warehouse_snapshot_stale_or_missing',$q['rows'][0]['reasons'],true),
+        'provider snapshot older than one day never approves gift');
+$bad=$valid; $bad['warehouse_checked_at']=time()+60;
+$q=BYL_BF2026_R8_Readiness::inspect([101=>['upgrade_minor'=>0],102=>['upgrade_minor'=>0]],[101=>$bad,102=>$valid]);
+checkR8(!$q['release_ready'],'future dated warehouse snapshot is invalid');
+$bad=$valid; unset($bad['inventory_evidence_kind']);
+$q=BYL_BF2026_R8_Readiness::inspect([101=>['upgrade_minor'=>0],102=>['upgrade_minor'=>0]],[101=>$bad,102=>$valid]);
+checkR8(!$q['release_ready']&&in_array('warehouse_provider_evidence_missing',$q['rows'][0]['reasons'],true),
+        'ERP product list count cannot replace provider reconciliation');
+$bad=$valid; unset($bad['warehouse_code']);
+$q=BYL_BF2026_R8_Readiness::inspect([101=>['upgrade_minor'=>0],102=>['upgrade_minor'=>0]],[101=>$bad,102=>$valid]);
+checkR8(!$q['release_ready'],'unidentified warehouse not valid');
+$bad=$valid; unset($bad['reviewed_by']);
+$q=BYL_BF2026_R8_Readiness::inspect([101=>['upgrade_minor'=>0],102=>['upgrade_minor'=>0]],[101=>$bad,102=>$valid]);
+checkR8(!$q['release_ready'],'no accountable reviewer not valid');
 echo 'BYL_BF2026_R8_READINESS_PASS='.$GLOBALS['r8_checks'].PHP_EOL;
