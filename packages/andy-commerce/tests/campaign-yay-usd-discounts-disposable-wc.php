@@ -10,7 +10,11 @@ if (!defined('ABSPATH') || !defined('DB_NAME')
  || get_option('woocommerce_currency')!=='USD') {
     throw new RuntimeException('YAY_USD_NATIVE_TEST_ISOLATION_DENIED');
 }
-require_once dirname(__DIR__).'/includes/class-andy-commerce-campaign-source-usd-discounts-v1.php';
+// WordPress may have already loaded the installed Andy Commerce plugin copy.
+// Do not redefine its class by requiring a separate GitHub checkout path.
+if(!class_exists('Andy_Commerce_Campaign_Source_USD_Discounts_V1', false)) {
+    require_once dirname(__DIR__).'/includes/class-andy-commerce-campaign-source-usd-discounts-v1.php';
+}
 if(function_exists('wc_load_cart'))wc_load_cart();
 $assert=static function($b,$message){if(!$b)throw new RuntimeException('YAY_USD_NATIVE_FAIL_'.$message);};
 $fixtures=[];$passes=0;
