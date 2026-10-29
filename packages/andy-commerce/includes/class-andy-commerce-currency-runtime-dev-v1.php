@@ -28,7 +28,7 @@ final class Andy_Commerce_Currency_Runtime_Dev_V1 {
             }
         }
         if (!function_exists('is_plugin_active')) return true;
-        foreach(['yaycurrency/yaycurrency.php','yaycurrency-pro/yaycurrency.php',
+        foreach(['yaycurrency/yaycurrency.php','yaycurrency/yay-currency.php','yaycurrency-pro/yay-currency.php','yaycurrency-pro/yaycurrency.php',
                  'yaycurrency-premium/yaycurrency.php','yaycurrency-pro/yaycurrency-pro.php'] as $slug) {
             if(is_plugin_active($slug)) return true;
         }
