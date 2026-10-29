@@ -390,7 +390,7 @@ final class YBY_Andy_OS_Navigation {
 				'settings'=>'设置' ) as $tab=>$label ) {
 				$add( $label, 'admin.php?page=andy-commerce&tab='.$tab, 'manage_woocommerce' );
 			}
-		} elseif ( in_array( $page, array( 'yby-core', 'yby-brand-os', 'yby-social-login' ), true ) ) {
+		} elseif ( in_array( $page, array( 'yby-core', 'yby-brand-os', 'yby-social-login', 'yby-login-os' ), true ) ) {
 			foreach ( array( 'general'=>'常规', 'modules'=>'模块', 'addons'=>'扩展',
 				'wp-api'=>'接口', 'system-status'=>'状态', 'updates'=>'更新' ) as $tab=>$label ) {
 				if ( 'wp-api' === $tab && ! YBY_Module_Registry::is_enabled( 'connector' ) ) { continue; }
@@ -401,6 +401,9 @@ final class YBY_Andy_OS_Navigation {
 			}
 			$add( '品牌', 'admin.php?page=yby-brand-os', 'manage_options' );
 			$add( '社交登录', 'admin.php?page=yby-social-login', 'manage_options', 'social_login' );
+			// L3 child immediately below the existing Social Login entry;
+			// no extra WordPress top-level or second-level menu.
+			$add( '后台登录', 'admin.php?page=yby-login-os', 'manage_options', 'login_os' );
 		}
 		return $items;
 	}
@@ -443,7 +446,7 @@ final class YBY_Andy_OS_Navigation {
 			'yby-docs-tutorial','yby-docs-settings' ), true ) ) {
 			return 'andy-core-content';
 		}
-		if ( in_array( $page, array( 'yby-core','yby-brand-os','yby-social-login' ), true ) ) {
+		if ( in_array( $page, array( 'yby-core','yby-brand-os','yby-social-login','yby-login-os' ), true ) ) {
 			return 'andy-core-system';
 		}
 		$post_type = isset( $_GET['post_type'] ) && is_scalar( $_GET['post_type'] )

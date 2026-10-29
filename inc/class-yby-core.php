@@ -33,6 +33,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-project-cpt.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-landing-page-cpt.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-brand-os.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-social-login.php';
+require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-login-os.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-token-verifier.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-auth-service.php';
 require_once YBY_CORE_PLUGIN_DIR . 'inc/class-yby-google-auth-rest-controller.php';
@@ -98,6 +99,7 @@ require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-lead-notification-admin.php'
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-business-os-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-project-studio.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-social-login-admin.php';
+require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-login-os-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-popup-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-three-os-admin.php';
 require_once YBY_CORE_PLUGIN_DIR . 'admin/class-yby-three-os-readonly.php';
@@ -127,6 +129,8 @@ class YBY_Core {
 		YBY_Popup_Field_Studio::boot();
 
 		YBY_Module_Registry::adopt_default_modules_once( 'v170_landing_pages', array( 'landing_pages' ) );
+		// Adopt only the inert Login OS shell on existing sites; both runtime features remain OFF.
+		YBY_Module_Registry::adopt_default_modules_once( 'login_os_v1_navigation', array( 'login_os' ) );
 		YBY_Module_Registry::adopt_default_modules_once( 'v1_three_os_newsletter_menu', array( 'newsletter_os' ) );
 
 		$this->define_system_hooks();
@@ -152,6 +156,21 @@ $this->loader->add_action( 'andy_core_register_modules', 'YBY_Business_OS_Module
 		$this->loader->add_action( 'plugins_loaded', $database, 'maybe_upgrade', 5, 0 );
 		$this->loader->add_action( 'plugins_loaded', 'YBY_Addon_Registry', 'discover', 15, 0 );
 		$this->loader->add_action( 'plugins_loaded', $module_runtime, 'discover_and_boot', 20, 0 );
+
+		// Login OS owns styling and an optional fail-open login alias only.
+		// The original wp-login.php remains available as an emergency fallback.
+		if ( YBY_Module_Registry::is_enabled( 'login_os' ) ) {
+			$this->loader->add_action( 'login_enqueue_scripts', 'YBY_Login_OS', 'enqueue_login_style', 20, 0 );
+			$this->loader->add_filter( 'login_body_class', 'YBY_Login_OS', 'login_body_classes', 10, 1 );
+			$this->loader->add_filter( 'login_message', 'YBY_Login_OS', 'render_logo', 10, 1 );
+			$this->loader->add_action( 'init', 'YBY_Login_OS', 'maybe_block_legacy', 0, 0 );
+			$this->loader->add_action( 'login_init', 'YBY_Login_OS', 'private_login_headers', 0, 0 );
+			$this->loader->add_action( 'wp_loaded', 'YBY_Login_OS', 'maybe_load_alias', 0, 0 );
+			$this->loader->add_filter( 'site_url', 'YBY_Login_OS', 'filter_site_url', 10, 4 );
+			$this->loader->add_filter( 'network_site_url', 'YBY_Login_OS', 'filter_network_site_url', 10, 3 );
+			$this->loader->add_filter( 'login_url', 'YBY_Login_OS', 'filter_login_url', 10, 3 );
+		}
+
 
 		if ( YBY_Module_Registry::is_enabled( 'email_os' ) ) {
 			$this->loader->add_action( 'plugins_loaded', 'YBY_Email_Design_Settings', 'install_defaults', 6, 0 );
@@ -197,6 +216,12 @@ $this->loader->add_action( 'andy_core_register_modules', 'YBY_Business_OS_Module
 			$social_login = new YBY_Social_Login_Admin();
 			$this->loader->add_action( 'admin_menu', $social_login, 'add_admin_menu' );
 			$this->loader->add_action( 'admin_enqueue_scripts', $social_login, 'enqueue_assets' );
+
+		}
+		// Backend Login OS can be configured independently of Google Social Login.
+		if ( YBY_Module_Registry::is_enabled( 'login_os' ) ) {
+			$login_os_admin = new YBY_Login_OS_Admin();
+			$this->loader->add_action( 'admin_menu', $login_os_admin, 'add_admin_menu' );
 		}
 		$this->loader->add_action( 'admin_menu', $admin, 'add_admin_menu' );
 		if ( $docs_enabled ) {

@@ -55,6 +55,14 @@ class YBY_Module_Registry {
                 'status' => 'ready',
                 'settings' => array( 'page' => 'yby-social-login' ),
             ),
+            'login_os' => array(
+                'name' => 'Login OS',
+                'description' => 'WordPress 原生登录视觉与安全登录别名；默认不改变登录行为。',
+                'default_enabled' => true,
+                'status' => 'ready',
+                'settings' => array( 'page' => 'yby-social-login', 'tab' => 'appearance' ),
+                'storage' => array( 'option_key' => 'yby_login_os_options_v1', 'schema_version' => '1' ),
+            ),
             'connector' => array(
                 'name' => 'Connector / WP-API',
                 'description' => 'ERP 与外部系统的签名 Connector API。',
