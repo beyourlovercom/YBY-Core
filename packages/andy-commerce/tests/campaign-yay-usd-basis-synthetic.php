@@ -115,5 +115,9 @@ $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch('0.00')]));
 assert_true($r['ok'] && $r['basis_minor']===0 && $r['gift_slots']===0,
     'zero-price merchandise never grants a gift even in a valid currency context');
 $passes++;
-assert_true($passes===53,'expected 53 checks');
+$r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(fixedCart('20.00'));
+assert_true($r['ok'] && $r['basis_minor']===0 && $r['gift_slots']===0,
+    'full-cart coupon reducing USD eligible merchandise to zero grants no gift');
+$passes++;
+assert_true($passes===54,'expected 54 checks');
 echo 'YAY_USD_BASIS_SYNTHETIC_CONTRACT_PASS='.$passes.PHP_EOL;
