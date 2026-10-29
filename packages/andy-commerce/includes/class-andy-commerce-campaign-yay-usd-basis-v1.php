@@ -41,9 +41,16 @@ final class Andy_Commerce_Campaign_Yay_USD_Basis_V1 {
     /** Public read-only bridge for consuming Campaign plugins. */
     public static function storefront_currency(): ?string {
         if(!function_exists('get_option')
-            || get_option('woocommerce_currency','')!=='USD'
-            || !function_exists('is_plugin_active'))
+            || get_option('woocommerce_currency','')!=='USD')
             return null;
+        // WordPress normally does not load is_plugin_active() on anonymous
+        // storefront requests; the admin-only plugin API must be explicitly
+        // included before checking the active Pro entry point.
+        if(!function_exists('is_plugin_active') && defined('ABSPATH')){
+            $pluginApi=ABSPATH.'wp-admin/includes/plugin.php';
+            if(is_file($pluginApi))require_once $pluginApi;
+        }
+        if(!function_exists('is_plugin_active'))return null;
         if(!is_plugin_active('yaycurrency-pro/yay-currency.php')
             || is_plugin_active('yaycurrency/yay-currency.php')
             || is_plugin_active('yaycurrency/yaycurrency.php'))
