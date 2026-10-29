@@ -36,3 +36,9 @@ Stop for Owner authorization before WWW/Production deploy; real payment/email/se
 - Core-specific addon/module contracts: inspect relevant `inc/`, `modules/` and tests as required, not every time by default.
 
 When a shared document conflicts with a site-specific, newer Owner-approved rule, **apply the site-specific rule to that site's integration/UAT**; preserve universal security and production safeguards.
+
+## Ads operations — Windows-only live execution (Owner directive, 2026-10-29)
+- Across **all Google Ads projects**, live campaign and paid-conversion setting writes must be executed only on the authorized Windows computer via BYL self-hosted Desktop Commander and an existing authenticated Chrome profile. This covers campaigns, status, spending, bids, keywords/negative keywords, audiences/geography, schedules, ad assets, campaign goals, and GTM changes that affect Ads conversion attribution or optimization.
+- China Mac and US Mac mini may inspect Ads reports, audit, code and plan read-only; no live Ads write from either Mac. The current Google Ads API/Windsor connector for irrigation must never be repurposed to another advertiser account without authorization.
+- For each write, verify customer ID and campaign ID, read existing settings, perform only the explicitly approved minimal change, read back the persisted result, and log the evidence in the relevant project GitHub issue. Do not restart READY computers or Chrome.
+- This rule changes the **execution device only**, not approval gates: budget increases, reactivations and broad/production-impacting changes still require explicit Owner approval.
