@@ -95,7 +95,7 @@ bash "$repo/scripts/build-andy-commerce-dev-candidate.sh" "$dest"
 # R7 release invariant: successful tests are insufficient if a packaging or
 # overwrite step silently removes R13/verified USD basis source files.
 # This gate is read-only; it never installs or changes Dev, Woo or Stripe.
-if ! python3 "$repo/scripts/check-commerce-r7-bundle.py" "$dest"; then
+if ! python3 "$repo/scripts/check-commerce-r7-bundle.py" "$dest" --source-root "$repo/packages/andy-commerce"; then
   echo "RELEASE_DENIED: R13/Commerce USD basis payload or bootstrap missing" >&2
   rm -f "$dest"
   exit 5
