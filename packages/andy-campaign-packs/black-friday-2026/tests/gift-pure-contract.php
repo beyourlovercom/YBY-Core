@@ -108,6 +108,7 @@ $GLOBALS['products'][1002]->stock=false;
 $mock = new WC_Cart([$normal,$free,$premium]);
 BYL_BF2026_Gifts::reconcile($mock);
 yes(count($mock->get_cart())===2,'out-of-stock premium gift removed on cart reconcile');
+$GLOBALS['products'][1002]->stock=true; // restore the reviewed premium item for later positive checkout tests.
 class BF_Order_Item_Stub {
     public array $meta = [];
     public function add_meta_data($key,$value,$unique): void { $this->meta[$key]=$value; }
@@ -210,13 +211,37 @@ $gbp_minor=static fn(int $usd) => intdiv($usd*$dev_gbp_rate_micros+500000,100000
 yes($gbp_minor(19899)===$gbp_minor(19900),
     'GBP quote collision prevents unsafe inverted FX threshold implementation');
 class Andy_Campaign_Lite {
+    public static string $state='master_off';
     public static function boot() { return new self(); }
-    public function decisions(): array { return array(BYL_BF2026_Gifts::ID=>'master_off'); }
+    public function decisions(): array { return array(BYL_BF2026_Gifts::ID=>self::$state); }
 }
+$GLOBALS['c3_currency']='USD';
+Andy_Campaign_Lite::$state='eligible';
+$staleAlternate=$validApproval;
+$staleAlternate['warehouse_checked_at']=time()-90000;
+$GLOBALS['gift_approvals'][1005]=$staleAlternate;
+$staleCart=new WC_Cart(array($normal,$free));
+$GLOBALS['bf_woo']->cart=$staleCart;
+$expiredError=new WP_Error();
+BYL_BF2026_Gifts::validate_store_api(null,$expiredError);
+yes(isset($expiredError->errors['byl_bf2026_invalid_gift']),
+    'checkout rejects a valid selected gift when another free gift loses stock approval');
+BYL_BF2026_Gifts::reconcile($staleCart);
+yes(count($staleCart->get_cart())===1,
+    'cart drops previously selected free gift when campaign lacks two approved free options');
+$readOnlyNoGift=new WP_Error();
+BYL_BF2026_Gifts::validate_store_api(null,$readOnlyNoGift);
+yes(count($readOnlyNoGift->errors)===0,
+    'normal merchandise remains purchasable when gift campaign is suspended');
+$staleRendered=BYL_BF2026_Gifts::render();
+yes(str_contains($staleRendered,'not currently available') && !str_contains($staleRendered,'<form'),
+    'public picker cannot show partial/invalid campaign options after inventory expiry');
+$GLOBALS['gift_approvals'][1005]=$validApproval;
+Andy_Campaign_Lite::$state='master_off';
 $before = WC_Cart::$calculations;
 $inactive = BYL_BF2026_Gifts::render();
 yes(str_contains($inactive,'not currently available') && !str_contains($inactive,'<form'),
     'OFF campaign renders a harmless landing preview without gift selection controls');
 yes(WC_Cart::$calculations === $before,
     'OFF shortcode rendering never touches Woo cart calculation');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=33\n";
+echo "BYL_BF2026_PURE_CONTRACT_PASS=37\n";
