@@ -35,6 +35,8 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-runtime-dev-v1.php';
 // R6 read-only, no-hook authoritative USD basis for Campaign gift thresholds.
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-campaign-usd-basis-v1.php';
+// YayCurrency Pro-only read-only source USD adapter; no FX/checkout hooks.
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-campaign-yay-usd-basis-v1.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-order-coupon-column.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m4-shipping-shadow.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-m5-progress-projection.php';
