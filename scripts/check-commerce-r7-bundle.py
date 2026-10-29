@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import sys
 import zipfile
+from pathlib import Path
 
 PREFIX = "andy-commerce/includes/"
 REQUIRED_FILES = (
@@ -24,7 +25,7 @@ BOOTSTRAP = PREFIX + "class-andy-commerce.php"
 CANARY_BOOT = "Andy_Commerce_Currency_R13_Dev_Canary::boot();"
 
 
-def check_bundle(path: str) -> list[str]:
+def check_bundle(path: str, source_root: str | None = None) -> list[str]:
     problems: list[str] = []
     with zipfile.ZipFile(path) as z:
         members = set(z.namelist())
@@ -44,15 +45,27 @@ def check_bundle(path: str) -> list[str]:
                 problems.append("missing_or_duplicate_bootstrap_require:" + name)
         if bootstrap.count(CANARY_BOOT) != 1:
             problems.append("missing_or_duplicate_canary_boot")
+        # Prevent a correctly named, but stale/modified class from being
+        # substituted while the main Commerce release ZIP is being built.
+        # Source must be the exact reviewed checkout. No network calls.
+        if source_root:
+            root = Path(source_root)
+            for member in (BOOTSTRAP, *(PREFIX + n for n in REQUIRED_FILES)):
+                source = root / member.removeprefix("andy-commerce/")
+                if not source.is_file():
+                    problems.append("source_file_missing:" + member)
+                elif member in members and z.read(member) != source.read_bytes():
+                    problems.append("source_payload_mismatch:" + member)
     return problems
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("zip", help="local Commerce release ZIP, NOT a live plugin")
+    parser.add_argument("--source-root", help="exact reviewed packages/andy-commerce source root")
     args = parser.parse_args()
     try:
-        problems = check_bundle(args.zip)
+        problems = check_bundle(args.zip, args.source_root)
     except (zipfile.BadZipFile, OSError, UnicodeDecodeError) as exc:
         print("R7_COMMERCE_BUNDLE_FAIL=" + type(exc).__name__, file=sys.stderr)
         return 2
@@ -60,7 +73,8 @@ def main() -> int:
         for p in problems:
             print("R7_COMMERCE_BUNDLE_FAIL=" + p, file=sys.stderr)
         return 1
-    print("R7_COMMERCE_BUNDLE_CONTRACT_PASS=7_FILES_7_REQUIRES_CANARY_BOOT")
+    print("R7_COMMERCE_BUNDLE_CONTRACT_PASS=7_FILES_7_REQUIRES_CANARY_BOOT"
+          + ("_AND_SOURCE_PARITY" if args.source_root else ""))
     return 0
 
 
