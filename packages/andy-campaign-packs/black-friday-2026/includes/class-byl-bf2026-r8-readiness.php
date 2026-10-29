@@ -7,7 +7,12 @@
  * $approvals map Woo product ID => owner-approved warehouse/cost/freight proof:
  *   ['approved'=>true, 'warehouse_available_qty'=>positive integer,
  *    'landed_cost_usd_minor'=>positive integer, 'packed_weight_g'=>positive integer,
+ *    'warehouse_code'=>machine code, 'warehouse_checked_at'=>Unix seconds,
+ *    'inventory_evidence_kind'=>'provider_verified'|'erp_provider_reconciled',
+ *    'reviewed_by'=>non-empty accountable reviewer,
  *    'allowed_countries'=>list of uppercase ISO-3166 alpha-2 codes]
+ * Warehouse stock must be explicitly provider-confirmed within 24 hours.
+ * A nonempty ERP/Woo stock-status alone is never sufficient.
  * Unlisted approval values are NOT inferred from Woo stock.
  */
 if (!defined('ABSPATH')) exit;
@@ -35,6 +40,20 @@ final class BYL_BF2026_R8_Readiness {
             if (($a['approved']??null)!==true)$reasons[]='owner_signoff_missing';
             if (!is_int($a['warehouse_available_qty']??null)
                 || $a['warehouse_available_qty']<1)$reasons[]='warehouse_qty_unverified';
+            $warehouse=$a['warehouse_code']??null;
+            if (!is_string($warehouse) || preg_match('/^[a-z][a-z0-9-]{1,30}$/D', $warehouse)!==1)
+                $reasons[]='warehouse_identity_unverified';
+            $evidence=$a['inventory_evidence_kind']??null;
+            if (!in_array($evidence, ['provider_verified','erp_provider_reconciled'], true))
+                $reasons[]='warehouse_provider_evidence_missing';
+            $checked=$a['warehouse_checked_at']??null;
+            // Do not accept expired or future-dated inventory attestations.
+            if (!is_int($checked) || $checked<=0 || $checked>time()
+                || time()-$checked>86400)
+                $reasons[]='warehouse_snapshot_stale_or_missing';
+            $reviewer=$a['reviewed_by']??null;
+            if (!is_string($reviewer) || trim($reviewer)==='')
+                $reasons[]='accountable_reviewer_missing';
             if (!is_int($a['landed_cost_usd_minor']??null)
                 || $a['landed_cost_usd_minor']<1)$reasons[]='landed_cost_unverified';
             if (!is_int($a['packed_weight_g']??null)
