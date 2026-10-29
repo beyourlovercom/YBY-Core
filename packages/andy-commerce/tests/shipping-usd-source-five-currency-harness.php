@@ -36,6 +36,10 @@ namespace {
         public array $items;
         public function __construct(array $items) { $this->items=$items; }
         public function get_cart(): array { return $this->items; }
+        public function get_displayed_subtotal(): float {
+            return array_sum(array_map(static fn($line)=>(float)$line['line_subtotal'], $this->items));
+        }
+        public function get_applied_coupons(): array { return []; }
     }
     final class FakeZone {
         public function __construct(private int $id=5) {}
@@ -57,9 +61,19 @@ namespace {
         public static function get_persisted_settings(): array {
             return ['mode'=>'automatic','free_shipping_code'=>'BYL49'];
         }
+        public static function normalize_code(string $code): string { return strtolower($code); }
     }
     $GLOBALS['cart']=null;
-    function WC() {return (object)['cart'=>$GLOBALS['cart']];}
+    final class FakeShipping {
+        public function get_packages(): array { return [['zone_id'=>5]]; }
+    }
+    final class FakeWC {
+        public function __get($name) {
+            return $name === 'cart' ? $GLOBALS['cart'] : null;
+        }
+        public function shipping() { return new FakeShipping(); }
+    }
+    function WC() {return new FakeWC();}
     require __DIR__ . '/../includes/class-andy-commerce-shipping-usd-source-v1.php';
     require __DIR__ . '/../includes/class-andy-commerce-shipping-promotion-runtime.php';
     $pass=0;
@@ -85,6 +99,17 @@ namespace {
             $assert($usd===$source,"$code USD $source source read");
             $eligible=Andy_Commerce_Shipping_Promotion_Runtime::filter_free_shipping(false,['zone_id'=>5],null);
             $assert($eligible===($source>=69),"$code USD $source eligibility");
+            $presentation=Andy_Commerce_Shipping_Promotion_Runtime::get_cart_presentation_state();
+            $assert($presentation['active']===true,"$code USD $source presentation active");
+            $assert($presentation['eligible']===($source>=69),"$code USD $source presentation eligibility");
+            $assert($presentation['basis_currency']==='USD',"$code USD $source canonical basis");
+            $assert($presentation['display_currency']===$code,"$code USD $source visible currency");
+            $assert($presentation['subtotal_usd']===$source,"$code USD $source canonical source subtotal");
+            $assert(abs($presentation['remaining_usd']-max(0,69-$source))<0.001,"$code USD $source canonical remaining");
+            $expectedThreshold=(float)number_format(69*$rate,2,'.','');
+            $assert(abs($presentation['threshold']-$expectedThreshold)<0.011,"$code USD $source local threshold");
+            $expectedRemain=(float)number_format(max(0,69-$source)*$rate,2,'.','');
+            $assert(abs($presentation['remaining']-$expectedRemain)<0.011,"$code USD $source local remaining");
         }
     }
     \Yay_Currency\Helpers\YayCurrencyHelper::$currency='EUR';

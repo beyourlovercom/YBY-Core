@@ -35,6 +35,29 @@ final class Andy_Commerce_Shipping_USD_Source_V1 {
             ? $currency : null;
     }
 
+    /** Explicit presentation currency, never an eligibility basis. */
+    public static function display_currency(): ?string {
+        return self::storefront_currency();
+    }
+
+    /** Convert a trusted USD amount FORWARD for the visible progress UI only. */
+    public static function display_amount(float $usd): ?float {
+        $currency = self::storefront_currency();
+        $usdMinor = self::cents($usd);
+        if ($currency === null || $usdMinor === null) return null;
+        if ($currency === 'USD') return $usdMinor / 100;
+        if (!function_exists('has_filter') || has_filter('yay_currency_convert_price') === false
+            || !function_exists('apply_filters')) return null;
+        try {
+            $converted = apply_filters(
+                'yay_currency_convert_price',
+                number_format($usdMinor / 100, 2, '.', '')
+            );
+        } catch (Throwable $e) { return null; }
+        $localMinor = self::cents($converted);
+        return $localMinor === null ? null : $localMinor / 100;
+    }
+
     public static function subtotal($cart): ?float {
         if (!is_object($cart) || !method_exists($cart, 'get_cart')) return null;
         $currency = self::storefront_currency();
