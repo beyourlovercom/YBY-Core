@@ -53,6 +53,18 @@ Previous uploaded source `美东仓库-库存9月.xlsx` shows warehouse count da
 - Historical NY combined **615 units**, consistent with more recent ERP NY `quantity_available=615` readback. This supports **SKU alias identity and arithmetic consistency only**; it does **not** prove a real-time 24-hour provider reconciliation, stock reservation, latest country policy or SKU packed grams.
 - The previously audited MorePlus/US-LA 726 units are a separate ERP record, **not** proven by this September NY snapshot.
 
+## Second candidate discovery from historical inventory × costbook
+Joined the **55 READY matched product costs** in the uploaded September 8 reconciliation against all **15 SKU rows** in the **September 4, 2026 US-NY inventory sheet**. This yields 9 exact-SKU/source-alias matches, of which the next least costly after `BY489A` are:
+
+| ERP/Warehouse SKU | Product | Historical CNY unit cost | Sep 4 NY qty | R8 action |
+|---|---|---:|---:|---|
+| `DW01A` | BLACKFIRE | **35.93** | **19** | Candidate for owner-reviewed **premium upgrade**, not automatically a free gift |
+| `VA699A` | ORTHUS | **44.503653334** | **33** | Candidate for owner-reviewed **premium upgrade**, not automatically a free gift |
+
+The previous 15-row September inventory snapshot does **not** show `CY615A`, `VX219A`, `609A`, or `VX610A`. It is invalid to infer that their current stock is zero; neither can we approve these four from missing historical rows.
+
+This historical intersection gives two additional *research* candidates, **not two approved free-gift SKUs**. Both stock observations are older than R8's 24-hour gate, and product packaging, destination carrier policy, current stocked location/availability and incremental gift margin are missing. No new SKU has been added to the runnable catalog.
+
 ## New R8 code-only freshness gate
 R8 Draft PR #255 now also refuses unsigned, stale, or untraceable inventory reports, **even when a positive quantity is entered**. Every review manifest row must have:
 - `approved=true`, positive `warehouse_available_qty`, positive `landed_cost_usd_minor` and `packed_weight_g`.
