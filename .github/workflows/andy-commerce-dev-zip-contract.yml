@@ -132,6 +132,18 @@ jobs:
                   b'/* removed */')
                   if k == boot else v) for k,v in entries.items()
           }
+          pro = 'andy-commerce/includes/class-andy-commerce-campaign-yay-usd-basis-v1.php'
+          variants['no-yay-pro-adapter.php'] = {k:v for k,v in entries.items() if k != pro}
+          variants['stale-yay-pro-adapter.php'] = {
+              k: (v + b"\\n/* simulated outdated Yay adapter */\\n" if k == pro else v)
+              for k,v in entries.items()
+          }
+          variants['no-yay-pro-loader.php'] = {
+              k: (v.replace(
+                  b"require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-campaign-yay-usd-basis-v1.php';",
+                  b'/* removed Yay Pro bootstrap require */')
+                  if k == boot else v) for k,v in entries.items()
+          }
           for label, files in variants.items():
               target = pathlib.Path(tmp) / ('r7-' + label + '.zip')
               with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as output:
@@ -144,7 +156,7 @@ jobs:
               echo "R7_MUTATION_NOT_REJECTED=$mutated"; exit 1
             fi
           done
-          echo "R7_MISSING_CLASS_REQUIRE_BOOT_SOURCE_MISMATCH_NEGATIVE_MATRIX_PASS=4"
+          echo "R7_MISSING_CLASS_REQUIRE_BOOT_SOURCE_MISMATCH_NEGATIVE_MATRIX_PASS=7"
           if unzip -Z1 "$RUNNER_TEMP/commerce.zip" | grep -E 'p5-m13-local-execution-proof.php|p6-hpos-native-refund.php|aicc-m14-local-runtime.php|m14-config-case.php|m14-store-api-checkout.py|m14-negative-lifecycle.py|m14-native-coupon-collision.py|m14-classic-checkout.py|m14-classic-six.py|m15-cap-ledger-local-uat.php|m15-real-wc-allocator-uat.php|m15-native-product-allocation-uat.php|m15-one-order-one-cap-uat.php|m16-local-woo-order-cap-uat.php|m16-post-save-recovery-uat.php'; then
             echo M13_SANDBOX_TEST_DRIVER_LEAKED_IN_INSTALLABLE_ZIP
             exit 1
