@@ -27,7 +27,15 @@ function apply_filters($hook,$value){
     if($hook!=='yay_currency_convert_price')return $value;
     return number_format(round((float)$value*$GLOBALS['rates'][$GLOBALS['currency']],2),2,'.','');
 }
-function is_plugin_active($slug){return $slug==='yaycurrency/yaycurrency.php';}
+$GLOBALS['yay_pro_active']=true;
+$GLOBALS['yay_free_active']=false;
+function is_plugin_active($slug){
+    if($slug==='yaycurrency/yaycurrency.php'||$slug==='yaycurrency/yay-currency.php')
+        return $GLOBALS['yay_free_active'];
+    if($slug==='yaycurrency-pro/yay-currency.php')
+        return $GLOBALS['yay_pro_active'];
+    return false;
+}
 class Andy_Commerce_Currency_Runtime_Dev_V1{
     public static function allowed(){return $GLOBALS['dual_engine'];}
 }
@@ -119,5 +127,27 @@ $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(fixedCart('20.00'));
 assert_true($r['ok'] && $r['basis_minor']===0 && $r['gift_slots']===0,
     'full-cart coupon reducing USD eligible merchandise to zero grants no gift');
 $passes++;
-assert_true($passes===54,'expected 54 checks');
+// Pro is the sole approved runtime. Free-only, absent Pro, and two
+// simultaneously active Yay engines must never receive gift entitlements.
+$GLOBALS['yay_pro_active']=false;
+$r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch('199.00')]));
+assert_true(!$r['ok'] && $r['reason']==='yaycurrency_pro_required',
+    'missing licensed Pro activation fails closed');
+$passes++;
+$GLOBALS['yay_free_active']=true;
+$r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch('199.00')]));
+assert_true(!$r['ok'] && $r['reason']==='yaycurrency_free_conflict',
+    'Free-only must not qualify as Pro');
+$passes++;
+$GLOBALS['yay_pro_active']=true;
+$r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch('199.00')]));
+assert_true(!$r['ok'] && $r['reason']==='yaycurrency_free_conflict',
+    'simultaneous Free and Pro must fail closed');
+$passes++;
+$GLOBALS['yay_free_active']=false;
+$r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch('199.00')]));
+assert_true($r['ok'] && $r['gift_slots']===2,
+    'Pro-only control still grants valid 199 USD threshold');
+$passes++;
+assert_true($passes===58,'expected 58 checks');
 echo 'YAY_USD_BASIS_SYNTHETIC_CONTRACT_PASS='.$passes.PHP_EOL;
