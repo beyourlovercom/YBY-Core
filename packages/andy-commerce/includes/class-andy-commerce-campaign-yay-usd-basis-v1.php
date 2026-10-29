@@ -18,6 +18,26 @@ final class Andy_Commerce_Campaign_Yay_USD_Basis_V1 {
     private const CURRENCIES = ['USD','EUR','GBP','AUD','CAD'];
     private const GIFT_THRESHOLD_MINOR = 19900;
 
+    /**
+     * USD-only threshold comparator for gifts, spend-and-save, tiered offers
+     * and per-zone shipping progress. DOES NOT grant a Woo shipping method.
+     * Values are exact integer USD cents; display currency is irrelevant.
+     */
+    public static function threshold(array $quote,int $requiredUsdMinor): array {
+        $net=$quote['basis_minor']??null;
+        if(($quote['ok']??false)!==true || !is_int($net)
+            || $net<0 || $net>100000000
+            || $requiredUsdMinor<1 || $requiredUsdMinor>100000000)
+            return ['ok'=>false,'reason'=>'unverified_usd_basis'];
+        return [
+            'ok'=>true,'currency'=>'USD',
+            'threshold_minor'=>$requiredUsdMinor,
+            'eligible'=>$net >= $requiredUsdMinor,
+            'remaining_minor'=>max(0,$requiredUsdMinor-$net),
+            'source_only'=>true,
+        ];
+    }
+
     private static function fail(string $reason): array {
         return ['ok'=>false,'reason'=>$reason,'basis_minor'=>null,'currency'=>null];
     }
