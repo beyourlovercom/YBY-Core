@@ -105,5 +105,15 @@ $GLOBALS['currency']='EUR';$GLOBALS['dual_engine']=true;
 $r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch('199.00')]));
 assert_true(!$r['ok']&&$r['reason']==='dual_currency_engine','dual engine denied');
 $passes++;
-assert_true($passes===51,'expected 51 checks');
+// Zero-value merchandise must never unlock the one-free-gift entitlement.
+assert_true(Andy_Commerce_Campaign_Yay_USD_Basis_V1::gift_slots_from_usd_minor(0)===0,
+    'zero USD source never grants a gift');
+$passes++;
+$GLOBALS['currency']='USD';
+$GLOBALS['dual_engine']=false;
+$r=Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote(new WC_Cart([merch('0.00')]));
+assert_true($r['ok'] && $r['basis_minor']===0 && $r['gift_slots']===0,
+    'zero-price merchandise never grants a gift even in a valid currency context');
+$passes++;
+assert_true($passes===53,'expected 53 checks');
 echo 'YAY_USD_BASIS_SYNTHETIC_CONTRACT_PASS='.$passes.PHP_EOL;
