@@ -1,0 +1,32 @@
+name: R7 Native Payment Evidence Contract
+on:
+  pull_request:
+    paths:
+      - 'scripts/r7-native-payment-evidence-gate.py'
+      - 'tests/r7_native_payment_evidence_gate_test.py'
+      - '.github/workflows/r7-native-payment-evidence-contract.yml'
+      - 'docs/andy-commerce-v1/R7-NATIVE-PAYMENT-EVIDENCE-CONTRACT-20261029.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-negative-matrix:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Validate Python source
+        run: |
+          python3 - <<'PY'
+          import ast
+          from pathlib import Path
+          for path in (
+              Path("scripts/r7-native-payment-evidence-gate.py"),
+              Path("tests/r7_native_payment_evidence_gate_test.py"),
+          ):
+              ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+          print("R7_AUDIT_SYNTAX_PASS=2")
+          PY
+      - name: Offline mock-only regression
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 -m unittest discover -s tests -p r7_native_payment_evidence_gate_test.py -v
