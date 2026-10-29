@@ -43,6 +43,9 @@ jobs:
           php packages/andy-commerce/tests/marketing-v1-campaign-menu-contract.php
           php -l packages/andy-commerce/includes/class-andy-commerce-campaign-usd-basis-v1.php
           php packages/andy-commerce/tests/campaign-usd-basis-dev-contract.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-campaign-yay-usd-basis-v1.php
+          php -l packages/andy-commerce/tests/campaign-yay-usd-basis-synthetic.php
+          php packages/andy-commerce/tests/campaign-yay-usd-basis-synthetic.php
           php packages/andy-commerce/tests/r7-stripe-account-proof-contract.php
       - name: Currency C2–C3 and Footer-only regression
         run: |
