@@ -82,9 +82,22 @@ final class Andy_Commerce_Campaign_Yay_USD_Basis_V1 {
             || wc_get_price_decimals()!==2
             || get_option('woocommerce_prices_include_tax','no')!=='no')
             return self::fail('woo_base_or_tax_not_supported');
-        $currency=get_woocommerce_currency();
-        if(!in_array($currency,self::CURRENCIES,true))
+        // Woo's checkout currency may deliberately stay USD while Yay Pro
+        // displays EUR/GBP/AUD/CAD (fallback checkout setting). Ask Yay Pro
+        // for its selected storefront currency; never infer it from Woo base
+        // currency or a client-supplied "currency" field.
+        $helper='Yay_Currency\\Helpers\\YayCurrencyHelper';
+        if(!class_exists($helper) || !method_exists($helper,'detect_current_currency'))
+            return self::fail('yay_selected_currency_unavailable');
+        try { $selected=$helper::detect_current_currency(); }
+        catch(Throwable $e){ return self::fail('yay_selected_currency_unavailable'); }
+        $currency=is_array($selected)?($selected['currency']??null):null;
+        if(!is_string($currency) || !in_array($currency,self::CURRENCIES,true)
+            || !isset($selected['status']) || (int)$selected['status']!==1)
             return self::fail('shopper_currency_not_supported');
+        $wooCurrency=get_woocommerce_currency();
+        if(!in_array($wooCurrency,self::CURRENCIES,true))
+            return self::fail('woo_checkout_currency_not_supported');
         // The old price converter must be OFF even if its old session cookie exists.
         if(class_exists('Andy_Commerce_Currency_Runtime_Dev_V1')
             && Andy_Commerce_Currency_Runtime_Dev_V1::allowed())
@@ -193,6 +206,7 @@ final class Andy_Commerce_Campaign_Yay_USD_Basis_V1 {
         return [
             'ok'=>true, 'reason'=>'verified_native_woo_usd_source',
             'basis_minor'=>$basis,'currency'=>$currency,
+            'woo_effective_currency'=>$wooCurrency,
             'gift_slots'=>self::gift_slots_from_usd_minor($basis),
             'coupon_count'=>count($coupons),'merchandise_lines'=>$lines,
             'source_discount_minor'=>$source['discount_minor'],
