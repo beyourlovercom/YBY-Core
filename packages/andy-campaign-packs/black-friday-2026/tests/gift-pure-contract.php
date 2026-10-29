@@ -153,6 +153,25 @@ yes(isset($blockedRegion->errors['byl_bf2026_invalid_gift'])
      && str_contains($blockedRegion->errors['byl_bf2026_invalid_gift'],'cannot ship'),
     'Store API blocks reviewed gift to excluded destination before payment');
 $GLOBALS['bf_woo']->customer->country='US';
+class R8_SubmittedOrder {
+    public function __construct(public string $country) {}
+    public function get_shipping_country(): string { return $this->country; }
+}
+$overrideDenied=new WP_Error();
+BYL_BF2026_Gifts::validate_store_api(new R8_SubmittedOrder('FR'),$overrideDenied);
+yes(isset($overrideDenied->errors['byl_bf2026_invalid_gift'])
+    && str_contains($overrideDenied->errors['byl_bf2026_invalid_gift'],'cannot ship'),
+    'submitted Store API order FR rejects gift despite stale session shipping US');
+$GLOBALS['bf_woo']->customer->country='FR';
+$overrideAllowed=new WP_Error();
+BYL_BF2026_Gifts::validate_store_api(new R8_SubmittedOrder('US'),$overrideAllowed);
+yes($overrideAllowed->errors===[],
+    'submitted Store API order US is authoritative over stale session FR');
+$GLOBALS['bf_woo']->customer->country='US';
+$overrideMissing=new WP_Error();
+BYL_BF2026_Gifts::validate_store_api(new R8_SubmittedOrder(''),$overrideMissing);
+yes(isset($overrideMissing->errors['byl_bf2026_invalid_gift']),
+    'missing submitted shipping country fails closed despite stale session US');
 $GLOBALS['c3_currency']='EUR';
 yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,'foreign currency fails closed without Commerce quote contract');
 class Andy_Commerce_Currency_Runtime_Dev_V1 {
@@ -244,4 +263,4 @@ yes(str_contains($inactive,'not currently available') && !str_contains($inactive
     'OFF campaign renders a harmless landing preview without gift selection controls');
 yes(WC_Cart::$calculations === $before,
     'OFF shortcode rendering never touches Woo cart calculation');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=37\n";
+echo "BYL_BF2026_PURE_CONTRACT_PASS=40\n";
