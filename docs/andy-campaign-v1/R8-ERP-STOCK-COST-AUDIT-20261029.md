@@ -87,6 +87,16 @@ Evidence: pure PHP `BYL_BF2026_PURE_CONTRACT_PASS=37`, provider expiry and appro
 
 This revision is **source-only** at the R8 child Draft PR. The running Dev BF plugin remains OFF with no approved catalog, so the new global-revocation code is not claimed deployed. Do not enable public gifts on the old Dev revision.
 
+## Final Store API address and regional picker gate (2026-10-29)
+R8 child Draft PR #255 now explicitly distinguishes the **submitted `WC_Order::get_shipping_country()`** during Store API checkout from the potentially stale `WC()->customer->get_shipping_country()` session:
+- Submitted France blocks an incompatible gift even if older cart session is United States.
+- Submitted United States permits an approved gift even if older session is France.
+- Missing submitted shipping country fails closed, even when an older session is United States.
+- On the gift picker, if the shopper already has a known shipping country, unsupported gifts show **Unavailable for your shipping country** and their selection button is disabled. The POST selector independently denies a known excluded destination; when unknown, strict checkout verification still applies.
+- This changes the campaign's gifting eligibility, **not** the underlying WooCommerce shipping policy or Stripe settings.
+
+Evidence at exact R8 Draft PR #255 source commit `9f973e5736b230c041ab3ec125ee0a4fbeabfb08`: `BYL_BF2026_PURE_CONTRACT_PASS=40`, `BYL_BF2026_R8_READINESS_PASS=18`, and US Mac mini independent native WooCommerce shopper test **23/23 PASS**, including region picker rendering, order-vs-session authority and provider-stock expiry. Four temporary products deleted; local options restored. All 6 applicable GitHub CI SUCCESS. Source-only; current Dev BF runtime OFF and **not claimed upgraded**.
+
 ## Blockers and next approved steps
 1. Confirm at least 2 free real gift SKUs and an optional paid upgrade; neither a UAT fixture nor the USD retail catalog price can be accepted as factory/landed gift cost. Existing records prove no production/packaging costs for the four candidates.
 2. For each approved SKU: signed factory/landed USD cost, current provider-verified warehouse available count after reservations, packaging weight in grams, total incremental international carrier cost, compliant allowed/excluded countries, responsible reviewer/approval date.
