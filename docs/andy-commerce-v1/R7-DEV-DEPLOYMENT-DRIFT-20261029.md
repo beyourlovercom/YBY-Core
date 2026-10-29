@@ -44,6 +44,13 @@ The package checker now accepts `--source-root packages/andy-commerce` and compa
 
 **Important:** parity only compares a release candidate to the reviewed checkout; it does not prove that currently installed Dev matches the candidate. Installing this R7 child work into the canonical PR #213 remains a separately controlled release task. The previously blocked repair was **not** retried.
 
+## Offline installed-version parity extension (2026-10-29)
+R7 child PR #254 adds a **read-only `--installed-root`** argument to `scripts/check-commerce-r7-bundle.py`. Given a reviewed Commerce candidate ZIP and an installed plugin folder, it compares the exact 8 PHP payloads (7 R13/quote files plus bootstrap) byte-for-byte, rejects absent installed files and modified installed source, and never changes the destination. The companion CI uses a **temporary simulated installed folder**, not Dev.
+
+US Mac mini verified: `R7_COMMERCE_BUNDLE_CONTRACT_PASS=7_FILES_7_REQUIRES_CANARY_BOOT_AND_SOURCE_PARITY_AND_INSTALLED_PARITY`; removed installed Canary rejected with `installed_file_missing`; modified installed bootstrap rejected with `installed_payload_mismatch`; **R7_INSTALLED_PARITY_CHECK_PASS=3**. Exact tested R7 Draft PR #254 commit `cf7d5bedebffc3292de4896b4aa2496de76ecf5f`.
+
+The previously blocked Dev remediation remains **not performed**; this is a preventive audit usable only when execution is separately authorized. No OAuth, payment or production change.
+
 ## Safe repair acceptance when authorized
 1. Re-read live Commerce bootstrap SHA and original R13 file inventory; ensure no concurrent Commerce publisher writes. Preserve full plugin-only rollback outside webroot and verify hashes.
 2. PR #213 sole publisher only: restore the missing seven source files with exact source SHA256, and insert only the corresponding requires plus default-OFF Canary bootstrap into existing live bootstrap. Never overwrite currency settings, Woo payment settings, user sessions, third-party integrations or the entire plugin.
