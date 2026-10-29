@@ -108,7 +108,6 @@ $GLOBALS['products'][1002]->stock=false;
 $mock = new WC_Cart([$normal,$free,$premium]);
 BYL_BF2026_Gifts::reconcile($mock);
 yes(count($mock->get_cart())===1,'out-of-stock premium invalidates catalog and removes all gift lines');
-$GLOBALS['products'][1002]->stock=true; // restore the reviewed premium item for later positive checkout tests.
 class BF_Order_Item_Stub {
     public array $meta = [];
     public function add_meta_data($key,$value,$unique): void { $this->meta[$key]=$value; }
@@ -141,6 +140,7 @@ $invalid=new WP_Error();
 BYL_BF2026_Gifts::validate_store_api(null,$invalid);
 yes(isset($invalid->errors['byl_bf2026_invalid_gift']),
     'Store API rejects unavailable promotional gift before payment');
+$GLOBALS['products'][1002]->stock=true; // restore after unavailable gift negative-path test.
 $GLOBALS['bf_woo']->cart = new WC_Cart(array($normal,$free));
 $valid = new WP_Error();
 BYL_BF2026_Gifts::validate_store_api(null,$valid);
