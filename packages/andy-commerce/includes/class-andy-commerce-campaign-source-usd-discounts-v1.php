@@ -9,18 +9,6 @@
 declare(strict_types=1);
 if (!defined('ABSPATH')) exit;
 
-if (class_exists('WC_Coupon') && !class_exists('BYL_Campaign_Source_USD_Coupon_V1')) {
-    /** Bypass the storefront currency amount filter for this isolated replay. */
-    class BYL_Campaign_Source_USD_Coupon_V1 extends WC_Coupon {
-        public function get_amount($context = 'view') {
-            return parent::get_amount('edit');
-        }
-        public function get_discount_type($context = 'view') {
-            return parent::get_discount_type('edit');
-        }
-    }
-}
-
 final class Andy_Commerce_Campaign_Source_USD_Discounts_V1 {
     private static function fail(string $reason): array {
         return ['ok'=>false,'reason'=>$reason,'basis_minor'=>null,'by_item_minor'=>[]];
@@ -42,7 +30,6 @@ final class Andy_Commerce_Campaign_Source_USD_Discounts_V1 {
      */
     public static function replay(array $sourceLines,array $couponCodes): array {
         if (!class_exists('WC_Discounts') || !class_exists('WC_Coupon')
-            || !class_exists('BYL_Campaign_Source_USD_Coupon_V1')
             || !function_exists('wc_add_number_precision'))
             return self::fail('native_woo_discounts_missing');
         if(count($sourceLines)<1 || count($sourceLines)>200 || count($couponCodes)>1)
@@ -74,7 +61,16 @@ final class Andy_Commerce_Campaign_Source_USD_Discounts_V1 {
             if(!is_string($code) || $code==='' || strlen($code)>200)
                 return self::fail('invalid_coupon_code');
             try{
-                $coupon=new BYL_Campaign_Source_USD_Coupon_V1($code);
+                // Instantiate only after WooCommerce loads: Andy Commerce may
+                // bootstrap before Woo, and no global currency filters change.
+                $coupon=new class($code) extends WC_Coupon {
+                    public function get_amount($context='view') {
+                        return parent::get_amount('edit');
+                    }
+                    public function get_discount_type($context='view') {
+                        return parent::get_discount_type('edit');
+                    }
+                };
                 $type=$coupon->get_discount_type('edit');
                 if(!$coupon->get_id() || !in_array($type,['fixed_cart','fixed_product','percent'],true))
                     return self::fail('coupon_type_not_supported');
