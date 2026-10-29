@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "campaign_id": "byl-black-friday-2026",
+  "source": "owner_explicit_selection_2026-10-29",
+  "status": "OWNER_SELECTED_NOT_FULFILLMENT_APPROVED",
+  "runtime_auto_load": false,
+  "owner_selected_free_gifts": [
+    {
+      "product_id": 30454,
+      "sku": "BY489A-Lubes",
+      "erp_product_id": 1346,
+      "erp_canonical_sku": "BY489A-Lubes",
+      "erp_provider_aliases": [
+        "BY489A",
+        "6971796990292"
+      ],
+      "product": "BEYOURLOVER Lubricant 35ml",
+      "upgrade_minor": 0,
+      "purchase_cost_usd_minor": 100,
+      "landed_cost_usd_minor": null,
+      "reported_packaged_weight_g": 10,
+      "verified_packed_weight_g": null,
+      "weight_needs_remeasurement": true,
+      "net_liquid_ml": 35,
+      "warehouse_code": "us-moreplus",
+      "erp_inventory_warehouse_code": "us-la",
+      "country_allowlist": [
+        "US"
+      ],
+      "last_erp_available_qty": 726,
+      "last_erp_reserved_qty": 0,
+      "provider_verified_available_qty": null,
+      "provider_verified_at": null,
+      "reviewed_by": null,
+      "approved_for_redeem": false
+    }
+  ],
+  "still_needed": [
+    "at_least_one_more_distinct_approved_free_sku",
+    "fresh_provider_verified_inventory",
+    "verified_packed_weight",
+    "warehouse_and_carrier_destination_policy",
+    "landed_cost_and_freight",
+    "owner_final_release_signoff"
+  ],
+  "guarantee": "This JSON file is not PHP or a WordPress option and must never automatically enable gifting."
+}
