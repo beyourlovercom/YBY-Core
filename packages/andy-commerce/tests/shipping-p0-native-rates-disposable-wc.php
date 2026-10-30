@@ -144,4 +144,22 @@ $fields=apply_filters('woocommerce_shipping_package_hash_ignored_fields',
     ['subtotal','total','rates'], ['contents'=>[]]);
 $assert(!in_array('subtotal',$fields,true)&&!in_array('total',$fields,true)
     &&in_array('rates',$fields,true),'cache includes pricing');
+// Restore this one-use WordPress DB for subsequent native Woo tests.
+WC()->cart->empty_cart();
+WC()->shipping()->reset_shipping();
+(new WC_Shipping_Zone($zoneId))->delete();
+delete_option('byl_shipping_promotion_settings');
+delete_option('woocommerce_flat_rate_'.$flatId.'_settings');
+delete_option('woocommerce_free_shipping_'.$freeId.'_settings');
+wp_delete_post($id60, true);
+wp_delete_post($id15, true);
+WC()->customer->set_shipping_country('');
+WC()->customer->set_shipping_state('');
+WC()->customer->set_shipping_postcode('');
+WC()->customer->set_shipping_city('');
+WC_Cache_Helper::get_transient_version('shipping', true);
+$assert(get_option('byl_shipping_promotion_settings', null)===null,
+    'fixture legacy option removed');
+$assert(!wc_get_product($id60) && !wc_get_product($id15),
+    'fixture products removed');
 echo "P0_WOO_NATIVE_RATES_AND_CACHE_PASS cases=$n; isolated DB; no gateway\\n";
