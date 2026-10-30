@@ -41,6 +41,12 @@ $zone->set_zone_name('P0 US synthetic country zone');
 $zone->set_zone_order(1);
 $zoneId = $zone->save();
 $zone->add_location('US', 'country');
+// Match real BYL: global legacy fallback 49, zone-specific US override 69.
+$shippingSettings = get_option('byl_shipping_promotion_settings');
+$shippingSettings['zone_overrides'][(string)$zoneId] = [
+    'mode'=>'override', 'threshold'=>69.00,
+];
+update_option('byl_shipping_promotion_settings', $shippingSettings, false);
 $flatId = $zone->add_shipping_method('flat_rate');
 $freeId = $zone->add_shipping_method('free_shipping');
 update_option('woocommerce_flat_rate_'.$flatId.'_settings', [
@@ -87,6 +93,9 @@ $n=0;
 foreach ($cfg as $currency=>$fx) {
     \Yay_Currency\Helpers\YayCurrencyHelper::$currency=$currency;
     $GLOBALS['p0_rate']=$fx;
+    $assert(Andy_Commerce_Shipping_Promotion_Policy::get_persisted_zone_effective_threshold((int)$zoneId)===69.0,
+        'US zone 69 threshold from legacy option');
+
     foreach ([60,75] as $subtotal) {
         WC()->cart->empty_cart();
         WC()->shipping()->reset_shipping();
