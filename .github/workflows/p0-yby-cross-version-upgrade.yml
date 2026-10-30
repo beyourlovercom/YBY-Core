@@ -65,11 +65,21 @@ jobs:
           rm -rf "$site/wp-content/plugins/yby-core"
           mkdir -p "$site/wp-content/plugins/yby-core"
           git archive HEAD | tar -x -C "$site/wp-content/plugins/yby-core"
-          grep -F 'Version:           2.3.2' "$site/wp-content/plugins/yby-core/yby-core.php"
+          grep -F 'Version:           2.3.3' "$site/wp-content/plugins/yby-core/yby-core.php"
           : > "$RUNNER_TEMP/p0-wp-debug.log"
           ANDY_P0_SYNTHETIC_DB=1 php "$RUNNER_TEMP/wp-cli.phar" eval-file "$GITHUB_WORKSPACE/tests/p0-connector-dbdelta-wordpress-mysql.php" --path="$site"
           if grep -E 'WordPress database error|PHP Fatal error' "$RUNNER_TEMP/p0-wp-debug.log"; then
             echo "P0 BLOCKED: WordPress errors during DB upgrade"
+            exit 1
+          fi
+      - name: Synthetic Inquiry, Case ID and Ads attribution contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="$RUNNER_TEMP/p0-wordpress"
+          ANDY_P0_SYNTHETIC_DB=1 php "$RUNNER_TEMP/wp-cli.phar" eval-file "$GITHUB_WORKSPACE/tests/p0-yby-synthetic-inquiry-attribution.php" --path="$site"
+          if grep -E 'WordPress database error|PHP Fatal error' "$RUNNER_TEMP/p0-wp-debug.log"; then
+            echo "P0 BLOCKED: synthetic inquiry emitted PHP/SQL error"
             exit 1
           fi
       - name: HTTP smoke without cached pages

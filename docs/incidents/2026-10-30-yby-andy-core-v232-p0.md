@@ -53,3 +53,11 @@ Both Bricks scenarios pass without fresh PHP Fatal or database errors. The synth
 - For YBY final UAT: use Bricks 2.3.7 + the exact approved child theme, confirm admin/REST, all **actual** advertising landing URLs, inquiry capture, Case ID and attribution. No fake production inquiry writes.
 - Keep production at 2.2.10 until a new, immutable signed hotfix version is built, explicitly approved and tested. Do **not** republish or overwrite the already released 2.3.2 artifact.
 - GitHub PR and checks are **not** a production deployment authorization.
+
+## 2.3.3 candidate follow-up (still draft; no production changes)
+
+- Corrected the candidate version stamp to 2.3.3, retaining database compatibility 1.4.0 and runtime schema version 1.5.0. Prior immutable 2.3.2 package is unchanged.
+- Added the new v2.3.3 candidate build script, release notes, upgrade and rollback guides; updated Release Package Validation to require signed package metadata for 2.3.3.
+- Added synthetic Inquiry/Case ID/Google Ads UTM/GCLID SQL round-trip assertions (outbound mail mocked) to disposable WordPress/MySQL CI. This uses the site's irrigation_wholesale_page_quote preset when registered by the real YBY child theme, otherwise the built-in page_owned_email_required preset in clean CI.
+- Built an isolated unsigned candidate ZIP, installed those exact ZIP bytes in a real local WordPress + YBY Bricks 2.3.7 child theme and verified: uncached home 200, REST 200, login 200, wp-admin 302, existing theme element ownership retained, synthetic Inquiry/Case ID/attribution PASS and twice-repeated Connector migration PASS, no fresh PHP Fatal or database errors.
+- No actual production inquiry submitted, no real email sent. The owner will separately authorize any merge, signature publication or production upgrade.
