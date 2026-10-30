@@ -1,7 +1,7 @@
 === Andy Commerce ===
 Contributors: ybyglobal
 Requires PHP: 8.0
-Stable tag: 1.0.13
+Stable tag: 1.0.14
 
 Reusable B2C / WooCommerce Addon for Andy Core.
 
@@ -13,6 +13,13 @@ Reusable B2C / WooCommerce Addon for Andy Core.
 The plugin fails closed with an admin notice when dependencies are missing or incompatible.
 
 == Changelog ==
+
+= 1.0.14 (Draft source / not production-published) =
+* Restore visible Andy Core → 交易 · 观察 navigation after Core menu consolidation without activating full Commerce runtime.
+* Administrator-only typed restore confirmation, nonce-protected mode transitions and last-20 audit records.
+* Read-only environment snapshot, active related-plugin inventory, HPOS flags, selected Woo hook attribution and audit log.
+* Fail-closed www default retained; no automatic database migration, payment, shipping, coupon, gift or order writes.
+
 
 = 1.0.13 (Draft observation-mode candidate, NOT stable/www) =
 * First-party Andy Commerce observation toggle: one-click enter, explicit acknowledged exit.
