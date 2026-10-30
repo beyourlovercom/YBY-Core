@@ -25,6 +25,12 @@ jobs:
           grep -Fq 'RELEASE_DENIED:' scripts/prepare-andy-commerce-dev-release.sh
           grep -Fq 'check-commerce-r7-bundle.py' scripts/prepare-andy-commerce-dev-release.sh
           grep -Fq 'R7_R13_Bundle_Contract=PASS' scripts/prepare-andy-commerce-dev-release.sh
+      - name: Observation Mode — no Woo transaction hooks on production
+        run: |
+          php -l packages/andy-commerce/andy-commerce.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-observation-mode.php
+          php packages/andy-commerce/tests/observation-mode-harness.php
+          php packages/andy-commerce/tests/version-sync-v102-harness.php
       - name: Marketing M7–M10 pure simulations, lifecycle and Dev rendering
         run: |
           php packages/andy-commerce/tests/marketing-m7-draft-security-harness.php

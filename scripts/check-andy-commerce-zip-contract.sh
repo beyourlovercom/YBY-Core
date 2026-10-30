@@ -4,9 +4,18 @@ zip="$1"; source_sha="${2:-unknown}"
 test -s "$zip"
 unzip -tq "$zip" >/dev/null
 entries="$(unzip -Z1 "$zip")"
-for f in admin/class-andy-commerce-admin.php admin/views/currency-os-v2-admin.php admin/views/currency-c2c3-readonly-panel.php assets/currency-c3-dev-preview.js includes/class-andy-commerce-c3-cart-snapshot-adapter.php includes/class-andy-commerce-currency-c2c3-preview.php admin/views/marketing-m10-workbench.php admin/views/marketing-m10-six-preview.php includes/class-andy-commerce-m10-six-type-simulator.php includes/class-andy-commerce-m10-lifecycle.php includes/class-andy-commerce-marketing-p1-sandbox-contract.php includes/class-andy-commerce-marketing-p2-woo-adapter.php includes/class-andy-commerce-marketing-p3-sku-woo.php includes/class-andy-commerce-marketing-p4-order-cap.php includes/class-andy-commerce-marketing-p5-checkout-hooks.php includes/class-andy-commerce-marketing-dev-uat.php includes/class-andy-commerce-currency-v2-dev.php includes/class-andy-commerce-m7-draft-studio.php andy-commerce.php; do
+for f in includes/class-andy-commerce-observation-mode.php admin/class-andy-commerce-admin.php admin/views/currency-os-v2-admin.php admin/views/currency-c2c3-readonly-panel.php assets/currency-c3-dev-preview.js includes/class-andy-commerce-c3-cart-snapshot-adapter.php includes/class-andy-commerce-currency-c2c3-preview.php admin/views/marketing-m10-workbench.php admin/views/marketing-m10-six-preview.php includes/class-andy-commerce-m10-six-type-simulator.php includes/class-andy-commerce-m10-lifecycle.php includes/class-andy-commerce-marketing-p1-sandbox-contract.php includes/class-andy-commerce-marketing-p2-woo-adapter.php includes/class-andy-commerce-marketing-p3-sku-woo.php includes/class-andy-commerce-marketing-p4-order-cap.php includes/class-andy-commerce-marketing-p5-checkout-hooks.php includes/class-andy-commerce-marketing-dev-uat.php includes/class-andy-commerce-currency-v2-dev.php includes/class-andy-commerce-m7-draft-studio.php andy-commerce.php; do
  echo "$entries" | grep -Fxq "andy-commerce/$f" || { echo "MISSING: $f"; exit 1; }
 done
+# Exact ZIP must contain the production fail-closed entrypoint before any
+# Commerce business modules or Woo hooks are imported.
+entry="$(unzip -p "$zip" andy-commerce/andy-commerce.php)"
+printf '%s' "$entry" | grep -Fq 'Andy_Commerce_Observation_Mode::is_observing()' || {
+ echo "OBSERVATION_ZIP_GUARD_MISSING"; exit 1;
+}
+printf '%s' "$(unzip -p "$zip" andy-commerce/includes/class-andy-commerce-observation-mode.php)" | grep -Fq 'function handle_toggle(' || {
+ echo "OBSERVATION_ZIP_TOGGLE_MISSING"; exit 1;
+}
 controller="$(unzip -p "$zip" andy-commerce/admin/class-andy-commerce-admin.php)"
 for s in "function supported_tabs(" "function register_l3_items(" "function currency_l3_route_exists(" "'andy_core_l3_external_items'" "'register_l3_items'" "'currency-os'" "'manage_woocommerce'" "'andy-commerce.currency-os'" "'多币种'" "'route_check'"; do
  printf '%s' "$controller" | grep -Fq "$s" || { echo "ADAPTER_ZIP_MISSING: $s"; exit 1; }

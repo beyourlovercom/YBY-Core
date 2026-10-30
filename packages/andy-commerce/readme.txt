@@ -1,7 +1,7 @@
 === Andy Commerce ===
 Contributors: ybyglobal
 Requires PHP: 8.0
-Stable tag: 1.0.12
+Stable tag: 1.0.13
 
 Reusable B2C / WooCommerce Addon for Andy Core.
 
@@ -13,6 +13,13 @@ Reusable B2C / WooCommerce Addon for Andy Core.
 The plugin fails closed with an admin notice when dependencies are missing or incompatible.
 
 == Changelog ==
+
+= 1.0.13 (Draft observation-mode candidate, NOT stable/www) =
+* First-party Andy Commerce observation toggle: one-click enter, explicit acknowledged exit.
+* Fail-closed before loading Commerce exports/shipping/coupon/currency/marketing/orders hooks on www and unknown production hosts.
+* Frontend observes with zero Andy Commerce hooks; admin can view sanitized status and switch using authenticated nonce/capability-protected POST.
+* Preserve existing Dev staging and disposable local Woo default behavior; no schema migration, campaign activation, checkout or payment change.
+* WWW rollout, live-feature activation and GitHub main/Stable remain independently gated.
 
 = 1.0.9-dev.1 (Dev-only R8-R10 Candidate) =
 * Adds master-OFF Dev shopper currency runtime using explicit time-limited Frankfurter reference FX snapshots; stale snapshots and legacy currency conflicts disable it.

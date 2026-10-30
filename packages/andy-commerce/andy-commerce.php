@@ -3,7 +3,7 @@
  * Plugin Name:       Andy Commerce
  * Plugin URI:        https://ybyglobal.com/
  * Description:       Reusable B2C / WooCommerce Addon for Andy Core.
- * Version:           1.0.12
+ * Version:           1.0.13
  * Author:            YBY Global
  * Text Domain:       andy-commerce
  * Requires Plugins:  yby-core,woocommerce
@@ -15,11 +15,19 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'ANDY_COMMERCE_VERSION', '1.0.12' );
+define( 'ANDY_COMMERCE_VERSION', '1.0.13' );
 define( 'ANDY_COMMERCE_MIN_CORE_VERSION', '1.9.0' );
 define( 'ANDY_COMMERCE_PLUGIN_FILE', __FILE__ );
 define( 'ANDY_COMMERCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ANDY_COMMERCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+
+// The earliest production safety gate: no Commerce modules are included,
+// registered or bootstrapped on observational requests.
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-observation-mode.php';
+Andy_Commerce_Observation_Mode::register();
+if ( Andy_Commerce_Observation_Mode::is_observing() ) {
+    return;
+}
 
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-presets.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-query-adapter.php';

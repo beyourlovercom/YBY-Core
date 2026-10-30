@@ -288,3 +288,14 @@ jobs:
           wp config delete AICC_CURRENCY_RUNTIME_TEST_CURRENCY --path="$RUNNER_TEMP/woo"
           wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
           echo 'P6D_OFFLINE_WOO_NATIVE_TAX_SHIPPING_ORDER_AND_GATE_ROLLBACK=PASS'
+
+      - name: Production-style observation switch in real disposable Woo (no payments)
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp option update andy_commerce_runtime_mode_v1 observe --path="$RUNNER_TEMP/woo"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/observation-mode-disposable-woo.php" --path="$RUNNER_TEMP/woo"
+          wp option update andy_commerce_runtime_mode_v1 active --path="$RUNNER_TEMP/woo"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/observation-mode-disposable-woo.php" --path="$RUNNER_TEMP/woo"
+          wp option update andy_commerce_runtime_mode_v1 observe --path="$RUNNER_TEMP/woo"
+          echo 'OBSERVATION_DISPOSABLE_WOO_ENTER_EXIT_WITHOUT_TRANSACTION_PASS'

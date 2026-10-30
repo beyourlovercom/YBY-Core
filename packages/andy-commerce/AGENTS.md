@@ -23,3 +23,11 @@ The gate does not revoke permissions held by existing WordPress users; it is enf
 - New seasonal campaigns belong to standalone Andy Campaign PHP Packs. When `andy_campaign_lite_master=yes`, M-P1 `current()` and M-P5 cap callbacks must reject legacy execution, and the legacy operator `arm` action must HTTP 409. When old STATUS or SWITCH is ON, Andy Campaign rejects itself. If both are ON, **both engines must fail closed**.
 - Currency, Stripe, payment, order, taxes, shipping remain owned by Commerce; existing Andy Core Landing Pages editor and native menus remain owned by Core.
 - No automatic DB migrations, option resets, Production writes or 'ready to merge' claims from a passing PHP harness. Integrate the guard only through the current exact-head Dev publisher and explicitly approved gate.
+
+
+## Production Observation Mode (Owner approved engineering scope 2026-10-30)
+- Andy Commerce version 1.0.13+ has a built-in `进入观察模式` toggle on Overview and under Andy Commerce → 观察模式. Do not use or install a second observer plugin to replace this requirement.
+- A new www or unknown production install defaults to observing **before any Commerce business module is included or Woo transaction hooks are registered**; no DB migrations or option writes on first load. An existing `dev.beyourlover.com` staging or disposable local Woo environment preserves its current active behavior until explicitly switched.
+- While observing, frontend registers zero new Commerce hooks; administrator-only menu/nonce-gated switch and read-only environment panel remain. Saved shipping/coupon/marketing settings and Woo transactional data remain untouched.
+- Entering observation is one POST with a nonce and `manage_options`; leaving observation requires explicit restore acknowledgement. Only a separate Owner approval may authorize live WWW runtime activation; the one-click control does not constitute production approval.
+- ZIP/source negative-hook tests, Dev install/readback, exact WWW dependency/HPOS/YayCurrency/Smart Coupons parity, backup/rollback and Canary are **separate gates**. No merging #213 to main, no Dev publisher overwrite, no www install or activation from this branch.

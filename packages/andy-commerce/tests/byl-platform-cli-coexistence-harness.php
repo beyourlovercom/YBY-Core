@@ -3,6 +3,9 @@
 declare(strict_types=1);
 define('ABSPATH', __DIR__);
 define('WP_CLI', true);
+// Existing unit fixture explicitly requests legacy full-runtime behavior;
+// production defaults remain observational in the actual WordPress site.
+function get_option($name, $default=null) { return $name==='andy_commerce_runtime_mode_v1' ? 'active' : $default; }
 function plugin_dir_path($file) { return dirname($file) . '/'; }
 function plugin_dir_url($file) { return 'https://example.invalid/plugins/'; }
 $GLOBALS['hooks'] = array();
