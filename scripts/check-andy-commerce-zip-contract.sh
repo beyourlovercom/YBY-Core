@@ -10,11 +10,20 @@ done
 # Exact ZIP must contain the production fail-closed entrypoint before any
 # Commerce business modules or Woo hooks are imported.
 entry="$(unzip -p "$zip" andy-commerce/andy-commerce.php)"
-printf '%s' "$entry" | grep -Fq 'Andy_Commerce_Observation_Mode::is_observing()' || {
+mode_source="$(unzip -p "$zip" andy-commerce/includes/class-andy-commerce-observation-mode.php)"
+# Here-strings avoid false SIGPIPE/pipefail negatives from grep -q on PHP.
+grep -Fq 'Andy_Commerce_Observation_Mode::is_observing()' <<< "$entry" || {
  echo "OBSERVATION_ZIP_GUARD_MISSING"; exit 1;
 }
-printf '%s' "$(unzip -p "$zip" andy-commerce/includes/class-andy-commerce-observation-mode.php)" | grep -Fq 'function handle_toggle(' || {
+grep -Fq 'function handle_toggle(' <<< "$mode_source" || {
  echo "OBSERVATION_ZIP_TOGGLE_MISSING"; exit 1;
+}
+repo_root="$(cd "$(dirname "$0")/.." && pwd)"
+cmp -s "$repo_root/packages/andy-commerce/andy-commerce.php" <(unzip -p "$zip" andy-commerce/andy-commerce.php) || {
+ echo "OBSERVATION_ZIP_BOOTSTRAP_SOURCE_MISMATCH"; exit 1;
+}
+cmp -s "$repo_root/packages/andy-commerce/includes/class-andy-commerce-observation-mode.php" <(unzip -p "$zip" andy-commerce/includes/class-andy-commerce-observation-mode.php) || {
+ echo "OBSERVATION_ZIP_MODE_SOURCE_MISMATCH"; exit 1;
 }
 controller="$(unzip -p "$zip" andy-commerce/admin/class-andy-commerce-admin.php)"
 for s in "function supported_tabs(" "function register_l3_items(" "function currency_l3_route_exists(" "'andy_core_l3_external_items'" "'register_l3_items'" "'currency-os'" "'manage_woocommerce'" "'andy-commerce.currency-os'" "'多币种'" "'route_check'"; do
