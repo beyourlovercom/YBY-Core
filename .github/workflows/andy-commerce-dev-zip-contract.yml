@@ -219,3 +219,12 @@ jobs:
             ${{ runner.temp }}/andy-commerce-dev-candidate.zip.attestation.txt
           if-no-files-found: error
           retention-days: 14
+
+      - name: Retain exact 1.0.14 candidate for review (NOT Dev-install authorization)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: andy-commerce-1.0.14-review-only-NOT-INSTALLABLE
+          path: ${{ runner.temp }}/commerce.zip
+          if-no-files-found: error
+          retention-days: 7
