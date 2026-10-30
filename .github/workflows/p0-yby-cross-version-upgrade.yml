@@ -1,0 +1,100 @@
+name: P0 YBY Cross-Version Upgrade Gate
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  yby-upgrade:
+    runs-on: ubuntu-24.04
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: yby_p0
+          MYSQL_USER: yby_p0
+          MYSQL_PASSWORD: synthetic_only
+          MYSQL_ROOT_PASSWORD: synthetic_root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -psynthetic_root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - name: Checkout complete history for v2.2.10 baseline
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+      - name: PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli
+          coverage: none
+      - name: Install isolated WordPress 6.6.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o "$RUNNER_TEMP/wp-cli.phar" https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          site="$RUNNER_TEMP/p0-wordpress"
+          php "$RUNNER_TEMP/wp-cli.phar" core download --path="$site" --version=6.6.2
+          php "$RUNNER_TEMP/wp-cli.phar" config create --path="$site" --dbname=yby_p0 --dbuser=yby_p0 --dbpass=synthetic_only --dbhost=127.0.0.1
+          php "$RUNNER_TEMP/wp-cli.phar" core install --path="$site" --url=http://127.0.0.1:18080 --title="P0 synthetic" --admin_user=test_admin --admin_password=synthetic-only-long-password --admin_email=test@example.invalid --skip-email
+          php "$RUNNER_TEMP/wp-cli.phar" config set WP_DEBUG true --raw --path="$site"
+          php "$RUNNER_TEMP/wp-cli.phar" config set WP_DEBUG_LOG "$RUNNER_TEMP/p0-wp-debug.log" --path="$site"
+          php "$RUNNER_TEMP/wp-cli.phar" config set WP_DEBUG_DISPLAY false --raw --path="$site"
+      - name: Seed exact old release v2.2.10
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="$RUNNER_TEMP/p0-wordpress"
+          mkdir -p "$site/wp-content/plugins/yby-core"
+          git archive v2.2.10 | tar -x -C "$site/wp-content/plugins/yby-core"
+          php "$RUNNER_TEMP/wp-cli.phar" plugin activate yby-core --path="$site"
+          grep -F 'Version:           2.2.10' "$site/wp-content/plugins/yby-core/yby-core.php"
+      - name: Upgrade same synthetic database to PR code
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="$RUNNER_TEMP/p0-wordpress"
+          rm -rf "$site/wp-content/plugins/yby-core"
+          mkdir -p "$site/wp-content/plugins/yby-core"
+          git archive HEAD | tar -x -C "$site/wp-content/plugins/yby-core"
+          grep -F 'Version:           2.3.2' "$site/wp-content/plugins/yby-core/yby-core.php"
+          : > "$RUNNER_TEMP/p0-wp-debug.log"
+          ANDY_P0_SYNTHETIC_DB=1 php "$RUNNER_TEMP/wp-cli.phar" eval-file "$GITHUB_WORKSPACE/tests/p0-connector-dbdelta-wordpress-mysql.php" --path="$site"
+          if grep -E 'WordPress database error|PHP Fatal error' "$RUNNER_TEMP/p0-wp-debug.log"; then
+            echo "P0 BLOCKED: WordPress errors during DB upgrade"
+            exit 1
+          fi
+      - name: HTTP smoke without cached pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="$RUNNER_TEMP/p0-wordpress"
+          php -S 127.0.0.1:18080 -t "$site" > "$RUNNER_TEMP/p0-http.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          sleep 2
+          for path in '/?p0_uncached=1' '/?rest_route=/' '/wp-login.php'; do
+            code="$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:18080$path")"
+            test "$code" = 200 || { echo "P0 FAIL $path HTTP $code"; cat "$RUNNER_TEMP/p0-http.log"; exit 1; }
+          done
+          code="$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:18080/wp-admin/)"
+          test "$code" = 302 || { echo "P0 FAIL admin HTTP $code"; exit 1; }
+          if grep -E 'WordPress database error|PHP Fatal error' "$RUNNER_TEMP/p0-wp-debug.log"; then
+            echo "P0 BLOCKED: Runtime fatal after upgrade"
+            exit 1
+          fi
+          echo "P0_CROSS_VERSION_UNCACHED_HTTP_PASS"
+      - name: Bricks child-theme collision and Core fallback
+        shell: bash
+        run: |
+          set -euo pipefail
+          php tests/bricks-child-ownership-harness.php
+          php tests/bricks-core-fallback-harness.php
