@@ -37,6 +37,12 @@ jobs:
         run: php packages/andy-campaign/tests/core-navigation-harness.php
       - name: Black Friday pure gift contract
         run: php packages/andy-campaign-packs/black-friday-2026/tests/gift-pure-contract.php
+      - name: R8 gift approval and fulfillment preflight
+        run: |
+          php -l packages/andy-campaign-packs/black-friday-2026/includes/class-byl-bf2026-r8-readiness.php
+          php packages/andy-campaign-packs/black-friday-2026/tests/gift-readiness-preflight.php
+      - name: R8 owner-selected free gift A signoff remains safe and OFF
+        run: python3 packages/andy-campaign-packs/black-friday-2026/tests/r8-owner-gift-selection-contract.py
       - name: Draft gift Dev-only canonical redirect contract
         run: php packages/andy-campaign-packs/black-friday-2026/tests/draft-gift-redirect-contract.php
       - name: Existing Andy Core navigation regression

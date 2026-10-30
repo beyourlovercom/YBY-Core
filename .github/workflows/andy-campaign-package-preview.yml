@@ -38,12 +38,82 @@ jobs:
           cp packages/andy-campaign/includes/class-andy-campaign-lite.php dist/stage/andy-campaign/includes/
           cp packages/andy-campaign-packs/black-friday-2026/black-friday-2026.php dist/stage/black-friday-2026/
           cp packages/andy-campaign-packs/black-friday-2026/includes/class-byl-bf2026-gifts.php dist/stage/black-friday-2026/includes/
+          cp packages/andy-campaign-packs/black-friday-2026/includes/class-byl-bf2026-r8-readiness.php dist/stage/black-friday-2026/includes/
           grep -q 'Plugin Name: Andy Campaign' dist/stage/andy-campaign/andy-campaign.php
           grep -q 'Plugin Name: BYL Black Friday' dist/stage/black-friday-2026/black-friday-2026.php
           cd dist/stage
           zip -q -r ../andy-campaign-0.1.0-preview.zip andy-campaign
           zip -q -r ../byl-black-friday-2026-0.1.0-preview.zip black-friday-2026
           cd ..
+          python3 ../scripts/check-campaign-r8-gift-bundle.py \
+            byl-black-friday-2026-0.1.0-preview.zip \
+            --source-root ../packages/andy-campaign-packs/black-friday-2026
+          python3 - byl-black-friday-2026-0.1.0-preview.zip <<'R8_NEG'
+          import pathlib, sys, tempfile, subprocess, zipfile
+          source=sys.argv[1]
+          with zipfile.ZipFile(source) as z:
+              src={name:z.read(name) for name in z.namelist()}
+          safety='black-friday-2026/includes/class-byl-bf2026-r8-readiness.php'
+          test_cases={
+              'missing-review-class': {k:v for k,v in src.items() if k!=safety},
+              'modified-review-class': {k:(v+b'\n/*stale R8 review*/\n') if k==safety else v for k,v in src.items()},
+              'missing-bootstrap-require': {k:(v.replace(
+                  b"require_once __DIR__ . '/includes/class-byl-bf2026-r8-readiness.php';",
+                  b'/*missing reviewed readiness*/')) if k=='black-friday-2026/black-friday-2026.php'
+                  else v for k,v in src.items()},
+          }
+          with tempfile.TemporaryDirectory() as dirname:
+              for label, contents in test_cases.items():
+                  target=pathlib.Path(dirname)/(label+'.zip')
+                  with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED) as out:
+                      for name,blob in contents.items():out.writestr(name,blob)
+                  check=subprocess.run([sys.executable,
+                      '../scripts/check-campaign-r8-gift-bundle.py',str(target),
+                      '--source-root','../packages/andy-campaign-packs/black-friday-2026'],
+                      capture_output=True,text=True)
+                  if check.returncode==0:
+                      raise SystemExit('R8_UNSAFE_PREVIEW_NOT_REJECTED:'+label)
+                  print('R8_UNSAFE_PREVIEW_REJECTED='+label)
+          print('R8_GIFT_PREVIEW_NEGATIVE_MATRIX_PASS=3')
+          R8_NEG
+          # Validate post-install parity against a disposable extracted folder.
+          # The check is read-only; no Dev installation or live files are read.
+          python3 - byl-black-friday-2026-0.1.0-preview.zip <<'R8_INSTALLED'
+          from pathlib import Path
+          import subprocess, sys, tempfile, zipfile
+          archive = Path(sys.argv[1]).resolve()
+          checker = '../scripts/check-campaign-r8-gift-bundle.py'
+          source = '../packages/andy-campaign-packs/black-friday-2026'
+          with tempfile.TemporaryDirectory() as dirname:
+              with zipfile.ZipFile(archive) as z:
+                  z.extractall(dirname)
+              root = Path(dirname) / 'black-friday-2026'
+              def check():
+                  return subprocess.run(
+                      [sys.executable, checker, str(archive),
+                       '--source-root', source, '--installed-root', str(root)],
+                      capture_output=True, text=True)
+              accepted = check()
+              if accepted.returncode != 0:
+                  raise SystemExit('R8_INSTALLED_GOOD_DENIED:' + accepted.stderr)
+              count = 1
+              for relative in ('black-friday-2026.php',
+                               'includes/class-byl-bf2026-r8-readiness.php',
+                               'includes/class-byl-bf2026-gifts.php'):
+                  file = root / relative
+                  original = file.read_bytes()
+                  file.write_bytes(original + b'\\n/*stale installed copy*/\\n')
+                  if check().returncode == 0:
+                      raise SystemExit('R8_INSTALLED_MUTATION_NOT_REJECTED:' + relative)
+                  count += 1
+                  file.unlink()
+                  if check().returncode == 0:
+                      raise SystemExit('R8_INSTALLED_MISSING_NOT_REJECTED:' + relative)
+                  count += 1
+                  file.parent.mkdir(parents=True, exist_ok=True)
+                  file.write_bytes(original)
+              print('R8_INSTALLED_PARITY_CHECK_PASS=' + str(count))
+          R8_INSTALLED
           sha256sum *preview.zip > SHA256SUMS
           cat SHA256SUMS
           unzip -l andy-campaign-0.1.0-preview.zip

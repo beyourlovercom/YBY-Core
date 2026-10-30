@@ -15,6 +15,8 @@ class WC_Product {
     public float $price=100;
     public function __construct(public string $type='simple',public bool $stock=true) {}
     public function set_price($p): void { $this->price=(float)$p; }
+    public function get_sku(): string { return 'BYL-APPROVED-GIFT'; }
+    public function get_name(): string { return 'Approved gift fixture'; }
     public function is_type($name): bool { return $name===$this->type; }
     public function is_purchasable(): bool { return $this->type==='simple'; }
     public function is_in_stock(): bool { return $this->stock; }
@@ -29,13 +31,24 @@ function wc_get_product($id) { return $GLOBALS['products'][(int)$id]??false; }
 function get_woocommerce_currency(): string { return $GLOBALS['c3_currency'] ?? 'USD'; }
 function wc_get_price_decimals(): int { return 2; }
 function wc_format_decimal($v) { return number_format((float)$v,2,'.',''); }
-function apply_filters($name,$value) { return $GLOBALS['gift_catalog'] ?? $value; }
+function apply_filters($name,$value) {
+    if($name==='byl_bf2026_gift_approvals')return $GLOBALS['gift_approvals']??$value;
+    return $GLOBALS['gift_catalog']??$value;
+}
 function yes($v,$msg) { if (!$v) throw new RuntimeException('BF_FAIL:'.$msg); }
+require dirname(__DIR__).'/includes/class-byl-bf2026-r8-readiness.php';
 require dirname(__DIR__).'/includes/class-byl-bf2026-gifts.php';
 $GLOBALS['gift_catalog']=array(1001=>array('upgrade_minor'=>0),1002=>array('upgrade_minor'=>999),1003=>array('upgrade_minor'=>-10),1004=>array('upgrade_minor'=>100001));
 $catalog=BYL_BF2026_Gifts::catalog();
 yes(count($catalog)===2 && $catalog[1001]===0 && $catalog[1002]===999,'catalog validates prices');
 $GLOBALS['products']=array(1001=>new WC_Product(),1002=>new WC_Product());
+$validApproval=['approved'=>true,'warehouse_available_qty'=>30,
+ 'landed_cost_usd_minor'=>350,'packed_weight_g'=>125,
+ 'allowed_countries'=>['US','GB'],'warehouse_code'=>'us-ny',
+ 'warehouse_checked_at'=>time()-15,'inventory_evidence_kind'=>'provider_verified',
+ 'reviewed_by'=>'Sandbox reviewer'];
+$GLOBALS['gift_approvals']=[1001=>$validApproval,1002=>$validApproval,1005=>$validApproval];
+
 yes(!BYL_BF2026_Gifts::ready(),'one free item is insufficient for two-free-gift promise');
 $GLOBALS['gift_catalog'][1005]=array('upgrade_minor'=>0);
 $GLOBALS['products'][1005]=new WC_Product();
@@ -50,6 +63,22 @@ $GLOBALS['products'][1005]->qty=0;
 yes(!BYL_BF2026_Gifts::ready(),'zero managed stock blocks promotion even with instock flag');
 $GLOBALS['products'][1005]->qty=10;
 yes(BYL_BF2026_Gifts::ready(),'physical available free gift stock restored');
+unset($GLOBALS['gift_approvals'][1001]);
+yes(!BYL_BF2026_Gifts::ready(),'revoked warehouse approval closes campaign');
+$GLOBALS['gift_approvals'][1001]=$validApproval;
+$missingWeight=$validApproval; unset($missingWeight['packed_weight_g']);
+$GLOBALS['gift_approvals'][1005]=$missingWeight;
+yes(!BYL_BF2026_Gifts::ready(),'missing packed weight blocks gift launch');
+$GLOBALS['gift_approvals'][1005]=$validApproval;
+yes(BYL_BF2026_Gifts::ready(),'restored approved manifests permit campaign readiness');
+$staleApproval=$validApproval;
+$staleApproval['warehouse_checked_at']=time()-90000;
+$GLOBALS['gift_approvals'][1001]=$staleApproval;
+yes(!BYL_BF2026_Gifts::ready(),'stale provider stock closes gift picker');
+$GLOBALS['gift_approvals'][1001]=$validApproval;
+yes(BYL_BF2026_Gifts::ready(),'fresh provider stock restores ready');
+
+
 $normal=['product_id'=>10,'quantity'=>1,'line_total'=>205.0];
 $free=['product_id'=>1001,'quantity'=>1,'line_total'=>0.0,'data'=>new WC_Product(),
     'andy_campaign_pack_id'=>BYL_BF2026_Gifts::ID,'_byl_bf2026_gift'=>true];
@@ -78,7 +107,7 @@ yes($empty['slots']===0,'gift-only cart no reward');
 $GLOBALS['products'][1002]->stock=false;
 $mock = new WC_Cart([$normal,$free,$premium]);
 BYL_BF2026_Gifts::reconcile($mock);
-yes(count($mock->get_cart())===2,'out-of-stock premium gift removed on cart reconcile');
+yes(count($mock->get_cart())===1,'out-of-stock premium invalidates catalog and removes all gift lines');
 class BF_Order_Item_Stub {
     public array $meta = [];
     public function add_meta_data($key,$value,$unique): void { $this->meta[$key]=$value; }
@@ -101,16 +130,73 @@ class WP_Error {
     public function add($code,$message): void { $this->errors[$code]=$message; }
 }
 function WC() { return $GLOBALS['bf_woo']; }
-$GLOBALS['bf_woo']=(object)array('cart'=>new WC_Cart(array($normal,$premium)));
+class R8CheckoutCustomer {
+    public string $country = 'US';
+    public function get_shipping_country(): string { return $this->country; }
+}
+$GLOBALS['bf_woo']=(object)array('cart'=>new WC_Cart(array($normal,$premium)),
+    'customer'=>new R8CheckoutCustomer());
 $invalid=new WP_Error();
 BYL_BF2026_Gifts::validate_store_api(null,$invalid);
 yes(isset($invalid->errors['byl_bf2026_invalid_gift']),
     'Store API rejects unavailable promotional gift before payment');
+$GLOBALS['products'][1002]->stock=true; // restore after unavailable gift negative-path test.
 $GLOBALS['bf_woo']->cart = new WC_Cart(array($normal,$free));
 $valid = new WP_Error();
 BYL_BF2026_Gifts::validate_store_api(null,$valid);
 yes(count($valid->errors)===0,
     'Store API accepts valid stock and allowance');
+$GLOBALS['bf_woo']->customer->country='FR';
+$blockedRegion=new WP_Error();
+BYL_BF2026_Gifts::validate_store_api(null,$blockedRegion);
+yes(isset($blockedRegion->errors['byl_bf2026_invalid_gift'])
+     && str_contains($blockedRegion->errors['byl_bf2026_invalid_gift'],'cannot ship'),
+    'Store API blocks reviewed gift to excluded destination before payment');
+$GLOBALS['bf_woo']->customer->country='US';
+class R8_SubmittedOrder {
+    public function __construct(public string $country) {}
+    public function get_shipping_country(): string { return $this->country; }
+}
+$overrideDenied=new WP_Error();
+BYL_BF2026_Gifts::validate_store_api(new R8_SubmittedOrder('FR'),$overrideDenied);
+yes(isset($overrideDenied->errors['byl_bf2026_invalid_gift'])
+    && str_contains($overrideDenied->errors['byl_bf2026_invalid_gift'],'cannot ship'),
+    'submitted Store API order FR rejects gift despite stale session shipping US');
+$GLOBALS['bf_woo']->customer->country='FR';
+$overrideAllowed=new WP_Error();
+BYL_BF2026_Gifts::validate_store_api(new R8_SubmittedOrder('US'),$overrideAllowed);
+yes($overrideAllowed->errors===[],
+    'submitted Store API order US is authoritative over stale session FR');
+$GLOBALS['bf_woo']->customer->country='US';
+$overrideMissing=new WP_Error();
+BYL_BF2026_Gifts::validate_store_api(new R8_SubmittedOrder(''),$overrideMissing);
+yes(isset($overrideMissing->errors['byl_bf2026_invalid_gift']),
+    'missing submitted shipping country fails closed despite stale session US');
+// Classic Woo 11.2+ passes normalized posted_data to after_checkout_validation;
+// submitted country (not current session) is the payment gate authority.
+$GLOBALS['bf_woo']->customer->country='US';
+$classicFrance=new WP_Error();
+BYL_BF2026_Gifts::validate_classic(['shipping_country'=>'FR'],$classicFrance);
+yes(isset($classicFrance->errors['byl_bf2026_invalid_gift'])
+    && str_contains($classicFrance->errors['byl_bf2026_invalid_gift'],'cannot ship'),
+    'Classic Checkout submitted France rejects old session US');
+$GLOBALS['bf_woo']->customer->country='FR';
+$classicUS=new WP_Error();
+BYL_BF2026_Gifts::validate_classic(['shipping_country'=>'US'],$classicUS);
+yes($classicUS->errors===[],'Classic Checkout submitted US overrides old session France');
+$classicMissing=new WP_Error();
+BYL_BF2026_Gifts::validate_classic([],$classicMissing);
+yes(isset($classicMissing->errors['byl_bf2026_invalid_gift']),
+    'Classic Checkout missing submitted country blocks promotional gift');
+$classicArray=new WP_Error();
+BYL_BF2026_Gifts::validate_classic(['shipping_country'=>['US']],$classicArray);
+yes(isset($classicArray->errors['byl_bf2026_invalid_gift']),
+    'Classic Checkout malformed array country fails closed');
+$GLOBALS['bf_woo']->cart=new WC_Cart([$normal]);
+$classicPlain=new WP_Error();
+BYL_BF2026_Gifts::validate_classic([],$classicPlain);
+yes($classicPlain->errors===[],'ordinary Classic merchandise checkout does not require gift country');
+$GLOBALS['bf_woo']->cart = new WC_Cart(array($normal,$free));
 $GLOBALS['c3_currency']='EUR';
 yes(BYL_BF2026_Gifts::eligibility($c)['slots']===0,'foreign currency fails closed without Commerce quote contract');
 class Andy_Commerce_Currency_Runtime_Dev_V1 {
@@ -169,13 +255,37 @@ $gbp_minor=static fn(int $usd) => intdiv($usd*$dev_gbp_rate_micros+500000,100000
 yes($gbp_minor(19899)===$gbp_minor(19900),
     'GBP quote collision prevents unsafe inverted FX threshold implementation');
 class Andy_Campaign_Lite {
+    public static string $state='master_off';
     public static function boot() { return new self(); }
-    public function decisions(): array { return array(BYL_BF2026_Gifts::ID=>'master_off'); }
+    public function decisions(): array { return array(BYL_BF2026_Gifts::ID=>self::$state); }
 }
+$GLOBALS['c3_currency']='USD';
+Andy_Campaign_Lite::$state='eligible';
+$staleAlternate=$validApproval;
+$staleAlternate['warehouse_checked_at']=time()-90000;
+$GLOBALS['gift_approvals'][1005]=$staleAlternate;
+$staleCart=new WC_Cart(array($normal,$free));
+$GLOBALS['bf_woo']->cart=$staleCart;
+$expiredError=new WP_Error();
+BYL_BF2026_Gifts::validate_store_api(null,$expiredError);
+yes(isset($expiredError->errors['byl_bf2026_invalid_gift']),
+    'checkout rejects a valid selected gift when another free gift loses stock approval');
+BYL_BF2026_Gifts::reconcile($staleCart);
+yes(count($staleCart->get_cart())===1,
+    'cart drops previously selected free gift when campaign lacks two approved free options');
+$readOnlyNoGift=new WP_Error();
+BYL_BF2026_Gifts::validate_store_api(null,$readOnlyNoGift);
+yes(count($readOnlyNoGift->errors)===0,
+    'normal merchandise remains purchasable when gift campaign is suspended');
+$staleRendered=BYL_BF2026_Gifts::render();
+yes(str_contains($staleRendered,'not currently available') && !str_contains($staleRendered,'<form'),
+    'public picker cannot show partial/invalid campaign options after inventory expiry');
+$GLOBALS['gift_approvals'][1005]=$validApproval;
+Andy_Campaign_Lite::$state='master_off';
 $before = WC_Cart::$calculations;
 $inactive = BYL_BF2026_Gifts::render();
 yes(str_contains($inactive,'not currently available') && !str_contains($inactive,'<form'),
     'OFF campaign renders a harmless landing preview without gift selection controls');
 yes(WC_Cart::$calculations === $before,
     'OFF shortcode rendering never touches Woo cart calculation');
-echo "BYL_BF2026_PURE_CONTRACT_PASS=27\n";
+echo "BYL_BF2026_PURE_CONTRACT_PASS=45\n";

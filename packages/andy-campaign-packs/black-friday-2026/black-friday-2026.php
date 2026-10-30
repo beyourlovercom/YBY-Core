@@ -8,6 +8,7 @@
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
+require_once __DIR__ . '/includes/class-byl-bf2026-r8-readiness.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-gifts.php';
 /** Keep gift landing-page shortcode renderable while the campaign is OFF.
  * This registers display only: all cart writes remain behind the Campaign runtime.
