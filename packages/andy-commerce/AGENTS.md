@@ -37,3 +37,6 @@ The gate does not revoke permissions held by existing WordPress users; it is enf
 - Observing remains fail closed before business module imports; read-only diagnostics register no hooks and do no DB writes. Do not claim an admin-request Hook snapshot proves front-end/Store API/checkout compatibility.
 - Only administrator POST may switch runtime with nonce and stale-value check. Leaving observe needs typed `ENABLE_COMMERCE_RUNTIME`, plus separate Owner live approval. Mode changes produce bounded audit events; audit write failures display a warning.
 - No WWW replace/activation, main merge, payment/discount/order changes without separate approval. Dev integration has one owner: Draft PR #213.
+
+- Production menu label is the native **交易** under Andy Core, with a safe mode-only controller/page. This never claims Currency/Shipping are active.
+- Release/UAT checklist: `docs/ANDY_COMMERCE_OBSERVATION_1.0.14_UAT.md`.
