@@ -24,7 +24,7 @@ $assert( false !== strpos( $plugin, 'Version:           2.3.3' ), 'PLUGIN_HEADER
 $assert( false !== strpos( $plugin, "define( 'YBY_CORE_VERSION', '2.3.3' );" ), 'CORE_CONSTANT_VERSION_GATE failed.' );
 $assert( false !== strpos( $plugin, "define( 'YBY_DATABASE_VERSION', '1.4.0' );" ), 'UPDATER_COMPAT_DATABASE_VERSION_GATE failed.' );
 $assert( false !== strpos( $plugin, "define( 'YBY_RUNTIME_DATABASE_VERSION', '1.5.0' );" ), 'RUNTIME_DATABASE_VERSION_GATE failed.' );
-$assert( false !== strpos( $version, 'Stable Candidate Version: 2.3.3' ) && false !== strpos( $version, 'Database Version: 1.5.0' ) && false !== strpos( $version, 'Updater Compatibility Database Version: 1.4.0' ), 'VERSION_MD_GATE failed.' );
+$assert( false !== strpos( $version, 'Stable Release Version: 2.3.3' ) && false !== strpos( $version, 'Database Version: 1.5.0' ) && false !== strpos( $version, 'Updater Compatibility Database Version: 1.4.0' ), 'VERSION_MD_GATE failed.' );
 $assert( false !== strpos( $readme, 'Product version: `2.3.3`' ) && false !== strpos( $readme, 'Database version: `1.5.0`' ) && false !== strpos( $readme, 'Updater compatibility database version: `1.4.0`' ), 'README_VERSION_GATE failed.' );
 $assert( false !== strpos( $wp_readme, 'Stable tag: 2.3.3' ) && false !== strpos( $wp_readme, 'Tested up to: 7.1' ), 'README_METADATA_GATE failed.' );
 $assert( false !== strpos( $changelog, '## v2.3.3 - 2026-10-30' ), 'CHANGELOG_RELEASE_GATE failed.' );
