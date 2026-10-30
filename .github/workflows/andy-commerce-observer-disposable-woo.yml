@@ -1,0 +1,74 @@
+name: Andy Commerce Observer Disposable Woo (read-only)
+on:
+  pull_request:
+    paths:
+      - 'packages/andy-commerce-observer/**'
+      - '.github/workflows/andy-commerce-observer-disposable-woo.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  observer-safe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: observer_disposable
+          MYSQL_USER: observer
+          MYSQL_PASSWORD: disposable-only
+          MYSQL_ROOT_PASSWORD: disposable-root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pdisposable-root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli,zip,curl
+          coverage: none
+      - name: PHP syntax and zero-business-hook guards
+        run: |
+          set -euo pipefail
+          php -l packages/andy-commerce-observer/andy-commerce-observer.php
+          php packages/andy-commerce-observer/tests/observer-nohooks-harness.php
+          php packages/andy-commerce-observer/tests/observer-admin-smoke.php
+          php packages/andy-commerce-observer/tests/observer-policy-provenance-harness.php
+      - name: Build isolated plugin ZIP
+        run: |
+          set -euo pipefail
+          cd packages
+          zip -q "$RUNNER_TEMP/andy-commerce-observer.zip" andy-commerce-observer/andy-commerce-observer.php
+          sha256sum "$RUNNER_TEMP/andy-commerce-observer.zip"
+          unzip -Z1 "$RUNNER_TEMP/andy-commerce-observer.zip"
+      - name: Disposable WP and Woo 11.2.1, no real accounts
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          chmod +x /usr/local/bin/wp
+          wp core download --path="$RUNNER_TEMP/observer-wp" --version=7.0
+          wp config create --path="$RUNNER_TEMP/observer-wp" --dbname=observer_disposable --dbuser=observer --dbpass=disposable-only --dbhost=127.0.0.1 --skip-check
+          wp config set DISABLE_WP_CRON true --path="$RUNNER_TEMP/observer-wp" --raw
+          wp config set WP_ENVIRONMENT_TYPE local --path="$RUNNER_TEMP/observer-wp"
+          wp core install --path="$RUNNER_TEMP/observer-wp" --url=http://observer.invalid --title=DisposableObserver --admin_user=observer-admin --admin_password=disposable-only --admin_email=observer@example.invalid --skip-email
+          wp plugin install woocommerce --version=11.2.1 --activate --path="$RUNNER_TEMP/observer-wp"
+          mkdir -p "$RUNNER_TEMP/observer-wp/wp-content/plugins/yby-core"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/observer-wp/wp-content/plugins/yby-core"
+          wp plugin activate yby-core --path="$RUNNER_TEMP/observer-wp"
+          wp config set WP_HTTP_BLOCK_EXTERNAL true --path="$RUNNER_TEMP/observer-wp" --raw
+          wp option update woocommerce_currency USD --path="$RUNNER_TEMP/observer-wp"
+          wp plugin install "$RUNNER_TEMP/andy-commerce-observer.zip" --activate --path="$RUNNER_TEMP/observer-wp"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce-observer/tests/observer-disposable-wordpress.php" --path="$RUNNER_TEMP/observer-wp"
+          wp plugin deactivate andy-commerce-observer --path="$RUNNER_TEMP/observer-wp"
+          wp plugin is-active woocommerce --path="$RUNNER_TEMP/observer-wp"
+          wp plugin is-active yby-core --path="$RUNNER_TEMP/observer-wp"
+          if wp plugin is-active andy-commerce-observer --path="$RUNNER_TEMP/observer-wp"; then exit 1; fi
+          echo 'OBSERVER_DISPOSABLE_ACTIVATE_READONLY_DEACTIVATE_PASS'
