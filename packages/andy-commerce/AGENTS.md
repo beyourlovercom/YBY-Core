@@ -31,3 +31,9 @@ The gate does not revoke permissions held by existing WordPress users; it is enf
 - While observing, frontend registers zero new Commerce hooks; administrator-only menu/nonce-gated switch and read-only environment panel remain. Saved shipping/coupon/marketing settings and Woo transactional data remain untouched.
 - Entering observation is one POST with a nonce and `manage_options`; leaving observation requires explicit restore acknowledgement. Only a separate Owner approval may authorize live WWW runtime activation; the one-click control does not constitute production approval.
 - ZIP/source negative-hook tests, Dev install/readback, exact WWW dependency/HPOS/YayCurrency/Smart Coupons parity, backup/rollback and Canary are **separate gates**. No merging #213 to main, no Dev publisher overwrite, no www install or activation from this branch.
+
+## Andy Commerce 1.0.14 R2–R4 observation gate
+- Add source-only menu repair under Andy Core native left L2 by **post-consolidation** registration at priority 1200. Do not modify Andy Core code or register a fake Commerce transactional admin controller.
+- Observing remains fail closed before business module imports; read-only diagnostics register no hooks and do no DB writes. Do not claim an admin-request Hook snapshot proves front-end/Store API/checkout compatibility.
+- Only administrator POST may switch runtime with nonce and stale-value check. Leaving observe needs typed `ENABLE_COMMERCE_RUNTIME`, plus separate Owner live approval. Mode changes produce bounded audit events; audit write failures display a warning.
+- No WWW replace/activation, main merge, payment/discount/order changes without separate approval. Dev integration has one owner: Draft PR #213.
