@@ -492,11 +492,34 @@ class YBY_Database {
 			KEY state_expires (state, lease_expires_at)
 		) {$charset_collate};";
 		dbDelta( $coupons_sql );
+		// dbDelta parses one column/index per line. Putting a full schema on
+		// a single line yields malformed ALTER statements on existing sites.
 		$payouts_sql = "CREATE TABLE {$payouts} (
-			id bigint unsigned NOT NULL AUTO_INCREMENT, connection_key varchar(128) NOT NULL, erp_payout_request_id varchar(128) NOT NULL, request_fingerprint char(64) NOT NULL, state varchar(20) NOT NULL DEFAULT 'processing', payout_id bigint unsigned NULL, lease_owner_hash char(64) NULL, lease_expires_at datetime NULL, created_at datetime NOT NULL, updated_at datetime NOT NULL, PRIMARY KEY (id), UNIQUE KEY connection_request (connection_key, erp_payout_request_id), UNIQUE KEY payout_id (payout_id), KEY state_expires (state, lease_expires_at)
+			id bigint unsigned NOT NULL AUTO_INCREMENT,
+			connection_key varchar(128) NOT NULL,
+			erp_payout_request_id varchar(128) NOT NULL,
+			request_fingerprint char(64) NOT NULL,
+			state varchar(20) NOT NULL DEFAULT 'processing',
+			payout_id bigint unsigned NULL,
+			lease_owner_hash char(64) NULL,
+			lease_expires_at datetime NULL,
+			created_at datetime NOT NULL,
+			updated_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			UNIQUE KEY connection_request (connection_key, erp_payout_request_id),
+			UNIQUE KEY payout_id (payout_id),
+			KEY state_expires (state, lease_expires_at)
 		) {$charset_collate};";
 		$claims_sql = "CREATE TABLE {$claims} (
-			id bigint unsigned NOT NULL AUTO_INCREMENT, referral_id bigint unsigned NOT NULL, connection_key varchar(128) NOT NULL, erp_payout_request_id varchar(128) NOT NULL, created_at datetime NOT NULL, updated_at datetime NOT NULL, PRIMARY KEY (id), UNIQUE KEY referral_id (referral_id), KEY payout_request (connection_key, erp_payout_request_id)
+			id bigint unsigned NOT NULL AUTO_INCREMENT,
+			referral_id bigint unsigned NOT NULL,
+			connection_key varchar(128) NOT NULL,
+			erp_payout_request_id varchar(128) NOT NULL,
+			created_at datetime NOT NULL,
+			updated_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			UNIQUE KEY referral_id (referral_id),
+			KEY payout_request (connection_key, erp_payout_request_id)
 		) {$charset_collate};";
 		dbDelta( $payouts_sql ); dbDelta( $claims_sql );
 	}

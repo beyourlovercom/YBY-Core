@@ -73,7 +73,7 @@ class YBY_Inquiry_Shortcodes {
 		add_shortcode( 'yby_inquiry', array( $this, 'render_inline_shortcode' ) );
 		// Optional Bricks page element; loaded at a later init priority only on Bricks sites.
 		if ( function_exists( 'add_action' ) ) {
-			add_action( 'init', array( $this, 'register_bricks_page_element' ), 11 );
+			add_action( 'init', array( $this, 'register_bricks_page_element' ), 100 );
 		}
 
 		add_shortcode(

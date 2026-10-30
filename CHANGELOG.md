@@ -1,3 +1,11 @@
+## v2.3.3 - 2026-10-30 (P0 YBY Bricks / dbDelta recovery candidate)
+
+- Preserve site-owned Bricks child theme inquiry components on existing sites; load the Core fallback under a distinct class name.
+- Fix the Connector payout dbDelta table declarations so repeated cross-version upgrades do not emit malformed ALTER TABLE SQL.
+- Add a disposable synthetic 2.2.10 to 2.3.3 WordPress + MySQL test with cached-bypass HTTP, Case ID and UTM/GCLID assertions.
+- Keep all production deployments, merges and public Stable publication behind separate Owner approval.
+- Incident details: docs/incidents/2026-10-30-yby-andy-core-v232-p0.md
+
 ## v2.3.2 - 2026-10-29 (Login OS V1.1 signed Stable)
 
 - New independent Andy Core system tertiary entry: 后台登录, after 社交登录; Google settings unaffected.

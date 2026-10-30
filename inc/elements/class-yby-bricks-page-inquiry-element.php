@@ -5,7 +5,7 @@
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-class YBY_Bricks_Page_Inquiry_Element extends \Bricks\Element {
+class YBY_Core_Bricks_Page_Inquiry_Element extends \Bricks\Element {
     public $category = 'general';
     public $name = 'yby-page-inquiry';
     public $icon = 'ti-email';
