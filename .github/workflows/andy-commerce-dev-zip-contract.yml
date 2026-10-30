@@ -29,6 +29,8 @@ jobs:
         run: |
           php -l packages/andy-commerce/andy-commerce.php
           php -l packages/andy-commerce/includes/class-andy-commerce-observation-mode.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-observation-diagnostics.php
+          php -l packages/andy-commerce/tests/observation-mode-entry-fixture.php
           php packages/andy-commerce/tests/observation-mode-harness.php
           php packages/andy-commerce/tests/version-sync-v102-harness.php
       - name: Marketing M7–M10 pure simulations, lifecycle and Dev rendering
