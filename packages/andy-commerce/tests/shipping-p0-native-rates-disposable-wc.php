@@ -4,7 +4,6 @@
  * Simulates the exact YayCurrency Pro selected-currency and forward FX hooks;
  * does not bundle / claim to execute licensed YayCurrency Pro itself.
  */
-declare(strict_types=1);
 if (!defined('ABSPATH') || !defined('DB_NAME')
     || DB_NAME !== 'commerce_p5_isolated'
     || get_option('siteurl') !== 'http://commerce-p5.invalid'
