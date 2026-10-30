@@ -58,7 +58,21 @@ final class Andy_Commerce_Shipping_USD_Source_V1 {
         return $localMinor === null ? null : $localMinor / 100;
     }
 
+    /**
+     * Native Woo shipping may calculate rates before final line subtotals are
+     * committed. Use validated native *current product* prices in that phase.
+     * This does not grant entitlements from a guessed or inverse FX total.
+     */
+    public static function shipping_subtotal($cart): ?float {
+        return self::compute_subtotal($cart, false);
+    }
+
     public static function subtotal($cart): ?float {
+        return self::compute_subtotal($cart, true);
+    }
+
+    private static function compute_subtotal($cart, bool $checkCommittedLine): ?float {
+
         if (!is_object($cart) || !method_exists($cart, 'get_cart')) return null;
         $currency = self::storefront_currency();
         if ($currency === null) return null;
@@ -95,9 +109,17 @@ final class Andy_Commerce_Shipping_USD_Source_V1 {
                 $localUnit = self::cents($converted);
                 if ($localUnit === null) return null;
             }
-            $actualLocal = self::cents($line['line_subtotal'] ?? null);
-            if ($actualLocal === null
-                || abs($actualLocal - $localUnit * $quantity) > min(10, 2 * $quantity + 1)) return null;
+            // get_price('view') is Woo's actual current product price, and must
+            // agree with Yay's official forward conversion of source USD.
+            // Unknown dynamic price filters fail closed, not reverse-converted.
+            try { $actualUnit = self::cents($product->get_price('view')); }
+            catch (Throwable $e) { return null; }
+            if ($actualUnit === null || abs($actualUnit - $localUnit) > 1) return null;
+            if ($checkCommittedLine) {
+                $actualLocal = self::cents($line['line_subtotal'] ?? null);
+                if ($actualLocal === null
+                    || abs($actualLocal - $localUnit * $quantity) > min(10, 2 * $quantity + 1)) return null;
+            }
             $total += $sourceUnit * $quantity;
             $units += $quantity;
             if ($total > 100000000 || $units > 500) return null;
