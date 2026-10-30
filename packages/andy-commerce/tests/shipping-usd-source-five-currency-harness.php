@@ -28,8 +28,9 @@ namespace {
         private string $usd;
         public function __construct(string $usd) { $this->usd=$usd; }
         public function get_price($context='view') {
-            if ($context !== 'edit') throw new \RuntimeException('untrusted price context');
-            return $this->usd;
+            if ($context === 'edit') return $this->usd;
+            if ($context !== 'view') throw new \RuntimeException('unexpected price context');
+            return number_format((float)$this->usd * $GLOBALS['rate'], 2, '.', '');
         }
     }
     final class FakeCart {
@@ -99,6 +100,27 @@ namespace {
             $assert($usd===$source,"$code USD $source source read");
             $eligible=Andy_Commerce_Shipping_Promotion_Runtime::filter_free_shipping(false,['zone_id'=>5],null);
             $assert($eligible===($source>=69),"$code USD $source eligibility");
+            // Native rate callbacks occur before final Woo cart line totals
+            // are guaranteed. The earlier source failed closed on this state.
+            $pendingItems = array_map(static function($item) {
+                unset($item['line_subtotal']);
+                return $item;
+            }, $items);
+            $completeCart=$cart;
+            $pendingCart=new FakeCart($pendingItems);
+            $GLOBALS['cart']=$pendingCart;
+            $assert(Andy_Commerce_Shipping_USD_Source_V1::subtotal($pendingCart)===null,
+                "$code USD $source strict missing subtotal rejection");
+            $assert(Andy_Commerce_Shipping_USD_Source_V1::shipping_subtotal($pendingCart)===$source,
+                "$code USD $source native quote source");
+            $assert(Andy_Commerce_Shipping_Promotion_Runtime::filter_free_shipping(false,['zone_id'=>5],null)===($source>=69),
+                "$code USD $source native rate phase");
+            $GLOBALS['cart']=$completeCart;
+            $fields=Andy_Commerce_Shipping_Promotion_Runtime::include_pricing_in_shipping_hash(
+                ['subtotal','total','rates','package_id'], ['contents'=>[]]);
+            $assert(!in_array('subtotal',$fields,true)&&!in_array('total',$fields,true)
+                &&in_array('rates',$fields,true), "$code USD $source cache price signature");
+
             $presentation=Andy_Commerce_Shipping_Promotion_Runtime::get_cart_presentation_state();
             $assert($presentation['active']===true,"$code USD $source presentation active");
             $assert($presentation['eligible']===($source>=69),"$code USD $source presentation eligibility");
@@ -118,6 +140,21 @@ namespace {
     $GLOBALS['cart']=$bad;
     $assert(Andy_Commerce_Shipping_USD_Source_V1::subtotal($bad)===null,'unrecognized dynamic pricing invalidates source');
     $assert(Andy_Commerce_Shipping_Promotion_Runtime::filter_free_shipping(true,['zone_id'=>5],null)===false,'fail-closed on unknown source');
+    $actualBad = new FakeCart([['data'=>new FakeProduct('60.00'),'quantity'=>1,'line_subtotal'=>'89.99']]);
+    $GLOBALS['cart']=$actualBad;
+    $assert(Andy_Commerce_Shipping_USD_Source_V1::shipping_subtotal($actualBad)===60.0,
+        'rate phase uses verified current unit not stale committed line');
+    $wrongViewProduct=new class {
+        public function get_price($context='view') {
+            return $context === 'edit' ? '75.00' : '200.00';
+        }
+    };
+    $wrongView=new FakeCart([['data'=>$wrongViewProduct,'quantity'=>1]]);
+    $GLOBALS['cart']=$wrongView;
+    $assert(Andy_Commerce_Shipping_USD_Source_V1::shipping_subtotal($wrongView)===null,
+        'unverified dynamic view price must reject native shipping');
+    $assert(Andy_Commerce_Shipping_Promotion_Runtime::filter_free_shipping(true,['zone_id'=>5],null)===false,
+        'invalid dynamic cart cannot receive free rate');
     \Yay_Currency\Helpers\YayCurrencyHelper::$currency='JPY';
     $assert(Andy_Commerce_Shipping_USD_Source_V1::subtotal($bad)===null,'unsupported currency rejected');
     \Yay_Currency\Helpers\YayCurrencyHelper::$currency='USD';

@@ -72,6 +72,13 @@ jobs:
           test "$(wp plugin is-active andy-commerce --path="$RUNNER_TEMP/woo" && echo yes)" = yes
           test "$(wp option get andy_commerce_m7_inactive_drafts_v1 --path="$RUNNER_TEMP/woo" 2>/dev/null || true)" = ""
           echo "P5_A_B_PLUGINS_ACTIVE_DRAFTS_OFF=PASS"
+      - name: P0 native five-currency shipping rate lifecycle (source-USD, cache, no gateway)
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/shipping-p0-native-rates-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          echo P0_NATIVE_WOO_RATES_ISOLATED_PASS
+
       - name: P5-C native disposable Woo order and non-gateway refund
         shell: bash
         run: |

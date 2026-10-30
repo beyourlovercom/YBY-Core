@@ -16,6 +16,7 @@ final class Andy_Commerce_Shipping_Promotion_Runtime {
 			add_action( 'woocommerce_blocks_loaded', array( self::class, 'register_store_api_endpoint_data' ) );
 		}
 		add_filter( 'woocommerce_shipping_free_shipping_is_available', array( self::class, 'filter_free_shipping' ), 10, 3 );
+		add_filter( 'woocommerce_shipping_package_hash_ignored_fields', array( self::class, 'include_pricing_in_shipping_hash' ), 20, 2 );
 		self::boot_default_shipping_preference();
 		add_filter( 'woocommerce_get_shop_coupon_data', array( self::class, 'filter_virtual_coupon' ), 10, 3 );
 		add_filter( 'woocommerce_coupon_get_individual_use', array( self::class, 'force_individual_use' ), 10, 2 );
@@ -152,6 +153,15 @@ final class Andy_Commerce_Shipping_Promotion_Runtime {
 		);
 	}
 
+	/** Shipping quote cache must change when subtotal/currency eligibility changes. */
+	public static function include_pricing_in_shipping_hash( $ignored, $package ) {
+		if ( ! is_array( $ignored ) || ! Andy_Commerce_Shipping_Promotion_Policy::is_runtime_active()
+			|| ( Andy_Commerce_Site_Preset::current()['id'] ?? '' ) !== 'byl' ) {
+			return $ignored;
+		}
+		return array_values( array_diff( $ignored, array( 'subtotal', 'total' ) ) );
+	}
+
 	public static function filter_free_shipping($is_available, $package, $shipping_method) {
 		if ( ! Andy_Commerce_Shipping_Promotion_Policy::is_runtime_active() ) { return $is_available; }
 		$cart = function_exists( 'WC' ) ? WC()->cart : null;
@@ -161,7 +171,9 @@ final class Andy_Commerce_Shipping_Promotion_Runtime {
 		$threshold = Andy_Commerce_Shipping_Promotion_Policy::get_persisted_zone_effective_threshold( $zone_id );
 		if ( null === $threshold ) { return $is_available; }
 		$decimals = function_exists( 'wc_get_price_decimals' ) ? wc_get_price_decimals() : 2;
-		$eligible = self::verified_subtotal( $cart );
+		$eligible = ( Andy_Commerce_Site_Preset::current()['id'] ?? '' ) === 'byl'
+			? Andy_Commerce_Shipping_USD_Source_V1::shipping_subtotal( $cart )
+			: self::verified_subtotal( $cart );
 		if ( null === $eligible ) { return false; } // Unknown source: never grant unverified free shipping.
 		if ( $eligible < $threshold ) { return false; }
 		$settings = Andy_Commerce_Shipping_Promotion_Policy::get_persisted_settings();
