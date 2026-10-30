@@ -75,6 +75,13 @@ WC()->customer->set_shipping_state('CA');
 WC()->customer->set_shipping_postcode('90001');
 WC()->customer->set_shipping_city('Los Angeles');
 WC()->customer->set_billing_country('US');
+echo 'P0_DEBUG hook=' . var_export(has_filter(
+    'woocommerce_shipping_free_shipping_is_available',
+    ['Andy_Commerce_Shipping_Promotion_Runtime','filter_free_shipping']), true)
+    . ' active=' . (Andy_Commerce_Shipping_Promotion_Policy::is_runtime_active()?'yes':'no')
+    . ' source=' . Andy_Commerce_Shipping_Promotion_Policy::settings_source()
+    . ' raw=' . wp_json_encode(get_option('byl_shipping_promotion_settings'))
+    . PHP_EOL;
 $cfg=['USD'=>1.0, 'EUR'=>.897, 'GBP'=>.7505, 'AUD'=>1.4187, 'CAD'=>1.4];
 $n=0;
 foreach ($cfg as $currency=>$fx) {
@@ -102,6 +109,18 @@ foreach ($cfg as $currency=>$fx) {
         $basis=Andy_Commerce_Shipping_USD_Source_V1::subtotal(WC()->cart);
         $assert($basis !== null && abs($basis-$subtotal)<.011,
             "$currency $subtotal canonical USD basis");
+        if ($free!==$eligible) {
+            echo 'P0_DEBUG_FAIL '.$currency.' USD='.$subtotal
+                .' native_filter='.var_export(Andy_Commerce_Shipping_Promotion_Runtime::filter_free_shipping(
+                    true,['destination'=>['country'=>'US','state'=>'CA']],null),true)
+                .' active='.(Andy_Commerce_Shipping_Promotion_Policy::is_runtime_active()?'yes':'no')
+                .' rows='.wp_json_encode(array_map(static function($v){
+                    return ['qty'=>$v['quantity'],'subtotal'=>$v['line_subtotal']??null,
+                        'price_edit'=>$v['data']->get_price('edit'),
+                        'price_view'=>$v['data']->get_price('view')];
+                },WC()->cart->get_cart()))
+                .PHP_EOL;
+        }
         $assert($free===$eligible,
             "$currency $subtotal native Woo rates ".implode(',',$rates));
         $state=Andy_Commerce_Shipping_Promotion_Runtime::get_cart_presentation_state();
