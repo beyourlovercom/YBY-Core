@@ -91,17 +91,53 @@ check(!class_exists('Andy_Commerce',false),'full-commerce-was-loaded');
 check(!class_exists('YBY_Woo_Order_Export_Module',false),'order-export loaded');
 check(!class_exists('Andy_Commerce_Shipping_Promotion_Runtime',false),'shipping runtime loaded');
 check($GLOBALS['fixture_writes']===[],'startup wrote options');
+if ($case==='www-post-active-confirmed'||$case==='www-post-active-denied') {
+    $_POST=['mode'=>'active','expected_mode'=>'observe',
+            'runtime_ack'=>$case==='www-post-active-confirmed'?'ENABLE_COMMERCE_RUNTIME':'wrong',
+            'andy_commerce_observation_nonce'=>'synthetic-nonce'];
+    try {
+        Andy_Commerce_Observation_Mode::handle_toggle();
+    } catch (RuntimeException $e) {
+        check($case==='www-post-active-denied','valid restore did not redirect');
+        check($GLOBALS['fixture_writes']===[],'blocked restore wrote option');
+        echo 'PASS_MODE '.$case.PHP_EOL; exit;
+    }
+    fail('expected blocked restore or redirect');
+}
 if ($case==='www-frontend'||$case==='unknown-host'||$case==='malformed-option'||$case==='www-local'||$case==='dev-nonstaging') {
     check($GLOBALS['fixture_hooks']===[],'frontend observe hooks registered');
 } else {
     check($GLOBALS['fixture_hooks']===['admin_menu','admin_menu','admin_post_andy_commerce_observation_toggle'],'only admin hooks');
 }
+if ($case==='www-admin-hook-alert') {
+    $GLOBALS['wp_filter']['woocommerce_shipping_chosen_method']=(object)[
+        'callbacks'=>[10=>[['function'=>['Andy_Commerce_Bad_Module','run']]]]
+    ];
+    $d=Andy_Commerce_Observation_Diagnostics::snapshot();
+    check($d['known_commerce_callbacks']===1,'must detect unexpected Commerce callback');
+    check($GLOBALS['fixture_writes']===[],'diagnostics must never write');
+}
 if ($case==='www-admin') {
     Andy_Commerce_Observation_Mode::register_menu();
     check($GLOBALS['fixture_menus']===[['top','andy-commerce'],['sub','andy-commerce-observation']],'safe menu expected');
+    $GLOBALS['menu']=[[0,'','yby-os']];
+    $GLOBALS['submenu']=['yby-os'=>[['询盘','manage_options','andy-core-leads'],['系统','manage_options','andy-core-system']]];
+    Andy_Commerce_Observation_Mode::register_core_menu();
+    check(array_column($GLOBALS['submenu']['yby-os'],2)===['andy-core-leads','andy-commerce-safe-mode','andy-core-system'],'safe Core L2 placement');
+    check(count(array_filter($GLOBALS['fixture_menus'],fn($x)=>$x===['sub','andy-commerce-safe-mode']))===1,'safe menu registered once');
     ob_start();Andy_Commerce_Observation_Mode::render_page();$html=ob_get_clean();
     check(str_contains($html,'进入观察模式')===false,'observe should show exit button');
     check(str_contains($html,'退出观察模式'),'exit button not rendered');
     check(str_contains($html,'交易 Hook 不加载'),'safe mode text missing');
+    check(str_contains($html,'只读环境与兼容性检查'),'diagnostics missing');
+    check(str_contains($html,'YayCurrency'),'YayCurrency inventory missing');
+    check(str_contains($html,'Smart Coupons'),'coupons inventory missing');
+    check(str_contains($html,'WooCommerce Hook 注册清单'),'Hook table missing');
+    check(!str_contains($html,'<input type="hidden" name="runtime_ack"'),'restore acknowledgement must be typed');
+    check(str_contains($html,'name="runtime_ack" required'),'typed acknowledgement missing');
+    check($GLOBALS['fixture_writes']===[],'render must never write');
+    $d=Andy_Commerce_Observation_Diagnostics::snapshot();
+    check($d['known_commerce_callbacks']===0,'unexpected hook in clean observe');
+    check(count($d['hook_rows'])===11,'expected 11 read-only hook checkpoints');
 }
 echo 'PASS_MODE '.$case.PHP_EOL;
