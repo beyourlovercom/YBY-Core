@@ -13,7 +13,7 @@
 ## R2: Core native navigation UAT
 
 1. Login as site administrator; ensure WooCommerce and Andy Core are present, and load `/wp-admin/admin.php?page=andy-commerce-safe-mode`.
-2. Under Andy Core, verify the single visible **交易 · 观察** L2 item, positioned before 系统 (and no extra Marketing/Commerce parent); verify it opens safe mode.
+2. Under Andy Core, verify the single visible **交易** L2 item, positioned before 系统 (and no extra Marketing/Commerce parent); verify it opens safe mode.
 3. Reopen existing `/wp-admin/admin.php?page=andy-commerce-observation`; safe page remains accessible. Verify non-admin users cannot see or change mode.
 4. Check `/wp-admin/admin.php?page=andy-commerce` legacy route still opens the safe-only view when observing (no Shipping/Currency marketing runtime loaded).
 5. On Dev/local only, test active-mode Core navigation remains unchanged; no duplicate safe L2.
