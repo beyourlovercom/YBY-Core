@@ -2,12 +2,12 @@
 
 Andy Core is the shared WordPress foundation plugin for managed websites.
 
-## Candidate status (2026-10-19)
+## v2.3.3 P0 Stable release (2026-10-30)
 
-- Product version: `2.3.3` (Login OS V1.1 signed Stable release)
+- Product version: `2.3.3` (signed P0 Bricks compatibility and dbDelta hotfix; site upgrades separately approved)
 - Database version: `1.5.0`
 - Updater compatibility database version: `1.4.0`
-- At release preparation, public Stable / Latest is `2.2.6`; the actual currently published Stable/Latest is determined by the GitHub release repository. Immutable Canary `2.2.9` remains a Prerelease.
+- Previous publicly published Stable was `2.3.2`; it remains immutable. Public Stable/Latest after R6 must be verified in the distribution repository. Historical v2.2.6 and v2.2.9 upgrade evidence remains below.
 - GitHub main already integrated the U3D-proven signed Hostinger updater in PR #159; base exact main SHA `a580f97b7e1f324b684d15caf0ff179dfaba7781`.
 - `v2.2.10` is a **version-only branch change relative to integrated main**, not relative to v2.2.6 Stable. An eventual Stable rollout from v2.2.6 includes **all intervening main features**, including previously integrated Creator read-only code. Those features must be reviewed in the Stable change inventory before Production.
 - Signed release is made as an eight-file candidate via CI. Source main integration is complete. Publication requires Owner authorization; any site-specific install, auto ON, host Cron or business operations require their own separate authorization.
