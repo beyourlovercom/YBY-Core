@@ -87,7 +87,7 @@ final class Andy_Commerce_Observation_Mode {
         }
         if ( ! $core_present ) { return; }
         add_submenu_page(
-            'yby-os', 'Andy Commerce · 观察模式', '交易 · 观察',
+            'yby-os', 'Andy Commerce · 观察模式', '交易',
             'manage_options', self::CORE_MENU, array( __CLASS__, 'render_page' )
         );
         if ( ! isset( $submenu['yby-os'] ) || ! is_array( $submenu['yby-os'] ) ) { return; }
@@ -199,7 +199,7 @@ final class Andy_Commerce_Observation_Mode {
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_die( 'Permission denied.', '', array( 'response' => 403 ) );
         }
-        echo '<div class="wrap"><h1>Andy Commerce · 安全模式</h1>';
+        echo '<div class="wrap"><h1>Andy Commerce · 观察模式</h1>';
         if ( isset( $_GET['mode_updated'] ) && '1' === $_GET['mode_updated'] ) {
             echo '<div class="notice notice-success"><p>已保存模式。请使用新的独立请求验证实际 Hook。</p></div>';
         }
