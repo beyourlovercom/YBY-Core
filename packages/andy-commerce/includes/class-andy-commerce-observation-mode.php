@@ -13,6 +13,9 @@ final class Andy_Commerce_Observation_Mode {
     const PAGE = 'andy-commerce-observation';
     const ACTION = 'andy_commerce_observation_toggle';
     const NONCE = 'andy_commerce_observation_mode_v1';
+    const CORE_MENU = 'andy-commerce-safe-mode';
+    const AUDIT_OPTION = 'andy_commerce_runtime_audit_v1';
+    const AUDIT_MAX = 20;
 
     /** Production and unknown sites fail closed. Preserve prior Dev runtime. */
     private static function is_existing_dev(): bool {
@@ -45,6 +48,8 @@ final class Andy_Commerce_Observation_Mode {
     public static function register(): void {
         if ( ! function_exists( 'is_admin' ) || ! is_admin() ) { return; }
         add_action( 'admin_menu', array( __CLASS__, 'register_menu' ), 99 );
+        // Andy Core consolidates menus at 1100; restore only a safe L2 at 1200.
+        add_action( 'admin_menu', array( __CLASS__, 'register_core_menu' ), 1200 );
         add_action( 'admin_post_' . self::ACTION, array( __CLASS__, 'handle_toggle' ) );
     }
 
@@ -64,12 +69,56 @@ final class Andy_Commerce_Observation_Mode {
         );
     }
 
+    /**
+     * Restore a safe Core L2 AFTER Andy Core removes the legacy top-level menu.
+     * Do not load Andy_Commerce_Admin, modify Core, or expose payment/discount UI.
+     * Use a unique route because the historical slug may have a hidden alias.
+     */
+    public static function register_core_menu(): void {
+        if ( ! self::is_observing() || ! current_user_can( 'manage_options' ) ) { return; }
+        global $menu, $submenu;
+        if ( ! is_array( $menu ) || ! is_array( $submenu ) ) { return; }
+        $core_present = false;
+        foreach ( $menu as $row ) {
+            if ( isset( $row[2] ) && 'yby-os' === $row[2] ) {
+                $core_present = true;
+                break;
+            }
+        }
+        if ( ! $core_present ) { return; }
+        add_submenu_page(
+            'yby-os', 'Andy Commerce · 观察模式', '交易 · 观察',
+            'manage_options', self::CORE_MENU, array( __CLASS__, 'render_page' )
+        );
+        if ( ! isset( $submenu['yby-os'] ) || ! is_array( $submenu['yby-os'] ) ) { return; }
+        $safe = array();
+        $others = array();
+        foreach ( $submenu['yby-os'] as $entry ) {
+            if ( isset( $entry[2] ) && self::CORE_MENU === $entry[2] ) {
+                $safe[] = $entry;
+            } else {
+                $others[] = $entry;
+            }
+        }
+        if ( 1 !== count( $safe ) ) { return; }
+        // Respect Andy Core's Owner-approved second-level sequence.
+        $index = count( $others );
+        foreach ( $others as $i => $entry ) {
+            if ( isset( $entry[2] ) && 'andy-core-system' === $entry[2] ) {
+                $index = $i;
+                break;
+            }
+        }
+        array_splice( $others, $index, 0, $safe );
+        $submenu['yby-os'] = $others;
+    }
+
     /** Pure transition contract: stale forms or unacknowledged exits fail. */
     public static function valid_transition( $target, $expected, $current, $ack ): bool {
         if ( ! in_array( $target, array( 'observe', 'active' ), true ) ||
              ! in_array( $expected, array( 'observe', 'active' ), true ) ||
              $target === $current || $expected !== $current ) { return false; }
-        return 'observe' === $target || 'YES_RESTORE_CUSTOMER_HOOKS' === $ack;
+        return 'observe' === $target || 'ENABLE_COMMERCE_RUNTIME' === $ack;
     }
 
     /** POST/nonce/capability only. No GET switch or AJAX toggle. */
@@ -93,8 +142,28 @@ final class Andy_Commerce_Observation_Mode {
         if ( ! update_option( self::OPTION, $target, false ) ) {
             wp_die( 'Commerce mode was not saved; no mode change is confirmed.', '', array( 'response' => 500 ) );
         }
-        wp_safe_redirect( admin_url( 'admin.php?page=' . self::PAGE . '&mode_updated=1' ) );
+        $logged = self::record_transition( $current, $target );
+        $suffix = $logged ? '&mode_updated=1' : '&mode_updated=1&audit_warning=1';
+        wp_safe_redirect( admin_url( 'admin.php?page=' . self::PAGE . $suffix ) );
         exit;
+    }
+
+    /** Bounded administrator audit; no writes during a normal page request. */
+    private static function record_transition( string $from, string $to ): bool {
+        $events = get_option( self::AUDIT_OPTION, array() );
+        if ( ! is_array( $events ) ) { $events = array(); }
+        $events[] = array(
+            'utc' => gmdate( 'Y-m-d H:i:s' ),
+            'user_id' => function_exists( 'get_current_user_id' ) ? (int) get_current_user_id() : 0,
+            'from' => $from, 'to' => $to,
+            'version' => defined( 'ANDY_COMMERCE_VERSION' ) ? ANDY_COMMERCE_VERSION : 'unknown',
+        );
+        return update_option( self::AUDIT_OPTION, array_slice( $events, -self::AUDIT_MAX ), false );
+    }
+
+    public static function audit_events(): array {
+        $events = get_option( self::AUDIT_OPTION, array() );
+        return is_array( $events ) ? array_slice( $events, -self::AUDIT_MAX ) : array();
     }
 
     /** Reusable one-action entry on the standard Commerce Overview. */
@@ -117,7 +186,8 @@ final class Andy_Commerce_Observation_Mode {
         echo '<input type="hidden" name="mode" value="' . esc_attr( $target ) . '">';
         echo '<input type="hidden" name="expected_mode" value="' . esc_attr( $current ) . '">';
         if ( $observing ) {
-            echo '<input type="hidden" name="runtime_ack" value="YES_RESTORE_CUSTOMER_HOOKS">';
+            echo '<p><label for="ac-runtime-restore-confirm">恢复执行前须独立审批，然后手动输入 <code>ENABLE_COMMERCE_RUNTIME</code>。</label></p>';
+            echo '<input id="ac-runtime-restore-confirm" type="text" name="runtime_ack" required autocomplete="off" class="regular-text" placeholder="ENABLE_COMMERCE_RUNTIME">';
         }
         wp_nonce_field( self::NONCE, 'andy_commerce_observation_nonce' );
         echo '<button class="button ' . ( $observing ? 'button-secondary' : 'button-primary' ) . '" type="submit">'
@@ -133,20 +203,11 @@ final class Andy_Commerce_Observation_Mode {
         if ( isset( $_GET['mode_updated'] ) && '1' === $_GET['mode_updated'] ) {
             echo '<div class="notice notice-success"><p>已保存模式。请使用新的独立请求验证实际 Hook。</p></div>';
         }
-        self::render_panel();
-        echo '<h2>环境状态（只读）</h2><table class="widefat striped" style="max-width:780px"><tbody>';
-        $fields = array(
-            'Andy Commerce' => defined( 'ANDY_COMMERCE_VERSION' ) ? ANDY_COMMERCE_VERSION : 'Unknown',
-            'WordPress' => function_exists( 'get_bloginfo' ) ? get_bloginfo( 'version' ) : 'Unknown',
-            'PHP' => PHP_VERSION,
-            'Andy Core' => defined( 'YBY_CORE_VERSION' ) ? YBY_CORE_VERSION : 'Not loaded',
-            'WooCommerce' => defined( 'WC_VERSION' ) ? WC_VERSION : 'Not loaded',
-            'WooCommerce base currency' => get_option( 'woocommerce_currency', 'Unknown' ),
-            'HPOS configuration' => get_option( 'woocommerce_custom_orders_table_enabled', 'Unknown' ),
-        );
-        foreach ( $fields as $label => $value ) {
-            echo '<tr><th>' . esc_html( $label ) . '</th><td>' . esc_html( (string) $value ) . '</td></tr>';
+        if ( isset( $_GET['audit_warning'] ) && '1' === $_GET['audit_warning'] ) {
+            echo '<div class="notice notice-error"><p>模式已保存，但审计写入失败；停止后续切换并检查数据库。</p></div>';
         }
-        echo '</tbody></table><p class="description">观察模式不执行 Cart/Checkout、优惠券、运费、订单及支付逻辑；以上信息只是配置读回，不能代替真实功能验收。</p></div>';
+        self::render_panel();
+        Andy_Commerce_Observation_Diagnostics::render();
+        echo '</div>';
     }
 }
