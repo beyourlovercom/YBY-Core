@@ -236,8 +236,16 @@ jobs:
       - name: Prepare canonical Dev-only release candidate
         if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/marketing-m10-policy-m9-bridge-dev-20261023'
         run: |
-          bash scripts/prepare-andy-commerce-dev-release.sh "$RUNNER_TEMP/andy-commerce-dev-candidate.zip"
+          # Earlier disposable regression steps can leave ephemeral files.
+          # DO NOT weaken the clean-source publisher: build from a pristine
+          # detached worktree of this exact reviewed commit instead.
+          pristine="$RUNNER_TEMP/commerce-rc1-pristine-source"
+          test ! -e "$pristine"
+          git worktree add --detach "$pristine" HEAD
+          test -z "$(git -C "$pristine" status --porcelain)"
+          bash "$pristine/scripts/prepare-andy-commerce-dev-release.sh" "$RUNNER_TEMP/andy-commerce-dev-candidate.zip"
           test -s "$RUNNER_TEMP/andy-commerce-dev-candidate.zip.attestation.txt"
+          grep -Fxq "source_HEAD=$(git -C "$pristine" rev-parse HEAD)" "$RUNNER_TEMP/andy-commerce-dev-candidate.zip.attestation.txt"
           cat "$RUNNER_TEMP/andy-commerce-dev-candidate.zip.attestation.txt"
       - name: Upload Dev ZIP and SHA attestation
         if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/marketing-m10-policy-m9-bridge-dev-20261023'
