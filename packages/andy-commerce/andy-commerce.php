@@ -57,6 +57,12 @@ add_action( 'plugins_loaded', 'andy_commerce_register_migration_cli', 35 );
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-promotion-policy.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-usd-source-v1.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-promotion-runtime.php';
+// R10-C: source-only. Each module requires independent OFF-by-default option,
+// exact dependency versions and an explicit Owner/server authorization gate.
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-r10c-transaction-compatibility.php';
+add_action( 'plugins_loaded', array( 'Andy_Commerce_R10C_Transaction_Compatibility', 'boot' ), 50 );
+add_action( 'admin_menu', array( 'Andy_Commerce_R10C_Transaction_Compatibility', 'register_admin_menu' ), 1201 );
+add_action( 'admin_post_andy_commerce_r10c_module_toggle', array( 'Andy_Commerce_R10C_Transaction_Compatibility', 'handle_admin_toggle' ) );
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-orders-features.php';
 
 add_action( 'andy_core_register_modules', array( 'YBY_Woo_Order_Export_Module', 'register_module' ), 12, 0 );

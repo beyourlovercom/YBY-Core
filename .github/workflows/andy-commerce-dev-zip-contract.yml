@@ -90,6 +90,14 @@ jobs:
           php -l packages/andy-commerce/tests/sandbox/class-andy-commerce-r10b-isolated-guards.php
           php -l packages/andy-commerce/tests/r10b-isolated-guards-safety-harness.php
           php packages/andy-commerce/tests/r10b-isolated-guards-safety-harness.php
+      - name: R10-C Owner approval candidate default-off runtime gates
+        run: |
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10c-transaction-compatibility.php
+          php -l packages/andy-commerce/andy-commerce.php
+          php -l packages/andy-commerce/tests/r10c-prod-fail-closed-gate-harness.php
+          php -l packages/andy-commerce/tests/r10c-bootstrap-observation-contract.php
+          php packages/andy-commerce/tests/r10c-prod-fail-closed-gate-harness.php
+          php packages/andy-commerce/tests/r10c-bootstrap-observation-contract.php
       - name: Currency C2–C3 and Footer-only regression
         run: |
           php packages/andy-commerce/tests/currency-os-v2-admin-shortcode-harness.php
