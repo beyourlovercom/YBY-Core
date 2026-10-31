@@ -1,7 +1,7 @@
 === Andy Commerce ===
 Contributors: ybyglobal
 Requires PHP: 8.0
-Stable tag: 1.0.8
+Stable tag: 1.1.0-rc1
 
 Reusable B2C / WooCommerce Addon for Andy Core.
 
@@ -13,6 +13,32 @@ Reusable B2C / WooCommerce Addon for Andy Core.
 The plugin fails closed with an admin notice when dependencies are missing or incompatible.
 
 == Changelog ==
+
+= 1.1.0-rc1 (Dev-only R10-C-D Owner-approved candidate; default OFF) =
+* Adds strictly default-OFF, independently controlled R10-C Shipping and Coupon compatibility adapters.
+* Exact Woo/Yay/Smart Coupons versions, Owner server opt-in, Core admin controls and global OBSERVE first.
+* No automatic module activation, checkout/payment actions, login route changes or database migrations.
+* WWW production remains on 1.0.14 OBSERVE pending separate Owner approval.
+
+
+= 1.0.14 (Draft source / not production-published) =
+* Restore visible Andy Core → 交易 · 观察 navigation after Core menu consolidation without activating full Commerce runtime.
+* Administrator-only typed restore confirmation, nonce-protected mode transitions and last-20 audit records.
+* Read-only environment snapshot, active related-plugin inventory, HPOS flags, selected Woo hook attribution and audit log.
+* Fail-closed www default retained; no automatic database migration, payment, shipping, coupon, gift or order writes.
+
+
+= 1.0.13 (Draft observation-mode candidate, NOT stable/www) =
+* First-party Andy Commerce observation toggle: one-click enter, explicit acknowledged exit.
+* Fail-closed before loading Commerce exports/shipping/coupon/currency/marketing/orders hooks on www and unknown production hosts.
+* Frontend observes with zero Andy Commerce hooks; admin can view sanitized status and switch using authenticated nonce/capability-protected POST.
+* Preserve existing Dev staging and disposable local Woo default behavior; no schema migration, campaign activation, checkout or payment change.
+* WWW rollout, live-feature activation and GitHub main/Stable remain independently gated.
+
+= 1.0.9-dev.1 (Dev-only R8-R10 Candidate) =
+* Adds master-OFF Dev shopper currency runtime using explicit time-limited Frankfurter reference FX snapshots; stale snapshots and legacy currency conflicts disable it.
+* Preserves USD Woo merchant base, functional native Footer currency selector, Woo session and Store API currency, native fixed coupon and tax-free flat shipping preview.
+* Foreign payment gateways disabled pending R11; Marketing unchanged/OFF; never activate on WWW. This is NOT Stable or YayCurrency production replacement.
 
 = 1.0.8 (Dev-only Candidate) =
 * Currency OS V2 Owner-approved native admin layout: five configuration tabs, save of isolated Dev preview settings, preserved 1.0.6 FX Ledger.

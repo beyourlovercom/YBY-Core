@@ -7,9 +7,9 @@ $native = file_get_contents( $base . '/includes/class-andy-commerce-native-order
 $check = static function ( $condition, $message ) {
     if ( ! $condition ) { fwrite( STDERR, "FAIL: $message\n" ); exit( 1 ); }
 };
-preg_match( '/^ \* Version:\s+([0-9]+\.[0-9]+\.[0-9]+)$/m', $plugin, $header );
+preg_match( '/^ \* Version:\s+([0-9]+\.[0-9]+\.[0-9]+(?:-rc[0-9]+)?)\r?$/m', $plugin, $header );
 preg_match( "/define\( 'ANDY_COMMERCE_VERSION', '([^']+)' \)/", $plugin, $constant );
-preg_match( '/^Stable tag:\s+([0-9]+\.[0-9]+\.[0-9]+)$/m', $readme, $stable );
+preg_match( '/^Stable tag:\s+([0-9]+\.[0-9]+\.[0-9]+(?:-rc[0-9]+)?)\r?$/m', $readme, $stable );
 preg_match( "/const VERSION = '([^']+)';/", $native, $assets );
 $check( ! empty( $header[1] ) && ! empty( $constant[1] ) && ! empty( $stable[1] ) && ! empty( $assets[1] ), 'version metadata missing' );
 $check( $header[1] === $constant[1] && $constant[1] === $stable[1], 'version metadata differs' );

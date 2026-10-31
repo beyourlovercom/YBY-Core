@@ -3,7 +3,7 @@
  * Plugin Name:       Andy Commerce
  * Plugin URI:        https://ybyglobal.com/
  * Description:       Reusable B2C / WooCommerce Addon for Andy Core.
- * Version:           1.0.8
+ * Version:           1.1.0-rc1
  * Author:            YBY Global
  * Text Domain:       andy-commerce
  * Requires Plugins:  yby-core,woocommerce
@@ -15,11 +15,20 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'ANDY_COMMERCE_VERSION', '1.0.8' );
+define( 'ANDY_COMMERCE_VERSION', '1.1.0-rc1' );
 define( 'ANDY_COMMERCE_MIN_CORE_VERSION', '1.9.0' );
 define( 'ANDY_COMMERCE_PLUGIN_FILE', __FILE__ );
 define( 'ANDY_COMMERCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ANDY_COMMERCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+
+// The earliest production safety gate: no Commerce modules are included,
+// registered or bootstrapped on observational requests.
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-observation-mode.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-observation-diagnostics.php';
+Andy_Commerce_Observation_Mode::register();
+if ( Andy_Commerce_Observation_Mode::is_observing() ) {
+    return;
+}
 
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-export-presets.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-yby-woo-order-query-adapter.php';
@@ -46,7 +55,14 @@ function andy_commerce_register_migration_cli(): void {
 add_action( 'plugins_loaded', 'andy_commerce_register_migration_cli', 35 );
 
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-promotion-policy.php';
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-usd-source-v1.php';
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-shipping-promotion-runtime.php';
+// R10-C: source-only. Each module requires independent OFF-by-default option,
+// exact dependency versions and an explicit Owner/server authorization gate.
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-r10c-transaction-compatibility.php';
+add_action( 'plugins_loaded', array( 'Andy_Commerce_R10C_Transaction_Compatibility', 'boot' ), 50 );
+add_action( 'admin_menu', array( 'Andy_Commerce_R10C_Transaction_Compatibility', 'register_admin_menu' ), 1201 );
+add_action( 'admin_post_andy_commerce_r10c_module_toggle', array( 'Andy_Commerce_R10C_Transaction_Compatibility', 'handle_admin_toggle' ) );
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-orders-features.php';
 
 add_action( 'andy_core_register_modules', array( 'YBY_Woo_Order_Export_Module', 'register_module' ), 12, 0 );

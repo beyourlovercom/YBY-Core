@@ -13,9 +13,207 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Sole Commerce Dev publisher contract
+        run: |
+          bash -n scripts/prepare-andy-commerce-dev-release.sh
+          test -s packages/andy-commerce/AGENTS.md
+          grep -Fq 'feat/marketing-m10-policy-m9-bridge-dev-20261023' scripts/prepare-andy-commerce-dev-release.sh
+          grep -Fq 'feat/currency-c2-c3-shadow-preview-20261023' scripts/prepare-andy-commerce-dev-release.sh
+          grep -Fq 'RELEASE_DENIED:' scripts/prepare-andy-commerce-dev-release.sh
+          grep -Fq 'check-commerce-r7-bundle.py' scripts/prepare-andy-commerce-dev-release.sh
+          grep -Fq 'R7_R13_Bundle_Contract=PASS' scripts/prepare-andy-commerce-dev-release.sh
+      - name: Observation Mode — no Woo transaction hooks on production
+        run: |
+          php -l packages/andy-commerce/andy-commerce.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-observation-mode.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-observation-diagnostics.php
+          php -l packages/andy-commerce/tests/observation-mode-entry-fixture.php
+          php packages/andy-commerce/tests/observation-mode-harness.php
+          php packages/andy-commerce/tests/version-sync-v102-harness.php
+      - name: Marketing M7–M10 pure simulations, lifecycle and Dev rendering
+        run: |
+          php packages/andy-commerce/tests/marketing-m7-draft-security-harness.php
+          php packages/andy-commerce/tests/marketing-m8-engine-harness.php
+          php packages/andy-commerce/tests/marketing-m10-policy-evaluator-harness.php
+          php packages/andy-commerce/tests/marketing-m10-six-type-matrix-harness.php
+          php packages/andy-commerce/tests/marketing-m10-lifecycle-harness.php
+          php packages/andy-commerce/tests/marketing-m9-dev-page-render-harness.php
+          php packages/andy-commerce/tests/marketing-m10-page-render-harness.php
+      - name: Marketing V1 / Campaign reciprocal exclusion (no runtime write)
+        run: |
+          php -l packages/andy-commerce/includes/class-andy-commerce-marketing-p1-sandbox-contract.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-marketing-p5-checkout-hooks.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-marketing-dev-uat.php
+          php packages/andy-commerce/tests/marketing-v1-campaign-mutual-exclusion-harness.php
+          php packages/andy-commerce/tests/marketing-v1-campaign-menu-contract.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-campaign-usd-basis-v1.php
+          php packages/andy-commerce/tests/campaign-usd-basis-dev-contract.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-campaign-source-usd-discounts-v1.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-campaign-yay-usd-basis-v1.php
+          php -l packages/andy-commerce/tests/campaign-yay-usd-basis-synthetic.php
+          php packages/andy-commerce/tests/campaign-yay-usd-basis-synthetic.php
+          python3 packages/andy-commerce/tests/bf2026-yay-patch-fixture.py
+          php -l "$RUNNER_TEMP/bf2026-yay-ci-candidate.php"
+          php packages/andy-commerce/tests/campaign-yay-bf-bridge-synthetic.php
+          php -l packages/andy-commerce/tests/campaign-yay-bf-dev-loader-preflight.php
+          php -l packages/andy-commerce/tests/campaign-yay-bf-dev-loader-and-cart-uat.php
+          php -l packages/andy-commerce/tests/campaign-yay-bf-dev-native-cart-uat.php
+          php -l packages/andy-commerce/tests/campaign-yay-bf-dev-native-coupon-uat.php
+          php packages/andy-commerce/tests/r7-stripe-account-proof-contract.php
+      - name: P0 verified USD-source shipping five-currency contract (no WP writes)
+        run: |
+          php -l packages/andy-commerce/includes/class-andy-commerce-shipping-usd-source-v1.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-shipping-promotion-runtime.php
+          php packages/andy-commerce/tests/shipping-usd-source-five-currency-harness.php
+      - name: R10 offline five-currency coupon/shipping shadow (NO live quotes)
+        run: |
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10-fx-shipping-parity-shadow.php
+          php -l packages/andy-commerce/tests/r10-fx-shipping-coupon-parity-harness.php
+          php packages/andy-commerce/tests/r10-fx-shipping-coupon-parity-harness.php
+      - name: R10-B strict licensed vendor ZIP gate (synthetic archives only)
+        run: |
+          python3 scripts/r10b-vendor-zip-preflight-test.py
+          php -l packages/andy-commerce/tests/r10b-eur-shipping-float-boundary-harness.php
+          php packages/andy-commerce/tests/r10b-eur-shipping-float-boundary-harness.php
+          php -l packages/andy-commerce/tests/sandbox/r10b-vendor-runtime-readonly.php
+          bash -n scripts/r10b-isolated-runtime-preflight.sh
+          # Fail closed without disposable WP marker. Never install vendor ZIPs in CI.
+          if bash scripts/r10b-isolated-runtime-preflight.sh /tmp; then
+            echo R10B_SAFETY_STOP_FAILED
+            exit 1
+          fi
+      - name: R10-B isolated shipping and one-coupon safety contracts
+        run: |
+          php -l packages/andy-commerce/tests/sandbox/class-andy-commerce-r10b-isolated-guards.php
+          php -l packages/andy-commerce/tests/r10b-isolated-guards-safety-harness.php
+          php packages/andy-commerce/tests/r10b-isolated-guards-safety-harness.php
+      - name: R10-C Owner approval candidate default-off runtime gates
+        run: |
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10c-transaction-compatibility.php
+          php -l packages/andy-commerce/andy-commerce.php
+          php -l packages/andy-commerce/tests/r10c-prod-fail-closed-gate-harness.php
+          php -l packages/andy-commerce/tests/r10c-bootstrap-observation-contract.php
+          php packages/andy-commerce/tests/r10c-prod-fail-closed-gate-harness.php
+          php packages/andy-commerce/tests/r10c-bootstrap-observation-contract.php
+          php -l packages/andy-commerce/tests/r10c-e-dynamic-shipping-zone-harness.php
+          php packages/andy-commerce/tests/r10c-e-dynamic-shipping-zone-harness.php
+      - name: Currency C2–C3 and Footer-only regression
+        run: |
+          php packages/andy-commerce/tests/currency-os-v2-admin-shortcode-harness.php
+          php packages/andy-commerce/tests/currency-c2c3-reconcile-harness.php
+          php packages/andy-commerce/tests/currency-c3-cart-snapshot-harness.php
+          php packages/andy-commerce/tests/currency-c3-coupon-boundary-harness.php
+          php packages/andy-commerce/tests/currency-c3-dev-browser-guard-harness.php
+          php packages/andy-commerce/tests/currency-c3-dev-zone-evidence-harness.php
+          php packages/andy-commerce/tests/marketing-m11-real-woo-readonly-harness.php
+          php packages/andy-commerce/tests/marketing-m12-real-woo-six-shadow-harness.php
+          php packages/andy-commerce/tests/marketing-m15-sku-allocation-harness.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-m15-cap-ledger.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-m16-order-cap-reconcile.php
+          php -l packages/andy-commerce/tests/sandbox/m16-local-woo-order-cap-uat.php
+          php -l packages/andy-commerce/tests/sandbox/m16-post-save-recovery-uat.php
+          php -l packages/andy-commerce/tests/sandbox/m15-cap-ledger-local-uat.php
+          php -l packages/andy-commerce/tests/sandbox/m15-real-wc-allocator-uat.php
+          php -l packages/andy-commerce/tests/sandbox/m15-native-product-allocation-uat.php
+          php -l packages/andy-commerce/tests/sandbox/m15-one-order-one-cap-uat.php
+          php -l packages/andy-commerce/tests/sandbox/p5-m13-local-execution-proof.php
+          php -l packages/andy-commerce/tests/sandbox/p6-hpos-native-refund.php
+          php -l packages/andy-commerce/tests/sandbox/aicc-m14-local-runtime.php
+          php -l packages/andy-commerce/tests/sandbox/m14-config-case.php
+          python3 - <<'PYAST'
+          import ast
+          from pathlib import Path
+          files = sorted(Path('packages/andy-commerce/tests/sandbox').glob('m14-*.py'))
+          assert len(files) >= 6, 'M14 expected test-only Python scripts missing'
+          for path in files:
+              ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
+          print(f'M14_PYTHON_SOURCE_SYNTAX_PASS={len(files)} WITHOUT_BYTECODE_WRITE')
+          PYAST
+          # The executable local Woo DB test driver MUST NEVER be shipped.
+          grep -Fq -- '--exclude tests/' scripts/build-andy-commerce-dev-candidate.sh
+          test ! -e packages/andy-commerce/includes/p5-m13-local-execution-proof.php
+
+          node --check packages/andy-commerce/assets/currency-c3-dev-preview.js
       - name: Actual ZIP and negative mutation
         run: |
           bash scripts/build-andy-commerce-dev-candidate.sh "$RUNNER_TEMP/commerce.zip"
+          python3 scripts/check-commerce-r7-bundle.py "$RUNNER_TEMP/commerce.zip" --source-root packages/andy-commerce
+          # Simulated post-install readback only; no real Dev, SSH or Woo writes.
+          mkdir -p "$RUNNER_TEMP/r7-simulated-installed"
+          unzip -q "$RUNNER_TEMP/commerce.zip" -d "$RUNNER_TEMP/r7-simulated-installed"
+          python3 scripts/check-commerce-r7-bundle.py "$RUNNER_TEMP/commerce.zip" \
+            --source-root packages/andy-commerce \
+            --installed-root "$RUNNER_TEMP/r7-simulated-installed/andy-commerce"
+          rm "$RUNNER_TEMP/r7-simulated-installed/andy-commerce/includes/class-andy-commerce-currency-r13-dev-canary.php"
+          if python3 scripts/check-commerce-r7-bundle.py "$RUNNER_TEMP/commerce.zip" \
+              --installed-root "$RUNNER_TEMP/r7-simulated-installed/andy-commerce"; then
+            echo R7_MISSING_INSTALLED_CANARY_NOT_CAUGHT; exit 1
+          fi
+          unzip -qo "$RUNNER_TEMP/commerce.zip" -d "$RUNNER_TEMP/r7-simulated-installed"
+          printf '\n/* stale live bootstrap */\n' >> "$RUNNER_TEMP/r7-simulated-installed/andy-commerce/includes/class-andy-commerce.php"
+          if python3 scripts/check-commerce-r7-bundle.py "$RUNNER_TEMP/commerce.zip" \
+              --installed-root "$RUNNER_TEMP/r7-simulated-installed/andy-commerce"; then
+            echo R7_STALE_INSTALLED_BOOTSTRAP_NOT_CAUGHT; exit 1
+          fi
+          echo R7_INSTALLED_PARITY_POSITIVE_AND_NEGATIVE_MATRIX_PASS=3
+          python3 - "$RUNNER_TEMP/commerce.zip" "$RUNNER_TEMP" <<'R7MUT'
+          import sys, zipfile, pathlib
+          original, tmp = sys.argv[1:]
+          required = 'andy-commerce/includes/class-andy-commerce-currency-r13-dev-canary.php'
+          boot = 'andy-commerce/includes/class-andy-commerce.php'
+          with zipfile.ZipFile(original) as src:
+              entries = {n: src.read(n) for n in src.namelist()}
+          variants = {}
+          # Byte mutation keeps names/requires intact: structure-only checks
+          # would accept this stale/modified R13 payload.
+          variants['stale-r13.php'] = {
+              k: (v + b"\n/* R7 simulated stale source */\n" if k == required else v)
+              for k,v in entries.items()
+          }
+          variants['no-r13.php'] = {k:v for k,v in entries.items() if k != required}
+          variants['no-canary-boot.php'] = {
+              k: (v.replace(b'Andy_Commerce_Currency_R13_Dev_Canary::boot();', b'/* removed */')
+                  if k == boot else v) for k,v in entries.items()
+          }
+          variants['no-r13-require.php'] = {
+              k: (v.replace(
+                  b"require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-r13-dev-canary.php';",
+                  b'/* removed */')
+                  if k == boot else v) for k,v in entries.items()
+          }
+          pro = 'andy-commerce/includes/class-andy-commerce-campaign-yay-usd-basis-v1.php'
+          variants['no-yay-pro-adapter.php'] = {k:v for k,v in entries.items() if k != pro}
+          variants['stale-yay-pro-adapter.php'] = {
+              k: (v + b"\\n/* simulated outdated Yay adapter */\\n" if k == pro else v)
+              for k,v in entries.items()
+          }
+          variants['no-yay-pro-loader.php'] = {
+              k: (v.replace(
+                  b"require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-campaign-yay-usd-basis-v1.php';",
+                  b'/* removed Yay Pro bootstrap require */')
+                  if k == boot else v) for k,v in entries.items()
+          }
+          for label, files in variants.items():
+              target = pathlib.Path(tmp) / ('r7-' + label + '.zip')
+              with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as output:
+                  for name, blob in files.items():
+                      output.writestr(name, blob)
+              print('R7_MUTATION_CREATED=' + str(target))
+          R7MUT
+          for mutated in "$RUNNER_TEMP"/r7-*.zip; do
+            if python3 scripts/check-commerce-r7-bundle.py "$mutated" --source-root packages/andy-commerce; then
+              echo "R7_MUTATION_NOT_REJECTED=$mutated"; exit 1
+            fi
+          done
+          echo "R7_MISSING_CLASS_REQUIRE_BOOT_SOURCE_MISMATCH_NEGATIVE_MATRIX_PASS=7"
+          if unzip -Z1 "$RUNNER_TEMP/commerce.zip" | grep -E 'p5-m13-local-execution-proof.php|p6-hpos-native-refund.php|aicc-m14-local-runtime.php|m14-config-case.php|m14-store-api-checkout.py|m14-negative-lifecycle.py|m14-native-coupon-collision.py|m14-classic-checkout.py|m14-classic-six.py|m15-cap-ledger-local-uat.php|m15-real-wc-allocator-uat.php|m15-native-product-allocation-uat.php|m15-one-order-one-cap-uat.php|m16-local-woo-order-cap-uat.php|m16-post-save-recovery-uat.php'; then
+            echo M13_SANDBOX_TEST_DRIVER_LEAKED_IN_INSTALLABLE_ZIP
+            exit 1
+          fi
+          echo M13_LOCAL_ONLY_SCRIPT_EXCLUDED_FROM_ZIP_PASS
           python3 - "$RUNNER_TEMP/commerce.zip" "$RUNNER_TEMP/bad.zip" <<'PY'
           import sys,zipfile
           with zipfile.ZipFile(sys.argv[1]) as z,zipfile.ZipFile(sys.argv[2],'w',zipfile.ZIP_DEFLATED) as out:
@@ -26,4 +224,47 @@ jobs:
               out.writestr(item.filename,data)
           PY
           if bash scripts/check-andy-commerce-zip-contract.sh "$RUNNER_TEMP/bad.zip";then exit 1;fi
+          python3 - "$RUNNER_TEMP/commerce.zip" "$RUNNER_TEMP/no-currency.zip" <<'PY'
+          import sys,zipfile
+          with zipfile.ZipFile(sys.argv[1]) as source,zipfile.ZipFile(sys.argv[2],'w',zipfile.ZIP_DEFLATED) as out:
+            for item in source.infolist():
+              if item.filename=='andy-commerce/includes/class-andy-commerce-currency-c2c3-preview.php':
+                continue
+              out.writestr(item,source.read(item.filename))
+          PY
+          if bash scripts/check-andy-commerce-zip-contract.sh "$RUNNER_TEMP/no-currency.zip";then exit 1;fi
           echo NEGATIVE_ZIP_REJECTION_PASS
+
+      - name: Prepare canonical Dev-only release candidate
+        if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/marketing-m10-policy-m9-bridge-dev-20261023'
+        run: |
+          # Earlier disposable regression steps can leave ephemeral files.
+          # DO NOT weaken the clean-source publisher: build from a pristine
+          # detached worktree of this exact reviewed commit instead.
+          pristine="$RUNNER_TEMP/commerce-rc1-pristine-source"
+          test ! -e "$pristine"
+          git worktree add --detach "$pristine" HEAD
+          test -z "$(git -C "$pristine" status --porcelain)"
+          bash "$pristine/scripts/prepare-andy-commerce-dev-release.sh" "$RUNNER_TEMP/andy-commerce-dev-candidate.zip"
+          test -s "$RUNNER_TEMP/andy-commerce-dev-candidate.zip.attestation.txt"
+          grep -Fxq "source_HEAD=$(git -C "$pristine" rev-parse HEAD)" "$RUNNER_TEMP/andy-commerce-dev-candidate.zip.attestation.txt"
+          cat "$RUNNER_TEMP/andy-commerce-dev-candidate.zip.attestation.txt"
+      - name: Upload Dev ZIP and SHA attestation
+        if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/marketing-m10-policy-m9-bridge-dev-20261023'
+        uses: actions/upload-artifact@v4
+        with:
+          name: andy-commerce-dev-candidate-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/andy-commerce-dev-candidate.zip
+            ${{ runner.temp }}/andy-commerce-dev-candidate.zip.attestation.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Retain exact 1.0.14 candidate for review (NOT Dev-install authorization)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: andy-commerce-1.0.14-review-only-NOT-INSTALLABLE
+          path: ${{ runner.temp }}/commerce.zip
+          if-no-files-found: error
+          retention-days: 7

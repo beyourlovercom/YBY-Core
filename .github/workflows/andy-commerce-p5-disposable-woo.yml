@@ -1,0 +1,301 @@
+name: Andy Commerce P5 Disposable Woo Sandbox
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/andy-commerce-p5-disposable-woo.yml'
+      - 'packages/andy-commerce/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-woo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: commerce_p5_isolated
+          MYSQL_USER: commerce_p5
+          MYSQL_PASSWORD: disposable-only
+          MYSQL_ROOT_PASSWORD: disposable-root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pdisposable-root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli,zip,curl
+          coverage: none
+      - name: Provision independent WordPress and WooCommerce
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          chmod +x /usr/local/bin/wp
+          wp core download --path="$RUNNER_TEMP/woo" --version=7.0
+          wp config create --path="$RUNNER_TEMP/woo" --dbname=commerce_p5_isolated --dbuser=commerce_p5 --dbpass=disposable-only --dbhost=127.0.0.1 --skip-check
+          wp config set DISABLE_WP_CRON true --path="$RUNNER_TEMP/woo" --raw
+          wp config set WP_ENVIRONMENT_TYPE local --path="$RUNNER_TEMP/woo"
+          wp core install --path="$RUNNER_TEMP/woo" --url=http://commerce-p5.invalid --title=CommerceDisposable --admin_user=p5-admin --admin_password=disposable-only --admin_email=admin@example.invalid --skip-email
+          wp plugin install woocommerce --version=11.2.1 --activate --path="$RUNNER_TEMP/woo"
+          mkdir -p "$RUNNER_TEMP/woo/wp-content/plugins/yby-core"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/woo/wp-content/plugins/yby-core"
+          wp plugin activate yby-core --path="$RUNNER_TEMP/woo"
+          bash scripts/build-andy-commerce-dev-candidate.sh "$RUNNER_TEMP/andy-commerce-p5.zip"
+          wp plugin install "$RUNNER_TEMP/andy-commerce-p5.zip" --activate --path="$RUNNER_TEMP/woo"
+          mkdir -p "$RUNNER_TEMP/woo/wp-content/mu-plugins"
+          cat > "$RUNNER_TEMP/woo/wp-content/mu-plugins/p5-isolation.php" <<'PHP'
+          <?php
+          add_filter('pre_wp_mail', static fn() => true, 999);
+          add_filter('pre_http_request', static function($pre, $args, $url) {
+              return new WP_Error('p5_external_network_denied', 'P5 sandbox external HTTP denied');
+          }, 999, 3);
+          PHP
+          wp config set WP_HTTP_BLOCK_EXTERNAL true --path="$RUNNER_TEMP/woo" --raw
+          echo "P5_INDEPENDENT_DATABASE_AND_SITE=PASS"
+      - name: Inspect isolated runtime and OFF-only marketing
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp plugin list --path="$RUNNER_TEMP/woo"
+          test "$(wp plugin is-active woocommerce --path="$RUNNER_TEMP/woo" && echo yes)" = yes
+          test "$(wp plugin is-active yby-core --path="$RUNNER_TEMP/woo" && echo yes)" = yes
+          test "$(wp plugin is-active andy-commerce --path="$RUNNER_TEMP/woo" && echo yes)" = yes
+          test "$(wp option get andy_commerce_m7_inactive_drafts_v1 --path="$RUNNER_TEMP/woo" 2>/dev/null || true)" = ""
+          echo "P5_A_B_PLUGINS_ACTIVE_DRAFTS_OFF=PASS"
+      - name: P0 native five-currency shipping rate lifecycle (source-USD, cache, no gateway)
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/shipping-p0-native-rates-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          echo P0_NATIVE_WOO_RATES_ISOLATED_PASS
+
+      - name: P5-C native disposable Woo order and non-gateway refund
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/p5-disposable-native-woo.php" --path="$RUNNER_TEMP/woo"
+
+      - name: P5-C native coupon variation and shipping compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/p5-disposable-compatibility.php" --path="$RUNNER_TEMP/woo"
+      - name: R6 native Woo fixed-cart five-currency USD199 gift gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Strictly one-use disposable DB; test itself verifies DB_NAME/host.
+          R6_DISPOSABLE_WOO=1 wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/campaign-usd-basis-native-fixed-cart-woo.php" --path="$RUNNER_TEMP/woo"
+          echo 'R6_NATIVE_WOO_FIVE_CURRENCY_COUPON_BOUNDARIES=PASS; NO_PROVIDER_CHARGE'
+
+      - name: R6 native Woo multi-SKU and quantity-two fixed-cart USD199 gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          R6_DISPOSABLE_WOO=1 wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/campaign-usd-basis-native-multiline-woo.php" --path="$RUNNER_TEMP/woo"
+          echo 'R6_NATIVE_WOO_MULTI_LINE_20_CASES=PASS; NO_PROVIDER_CHARGE'
+
+      - name: P6-F disposable Commerce deactivate/reactivate smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp plugin deactivate andy-commerce --path="$RUNNER_TEMP/woo"
+          if wp plugin is-active andy-commerce --path="$RUNNER_TEMP/woo"; then exit 1; fi
+          wp plugin activate andy-commerce --path="$RUNNER_TEMP/woo"
+          wp plugin is-active andy-commerce --path="$RUNNER_TEMP/woo"
+          wp plugin is-active woocommerce --path="$RUNNER_TEMP/woo"
+          test "$(wp option get andy_commerce_m7_inactive_drafts_v1 --path="$RUNNER_TEMP/woo" 2>/dev/null || true)" = ""
+          echo 'P6_F_DISPOSABLE_REACTIVATION_PASS; CAMPAIGNS_OFF=YES'
+
+      - name: P6-F disposable exact ZIP rollback and reinstall
+        shell: bash
+        run: |
+          set -euo pipefail
+          PLUG="$RUNNER_TEMP/woo/wp-content/plugins/andy-commerce"
+          test -f "$PLUG/andy-commerce.php"
+          BEFORE="$(sha256sum "$PLUG/admin/class-andy-commerce-admin.php" | cut -d' ' -f1)"
+          cp -a "$PLUG" "$RUNNER_TEMP/commerce-pre-rollback"
+          wp plugin deactivate andy-commerce --path="$RUNNER_TEMP/woo"
+          mv "$PLUG" "$RUNNER_TEMP/commerce-before-restore"
+          cp -a "$RUNNER_TEMP/commerce-pre-rollback" "$PLUG"
+          wp plugin activate andy-commerce --path="$RUNNER_TEMP/woo"
+          AFTER="$(sha256sum "$PLUG/admin/class-andy-commerce-admin.php" | cut -d' ' -f1)"
+          test "$BEFORE" = "$AFTER"
+          wp plugin is-active andy-commerce --path="$RUNNER_TEMP/woo"
+          echo 'P6_F_FILE_RESTORE_AND_REACTIVATE_PASS; NO_PRODUCTION_MUTATION=TRUE'
+
+      - name: Currency C-R1 native EUR Woo cart isolated activation
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The flag exists only in this disposable WordPress config. Do not
+          # enable it on Dev or any live site.
+          wp config set AICC_CURRENCY_RUNTIME_SANDBOX true --raw --path="$RUNNER_TEMP/woo"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-runtime-c1-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
+          echo 'C_R1_SANDBOX_FLAG_REMOVED=PASS'
+
+      - name: Currency C-R2 five native Woo product cart Store API paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp config set AICC_CURRENCY_RUNTIME_SANDBOX true --raw --path="$RUNNER_TEMP/woo"
+          for iso in USD EUR GBP AUD CAD; do
+            wp config set AICC_CURRENCY_RUNTIME_TEST_CURRENCY "$iso" --path="$RUNNER_TEMP/woo"
+            wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-runtime-c2-five-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          done
+          wp config delete AICC_CURRENCY_RUNTIME_TEST_CURRENCY --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
+          echo 'C_R2_FIVE_CURRENCY_SANDBOX_FLAGS_REMOVED=PASS'
+
+      - name: Currency C-R4 to C-R7 native Woo integration and recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp config set AICC_CURRENCY_RUNTIME_SANDBOX true --raw --path="$RUNNER_TEMP/woo"
+          wp config set AICC_CURRENCY_RUNTIME_TEST_CURRENCY CAD --path="$RUNNER_TEMP/woo"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-runtime-c4-c7-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_RUNTIME_TEST_CURRENCY --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
+          wp eval 'if (has_filter("woocommerce_product_get_price", ["Andy_Commerce_Currency_Runtime_C1","price"]) !== false) { throw new RuntimeException("Currency hooks active without sandbox gate"); } echo "C_R7_PRODUCTION_DEFAULT_OFF_GUARD_PASS\\n";' --path="$RUNNER_TEMP/woo"
+
+      - name: Currency R11-R13 native Classic Blocks FX refunds and safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp config set AICC_CURRENCY_RUNTIME_SANDBOX true --raw --path="$RUNNER_TEMP/woo"
+          wp config set AICC_CURRENCY_RUNTIME_TEST_CURRENCY CAD --path="$RUNNER_TEMP/woo"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r11-r13-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_RUNTIME_TEST_CURRENCY --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
+          wp eval 'if(has_filter("woocommerce_store_api_checkout_order_processed",["Andy_Commerce_Currency_Runtime_C6","blocks_snapshot"])!==false){throw new RuntimeException("R13 Blocks hook activated outside isolated sandbox");} echo "R13_BLOCKS_DEFAULT_OFF_GUARD_PASS\\n";' --path="$RUNNER_TEMP/woo"
+
+      - name: Currency R11 actual Store API Checkout POST offline COD only
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp config set AICC_CURRENCY_RUNTIME_SANDBOX true --raw --path="$RUNNER_TEMP/woo"
+          wp config set AICC_CURRENCY_RUNTIME_TEST_CURRENCY CAD --path="$RUNNER_TEMP/woo"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r11-blocks-post-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_RUNTIME_TEST_CURRENCY --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
+
+      - name: Currency R13 real five-currency Blocks Checkout and Stripe test quote contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp config set AICC_CURRENCY_RUNTIME_SANDBOX true --raw --path="$RUNNER_TEMP/woo"
+          for iso in USD EUR GBP AUD CAD; do
+            wp config set AICC_CURRENCY_RUNTIME_TEST_CURRENCY "$iso" --path="$RUNNER_TEMP/woo"
+            wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-five-currency-stripe-contract-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          done
+          wp config delete AICC_CURRENCY_RUNTIME_TEST_CURRENCY --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
+          echo 'R13_STRIPE_TEST_QUOTE_FIVE_CURRENCY_COMPLETE_NO_EXTERNAL_GATEWAY=PASS'
+
+      - name: Currency YayCurrency native Woo source USD discount replay (no payments)
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/campaign-yay-usd-discounts-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          echo 'YAY_NATIVE_USD_PERCENT_FIXED_CART_FIXED_PRODUCT_REPLAY=PASS'
+
+      - name: Currency R13 native Stripe HTTPS preflight scripts syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile "$GITHUB_WORKSPACE/scripts/currency-r13-woo-stripe-https-preflight.py"
+          php -l "$GITHUB_WORKSPACE/scripts/currency-r13-stripe-native-woo-preflight.php"
+          echo 'R13_TEST_WEBHOOK_PREFLIGHT_SOURCE_SYNTAX_PASS; PUBLIC_DELIVERY_UNVERIFIED'
+
+      - name: Currency R13 Stripe TEST provider refund locked USD pure contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          php "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-provider-refund-ledger-contract.php"
+          echo 'R13_REFUND_LEDGER_2700_SPLITS_EXACT_NO_PROVIDER_POST=PASS'
+
+      - name: Currency R13 native Woo country tax shipping source USD dual ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-tax-shipping-ledger-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          echo 'R13_DUAL_LEDGER_TEST_ONLY_NO_RUNTIME_CHECKOUT_HOOK=PASS'
+
+      - name: Currency R8-R10 real Dev shopper preview contract in disposable Woo
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-runtime-r8-r10-dev-ci.php" --path="$RUNNER_TEMP/woo"
+          echo 'R8_R10_SOURCE_RUNTIME_CI_COMPLETE'
+
+      - name: Currency R13 Woo HPOS OFF and ON native order/refund persistence
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp option update woocommerce_custom_orders_table_enabled no --path="$RUNNER_TEMP/woo"
+          wp config set AICC_CURRENCY_R13_HPOS_EXPECT off --path="$RUNNER_TEMP/woo"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-hpos-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          # Woo forbids switching authority while legacy orders are unsynced.
+          # Sync only this one-use MySQL site; no production HPOS migration.
+          wp wc hpos sync --batch-size=100 --path="$RUNNER_TEMP/woo"
+          wp option update woocommerce_custom_orders_table_enabled yes --path="$RUNNER_TEMP/woo"
+          wp config set AICC_CURRENCY_R13_HPOS_EXPECT on --path="$RUNNER_TEMP/woo"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-hpos-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_R13_HPOS_EXPECT --path="$RUNNER_TEMP/woo"
+          echo 'R13_HPOS_TEST_PROCESS_FLAGS_REMOVED=PASS'
+
+      - name: R13 Dev Canary strict admin-only TEST account and payment gateway gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l "$GITHUB_WORKSPACE/packages/andy-commerce/includes/class-andy-commerce-currency-r13-dev-canary.php"
+          php "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-dev-canary-gate-contract.php"
+          echo 'R13_DEV_CANARY_OFF_BY_DEFAULT_WWW_GUEST_LIVE_DENIED=PASS'
+
+      - name: Currency P6-E Stripe TEST three-ledger settlement pure audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          php "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-stripe-test-settlement-audit-contract.php"
+          echo 'P6E_REFERENCE_FX_NEVER_EQUALS_PROVIDER_PAYOUT=PASS'
+
+      - name: Currency P6-D/F real Woo complex checkout and reference FX fail-closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          php "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-reference-fx-quote-contract.php"
+          wp config set AICC_CURRENCY_RUNTIME_SANDBOX true --raw --path="$RUNNER_TEMP/woo"
+          wp config set AICC_CURRENCY_RUNTIME_TEST_CURRENCY CAD --path="$RUNNER_TEMP/woo"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-native-tax-shipping-blocks-post-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          # Each WP CLI process is a distinct native Checkout session. Woo Store API
+          # caches the current draft order in its route instance within one process.
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-native-tax-shipping-two-sku-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          # Every Checkout has a freshly instantiated Store API route object.
+          for scenario in mixed coupons dynamic deny_shipping_inclusive inclusive; do
+            P6_COMPLEX_CASE="$scenario" wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/currency-r13-complex-native-checkout-disposable-wc.php" --path="$RUNNER_TEMP/woo"
+          done
+          wp config delete AICC_CURRENCY_RUNTIME_TEST_CURRENCY --path="$RUNNER_TEMP/woo"
+          wp config delete AICC_CURRENCY_RUNTIME_SANDBOX --path="$RUNNER_TEMP/woo"
+          echo 'P6D_OFFLINE_WOO_NATIVE_TAX_SHIPPING_ORDER_AND_GATE_ROLLBACK=PASS'
+
+      - name: Production-style observation switch in real disposable Woo (no payments)
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp option update andy_commerce_runtime_mode_v1 observe --path="$RUNNER_TEMP/woo"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/observation-mode-disposable-woo.php" --path="$RUNNER_TEMP/woo"
+          wp option update andy_commerce_runtime_mode_v1 active --path="$RUNNER_TEMP/woo"
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/observation-mode-disposable-woo.php" --path="$RUNNER_TEMP/woo"
+          wp option update andy_commerce_runtime_mode_v1 observe --path="$RUNNER_TEMP/woo"
+          echo 'OBSERVATION_DISPOSABLE_WOO_ENTER_EXIT_WITHOUT_TRANSACTION_PASS'

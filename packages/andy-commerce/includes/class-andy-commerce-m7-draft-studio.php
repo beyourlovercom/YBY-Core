@@ -6,6 +6,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 require_once __DIR__.'/class-andy-commerce-m10-policy-fields.php';
 require_once __DIR__.'/class-andy-commerce-m10-policy-evaluator.php';
+require_once __DIR__.'/class-andy-commerce-m10-lifecycle.php';
 
 final class Andy_Commerce_M7_Draft_Studio {
     const OPTION = 'andy_commerce_m7_inactive_drafts_v1';
@@ -22,6 +23,7 @@ final class Andy_Commerce_M7_Draft_Studio {
         if (!is_admin()) return;
         add_action('admin_post_andy_commerce_m7_save_draft',array(__CLASS__,'save'));
         add_action('admin_post_andy_commerce_m7_archive_draft',array(__CLASS__,'archive'));
+        add_action('admin_post_andy_commerce_m10_transition_draft',array(__CLASS__,'transition'));
     }
 
     public static function rows() {
@@ -110,7 +112,8 @@ final class Andy_Commerce_M7_Draft_Studio {
             if (count($rows)>=50) self::go('limit');
             $id='draft-'.str_replace('-','',wp_generate_uuid4());
             $revision=0;
-        } elseif (!isset($rows[$id])||($rows[$id]['revision']??-1)!==$revision) {
+        } elseif (!isset($rows[$id])||($rows[$id]['revision']??-1)!==$revision
+            ||($rows[$id]['lifecycle']??'draft')==='archived') {
             self::go('conflict');
         }
         $rows[$id]=array(
@@ -119,9 +122,31 @@ final class Andy_Commerce_M7_Draft_Studio {
             'priority'=>$priority,'rule'=>$rule,'policy'=>$policy,'status'=>'draft',
             'active'=>false,'stack_with_coupon'=>false,
             'edited_utc'=>gmdate('c'),
+            'lifecycle'=>$rows[$id]['lifecycle']??'draft',
+            'lifecycle_history'=>$rows[$id]['lifecycle_history']??array(),
         );
         update_option(self::OPTION,$rows,false);
         self::go('saved');
+    }
+
+    public static function transition() {
+        self::require_authority('transition');
+        if (strtoupper((string)($_SERVER['REQUEST_METHOD']??''))!=='POST') {
+            wp_die('POST required','',array('response'=>405));
+        }
+        $id=sanitize_key(wp_unslash($_POST['draft_id']??''));
+        $revision=absint($_POST['draft_revision']??0);
+        $next=sanitize_key(wp_unslash($_POST['next_lifecycle']??''));
+        $rows=self::rows();
+        if(!isset($rows[$id]))self::go('conflict');
+        try {
+            $rows[$id]=Andy_Commerce_M10_Lifecycle::transition(
+                $rows[$id],$next,$revision,gmdate('Y-m-d\TH:i:s+00:00'),
+                'user_'.(string)get_current_user_id()
+            );
+        }catch(InvalidArgumentException $error){self::go('invalid');}
+        update_option(self::OPTION,$rows,false);
+        self::go('transitioned');
     }
 
     public static function archive() {
