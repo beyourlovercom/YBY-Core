@@ -68,6 +68,11 @@ jobs:
           php -l packages/andy-commerce/includes/class-andy-commerce-shipping-usd-source-v1.php
           php -l packages/andy-commerce/includes/class-andy-commerce-shipping-promotion-runtime.php
           php packages/andy-commerce/tests/shipping-usd-source-five-currency-harness.php
+      - name: R10 offline five-currency coupon/shipping shadow (NO live quotes)
+        run: |
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10-fx-shipping-parity-shadow.php
+          php -l packages/andy-commerce/tests/r10-fx-shipping-coupon-parity-harness.php
+          php packages/andy-commerce/tests/r10-fx-shipping-coupon-parity-harness.php
       - name: Currency C2–C3 and Footer-only regression
         run: |
           php packages/andy-commerce/tests/currency-os-v2-admin-shortcode-harness.php
