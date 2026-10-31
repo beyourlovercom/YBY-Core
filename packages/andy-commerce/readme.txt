@@ -1,7 +1,7 @@
 === Andy Commerce ===
 Contributors: ybyglobal
 Requires PHP: 8.0
-Stable tag: 1.0.14
+Stable tag: 1.1.0-rc1
 
 Reusable B2C / WooCommerce Addon for Andy Core.
 
@@ -13,6 +13,13 @@ Reusable B2C / WooCommerce Addon for Andy Core.
 The plugin fails closed with an admin notice when dependencies are missing or incompatible.
 
 == Changelog ==
+
+= 1.1.0-rc1 (Dev-only R10-C-D Owner-approved candidate; default OFF) =
+* Adds strictly default-OFF, independently controlled R10-C Shipping and Coupon compatibility adapters.
+* Exact Woo/Yay/Smart Coupons versions, Owner server opt-in, Core admin controls and global OBSERVE first.
+* No automatic module activation, checkout/payment actions, login route changes or database migrations.
+* WWW production remains on 1.0.14 OBSERVE pending separate Owner approval.
+
 
 = 1.0.14 (Draft source / not production-published) =
 * Restore visible Andy Core → 交易 · 观察 navigation after Core menu consolidation without activating full Commerce runtime.
