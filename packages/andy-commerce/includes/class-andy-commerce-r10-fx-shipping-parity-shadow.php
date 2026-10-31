@@ -17,10 +17,20 @@ final class Andy_Commerce_R10_FX_Shipping_Parity_Shadow {
 
     public static function compare(
         array $items, array $manualCouponCodes, int $shippingThresholdUsdMinor,
-        string $currency, int $syntheticFxMicros
+        string $currency, int $syntheticFxMicros,
+        string $nativeRequires = 'min_amount',
+        bool $verifiedNativeFreeShippingCoupon = false
     ): array {
         if ( ! in_array( $currency, self::CURRENCIES, true ) ) {
             throw new InvalidArgumentException( 'Unsupported preview currency' );
+        }
+        // WW W native setting requires = either. Never infer a free-shipping
+        // coupon from its code: verification is an explicit external input.
+        if ( ! in_array( $nativeRequires, [ 'min_amount', 'either' ], true ) ) {
+            throw new InvalidArgumentException( 'Unsupported Woo shipping requirement' );
+        }
+        if ( $verifiedNativeFreeShippingCoupon && count( $manualCouponCodes ) !== 1 ) {
+            throw new InvalidArgumentException( 'Free shipping coupon must have one verified cart code' );
         }
         if ( count( $manualCouponCodes ) > 1 ) {
             throw new InvalidArgumentException( 'Multiple manual coupons require explicit stacking review' );
@@ -31,6 +41,12 @@ final class Andy_Commerce_R10_FX_Shipping_Parity_Shadow {
             }
         }
         $native = Andy_Commerce_M4_Shipping_Shadow::compare( $items, $shippingThresholdUsdMinor );
+        $qualified = $native['proposed_eligible'];
+        $legacyQualified = $native['legacy_eligible'];
+        if ( 'either' === $nativeRequires && $verifiedNativeFreeShippingCoupon ) {
+            $qualified = true;
+            $legacyQualified = true;
+        }
         $usd = $native['proposed_merchandise_minor'];
         $local = Andy_Commerce_Currency_OS_V1::convert_usd_minor( $usd, $syntheticFxMicros );
         return [
@@ -42,9 +58,11 @@ final class Andy_Commerce_R10_FX_Shipping_Parity_Shadow {
             'source_usd_eligible_minor' => $usd,
             'display_local_minor' => $local,
             'source_usd_threshold_minor' => $shippingThresholdUsdMinor,
-            'shipping_preview_only' => $native['proposed_eligible'],
-            'legacy_shipping_preview_only' => $native['legacy_eligible'],
-            'shipping_policy_disagreement' => $native['disagreement'],
+            'shipping_requirement' => $nativeRequires,
+            'verified_free_shipping_coupon_fixture' => $verifiedNativeFreeShippingCoupon,
+            'shipping_preview_only' => $qualified,
+            'legacy_shipping_preview_only' => $legacyQualified,
+            'shipping_policy_disagreement' => $qualified !== $legacyQualified,
             'manual_coupon_count' => count( $manualCouponCodes ),
             'runtime_enabled' => false,
             'woo_hooks_registered' => 0,

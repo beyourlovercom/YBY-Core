@@ -42,6 +42,34 @@ foreach($rates as $currency=>$fx) {
             'legacy_disagreement'=>$r['shipping_policy_disagreement'],
         ];
     }
+    // WWW read-only shipping setting: requires=either, min_amount=USD 69,
+    // ignore_discounts=no. Coupon codes alone never prove free-shipping status.
+    foreach([
+        ['either_no_coupon', [$line(6000,6000)],[],false,false],
+        ['either_ordinary_coupon',[$line(6000,6000)],['NORMAL10'],false,false],
+        ['either_valid_free_coupon',[$line(6000,6000)],['FREE_VALID'],true,true],
+        ['either_79_discounted_64_free_coupon',[$line(7900,6400)],['FREE_VALID'],true,true],
+        ['either_79_discounted_64_plain_coupon',[$line(7900,6400)],['NORMAL10'],false,false],
+    ] as [$label,$items,$codes,$expected,$verified]) {
+        $r = Andy_Commerce_R10_FX_Shipping_Parity_Shadow::compare(
+            $items,$codes,6900,$currency,$fx,'either',$verified
+        );
+        $assert($r['shipping_preview_only']===$expected,$currency.'-'.$label);
+        $assert($r['woo_mutations']===0 && !$r['real_checkout_verified'],
+            $currency.'-'.$label.'-read-only');
+        $scored++;
+    }
+    foreach ([
+        ['MISSING_COUPON_EVIDENCE',[$line(6000,6000)],[],6900,$currency,$fx,'either',true],
+        ['UNSUPPORTED_POLICY',[$line(6000,6000)],[],6900,$currency,$fx,'coupon',false],
+    ] as [$label,$items,$codes,$threshold,$cur,$rate,$req,$verified]) {
+        try {
+            Andy_Commerce_R10_FX_Shipping_Parity_Shadow::compare(
+                $items,$codes,$threshold,$cur,$rate,$req,$verified
+            );
+            $assert(false,$label.'-'.$currency.'-accepted');
+        } catch(InvalidArgumentException $e) {$scored++;}
+    }
     foreach([
         ['MULTI_COUPON',[$line(7900,6900)],['MANUAL_A','MANUAL_B'],6900,$currency,$fx],
         ['INVALID_FX',[$line(6900,6900)],[],6900,$currency,1],
@@ -52,5 +80,5 @@ foreach($rates as $currency=>$fx) {
         } catch(InvalidArgumentException $e) {$scored++;}
     }
 }
-echo 'R10_OFFLINE_SHADOW_PASS='.$scored.'_CHECKS_5_SYNTHETIC_FX_7_SCENARIOS_2_FAIL_CLOSED_CASES'.PHP_EOL;
+echo 'R10_OFFLINE_SHADOW_PASS='.$scored.'_CHECKS_5_SYNTHETIC_FX_7_BASE_5_EITHER_4_FAIL_CLOSED_CASES'.PHP_EOL;
 echo 'R10_EXAMPLES='.json_encode($examples,JSON_UNESCAPED_SLASHES).PHP_EOL;
