@@ -85,6 +85,11 @@ jobs:
             echo R10B_SAFETY_STOP_FAILED
             exit 1
           fi
+      - name: R10-B isolated shipping and one-coupon safety contracts
+        run: |
+          php -l packages/andy-commerce/tests/sandbox/class-andy-commerce-r10b-isolated-guards.php
+          php -l packages/andy-commerce/tests/r10b-isolated-guards-safety-harness.php
+          php packages/andy-commerce/tests/r10b-isolated-guards-safety-harness.php
       - name: Currency C2–C3 and Footer-only regression
         run: |
           php packages/andy-commerce/tests/currency-os-v2-admin-shortcode-harness.php
