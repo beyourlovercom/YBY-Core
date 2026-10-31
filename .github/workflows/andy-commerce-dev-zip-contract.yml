@@ -73,6 +73,16 @@ jobs:
           php -l packages/andy-commerce/includes/class-andy-commerce-r10-fx-shipping-parity-shadow.php
           php -l packages/andy-commerce/tests/r10-fx-shipping-coupon-parity-harness.php
           php packages/andy-commerce/tests/r10-fx-shipping-coupon-parity-harness.php
+      - name: R10-B strict licensed vendor ZIP gate (synthetic archives only)
+        run: |
+          python3 scripts/r10b-vendor-zip-preflight-test.py
+          php -l packages/andy-commerce/tests/sandbox/r10b-vendor-runtime-readonly.php
+          bash -n scripts/r10b-isolated-runtime-preflight.sh
+          # Fail closed without disposable WP marker. Never install vendor ZIPs in CI.
+          if bash scripts/r10b-isolated-runtime-preflight.sh /tmp; then
+            echo R10B_SAFETY_STOP_FAILED
+            exit 1
+          fi
       - name: Currency C2–C3 and Footer-only regression
         run: |
           php packages/andy-commerce/tests/currency-os-v2-admin-shortcode-harness.php
