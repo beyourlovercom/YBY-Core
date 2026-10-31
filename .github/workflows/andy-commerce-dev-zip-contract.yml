@@ -76,6 +76,8 @@ jobs:
       - name: R10-B strict licensed vendor ZIP gate (synthetic archives only)
         run: |
           python3 scripts/r10b-vendor-zip-preflight-test.py
+          php -l packages/andy-commerce/tests/r10b-eur-shipping-float-boundary-harness.php
+          php packages/andy-commerce/tests/r10b-eur-shipping-float-boundary-harness.php
           php -l packages/andy-commerce/tests/sandbox/r10b-vendor-runtime-readonly.php
           bash -n scripts/r10b-isolated-runtime-preflight.sh
           # Fail closed without disposable WP marker. Never install vendor ZIPs in CI.

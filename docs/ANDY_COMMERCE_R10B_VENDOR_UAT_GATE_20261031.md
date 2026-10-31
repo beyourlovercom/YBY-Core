@@ -1,13 +1,15 @@
 # Andy Commerce R10-B exact two-vendor gate — 2026-10-31
 
-Classification: TEST PREPARATION. Not live checkout acceptance or www install authorization.
+Classification: TEST PREPARATION, plus actual isolated Woo UAT evidence. Not WWW checkout acceptance or www install authorization.
+
+2026-10-31 UPDATE: previously missing exact vendor versions WERE FOUND in Windows Localnew and Localdev. Both copied read-only to NEW isolated Windows Woo, with Woo 11.2.1 and YayCurrency 3.3.5 matched. Actual native 40 cases and 4 independent Store API scenarios completed. See ANDY_COMMERCE_R10B_NATIVE_WINDOWS_UAT_20261031.md. Two blocking findings: BOTH coupons accepted, and EUR USD69-equivalent free shipping missing due float precision.
 
 ## Source baseline from authenticated admin and local package checks
 
 - WWW: WooCommerce 11.2.1; YayCurrency Pro 3.3.5; WebToffee Smart Coupons Pro 3.2.0; StoreApps WooCommerce Smart Coupons 9.51.0. Both coupon vendors active.
 - WWW Andy Commerce 1.0.14 remains OBSERVE. No approved production SSH: do not attempt to retrieve production files that way.
 - DEV: Woo 11.2.1 / YayCurrency 3.3.5 / Andy Commerce 1.0.14; neither coupon vendor installed. Its quotes CANNOT establish dual-vendor parity.
-- China Mac local historical WebToffee archive main header = 2.4.1; StoreApps downloaded archive = 9.82.2 (older 9.29.1 also present); YayCurrency archive = 3.3.5 exact. Mac mini/Windows/007windows usual download locations yielded no matching 3.2.0/9.51.0 packages. DO NOT substitute mismatched versions.
+- Historical Mac ZIPs were mismatched, but later Windows installed plugin directories yielded exact WebToffee 3.2.0 and StoreApps 9.51.0 matching www. Exact versions were loaded in fresh isolated Windows; never substitute those older ZIPs.
 - WWW native Free Shipping zone 0 requires EITHER post-discount USD 69 minimum OR valid free-shipping coupon; Flat Rate base USD 20 with class costs. StoreApps auto apply enabled; Woo sequential coupons enabled; single-coupon global restriction NOT proved.
 
 ## Source-only tools
@@ -28,4 +30,4 @@ C. With approved isolated shopper test, use actual YayCurrency selection mechani
 D. Resolve all mismatches, record native quotes, vendor version hashes and regression results. Do not interpret source-only 80/80 and general isolated Woo CI as vendor parity.
 E. No WWW plugin update, module activation, exit OBSERVE, or production config changes without separate Owner pass.
 
-Verdict: R9-B WWW settings snapshot PASS. R10-B exact two-vendor real quote parity BLOCKED due to missing exact licensed copies. GitHub stores only the toolchain and test plan, not paid plugins.
+Verdict: R9-B WWW settings snapshot PASS; actual R10-B exact two-vendor runtime UAT EXECUTED, with two HARD FAILS (multi-coupon stacking and EUR boundary free shipping). Not eligible for production activation. GitHub contains no paid plugin files or customer data.
