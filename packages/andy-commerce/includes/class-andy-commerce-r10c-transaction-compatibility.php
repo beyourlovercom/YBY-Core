@@ -217,7 +217,7 @@ final class Andy_Commerce_R10C_Transaction_Compatibility {
         if ($available || !self::enabled('shipping')
             || !is_array($package) || !is_object($method)
             || ($method->id ?? '') !== 'free_shipping'
-            || (int)($method->instance_id ?? -1) !== 1
+            || (int)($method->instance_id ?? 0) <= 0
             || ($method->enabled ?? '') !== 'yes'
             || !in_array($method->requires ?? null, array('either','min_amount'),true)
             || ($method->ignore_discounts ?? '') !== 'no'
@@ -230,13 +230,22 @@ final class Andy_Commerce_R10C_Transaction_Compatibility {
             || !method_exists($cart,'get_cart')) return $available;
         $zone = WC_Shipping_Zones::get_zone_matching_package($package);
         if (!is_object($zone) || !method_exists($zone,'get_id')
-            || (int)$zone->get_id() !== 0
+            || (int)$zone->get_id() < 0
             || !method_exists($zone,'get_shipping_methods')) return $available;
+        // Match the precise *active* native method of the zone Woo selected
+        // for this shipping package; method IDs differ between installations.
+        // Never substitute a guessed default zone or a hard-coded instance ID.
+        $instance_id = (int)$method->instance_id;
         $match = false;
         foreach ($zone->get_shipping_methods(false) as $installed) {
-            if ($installed->id === 'free_shipping'
-                && (int)$installed->instance_id === 1
-                && ($installed->enabled ?? '') === 'yes') $match = true;
+            if (($installed->id ?? '') !== 'free_shipping'
+                || (int)($installed->instance_id ?? 0) !== $instance_id
+                || ($installed->enabled ?? '') !== 'yes') continue;
+            if (($installed->requires ?? null) !== ($method->requires ?? null)
+                || ($installed->ignore_discounts ?? null)
+                   !== ($method->ignore_discounts ?? null)) return $available;
+            $match = true;
+            break;
         }
         if (!$match) return $available;
         // In the absence of a verified shipping-class exclusion policy,
