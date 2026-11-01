@@ -104,6 +104,12 @@ jobs:
           php packages/andy-commerce/tests/r10g-legacy-transaction-hook-audit.php
           php -l packages/andy-commerce/tests/r10h-coupon-priority-sandbox-harness.php
           php packages/andy-commerce/tests/r10h-coupon-priority-sandbox-harness.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10g2-legacy-runtime-quarantine.php
+          php -l packages/andy-commerce/includes/class-andy-commerce.php
+          php -l packages/andy-commerce/tests/r10g2-legacy-quarantine-gate-harness.php
+          php packages/andy-commerce/tests/r10g2-legacy-quarantine-gate-harness.php denied
+          php packages/andy-commerce/tests/r10g2-legacy-quarantine-gate-harness.php authorized
+          python3 packages/andy-commerce/tests/r10g2-legacy-boot-source-contract.py
       - name: Currency C2–C3 and Footer-only regression
         run: |
           php packages/andy-commerce/tests/currency-os-v2-admin-shortcode-harness.php

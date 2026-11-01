@@ -7,6 +7,11 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
+// Global OBSERVE is still enforced by the plugin entrypoint, before this
+// file is loaded. This additional default-deny layer isolates the OLD
+// transaction runtimes even when a future Owner-approved test exits OBSERVE.
+require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-r10g2-legacy-runtime-quarantine.php';
+
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'admin/class-andy-commerce-admin.php';
 // Pure USD-first Currency OS V1: loaded without any Woo/cart/checkout hooks.
 require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-currency-os-v1.php';
@@ -54,26 +59,34 @@ require_once ANDY_COMMERCE_PLUGIN_DIR . 'includes/class-andy-commerce-marketing-
 
 class Andy_Commerce {
 	public function run() {
-		Andy_Commerce_Currency_V2_Dev::boot();
-		Andy_Commerce_Currency_R13_Dev_Canary::boot();
-		Andy_Commerce_Currency_Runtime_C1::boot();
-		Andy_Commerce_Currency_Runtime_Dev_V1::admin_boot();
-		Andy_Commerce_Currency_Runtime_Dev_V1::boot();
-		// Hooks are registered only for the named disposable environment or
-		// a deliberately armed HTTPS Dev Woo administrator (never guests).
-		Andy_Commerce_Marketing_P2_Woo_Adapter::boot();
-		Andy_Commerce_Marketing_P5_Checkout_Hooks::boot();
-		Andy_Commerce_Shipping_Promotion_Policy::boot();
-		if ( ! class_exists( 'BYL_Shipping_Promotion_Runtime' ) ) {
-			Andy_Commerce_Shipping_Promotion_Runtime::boot();
-		} else {
-			// Keep legacy shipping eligibility/coupon hooks as sole authority
-			// until separately approved retirement; register only a default choice.
-			Andy_Commerce_Shipping_Promotion_Runtime::boot_default_shipping_preference();
+		// R10-G2: three independent legacy groups, ALL default denied.
+		// No existing Commerce option or R10-C switch enables these groups.
+		if ( Andy_Commerce_R10G2_Legacy_Runtime_Quarantine::allowed( 'currency' ) ) {
+			Andy_Commerce_Currency_V2_Dev::boot();
+			Andy_Commerce_Currency_R13_Dev_Canary::boot();
+			Andy_Commerce_Currency_Runtime_C1::boot();
+			Andy_Commerce_Currency_Runtime_Dev_V1::admin_boot();
+			Andy_Commerce_Currency_Runtime_Dev_V1::boot();
+		}
+		if ( Andy_Commerce_R10G2_Legacy_Runtime_Quarantine::allowed( 'marketing' ) ) {
+			Andy_Commerce_Marketing_P2_Woo_Adapter::boot();
+			Andy_Commerce_Marketing_P5_Checkout_Hooks::boot();
+		}
+		if ( Andy_Commerce_R10G2_Legacy_Runtime_Quarantine::allowed( 'shipping' ) ) {
+			Andy_Commerce_Shipping_Promotion_Policy::boot();
+			if ( ! class_exists( 'BYL_Shipping_Promotion_Runtime' ) ) {
+				Andy_Commerce_Shipping_Promotion_Runtime::boot();
+			} else {
+				// A separately approved BYL legacy bridge can retain default
+				// rate preference without double-registering eligibility hooks.
+				Andy_Commerce_Shipping_Promotion_Runtime::boot_default_shipping_preference();
+			}
 		}
 		if ( is_admin() ) {
-			Andy_Commerce_M7_Draft_Studio::boot();
-			Andy_Commerce_Marketing_Dev_UAT::boot();
+			if ( Andy_Commerce_R10G2_Legacy_Runtime_Quarantine::allowed( 'marketing' ) ) {
+				Andy_Commerce_M7_Draft_Studio::boot();
+				Andy_Commerce_Marketing_Dev_UAT::boot();
+			}
 			$admin = new Andy_Commerce_Admin();
 			add_action( 'admin_menu', array( $admin, 'add_admin_menu' ), 35 );
 		}
