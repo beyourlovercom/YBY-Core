@@ -1,7 +1,7 @@
 === Andy Commerce ===
 Contributors: ybyglobal
 Requires PHP: 8.0
-Stable tag: 1.1.0-rc1
+Stable tag: 1.1.0-rc2
 
 Reusable B2C / WooCommerce Addon for Andy Core.
 
@@ -13,6 +13,12 @@ Reusable B2C / WooCommerce Addon for Andy Core.
 The plugin fails closed with an admin notice when dependencies are missing or incompatible.
 
 == Changelog ==
+
+= 1.1.0-rc2 (Dev-only release candidate; NOT deployed) =
+* Correct native WooCommerce free-shipping epsilon check to match the actual enabled shipping method in the package's matching zone, without hard-coded instance IDs.
+* Preserve independent R10-C OFF-by-default module gates and global OBSERVE precedence.
+* No changes to payments, checkout orders, Woo shipping-zone configurations, plugin licensing or login routes.
+
 
 = 1.1.0-rc1 (Dev-only R10-C-D Owner-approved candidate; default OFF) =
 * Adds strictly default-OFF, independently controlled R10-C Shipping and Coupon compatibility adapters.

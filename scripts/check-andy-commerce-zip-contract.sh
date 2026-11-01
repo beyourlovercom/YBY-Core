@@ -45,5 +45,5 @@ grep -Fq "Andy_Commerce_Observation_Mode::is_observing()" <<< "$rc_source" || {
 cmp -s "$repo_root/packages/andy-commerce/includes/class-andy-commerce-r10c-transaction-compatibility.php" <(unzip -p "$zip" andy-commerce/includes/class-andy-commerce-r10c-transaction-compatibility.php) || {
  echo "R10C_ZIP_SOURCE_MISMATCH"; exit 1;
 }
-if [[ "$entry" != *"1.1.0-rc1"* ]]; then echo "R10C_RC1_ZIP_VERSION_MISSING"; exit 1; fi
+if [[ "$entry" != *"1.1.0-rc2"* ]]; then echo "R10C_RC2_ZIP_VERSION_MISSING"; exit 1; fi
 echo "ZIP_CONTRACT_PASS source=$source_sha sha256=$(shasum -a 256 "$zip"|awk '{print $1}')"
