@@ -1,5 +1,5 @@
 from pathlib import Path
-base=Path(r'D:\ai\r10c-dev-rc1-build\packages\andy-commerce')
+base=Path(__file__).resolve().parents[1]
 s=(base/'includes/class-andy-commerce.php').read_text(encoding='utf-8')
 entry=(base/'andy-commerce.php').read_text(encoding='utf-8')
 early=entry.index('Andy_Commerce_Observation_Mode::is_observing()')
