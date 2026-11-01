@@ -100,6 +100,10 @@ jobs:
           php packages/andy-commerce/tests/r10c-bootstrap-observation-contract.php
           php -l packages/andy-commerce/tests/r10c-e-dynamic-shipping-zone-harness.php
           php packages/andy-commerce/tests/r10c-e-dynamic-shipping-zone-harness.php
+          php -l packages/andy-commerce/tests/r10g-legacy-transaction-hook-audit.php
+          php packages/andy-commerce/tests/r10g-legacy-transaction-hook-audit.php
+          php -l packages/andy-commerce/tests/r10h-coupon-priority-sandbox-harness.php
+          php packages/andy-commerce/tests/r10h-coupon-priority-sandbox-harness.php
       - name: Currency C2–C3 and Footer-only regression
         run: |
           php packages/andy-commerce/tests/currency-os-v2-admin-shortcode-harness.php
