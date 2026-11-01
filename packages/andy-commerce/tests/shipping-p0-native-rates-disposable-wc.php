@@ -23,6 +23,17 @@ $assert = static function(bool $ok, string $message): void {
     if (!$ok) throw new RuntimeException('P0_NATIVE_RATE_FAIL: '.$message);
 };
 $assert(Andy_Commerce_Shipping_Promotion_Runtime::class !== '', 'runtime present');
+// R10-G2: production/Dev default startup deliberately quarantines this legacy
+// runtime. This P0 exercise explicitly boots it ONLY after the strict one-use
+// test DB, local origin, network-disabled and Woo class preflight above.
+// No shared site option or global OBSERVE state is changed.
+$assert(has_filter('woocommerce_shipping_free_shipping_is_available',
+    ['Andy_Commerce_Shipping_Promotion_Runtime','filter_free_shipping'])===false,
+    'legacy shipping quarantine before isolated P0 fixture');
+Andy_Commerce_Shipping_Promotion_Runtime::boot();
+$assert(has_filter('woocommerce_shipping_free_shipping_is_available',
+    ['Andy_Commerce_Shipping_Promotion_Runtime','filter_free_shipping'])!==false,
+    'isolated P0 explicitly loaded legacy shipping policy hook');
 add_filter('andy_commerce_site_preset', static function($preset) {
     return ['id'=>'byl','global_threshold'=>49.0,
         'free_shipping_code'=>'BYL49',
