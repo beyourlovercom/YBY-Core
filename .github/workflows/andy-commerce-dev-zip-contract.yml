@@ -107,6 +107,12 @@ jobs:
           php -l packages/andy-commerce/includes/class-andy-commerce-r10h2-manual-priority-shadow.php
           php -l packages/andy-commerce/tests/r10h2-manual-priority-shadow-harness.php
           php packages/andy-commerce/tests/r10h2-manual-priority-shadow-harness.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10h3-vendor-auto-provenance.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10h3-rollback-integrity-shadow.php
+          php -l packages/andy-commerce/tests/r10h3-provider-provenance-harness.php
+          php packages/andy-commerce/tests/r10h3-provider-provenance-harness.php
+          php -l packages/andy-commerce/tests/r10h3-rollback-integrity-harness.php
+          php packages/andy-commerce/tests/r10h3-rollback-integrity-harness.php
           php -l packages/andy-commerce/includes/class-andy-commerce-r10g2-legacy-runtime-quarantine.php
           php -l packages/andy-commerce/includes/class-andy-commerce.php
           php -l packages/andy-commerce/tests/r10g2-legacy-quarantine-gate-harness.php
