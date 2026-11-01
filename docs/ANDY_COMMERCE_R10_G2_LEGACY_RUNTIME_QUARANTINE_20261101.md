@@ -15,6 +15,7 @@ Date: 2026-11-01. Owner's "继续" authorizes safe source/isolated UAT progress,
 - **Existing early global OBSERVE return in `andy-commerce.php` is unchanged and remains first**; existing R10-C Shipping and Coupon remain separately gated and are NOT enabled by this allowlist.
 - Andy Commerce general admin, order-export and addon registration code paths outside the old transaction runtime are otherwise unchanged. This candidate does not promise that the entire app has no non-commerce admin hooks after a future OBSERVE exit; only explicitly enumerated legacy runtime entries are quarantined.
 - No change to current version header `1.1.0-rc2` yet because **no installation is authorized**. A future owner-approved Dev build must carry a new version (e.g. rc3), verified ZIP and private rollback.
+- Currency C-R1..R13 native Woo regression retains an explicitly isolated local-test exception ONLY for the currency module: AICC_CURRENCY_RUNTIME_SANDBOX=true, DB_NAME=commerce_p5_isolated, siteurl=http://commerce-p5.invalid, WordPress environment=local, WP_HTTP_BLOCK_EXTERNAL=true and DISABLE_WP_CRON=true must all hold. Dev/www cannot use it, and Shipping/Marketing remain denied. The mock harness adds five cases (26/26 for the sandbox mode).
 - Official ZIP contract now requires the quarantine file and bytewise source parity of both quarantine and updated legacy bootstrap.
 
 ## Evidence

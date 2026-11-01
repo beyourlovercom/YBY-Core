@@ -6,9 +6,15 @@
 declare(strict_types=1);
 if(!defined('ABSPATH'))define('ABSPATH',__DIR__.DIRECTORY_SEPARATOR);
 $mode=$argv[1]??'denied';
-if(!in_array($mode,['denied','authorized'],true))exit(3);
+if(!in_array($mode,['denied','authorized','sandbox'],true))exit(3);
 if($mode==='authorized'){
  define('ANDY_COMMERCE_R10G2_OWNER_LEGACY_AUTH','OWNER_APPROVED_R10G2_DEV_LEGACY');
+}
+if($mode==='sandbox'){
+ define('AICC_CURRENCY_RUNTIME_SANDBOX',true);
+ define('DB_NAME','commerce_p5_isolated');
+ define('WP_HTTP_BLOCK_EXTERNAL',true);
+ define('DISABLE_WP_CRON',true);
 }
 $GLOBALS['g2_opts']=[
  'siteurl'=>'https://dev.beyourlover.com',
@@ -68,6 +74,19 @@ trial('lookalike_host_rejected','shipping',false);
 $GLOBALS['g2_opts']['siteurl']='https://dev.beyourlover.com';
 $GLOBALS['g2_opts']['andy_commerce_r10g2_legacy_shipping_enabled_v1']='true';
 trial('not_exact_yes','shipping',false);
+if($mode==='sandbox'){
+ $GLOBALS['g2_opts']['siteurl']='http://commerce-p5.invalid';
+ $GLOBALS['g2_env']='local';
+ $GLOBALS['g2_opts']['andy_commerce_r10g2_legacy_currency_enabled_v1']='no';
+ trial('exact_isolated_currency_runtime_allowed','currency',true);
+ trial('isolated_shipping_still_denied','shipping',false);
+ trial('isolated_marketing_still_denied','marketing',false);
+ $GLOBALS['g2_env']='production';
+ trial('isolated_wrong_environment_denied','currency',false);
+ $GLOBALS['g2_env']='local';
+ $GLOBALS['g2_opts']['siteurl']='https://dev.beyourlover.com';
+ trial('isolated_wrong_host_denied','currency',false);
+}
 echo 'R10G2_GATE_MODE='.strtoupper($mode)."\n";
 echo 'R10G2_GATE_TOTAL='.($total-count($failed)).'/'.$total."\n";
 exit($failed?1:0);

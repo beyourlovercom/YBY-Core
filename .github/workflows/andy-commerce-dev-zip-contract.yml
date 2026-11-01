@@ -109,6 +109,7 @@ jobs:
           php -l packages/andy-commerce/tests/r10g2-legacy-quarantine-gate-harness.php
           php packages/andy-commerce/tests/r10g2-legacy-quarantine-gate-harness.php denied
           php packages/andy-commerce/tests/r10g2-legacy-quarantine-gate-harness.php authorized
+          php packages/andy-commerce/tests/r10g2-legacy-quarantine-gate-harness.php sandbox
           python3 packages/andy-commerce/tests/r10g2-legacy-boot-source-contract.py
       - name: Currency C2–C3 and Footer-only regression
         run: |

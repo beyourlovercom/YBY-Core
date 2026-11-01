@@ -24,6 +24,19 @@ final class Andy_Commerce_R10G2_Legacy_Runtime_Quarantine {
             || (class_exists('Andy_Commerce_Observation_Mode', false)
                 && Andy_Commerce_Observation_Mode::is_observing())) return false;
 
+        // Existing C-R1..R13 native Woo tests intentionally arm Currency
+        // with their own isolated wp-config flag. Keep that regression path
+        // ONLY in its fixed disposable database/hostname, with no network
+        // or Cron; no legacy Shipping/Marketing exception is allowed.
+        if ($module === 'currency'
+            && defined('AICC_CURRENCY_RUNTIME_SANDBOX')
+            && AICC_CURRENCY_RUNTIME_SANDBOX === true
+            && defined('DB_NAME') && DB_NAME === 'commerce_p5_isolated'
+            && get_option('siteurl', '') === 'http://commerce-p5.invalid'
+            && wp_get_environment_type() === 'local'
+            && defined('WP_HTTP_BLOCK_EXTERNAL') && WP_HTTP_BLOCK_EXTERNAL === true
+            && defined('DISABLE_WP_CRON') && DISABLE_WP_CRON === true) return true;
+
         // No permission for WWW or any unexpected host, even if a stray
         // deployment accidentally carries a configuration from Dev.
         if (get_option('siteurl', '') !== 'https://dev.beyourlover.com'
