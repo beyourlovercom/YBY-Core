@@ -5,7 +5,7 @@
  */
 declare(strict_types=1);
 if(!defined('ABSPATH'))define('ABSPATH',__DIR__.DIRECTORY_SEPARATOR);
-$mode=$argv[1]??'';
+$mode=$argv[1]??'denied';
 if(!in_array($mode,['denied','authorized'],true))exit(3);
 if($mode==='authorized'){
  define('ANDY_COMMERCE_R10G2_OWNER_LEGACY_AUTH','OWNER_APPROVED_R10G2_DEV_LEGACY');
