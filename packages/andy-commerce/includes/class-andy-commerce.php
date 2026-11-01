@@ -72,8 +72,9 @@ class Andy_Commerce {
 			Andy_Commerce_Marketing_P2_Woo_Adapter::boot();
 			Andy_Commerce_Marketing_P5_Checkout_Hooks::boot();
 		}
+		// Benign registration of existing admin settings: no customer Woo hooks.
+		Andy_Commerce_Shipping_Promotion_Policy::boot();
 		if ( Andy_Commerce_R10G2_Legacy_Runtime_Quarantine::allowed( 'shipping' ) ) {
-			Andy_Commerce_Shipping_Promotion_Policy::boot();
 			if ( ! class_exists( 'BYL_Shipping_Promotion_Runtime' ) ) {
 				Andy_Commerce_Shipping_Promotion_Runtime::boot();
 			} else {

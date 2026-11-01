@@ -8,7 +8,7 @@ assert early<entry.index("class-andy-commerce-r10c-transaction-compatibility.php
 rules={
  'currency':['Andy_Commerce_Currency_V2_Dev::boot()', 'Andy_Commerce_Currency_R13_Dev_Canary::boot()', 'Andy_Commerce_Currency_Runtime_C1::boot()', 'Andy_Commerce_Currency_Runtime_Dev_V1::admin_boot()', 'Andy_Commerce_Currency_Runtime_Dev_V1::boot()'],
  'marketing':['Andy_Commerce_Marketing_P2_Woo_Adapter::boot()', 'Andy_Commerce_Marketing_P5_Checkout_Hooks::boot()', 'Andy_Commerce_M7_Draft_Studio::boot()', 'Andy_Commerce_Marketing_Dev_UAT::boot()'],
- 'shipping':['Andy_Commerce_Shipping_Promotion_Policy::boot()', 'Andy_Commerce_Shipping_Promotion_Runtime::boot()', 'Andy_Commerce_Shipping_Promotion_Runtime::boot_default_shipping_preference()']
+ 'shipping':['Andy_Commerce_Shipping_Promotion_Runtime::boot()', 'Andy_Commerce_Shipping_Promotion_Runtime::boot_default_shipping_preference()']
 }
 ranges={}
 for mod in ['currency','marketing','shipping']:
@@ -46,6 +46,10 @@ assert 'andy_commerce_r10c_shipping_enabled_v1' in r10
 assert 'andy_commerce_r10c_coupon_enabled_v1' in r10
 assert 'ANDY_COMMERCE_R10G2' not in r10
 assert 'ANDY_COMMERCE_R10G2' not in entry
+# Settings registration is non-transactional; preserve existing admin UX.
+assert s.count('Andy_Commerce_Shipping_Promotion_Policy::boot()')==1
+assert not any(a<=s.index('Andy_Commerce_Shipping_Promotion_Policy::boot()')<b for a,b,_ in ranges['shipping'])
+print('R10G2_BENIGN_SETTINGS_REGISTRATION_PRESERVED=PASS')
 print('R10G2_R10C_MODULE_INDEPENDENCE=PASS')
 print('R10G2_EARLY_OBSERVE_PRIORITY=PASS')
 print('R10G2_UNGUARDED_BOOT_COUNT=0')
