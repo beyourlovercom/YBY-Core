@@ -79,6 +79,13 @@ jobs:
           wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/shipping-p0-native-rates-disposable-wc.php" --path="$RUNNER_TEMP/woo"
           echo P0_NATIVE_WOO_RATES_ISOLATED_PASS
 
+      - name: R10-H2 native WC_Coupon metadata manual priority shadow, NO hooks
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp eval-file "$GITHUB_WORKSPACE/packages/andy-commerce/tests/r10h2-native-woo-coupon-disposable.php" --path="$RUNNER_TEMP/woo"
+          echo R10H2_NATIVE_WOO_SHADOW_PASS_NO_MUTATION
+
       - name: P5-C native disposable Woo order and non-gateway refund
         shell: bash
         run: |

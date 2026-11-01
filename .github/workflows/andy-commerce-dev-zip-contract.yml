@@ -104,6 +104,9 @@ jobs:
           php packages/andy-commerce/tests/r10g-legacy-transaction-hook-audit.php
           php -l packages/andy-commerce/tests/r10h-coupon-priority-sandbox-harness.php
           php packages/andy-commerce/tests/r10h-coupon-priority-sandbox-harness.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10h2-manual-priority-shadow.php
+          php -l packages/andy-commerce/tests/r10h2-manual-priority-shadow-harness.php
+          php packages/andy-commerce/tests/r10h2-manual-priority-shadow-harness.php
           php -l packages/andy-commerce/includes/class-andy-commerce-r10g2-legacy-runtime-quarantine.php
           php -l packages/andy-commerce/includes/class-andy-commerce.php
           php -l packages/andy-commerce/tests/r10g2-legacy-quarantine-gate-harness.php
