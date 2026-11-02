@@ -119,6 +119,18 @@ jobs:
           php packages/andy-commerce/tests/r10h3b-webtoffee-reapply-harness.php
           php -l packages/andy-commerce/tests/r10h3b-storeapps-reapply-harness.php
           php packages/andy-commerce/tests/r10h3b-storeapps-reapply-harness.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10h3c-reward-protection-shadow.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10h3c-manual-request-shadow.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10h3c-full-rollback-shadow.php
+          php -l packages/andy-commerce/tests/r10h3c-reward-protection-harness.php
+          php packages/andy-commerce/tests/r10h3c-reward-protection-harness.php
+          php -l packages/andy-commerce/tests/r10h3c-manual-request-harness.php
+          php packages/andy-commerce/tests/r10h3c-manual-request-harness.php
+          php -l packages/andy-commerce/tests/r10h3c-full-rollback-harness.php
+          php packages/andy-commerce/tests/r10h3c-full-rollback-harness.php
+          php -l packages/andy-commerce/tests/r10h3c-protected-vendor-types-disposable.php
+          php -l packages/andy-commerce/tests/r10h3c-native-route-shapes-disposable.php
+          php -l packages/andy-commerce/tests/r10h3c-native-rollback-disposable.php
           php -l packages/andy-commerce/tests/r10h3a-webtoffee-genuine-auto-disposable.php
           php -l packages/andy-commerce/tests/r10h3b-webtoffee-manual-transaction-disposable.php
           php -l packages/andy-commerce/tests/r10h3b-storeapps-manual-transaction-disposable.php
