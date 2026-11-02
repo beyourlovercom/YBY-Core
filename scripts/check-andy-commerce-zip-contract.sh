@@ -91,5 +91,6 @@ if grep -Fq 'Andy_Commerce_R10H3C_' <<< "$entry"; then echo "R10H3C_UNAUTHORIZED
 # H3-C1 native ticket helper must remain source-only and never self-register.
 cmp -s "$repo_root/packages/andy-commerce/includes/class-andy-commerce-r10h3c1-manual-ticket-shadow.php" <(unzip -p "$zip" andy-commerce/includes/class-andy-commerce-r10h3c1-manual-ticket-shadow.php) || { echo "R10H3C1_SOURCE_DRIFT"; exit 1; }
 if grep -Fq 'class-andy-commerce-r10h3c1-manual-ticket-shadow.php' <<< "$entry"; then echo "R10H3C1_UNAUTHORIZED_BOOTSTRAP"; exit 1; fi
-if grep -Fq 'Andy_Commerce_R10H3C1_' <<< "$entry"; then echo "R10H3C1_UNAUTHORIZED_CALL"; exit 1; fiif [[ "$entry" != *"1.1.0-rc2"* ]]; then echo "R10C_RC2_ZIP_VERSION_MISSING"; exit 1; fi
+if grep -Fq 'Andy_Commerce_R10H3C1_' <<< "$entry"; then echo "R10H3C1_UNAUTHORIZED_CALL"; exit 1; fi
+if [[ "$entry" != *"1.1.0-rc2"* ]]; then echo "R10C_RC2_ZIP_VERSION_MISSING"; exit 1; fi
 echo "ZIP_CONTRACT_PASS source=$source_sha sha256=$(shasum -a 256 "$zip"|awk '{print $1}')"
