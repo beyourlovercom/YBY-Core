@@ -82,7 +82,7 @@ final class BYL_BF2026_Landing_Preview {
                         </article>
                     <?php endforeach; ?>
                 </div>
-                <a class="byl-bf26-cta byl-bf26-view" href="#bf26-gifts">View All Products</a>
+                <a class="byl-bf26-cta byl-bf26-view" href="#bf26-products">View All Products</a>
             </section>
             <section class="byl-bf26-gifts" id="bf26-gifts">
                 <div class="byl-bf26-gift-intro">
