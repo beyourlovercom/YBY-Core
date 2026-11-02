@@ -10,12 +10,14 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 require_once __DIR__ . '/includes/class-byl-bf2026-r8-readiness.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-gifts.php';
+require_once __DIR__ . '/includes/class-byl-bf2026-landing-preview.php';
 /** Keep gift landing-page shortcode renderable while the campaign is OFF.
  * This registers display only: all cart writes remain behind the Campaign runtime.
  */
 add_action( 'init', static function () {
     if ( class_exists( 'WooCommerce' ) ) {
         add_shortcode( 'byl_bf2026_gifts', array( 'BYL_BF2026_Gifts', 'render' ) );
+        BYL_BF2026_Landing_Preview::register();
     }
 }, 12 );
 
