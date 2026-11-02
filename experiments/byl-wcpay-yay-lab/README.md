@@ -19,7 +19,7 @@ This rules out the theory that only an administrator's old WooPayments currency 
 - Separate experiment under \`experiments/\`; this is **not part of the Andy Core release package**.
 - Requires **both** exact WordPress home host \`dev.beyourlover.com\` and HTTP request header \`X-BYL-Currency-Lab: 1\`.
 - No matching header or any other hostname: **no price/currency hooks added or removed**.
-- The intervention selectively detaches WooPayments 11.2.0's currency and price-format callbacks; payment gateway remains registered.
+- V0.1.1 selectively detaches WooPayments 11.2.0's **price conversion** callbacks, while preserving its WooCommerce currency identity/formatting callbacks for Store API. Payment gateways remain registered.
 - No database writes, no refunds, no actual payments, no changes to WooPayments or YayCurrency vendor code.
 - This is a diagnostic experiment, **not proof** that Store API, coupons, shipping, taxes, order metadata or refunds are correct.
 
