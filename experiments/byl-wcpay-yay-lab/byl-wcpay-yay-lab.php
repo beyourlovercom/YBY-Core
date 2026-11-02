@@ -2,7 +2,7 @@
 /**
  * Plugin Name: BYL WooPayments / YayCurrency Conversion Lab
  * Description: Header-gated, Dev-only single-conversion experiment. Never install on production.
- * Version: 0.1.0-dev
+ * Version: 0.1.1-dev
  * Requires PHP: 7.4
  */
 if ( ! defined( 'ABSPATH' ) ) {
@@ -16,7 +16,7 @@ function byl_currency_lab_request_enabled(): bool {
 	return 'dev.beyourlover.com' === $hostname && '1' === $header;
 }
 
-/** Only remove approved WooPayments price/currency callbacks; never modify other plugins. */
+/** Only remove approved WooPayments price transforms; keep currency identity hooks; never modify other plugins. */
 function byl_currency_lab_detach_callbacks(): array {
 	if ( ! byl_currency_lab_request_enabled() ) {
 		return [];
@@ -41,14 +41,7 @@ function byl_currency_lab_detach_callbacks(): array {
 			'query_loop_block_query_vars'                     => [ 'maybe_modify_price_ranges_query_var' ],
 			'woocommerce_new_order'                           => [ 'add_order_meta' ],
 		],
-		'WCPay\MultiCurrency\FrontendCurrencies' => [
-			'woocommerce_currency'                     => [ 'get_woocommerce_currency' ],
-			'wc_get_price_decimals'                   => [ 'get_price_decimals' ],
-			'wc_get_price_decimal_separator'           => [ 'get_price_decimal_separator' ],
-			'wc_get_price_thousand_separator'          => [ 'get_price_thousand_separator' ],
-			'woocommerce_price_format'                 => [ 'get_woocommerce_price_format' ],
-			'option_woocommerce_currency_pos'          => [ 'get_woocommerce_currency_pos' ],
-		],
+
 	];
 	$removed = [];
 	foreach ( $allowed as $class_name => $hooks ) {
