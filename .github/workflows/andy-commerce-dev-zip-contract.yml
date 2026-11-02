@@ -128,6 +128,14 @@ jobs:
           php packages/andy-commerce/tests/r10h3c-manual-request-harness.php
           php -l packages/andy-commerce/tests/r10h3c-full-rollback-harness.php
           php packages/andy-commerce/tests/r10h3c-full-rollback-harness.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10h3c1-manual-ticket-shadow.php
+          php -l packages/andy-commerce/tests/r10h3c1-manual-ticket-harness.php
+          php packages/andy-commerce/tests/r10h3c1-manual-ticket-harness.php
+          php -l packages/andy-commerce/tests/r10h3c1-native-request-auth-disposable.php
+          php -l packages/andy-commerce/tests/r10h3c2-native-yay-five-currency-disposable.php
+          php -l packages/andy-commerce/tests/r10h3c3-native-late-rollback-probe-disposable.php
+          php -l packages/andy-commerce/tests/r10h3c3-storeapps-late-rollback-disposable.php
+          php -l packages/andy-commerce/tests/r10h3c3-webtoffee-late-rollback-disposable.php
           php -l packages/andy-commerce/tests/r10h3c-protected-vendor-types-disposable.php
           php -l packages/andy-commerce/tests/r10h3c-native-route-shapes-disposable.php
           php -l packages/andy-commerce/tests/r10h3c-native-rollback-disposable.php
