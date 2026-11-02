@@ -28,12 +28,33 @@ final class BYL_BF2026_Landing_Preview {
         // Owner-reviewed exact map, key=brief label, value=real Woo simple product ID.
         $ids = apply_filters('byl_bf2026_preview_product_map', array());
         if (!is_array($ids) || count($ids) > 24) { return array(); }
+        $expected = array();
+        // Dev-only product images; no promotion activation or warehouse approval.
+        $host = function_exists('home_url') && function_exists('wp_parse_url')
+            ? strtolower((string)wp_parse_url(home_url('/'), PHP_URL_HOST)) : '';
+        if (!$ids && $host === 'dev.beyourlover.com') {
+            $file = dirname(__DIR__).'/config/dev-sale-candidates-20261102.json';
+            $raw = is_file($file) && filesize($file) < 65536 ? file_get_contents($file) : false;
+            $doc = is_string($raw) ? json_decode($raw, true) : null;
+            if (is_array($doc) && ($doc['schema_version'] ?? null) === 1
+                && ($doc['runtime_auto_load'] ?? true) === false && is_array($doc['items'] ?? null)
+                && count($doc['items']) === 24) {
+                foreach ($doc['items'] as $item) {
+                    if (!is_array($item) || !is_string($item['label'] ?? null)
+                        || !is_int($item['product_id'] ?? null) || $item['product_id'] <= 0
+                        || !is_string($item['sku'] ?? null) || $item['sku'] === '') { continue; }
+                    $ids[$item['label']] = $item['product_id'];
+                    $expected[$item['label']] = $item['sku'];
+                }
+            }
+        }
         $safe = array();
         foreach (self::SALE_NAMES as $name) {
             $id = $ids[$name] ?? null;
             if (!is_int($id) || $id <= 0 || !function_exists('wc_get_product')) { continue; }
             $product = wc_get_product($id);
             if (!$product || !$product->is_type('simple') || !$product->get_sku()) { continue; }
+            if (isset($expected[$name]) && (string)$product->get_sku() !== $expected[$name]) { continue; }
             $safe[$name] = $product;
         }
         return $safe;
