@@ -4,7 +4,7 @@ zip="$1"; source_sha="${2:-unknown}"
 test -s "$zip"
 unzip -tq "$zip" >/dev/null
 entries="$(unzip -Z1 "$zip")"
-for f in includes/class-andy-commerce-observation-mode.php includes/class-andy-commerce-observation-diagnostics.php includes/class-andy-commerce-r10c-transaction-compatibility.php includes/class-andy-commerce-r10g2-legacy-runtime-quarantine.php includes/class-andy-commerce-r10h2-manual-priority-shadow.php includes/class-andy-commerce-r10h3-vendor-auto-provenance.php includes/class-andy-commerce-r10h3-rollback-integrity-shadow.php admin/class-andy-commerce-admin.php admin/views/currency-os-v2-admin.php admin/views/currency-c2c3-readonly-panel.php assets/currency-c3-dev-preview.js includes/class-andy-commerce-c3-cart-snapshot-adapter.php includes/class-andy-commerce-currency-c2c3-preview.php admin/views/marketing-m10-workbench.php admin/views/marketing-m10-six-preview.php includes/class-andy-commerce-m10-six-type-simulator.php includes/class-andy-commerce-m10-lifecycle.php includes/class-andy-commerce-marketing-p1-sandbox-contract.php includes/class-andy-commerce-marketing-p2-woo-adapter.php includes/class-andy-commerce-marketing-p3-sku-woo.php includes/class-andy-commerce-marketing-p4-order-cap.php includes/class-andy-commerce-marketing-p5-checkout-hooks.php includes/class-andy-commerce-marketing-dev-uat.php includes/class-andy-commerce-currency-v2-dev.php includes/class-andy-commerce-m7-draft-studio.php andy-commerce.php; do
+for f in includes/class-andy-commerce-observation-mode.php includes/class-andy-commerce-observation-diagnostics.php includes/class-andy-commerce-r10c-transaction-compatibility.php includes/class-andy-commerce-r10g2-legacy-runtime-quarantine.php includes/class-andy-commerce-r10h2-manual-priority-shadow.php includes/class-andy-commerce-r10h3-vendor-auto-provenance.php includes/class-andy-commerce-r10h3-rollback-integrity-shadow.php includes/class-andy-commerce-r10h3b-webtoffee-reapply-shadow.php includes/class-andy-commerce-r10h3b-storeapps-reapply-shadow.php admin/class-andy-commerce-admin.php admin/views/currency-os-v2-admin.php admin/views/currency-c2c3-readonly-panel.php assets/currency-c3-dev-preview.js includes/class-andy-commerce-c3-cart-snapshot-adapter.php includes/class-andy-commerce-currency-c2c3-preview.php admin/views/marketing-m10-workbench.php admin/views/marketing-m10-six-preview.php includes/class-andy-commerce-m10-six-type-simulator.php includes/class-andy-commerce-m10-lifecycle.php includes/class-andy-commerce-marketing-p1-sandbox-contract.php includes/class-andy-commerce-marketing-p2-woo-adapter.php includes/class-andy-commerce-marketing-p3-sku-woo.php includes/class-andy-commerce-marketing-p4-order-cap.php includes/class-andy-commerce-marketing-p5-checkout-hooks.php includes/class-andy-commerce-marketing-dev-uat.php includes/class-andy-commerce-currency-v2-dev.php includes/class-andy-commerce-m7-draft-studio.php andy-commerce.php; do
  echo "$entries" | grep -Fxq "andy-commerce/$f" || { echo "MISSING: $f"; exit 1; }
 done
 # Exact ZIP must contain the production fail-closed entrypoint before any
@@ -76,5 +76,11 @@ for h3 in class-andy-commerce-r10h3-vendor-auto-provenance.php class-andy-commer
   if grep -Fq "$h3" <<< "$entry"; then echo "R10H3_UNAUTHORIZED_BOOTSTRAP_IMPORT:$h3"; exit 1; fi
 done
 if grep -Fq 'Andy_Commerce_R10H3_' <<< "$entry"; then echo "R10H3_UNAUTHORIZED_BOOTSTRAP_USE"; exit 1; fi
+# R10-H3B: narrow reapply shadow code MUST stay unregistered.
+for h3b in class-andy-commerce-r10h3b-webtoffee-reapply-shadow.php class-andy-commerce-r10h3b-storeapps-reapply-shadow.php; do
+  cmp -s "$repo_root/packages/andy-commerce/includes/$h3b" <(unzip -p "$zip" "andy-commerce/includes/$h3b") || { echo "R10H3B_ZIP_SOURCE_MISMATCH:$h3b"; exit 1; }
+  if grep -Fq "$h3b" <<< "$entry"; then echo "R10H3B_UNAUTHORIZED_BOOTSTRAP_IMPORT:$h3b"; exit 1; fi
+done
+if grep -Fq 'Andy_Commerce_R10H3B_' <<< "$entry"; then echo "R10H3B_UNAUTHORIZED_ENTRY_CALL"; exit 1; fi
 if [[ "$entry" != *"1.1.0-rc2"* ]]; then echo "R10C_RC2_ZIP_VERSION_MISSING"; exit 1; fi
 echo "ZIP_CONTRACT_PASS source=$source_sha sha256=$(shasum -a 256 "$zip"|awk '{print $1}')"

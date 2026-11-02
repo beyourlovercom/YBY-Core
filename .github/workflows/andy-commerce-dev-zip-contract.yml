@@ -113,6 +113,15 @@ jobs:
           php packages/andy-commerce/tests/r10h3-provider-provenance-harness.php
           php -l packages/andy-commerce/tests/r10h3-rollback-integrity-harness.php
           php packages/andy-commerce/tests/r10h3-rollback-integrity-harness.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10h3b-webtoffee-reapply-shadow.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10h3b-storeapps-reapply-shadow.php
+          php -l packages/andy-commerce/tests/r10h3b-webtoffee-reapply-harness.php
+          php packages/andy-commerce/tests/r10h3b-webtoffee-reapply-harness.php
+          php -l packages/andy-commerce/tests/r10h3b-storeapps-reapply-harness.php
+          php packages/andy-commerce/tests/r10h3b-storeapps-reapply-harness.php
+          php -l packages/andy-commerce/tests/r10h3a-webtoffee-genuine-auto-disposable.php
+          php -l packages/andy-commerce/tests/r10h3b-webtoffee-manual-transaction-disposable.php
+          php -l packages/andy-commerce/tests/r10h3b-storeapps-manual-transaction-disposable.php
           php -l packages/andy-commerce/includes/class-andy-commerce-r10g2-legacy-runtime-quarantine.php
           php -l packages/andy-commerce/includes/class-andy-commerce.php
           php -l packages/andy-commerce/tests/r10g2-legacy-quarantine-gate-harness.php
