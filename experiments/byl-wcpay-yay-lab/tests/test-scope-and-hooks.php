@@ -55,7 +55,7 @@ namespace {
 	check( byl_currency_lab_request_enabled(), 'Dev with header enabled' );
 	$removed = byl_currency_lab_detach_callbacks();
 	check( ($removed['woocommerce_product_get_price'] ?? 0) === 1, 'WooPayments product hook removed' );
-	check( ($removed['woocommerce_currency'] ?? 0) === 1, 'WooPayments currency hook removed' );
+	check( ! isset( $removed['woocommerce_currency'] ) && count( $GLOBALS['wp_filter']['woocommerce_currency']->callbacks[900] ) === 1, 'WooPayments currency identity preserved for Store API' );
 	check( ($removed['woocommerce_shipping_method_add_rate_args'] ?? 0) === 1, 'WooPayments shipping hook removed' );
 	check( count( $GLOBALS['wp_filter']['woocommerce_product_get_price']->callbacks[100] ) === 1, 'other plugins untouched' );
 	check( [] === byl_currency_lab_detach_callbacks(), 'repeated removal idempotent' );
