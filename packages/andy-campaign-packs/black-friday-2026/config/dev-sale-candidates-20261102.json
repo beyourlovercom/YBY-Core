@@ -13,7 +13,7 @@
       "product_id": 9095,
       "sku": "VX007H",
       "store_in_stock": true,
-      "premium_tier_usd": null,
+      "premium_tier_usd": 15,
       "warehouse_available_qty": null,
       "warehouse_verified_at": null,
       "approved_for_sale": false,
