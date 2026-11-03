@@ -118,6 +118,53 @@ final class BYL_BF2026_R9C_Woo_Adapter {
         ];
     }
 
+    /**
+     * Read-only checkout preflight for future Classic/Store API integration.
+     * Reject stale addresses, missing promised random slots, unverified
+     * warehouse approval and more than one paid replacement.
+     */
+    public static function audit_fulfillment($cart, string $shipping_country,
+        array $reviewed_prices, array $reviewed_approvals): array {
+        $quote = self::quote($cart,$shipping_country);
+        if (!$quote['ok']) { return $quote; }
+        $slots = $quote['entitlement']['gift_slots'];
+        $count = 0; $paid = 0; $seen = [];
+        foreach ($cart->get_cart() as $line) {
+            if (!self::gift_line($line)) { continue; }
+            $id = (int)($line['product_id'] ?? 0);
+            if ($id <= 0 || isset($seen[$id]) || (int)($line['quantity'] ?? 0) !== 1
+                || !isset($reviewed_prices[$id]) || !is_int($reviewed_prices[$id])) {
+                return ['ok'=>false,'reason'=>'invalid_gift_cart_state'];
+            }
+            $seen[$id] = true; ++$count;
+            if ($reviewed_prices[$id] > 0) { ++$paid; }
+            if (!class_exists('BYL_BF2026_R8_Readiness')) {
+                return ['ok'=>false,'reason'=>'approval_engine_unavailable'];
+            }
+            $inspection=BYL_BF2026_R8_Readiness::inspect(
+                [$id=>['upgrade_minor'=>$reviewed_prices[$id]]],$reviewed_approvals
+            );
+            if (($inspection['rows'][0]['status']??'') !== 'APPROVED'
+                || !in_array(strtoupper($shipping_country),
+                    $reviewed_approvals[$id]['allowed_countries']??[],true)) {
+                return ['ok'=>false,'reason'=>'gift_destination_or_stock_unverified'];
+            }
+        }
+        if ($count > $slots || $paid > 1) {
+            return ['ok'=>false,'reason'=>'gift_slots_exceeded'];
+        }
+        if ($paid > 0 && !$quote['entitlement']['premium_allowed']) {
+            return ['ok'=>false,'reason'=>'premium_lost_eligibility'];
+        }
+        // Mandatory global gift promise: do not authorize checkout while
+        // the server has not allocated every destination-shippable slot.
+        if ($count !== $slots) {
+            return ['ok'=>false,'reason'=>'promised_random_gift_not_allocated'];
+        }
+        return ['ok'=>true,'slots'=>$slots,'paid_slots'=>$paid,
+            'free_slots'=>$count-$paid,'basis_minor'=>$quote['basis_minor']];
+    }
+
     /** For Woo WC_Discounts items. No hook registration in this class. */
     public static function influencer_discount_items(array $items, $coupon,
         array $verified_influencer_ids, array $black_friday_ids): array {
