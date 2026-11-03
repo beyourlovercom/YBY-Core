@@ -86,15 +86,19 @@ final class BYL_BF2026_R9C_Woo_Adapter {
             if ($reviewed_prices[$id] > 0) {
                 if ($old_premium_key !== null) { return ['ok'=>false,'reason'=>'multiple_existing_upgrades']; }
                 $old_premium_key = $key;
-                if ($id === $product_id) {
-                    return ['ok'=>true,'action'=>'already_selected','product_id'=>$id,'upgrade_minor'=>$price];
-                }
             } elseif ($old_free_key === null) {
                 $old_free_key = $key;
             }
         }
         $slots = $quote['entitlement']['gift_slots'];
         if ($used > $slots) { return ['ok'=>false,'reason'=>'gift_slot_overflow']; }
+        if ($old_premium_key !== null) {
+            $current = $cart->get_cart()[$old_premium_key] ?? [];
+            if ((int)($current['product_id'] ?? 0) === $product_id) {
+                return ['ok'=>true,'action'=>'already_selected',
+                    'product_id'=>$product_id,'upgrade_minor'=>$price];
+            }
+        }
         $remove = $old_premium_key ?? ($used >= $slots ? $old_free_key : null);
         if ($used >= $slots && $remove === null) {
             return ['ok'=>false,'reason'=>'cannot_replace_gift'];
