@@ -128,4 +128,21 @@ good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($withPaid,'US',$prices,$stale
 $staleSelected=$approved;$staleSelected[5001]['warehouse_checked_at']=time()-87000;
 good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($withPaid,'US',$prices,$staleSelected)['ok']===false,
     'selected premium stale inventory blocks');
+$incorrectUpgrade=new WC_Cart([
+    'normal'=>['product_id'=>900,'line_total'=>'199'],
+    'premium'=>gift(5001,9.99),'free'=>gift(6002,0)
+]);
+good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment(
+    $incorrectUpgrade,'US',$prices,$approved)['reason']==='gift_charged_price_inconsistent',
+    'premium undercharge or coupon leakage blocked');
+$incorrectFree=new WC_Cart([
+    'normal'=>['product_id'=>900,'line_total'=>'199'],
+    'free1'=>gift(6001,19.90),'free2'=>gift(6002,0)
+]);
+good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment(
+    $incorrectFree,'US',$prices,$approved)['reason']==='gift_charged_price_inconsistent',
+    'free gift retail overcharge blocked');
+$badTier=$prices;$badTier[5001]=1999;
+good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment(
+    $withPaid,'US',$badTier,$approved)['ok']===false,'unapproved premium tier blocked');
 echo 'BF2026_R9C_NATIVE_ADAPTER_FIXTURE_PASS='.$n.PHP_EOL;
