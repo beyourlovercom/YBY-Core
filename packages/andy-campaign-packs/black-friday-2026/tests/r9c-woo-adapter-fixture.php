@@ -106,4 +106,26 @@ good(count($eligible)===1,'coupon only regular item');
 good($eligible[0]->object['product_id']===101,'regular item retained');
 good(count(BYL_BF2026_R9C_Woo_Adapter::influencer_discount_items($items,new Synthetic_Coupon(556),[555],[201,202]))===4,'other coupon untouched');
 good(count(BYL_BF2026_R9C_Woo_Adapter::influencer_discount_items([discount_row(201)],new Synthetic_Coupon(555),[555],[201]))===0,'only BF items no discount');
+$empty=BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment(base_cart(199),'US',$prices,$approved);
+good($empty['ok']===false && $empty['reason']==='promised_random_gift_not_allocated','automatic gifts mandatory');
+$complete=BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($two,'US',$prices,$approved);
+good($complete['ok']===true && $complete['free_slots']===2,'two free gifts fulfilled');
+$complete=BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($withPaid,'US',$prices,$approved);
+good($complete['ok']===true && $complete['paid_slots']===1 && $complete['free_slots']===1,'paid and random balance');
+$premiumOnly=new WC_Cart(['normal'=>['product_id'=>900,'line_total'=>'99'],
+    'premium'=>gift(5003,20)]);
+good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($premiumOnly,'US',$prices,$approved)['ok']===true,'99 premium completes one slot');
+$staleGift=new WC_Cart(['normal'=>['product_id'=>900,'line_total'=>'98.99'],
+    'premium'=>gift(5003,20)]);
+good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($staleGift,'US',$prices,$approved)['ok']===false,'coupon drops below99');
+good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($two,'CA',$prices,$approved)['ok']===false,'free US pool must not be claimed global');
+good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($bad,'US',$prices,$approved)['ok']===false,'2 premiums never settle');
+good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment(
+    new WC_Cart(['normal'=>['product_id'=>900,'line_total'=>'199'],'one'=>gift(6001,0)]),
+    'US',$prices,$approved)['ok']===false,'199 one gift still incomplete');
+good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($withPaid,'US',$prices,$stale)['ok']===true,
+    'unrelated stale approval does not veto approved items');
+$staleSelected=$approved;$staleSelected[5001]['warehouse_checked_at']=time()-87000;
+good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($withPaid,'US',$prices,$staleSelected)['ok']===false,
+    'selected premium stale inventory blocks');
 echo 'BF2026_R9C_NATIVE_ADAPTER_FIXTURE_PASS='.$n.PHP_EOL;
