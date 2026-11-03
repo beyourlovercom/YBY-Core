@@ -92,5 +92,12 @@ if grep -Fq 'Andy_Commerce_R10H3C_' <<< "$entry"; then echo "R10H3C_UNAUTHORIZED
 cmp -s "$repo_root/packages/andy-commerce/includes/class-andy-commerce-r10h3c1-manual-ticket-shadow.php" <(unzip -p "$zip" andy-commerce/includes/class-andy-commerce-r10h3c1-manual-ticket-shadow.php) || { echo "R10H3C1_SOURCE_DRIFT"; exit 1; }
 if grep -Fq 'class-andy-commerce-r10h3c1-manual-ticket-shadow.php' <<< "$entry"; then echo "R10H3C1_UNAUTHORIZED_BOOTSTRAP"; exit 1; fi
 if grep -Fq 'Andy_Commerce_R10H3C1_' <<< "$entry"; then echo "R10H3C1_UNAUTHORIZED_CALL"; exit 1; fi
+# R10-S: lightweight coupon is explicitly dual-OFF-by-default and scoped.
+r10s_path="includes/class-andy-commerce-r10s-light-coupon.php"
+echo "$entries" | grep -Fxq "andy-commerce/$r10s_path" || { echo "R10S_CLASS_MISSING"; exit 1; }
+cmp -s "$repo_root/packages/andy-commerce/$r10s_path" <(unzip -p "$zip" "andy-commerce/$r10s_path") || { echo "R10S_CLASS_SOURCE_DRIFT"; exit 1; }
+grep -Fq "andy_commerce_r10s_light_priority_enabled_v1" <<< "$rc_source" || { echo "R10S_DUAL_OPTION_MISSING"; exit 1; }
+grep -Fq "class-andy-commerce-r10s-light-coupon.php" <<< "$rc_source" || { echo "R10S_CONDITIONAL_IMPORT_MISSING"; exit 1; }
+if grep -Fq "class-andy-commerce-r10s-light-coupon.php" <<< "$entry"; then echo "R10S_UNAUTHORIZED_UNGATED_BOOT"; exit 1; fi
 if [[ "$entry" != *"1.1.0-rc2"* ]]; then echo "R10C_RC2_ZIP_VERSION_MISSING"; exit 1; fi
 echo "ZIP_CONTRACT_PASS source=$source_sha sha256=$(shasum -a 256 "$zip"|awk '{print $1}')"

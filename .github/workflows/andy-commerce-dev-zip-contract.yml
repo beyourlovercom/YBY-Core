@@ -149,6 +149,15 @@ jobs:
           php packages/andy-commerce/tests/r10g2-legacy-quarantine-gate-harness.php authorized
           php packages/andy-commerce/tests/r10g2-legacy-quarantine-gate-harness.php sandbox
           python3 packages/andy-commerce/tests/r10g2-legacy-boot-source-contract.py
+      - name: R10-S light coupon dual-OFF policy (no site or paid vendor writes)
+        run: |
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10s-light-coupon.php
+          php -l packages/andy-commerce/includes/class-andy-commerce-r10c-transaction-compatibility.php
+          php -l packages/andy-commerce/tests/r10s-lite-native-disposable.php
+          php -l packages/andy-commerce/tests/r10s-lite-default-off-harness.php
+          php packages/andy-commerce/tests/r10s-lite-default-off-harness.php
+          # Licensed-vendor native/HTTP scenarios require owner-controlled
+          # Windows localhost; never fake them using CI mocks.
       - name: Currency C2–C3 and Footer-only regression
         run: |
           php packages/andy-commerce/tests/currency-os-v2-admin-shortcode-harness.php

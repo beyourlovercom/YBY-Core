@@ -44,7 +44,16 @@ final class Andy_Commerce_R10C_Transaction_Compatibility {
             && ANDY_COMMERCE_R10C_OWNER_RELEASE_AUTH === 'OWNER_APPROVED_R10C_RELEASE'
             && function_exists('wp_get_environment_type')
             && wp_get_environment_type() === 'production';
-        if (!$sandbox && !$production) return false;
+        // Dev is explicitly opt-in, coupon-only, and requires a distinct
+        // Owner UAT authorization; never inherit the WWW release constant.
+        $dev_coupon = $module === 'coupon'
+            && $host === 'dev.beyourlover.com'
+            && get_option('andy_commerce_r10s_light_priority_enabled_v1','no') === 'yes'
+            && defined('ANDY_COMMERCE_R10S_DEV_UAT_AUTH')
+            && ANDY_COMMERCE_R10S_DEV_UAT_AUTH === 'OWNER_APPROVED_R10S_DEV_UAT'
+            && function_exists('wp_get_environment_type')
+            && wp_get_environment_type() === 'staging';
+        if (!$sandbox && !$production && !$dev_coupon) return false;
         // Exact active dependency stack: no silent vendor substitution or update.
         if (!function_exists('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -73,8 +82,18 @@ final class Andy_Commerce_R10C_Transaction_Compatibility {
             self::$shipping_booted = true;
         }
         if (!self::$coupon_booted && self::enabled('coupon')) {
-            add_filter('woocommerce_coupon_is_valid',
-                array(self::class,'single_ordinary_discount'), 100000, 2);
+            // R10-S is an EXTRA opt-in. Legacy R10-C behavior is unchanged
+            // unless both the original coupon and the new lightweight gate
+            // are explicitly ON. Global observation excludes this boot.
+            if (get_option('andy_commerce_r10s_light_priority_enabled_v1','no') === 'yes') {
+                require_once __DIR__ . '/class-andy-commerce-r10s-light-coupon.php';
+                Andy_Commerce_R10S_Light_Coupon::register();
+                add_filter('woocommerce_coupon_is_valid',
+                    array('Andy_Commerce_R10S_Light_Coupon','allow'), 100000, 2);
+            } else {
+                add_filter('woocommerce_coupon_is_valid',
+                    array(self::class,'single_ordinary_discount'), 100000, 2);
+            }
             self::$coupon_booted = true;
         }
     }
