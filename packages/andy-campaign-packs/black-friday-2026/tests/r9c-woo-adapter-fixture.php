@@ -67,6 +67,11 @@ $p=BYL_BF2026_R9C_Woo_Adapter::plan_premium($withPaid,'US',5003,$prices,$approve
 good($p['ok'] && $p['remove_key']==='first','switch paid without removing random');
 $p=BYL_BF2026_R9C_Woo_Adapter::plan_premium($withPaid,'US',5001,$prices,$approved);
 good($p['ok'] && $p['action']==='already_selected','repeat idempotent');
+$badPaidFirst=new WC_Cart(['normal'=>['product_id'=>900,'line_total'=>'199'],
+    'first'=>gift(5001,10),'second'=>gift(5002,15)]);
+good(BYL_BF2026_R9C_Woo_Adapter::plan_premium(
+    $badPaidFirst,'US',5001,$prices,$approved)['ok']===false,
+    'do not allow early idempotence to hide a second premium');
 $bad=new WC_Cart(['normal'=>['product_id'=>900,'line_total'=>'199'],
     'first'=>gift(5001,10),'second'=>gift(5002,15)]);
 good(BYL_BF2026_R9C_Woo_Adapter::plan_premium($bad,'US',5003,$prices,$approved)['ok']===false,'2 paid rejected');
