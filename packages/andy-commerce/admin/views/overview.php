@@ -1,5 +1,6 @@
 <?php if ( ! defined( 'ABSPATH' ) ) { exit; } ?>
 <div class="wrap">
+	<?php Andy_Commerce_Observation_Mode::render_panel(); ?>
 	<?php if ( ! class_exists( 'YBY_Andy_Admin_Shell_V22' ) || ! YBY_Andy_Admin_Shell_V22::suppress_legacy_tabs( Andy_Commerce_Admin::PAGE_SLUG ) ) : ?>
 <h1><?php esc_html_e( 'Andy Commerce', 'andy-commerce' ); ?></h1>
 	<nav class="nav-tab-wrapper">

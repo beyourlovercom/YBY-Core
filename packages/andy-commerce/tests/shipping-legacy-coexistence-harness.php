@@ -8,6 +8,16 @@ $GLOBALS['actions']=array();
 function add_filter($hook,$callback,$priority=10,$accepted=1) {$GLOBALS['filters'][$hook][] = array($callback,$priority,$accepted);}
 function add_action($hook,$callback,$priority=10,$accepted=1) {$GLOBALS['actions'][$hook][] = array($callback,$priority,$accepted);}
 function is_admin() {return false;}
+// This regression deliberately exercises the *explicitly Owner-authorized*
+// isolated Dev legacy shipping bridge, not the default-denied state.
+define('ANDY_COMMERCE_R10G2_OWNER_LEGACY_AUTH','OWNER_APPROVED_R10G2_DEV_LEGACY');
+function wp_get_environment_type(): string {return 'staging';}
+function get_option(string $key,$default=null) {
+ if($key==='siteurl')return 'https://dev.beyourlover.com';
+ if($key==='andy_commerce_r10g2_legacy_shipping_enabled_v1')return 'yes';
+ return $default;
+}
+
 final class BYL_Shipping_Promotion_Runtime {}
 final class Andy_Commerce_Shipping_Promotion_Policy {
  public static int $booted=0;

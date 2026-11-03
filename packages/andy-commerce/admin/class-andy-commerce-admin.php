@@ -36,7 +36,8 @@ class Andy_Commerce_Admin {
 		// Register the four additional Marketing screens after Core's native
 		// marketing-promotions (rendered as 活动列表 while Marketing L2 active).
 		// These declarations do not add WP menus or change Currency behavior.
-		if ( self::marketing_l3_route_exists( 'marketing-create', $page ) ) {
+		if ( ! class_exists( 'Andy_Campaign_Lite' )
+			&& self::marketing_l3_route_exists( 'marketing-create', $page ) ) {
 			foreach ( array(
 				'marketing-create' => '新建活动',
 				'marketing-templates' => '活动模板',

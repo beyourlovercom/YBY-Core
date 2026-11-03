@@ -36,6 +36,15 @@ if (!preg_match('/^[A-Z]{2}$/D',$selectedCountry)) $selectedCountry='US';
 $countryLabels=['US'=>'美国 US','CA'=>'加拿大 CA','GB'=>'英国 GB',
     'DE'=>'德国 DE','FR'=>'法国 FR','AU'=>'澳大利亚 AU','HK'=>'香港 HK'];
 if (!isset($countryLabels[$selectedCountry])) $selectedCountry='US';
+// Synthetic qualification inputs: never infer current customer or Woo items.
+$simDate = isset($_GET['m9_date']) && is_string($_GET['m9_date'])
+    ? sanitize_text_field(wp_unslash($_GET['m9_date'])) : '2026-10-23';
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/D',$simDate)) $simDate='2026-10-23';
+$simProduct = $intField('m9_product_id',0,2147483647);
+$simCoupon = isset($_GET['m9_coupon']) && is_string($_GET['m9_coupon'])
+    ? sanitize_text_field(wp_unslash($_GET['m9_coupon'])) : '';
+if (strlen($simCoupon)>50) $simCoupon='';
+$blockedDrafts=[];
 $zone = isset($_GET['m9_zone']) && is_string($_GET['m9_zone']) ? $_GET['m9_zone']:'5';
 if (!in_array($zone,['0','1','3','4','5'],true)) $zone='5';
 $zoneDescriptions=['5'=>'美国本土及部分亚洲地区 · USD $69','4'=>'阿拉斯加／夏威夷 · USD $129',
@@ -72,6 +81,22 @@ if (class_exists('Andy_Commerce_M7_Draft_Studio')) {
             || !is_array($draft['rule'] ?? null)
             || !is_array($draft['countries']??null)
             || !in_array($selectedCountry,$draft['countries'],true)) continue;
+        if (class_exists('Andy_Commerce_M10_Policy_Evaluator')) {
+            $policyVerdict=Andy_Commerce_M10_Policy_Evaluator::check($draft,[
+                'date_utc'=>$simDate,
+                'product_ids'=>$simProduct>0?[$simProduct]:[],
+                'manual_coupon'=>$simCoupon!==''?$simCoupon:null,
+            ]);
+            if (!$policyVerdict['eligible']) {
+                $blockedDrafts[]=['id'=>(string)($draft['id']??''),
+                    'reason'=>$policyVerdict['reason']];
+                continue;
+            }
+        } elseif (!empty($draft['policy'])) {
+            // Never skip policy just because an evaluator is not loaded.
+            $blockedDrafts[]=['id'=>(string)($draft['id']??''),'reason'=>'evaluator_missing'];
+            continue;
+        }
         $dRule=$draft['rule'];$type=$draft['type']??'';
         if ($type!=='spend_save' && $type!=='free_gift') continue;
         if (!is_int($dRule['threshold_minor']??null)
@@ -169,6 +194,9 @@ $builderUrl=add_query_arg(['page'=>'andy-commerce','tab'=>$marketingTab,
       <label>已有折扣（USD） <input type="number" min="0" max="100000" name="m9_discount" value="<?php echo esc_attr((string)$discount); ?>"></label>
       <label>客户币种 <select name="m9_currency"><?php foreach(Andy_Commerce_Currency_OS_V1::SUPPORTED as $code):?><option <?php selected($currency,$code); ?> value="<?php echo esc_attr($code); ?>"><?php echo esc_html($code); ?></option><?php endforeach;?></select></label>
       <label>模拟国家 <select name="m9_country"><?php foreach($countryLabels as $code=>$label):?><option <?php selected($selectedCountry,$code); ?> value="<?php echo esc_attr($code); ?>"><?php echo esc_html($label); ?></option><?php endforeach;?></select></label>
+      <label>模拟 UTC 日期 <input type="date" name="m9_date" value="<?php echo esc_attr($simDate); ?>"></label>
+      <label>模拟商品 ID <input type="number" name="m9_product_id" min="0" value="<?php echo esc_attr((string)$simProduct); ?>"></label>
+      <label>已有优惠券（可空） <input name="m9_coupon" maxlength="50" value="<?php echo esc_attr($simCoupon); ?>"></label>
       <label>配送区域 <select name="m9_zone"><?php foreach($zoneDescriptions as $code=>$text):?><option <?php selected($zone,$code); ?> value="<?php echo esc_attr($code); ?>"><?php echo esc_html($text); ?></option><?php endforeach;?></select></label>
     </div>
     <h4 class="ac-subheading">模拟活动参数（USD）</h4>
@@ -178,6 +206,15 @@ $builderUrl=add_query_arg(['page'=>'andy-commerce','tab'=>$marketingTab,
       <label>第一档固定减免（USD） <input type="number" min="1" max="100000" name="m9_reward" value="<?php echo esc_attr((string)$bonusDiscount); ?>"></label>
       <label>第二档满减门槛（USD） <input type="number" min="0" max="100000" name="m9_extra_threshold" value="<?php echo esc_attr((string)$additionalThreshold); ?>"></label>
       <label>第二档固定减免（USD） <input type="number" min="1" max="100000" name="m9_extra_reward" value="<?php echo esc_attr((string)$additionalReward); ?>"></label>
+    </div>
+    <h4 class="ac-subheading">六类型合成购物车 · 商品 ID 101 / 202 / 303</h4>
+    <div class="ac-fields">
+      <label>101 数量 <input type="number" name="m10_qty_101" min="0" max="1000" value="<?php echo esc_attr((string)($_GET['m10_qty_101']??'2')); ?>"></label>
+      <label>101 折扣后行合计 USD <input type="number" name="m10_amount_101" min="0" max="100000" value="<?php echo esc_attr((string)($_GET['m10_amount_101']??'80')); ?>"></label>
+      <label>202 数量 <input type="number" name="m10_qty_202" min="0" max="1000" value="<?php echo esc_attr((string)($_GET['m10_qty_202']??'1')); ?>"></label>
+      <label>202 折扣后行合计 USD <input type="number" name="m10_amount_202" min="0" max="100000" value="<?php echo esc_attr((string)($_GET['m10_amount_202']??'45')); ?>"></label>
+      <label>303 数量 <input type="number" name="m10_qty_303" min="0" max="1000" value="<?php echo esc_attr((string)($_GET['m10_qty_303']??'1')); ?>"></label>
+      <label>303 折扣后行合计 USD <input type="number" name="m10_amount_303" min="0" max="100000" value="<?php echo esc_attr((string)($_GET['m10_amount_303']??'60')); ?>"></label>
     </div>
     <p><button type="submit" class="button button-primary">重新计算规则</button></p>
   </form>
@@ -295,4 +332,5 @@ $builderUrl=add_query_arg(['page'=>'andy-commerce','tab'=>$marketingTab,
   <p class="description">本页面使用非实时模拟汇率，不接入实际结账、支付、税费、Woo 运费修改或订单写入。</p>
 </div>
 <p><a href="<?php echo esc_url(add_query_arg(['page'=>'andy-commerce','tab'=>'marketing-promotions'],admin_url('admin.php'))); ?>">← 返回营销工作台</a></p>
+<?php include __DIR__.'/marketing-m10-six-preview.php'; ?>
 </section>

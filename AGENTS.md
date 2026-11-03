@@ -8,6 +8,13 @@
   - **YBY Bottle / YBY Irrigation**: preserve established Windows Local-first workflows and local sync. Dev remains the environment-specific validation target for these sites until their Owner explicitly changes those projects' rules.
 - For a task shared across sites, run appropriate **Core unit/compatibility tests** independent of the site, then verify on each relevant site's chosen integration environment.
 
+## Andy Commerce Dev release authority — Owner decision 2026-10-23
+- **ONE Dev installer/publisher for the entire Andy Commerce plugin**: the integration lineage maintained in [Draft PR #213](https://github.com/beyourlovercom/YBY-Core/pull/213), ref `feat/marketing-m10-policy-m9-bridge-dev-20261023`. It owns the only installable Dev ZIP and rollback/readback evidence for `dev.beyourlover.com`.
+- Currency C2/C3 [Draft PR #207](https://github.com/beyourlovercom/YBY-Core/pull/207) and other Commerce branches are **code-and-CI-only producers**. They may make source commits and local/CI preview ZIPs, but may not overwrite the Dev-installed Commerce plugin with independent/same-version ZIPs. Changes from #207 must be reconciled with the exact current HEAD of #213 before the next Dev integration install. No cherry-picking the whole older tree or removing Marketing/controlled L3 adapter to resolve conflicts.
+- The designated integrator must use `scripts/prepare-andy-commerce-dev-release.sh` (verified exact GitHub HEAD + latest Currency source parity + all Commerce ZIP/function contracts + full regression) before labelling any artifact *Dev-installable*. Plain build output is **preview only**. Retain last known-good Dev rollback, record new SHA256 and installed-controller SHA256, confirm one Currency L3, six inner Currency tabs, five Marketing L3, Footer-only frontend selector and all six Dev simulations.
+- This is a **source/process gate**, not a change to WordPress administrator permissions or a bypass of security checks. An administrator could technically install another ZIP, but doing so is outside authorized release ownership. No GitHub main/Stable/WWW change, no real order/payment/discount/gift/shipping/inventory/email write, and no READY device restart under this approval.
+- Plugin-local details: [packages/andy-commerce/AGENTS.md](packages/andy-commerce/AGENTS.md).
+
 ## Autonomous approved-scope workflow
 - In an Owner-approved bounded work package, investigate the relevant source, implement, run proportionate tests, fix failures, commit, push and prepare/update PR without repeated micro-approval.
 - Choose the available implementation provider based on complexity and validated access, not by a hard-coded model nickname. Do not require Codex Luna for every small code or documentation fix.

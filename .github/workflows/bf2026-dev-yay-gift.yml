@@ -1,0 +1,63 @@
+name: BYL Black Friday 2026 YayCurrency Pro Dev Candidate
+on:
+  pull_request:
+    paths:
+      - 'packages/byl-black-friday-2026/**'
+      - '.github/workflows/bf2026-dev-yay-gift.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dev-candidate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify PHP and immutable gift contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          d=packages/byl-black-friday-2026
+          for f in "$d/black-friday-2026.php" "$d/includes/class-byl-bf2026-gifts.php" "$d/includes/class-byl-bf2026-r8-readiness.php"; do
+            php -l "$f"
+          done
+          grep -Fq 'Version: 0.1.1-dev' "$d/black-friday-2026.php"
+          grep -Fq "version' => '0.1.1-dev'" "$d/black-friday-2026.php"
+          grep -Fq 'Andy_Commerce_Campaign_Yay_USD_Basis_V1::quote($cart)' "$d/includes/class-byl-bf2026-gifts.php"
+          grep -Fq 'Andy_Commerce_Campaign_Yay_USD_Basis_V1::storefront_currency()' "$d/includes/class-byl-bf2026-gifts.php"
+          grep -Fq 'BYL_BF2026_R8_Readiness::inspect' "$d/includes/class-byl-bf2026-gifts.php"
+          grep -Fq 'count($rows)>=2' "$d/includes/class-byl-bf2026-r8-readiness.php"
+          if grep -Eq 'Andy_Commerce_Currency_Runtime_Dev_V1::convert\(|Andy_Commerce_Campaign_USD_Basis_V1::quote\(' "$d/includes/class-byl-bf2026-gifts.php"; then
+            echo LEGACY_CURRENCY_BRIDGE_STILL_PRESENT; exit 2
+          fi
+          printf '%s  %s\n' '9111c0cb31605ff1111a40586b399218d84ec5c70f2d3c15ec55a68ea017f58a' "$d/includes/class-byl-bf2026-gifts.php" | sha256sum --check
+          echo BF_SOURCE_LINT_AND_USD_BRIDGE_CONTRACT_PASS
+      - name: Build isolated plugin ZIP and SHA attestation
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/bf-dev-candidate"
+          mkdir -p "$root/black-friday-2026"
+          cp -R packages/byl-black-friday-2026/. "$root/black-friday-2026/"
+          ( cd "$root" && zip -q -r "$RUNNER_TEMP/black-friday-2026-0.1.1-dev.zip" black-friday-2026 )
+          unzip -tq "$RUNNER_TEMP/black-friday-2026-0.1.1-dev.zip"
+          {
+            echo "environment=DEV_ONLY"
+            echo "source_HEAD=$GITHUB_SHA"
+            echo "gift_php_SHA256=$(sha256sum packages/byl-black-friday-2026/includes/class-byl-bf2026-gifts.php | awk '{print $1}')"
+            echo "zip_SHA256=$(sha256sum "$RUNNER_TEMP/black-friday-2026-0.1.1-dev.zip" | awk '{print $1}')"
+            echo "Campaign_Enabled=NOT_AUTHORIZED"
+            echo "Dev_Installed=NOT_VERIFIED"
+          } > "$RUNNER_TEMP/black-friday-2026-0.1.1-dev.zip.attestation.txt"
+          cat "$RUNNER_TEMP/black-friday-2026-0.1.1-dev.zip.attestation.txt"
+      - name: Upload Dev plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: black-friday-2026-dev-yaycurrency-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/black-friday-2026-0.1.1-dev.zip
+            ${{ runner.temp }}/black-friday-2026-0.1.1-dev.zip.attestation.txt
+          if-no-files-found: error
+          retention-days: 14

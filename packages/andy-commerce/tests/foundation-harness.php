@@ -4,6 +4,9 @@ if ( ! defined( 'ABSPATH' ) ) { define( 'ABSPATH', __DIR__ ); }
 $GLOBALS['hooks'] = array();
 $GLOBALS['notices'] = array();
 
+// Existing unit fixture explicitly requests legacy full-runtime behavior;
+// production defaults remain observational in the actual WordPress site.
+function get_option($name, $default=null) { return $name==='andy_commerce_runtime_mode_v1' ? 'active' : $default; }
 function plugin_dir_path( $file ) { return dirname( $file ) . '/'; }
 function plugin_dir_url( $file ) { return 'https://example.com/wp-content/plugins/andy-commerce/'; }
 function plugin_basename( $file ) { return 'andy-commerce/andy-commerce.php'; }

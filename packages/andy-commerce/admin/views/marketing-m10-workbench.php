@@ -5,6 +5,7 @@
  * Reuses M7 nonce/revision/Dev-only draft storage. Never awards anything.
  */
 if ( ! defined('ABSPATH') ) { exit; }
+require_once dirname(__DIR__,2).'/includes/class-andy-commerce-m10-lifecycle.php';
 if ( ! current_user_can('manage_woocommerce') ||
     ! class_exists('Andy_Commerce_M7_Draft_Studio') ||
     ! Andy_Commerce_M7_Draft_Studio::dev_only() ) {
@@ -58,7 +59,10 @@ $revision=$chosen && !$copySource ? (int)($chosen['revision']??0) : 0;
 $labelTypes=array('spend_save'=>'满额优惠','free_gift'=>'满额赠品',
     'bogo'=>'买赠活动','bundles'=>'组合优惠','tiered'=>'阶梯优惠');
 $operationResults=array('saved'=>'已保存','archived'=>'已归档',
-    'invalid'=>'输入数据无效','conflict'=>'草稿版本冲突','limit'=>'草稿数量达到上限');
+    'invalid'=>'输入数据无效','conflict'=>'草稿版本冲突','limit'=>'草稿数量达到上限',
+    'transitioned'=>'虚拟状态已更新（仅 Dev，未真实启用）');
+$lifeLabels=array('draft'=>'草稿','review'=>'待审核','scheduled'=>'模拟已排期',
+    'paused'=>'模拟已暂停','ended'=>'模拟已结束','archived'=>'模拟已归档');
 ?>
 <?php
 // Native Core Shell owns the .wrap when active; otherwise WordPress needs
@@ -132,9 +136,11 @@ echo esc_html($operationResults[$operationKey]??'未确认操作'); ?>。所有�
  <div class="ac-table"><table class="widefat striped"><thead><tr><th>活动名称</th><th>类型</th><th>币种／地区</th><th>优先级</th><th>状态</th><th>操作</th></tr></thead><tbody>
  <?php foreach($all as $id=>$row): ?>
   <tr><td><strong><?php echo esc_html((string)($row['name']??'')); ?></strong><br><small><?php echo esc_html($id); ?></small></td>
-  <td><?php echo esc_html($labelTypes[$row['type']??'']??'待验证规则'); ?></td>
+  <td><?php echo esc_html(($row['type']??null)==='spend_save'
+      ?(isset($row['rule']['percent_bp'])?'百分比折扣':'满额立减')
+      :($labelTypes[$row['type']??'']??'待验证规则')); ?></td>
   <td><?php echo esc_html(($row['currency']??'USD').' / '.implode(', ',(array)($row['countries']??array()))); ?></td>
-  <td><?php echo esc_html((string)($row['priority']??0)); ?></td><td><span class="ac-badge">未启用草稿</span></td>
+  <td><?php echo esc_html((string)($row['priority']??0)); ?></td><td><span class="ac-badge"><?php echo esc_html($lifeLabels[$row['lifecycle']??'draft']??'未启用草稿'); ?> · OFF</span></td>
   <td><div class="ac-inline-actions"><a href="<?php echo esc_url($base('marketing-create',array('draft_id'=>$id))); ?>">编辑</a>
   <a href="<?php echo esc_url($base('marketing-create',array('copy_id'=>$id))); ?>">复制</a>
   <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
@@ -142,7 +148,18 @@ echo esc_html($operationResults[$operationKey]??'未确认操作'); ?>。所有�
   <input type="hidden" name="action" value="andy_commerce_m7_archive_draft">
   <input type="hidden" name="draft_id" value="<?php echo esc_attr($id); ?>">
   <input type="hidden" name="draft_revision" value="<?php echo esc_attr((string)($row['revision']??0)); ?>">
-  <button class="button-link" type="submit" onclick="return confirm('只归档此未启用草稿，不会影响真实订单。确认继续？')">归档</button></form></div></td></tr>
+  <button class="button-link" type="submit" onclick="return confirm('只归档此未启用草稿，不会影响真实订单。确认继续？')">归档</button></form>
+  <?php $nextStates=Andy_Commerce_M10_Lifecycle::allowed((string)($row['lifecycle']??'draft')); ?>
+  <?php if($nextStates): ?><form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+    <?php wp_nonce_field('andy_commerce_m7_transition_draft'); ?>
+    <input type="hidden" name="action" value="andy_commerce_m10_transition_draft">
+    <input type="hidden" name="draft_id" value="<?php echo esc_attr($id); ?>">
+    <input type="hidden" name="draft_revision" value="<?php echo esc_attr((string)($row['revision']??0)); ?>">
+    <select name="next_lifecycle" aria-label="模拟生命周期目标">
+    <?php foreach($nextStates as $state): ?><option value="<?php echo esc_attr($state); ?>"><?php echo esc_html($lifeLabels[$state]??$state); ?></option><?php endforeach; ?>
+    </select><button class="button button-small" type="submit">模拟流转</button>
+  </form><?php endif; ?>
+  </div></td></tr>
  <?php endforeach; ?>
  <?php if(!$all):?><tr><td colspan="6">暂无活动草稿。可以选择模板创建第一条未启用活动。</td></tr><?php endif; ?>
  </tbody></table></div>
@@ -238,6 +255,20 @@ echo esc_html($operationResults[$operationKey]??'未确认操作'); ?>。所有�
 </div>
 <div class="ac-card"><h2>执行记录 · 待启用</h2><p>目前只有离线模拟与 Dev 草稿存储，尚未建立真实订单级活动执行日志。不展示伪造的执行记录。</p>
 <p class="ac-muted">未来接入真实执行引擎后，记录活动 ID、订单 ID、折扣前后 USD、叠加冲突、幂等校验、赠品发放与回滚结果。</p></div>
+<div class="ac-card"><h2>Dev 虚拟生命周期审计（不代表真实执行）</h2>
+<table class="widefat striped"><thead><tr><th>草稿 ID</th><th>原状态 → 新状态</th><th>UTC 时间</th><th>Dev 操作人</th><th>运行时</th></tr></thead><tbody>
+<?php $traceCount=0;foreach($all as $record):
+ foreach((array)($record['lifecycle_history']??array()) as $trace):$traceCount++; ?>
+<tr><td><?php echo esc_html((string)($record['id']??'')); ?></td>
+<td><?php echo esc_html(($lifeLabels[$trace['from']??'']??'未知').' → '.($lifeLabels[$trace['to']??'']??'未知')); ?></td>
+<td><?php echo esc_html((string)($trace['at_utc']??'')); ?></td>
+<td><?php echo esc_html((string)($trace['actor']??'')); ?></td><td>OFF · 仅模拟</td></tr>
+<?php endforeach;endforeach;if(!$traceCount): ?>
+<tr><td colspan="5">暂无虚拟状态变更记录。没有实际订单执行记录。</td></tr>
+<?php endif; ?></tbody></table></div>
+<?php endif; ?>
+<?php if($tab==='marketing-promotions' && class_exists('Andy_Commerce_Marketing_Dev_UAT')): ?>
+<?php Andy_Commerce_Marketing_Dev_UAT::render_panel(); ?>
 <?php endif; ?>
 </section>
 <?php if($tab==='marketing-create'): ?>

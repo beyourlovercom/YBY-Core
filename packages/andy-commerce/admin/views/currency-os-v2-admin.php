@@ -66,6 +66,7 @@ $toggle=static function($key,$label,$value){
     <p class="muted">五币种参考汇率及 USD 财务核算只读预览；不会变更真实商品价格、运费或支付金额。</p>
     <?php $currency_os_v2_embedded=true; include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/currency-os-v1-dev-lab.php'; ?>
   </section>
+  <?php include ANDY_COMMERCE_PLUGIN_DIR . 'admin/views/currency-c2c3-readonly-panel.php'; ?>
 <?php elseif($section==='manage'):?>
   <?php $currency_names=['USD'=>'美元','EUR'=>'欧元','GBP'=>'英镑','AUD'=>'澳元','CAD'=>'加元']; ?>
   <section class="acv2-card">
@@ -133,5 +134,37 @@ $toggle=static function($key,$label,$value){
     <footer class="acv2-footer"><span class="muted">仅保存 Dev 预览草稿 · 不修改 WWW/YayCurrency、实际结账、订单或价格</span>
     <?php if($section!=='ledger'):?><button type="submit" class="button button-primary">保存 Dev 预览设置</button><?php endif;?></footer>
   </form>
+  <?php endif; ?>
+  <?php if($section==='manage' && class_exists('Andy_Commerce_Currency_Runtime_Dev_V1')) :
+    $runtime=Andy_Commerce_Currency_Runtime_Dev_V1::settings();
+    $rateSnapshot=Andy_Commerce_Currency_Runtime_Dev_V1::rates();
+    $blocked=Andy_Commerce_Currency_Runtime_Dev_V1::legacy_conflict();
+  ?>
+  <section class="acv2-card" aria-label="Currency R8–R10 Dev Runtime">
+    <h2>Currency Runtime · Dev 受控启用</h2>
+    <p class="muted">真正影响 Dev 商品价格与购物车；默认 OFF。需要有效参考汇率且不得与 YayCurrency 并行。仅 Dev，不会修改 WWW。</p>
+    <p><strong>当前状态：</strong><?php echo $runtime['enabled'] ? '已请求启用' : 'OFF'; ?>
+      <?php echo $blocked ? ' · 检测到其他多币种引擎，拒绝启动' : ''; ?>
+      <?php echo $rateSnapshot ? ' · 汇率快照有效' : ' · 尚无有效汇率快照'; ?>
+    </p>
+    <?php if($rateSnapshot): ?>
+      <p class="muted">汇率源：<?php echo esc_html($rateSnapshot['rate_source']); ?>
+      · 读取时间 UTC：<?php echo esc_html(gmdate('Y-m-d H:i', $rateSnapshot['retrieved_at_utc'])); ?>
+      · 超过 72 小时自动停用外币 Runtime</p>
+    <?php endif; ?>
+    <div class="acv2-flex">
+      <?php foreach(['refresh'=>'读取参考汇率','enable'=>'启用 Dev Runtime','disable'=>'关闭 Dev Runtime'] as $action=>$label): ?>
+        <form action="<?php echo esc_url(admin_url('admin-post.php')); ?>" method="post" style="margin:0;">
+          <?php wp_nonce_field('ac_currency_runtime_dev_save'); ?>
+          <input type="hidden" name="action" value="ac_currency_runtime_dev_save">
+          <input type="hidden" name="ac_runtime_action" value="<?php echo esc_attr($action); ?>">
+          <button class="button <?php echo $action==='disable'?'':'button-secondary'; ?>" type="submit"
+            <?php echo $action==='enable' && ($blocked || !$rateSnapshot) ? 'disabled' : ''; ?>><?php echo esc_html($label); ?></button>
+        </form>
+      <?php endforeach; ?>
+    </div>
+    <p class="warn">Frankfurter 是参考汇率，不等于实际网关结算汇率。本阶段 Dev 外币付款网关应保持禁用；
+    R11 才能验收完整结账。USD 原始商品价格和 Marketing 优惠门槛始终为权威来源。</p>
+  </section>
   <?php endif; ?>
 </div>
