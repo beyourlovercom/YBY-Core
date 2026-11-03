@@ -45,5 +45,11 @@ jobs:
         run: python3 packages/andy-campaign-packs/black-friday-2026/tests/r8-owner-gift-selection-contract.py
       - name: Draft gift Dev-only canonical redirect contract
         run: php packages/andy-campaign-packs/black-friday-2026/tests/draft-gift-redirect-contract.php
+      - name: BF2026 landing and R9-B / R9-C OFF-only contracts
+        run: |
+          php packages/andy-campaign-packs/black-friday-2026/tests/landing-preview-contract.php
+          php packages/andy-campaign-packs/black-friday-2026/tests/r9-dev-display-map-contract.php
+          php packages/andy-campaign-packs/black-friday-2026/tests/r9-policy-pure-contract.php
+          php packages/andy-campaign-packs/black-friday-2026/tests/r9c-woo-adapter-fixture.php
       - name: Existing Andy Core navigation regression
         run: php tests/andy-os-unified-nav-v1-harness.php
