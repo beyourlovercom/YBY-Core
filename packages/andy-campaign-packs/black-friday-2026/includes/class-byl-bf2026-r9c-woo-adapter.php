@@ -136,8 +136,15 @@ final class BYL_BF2026_R9C_Woo_Adapter {
                 || !isset($reviewed_prices[$id]) || !is_int($reviewed_prices[$id])) {
                 return ['ok'=>false,'reason'=>'invalid_gift_cart_state'];
             }
+            $expected_minor = $reviewed_prices[$id];
+            $charged = $line['line_total'] ?? null;
+            if (!in_array($expected_minor,[0,1000,1500,2000],true)
+                || !is_numeric($charged) || !is_finite((float)$charged)
+                || (int)round((float)$charged*100) !== $expected_minor) {
+                return ['ok'=>false,'reason'=>'gift_charged_price_inconsistent'];
+            }
             $seen[$id] = true; ++$count;
-            if ($reviewed_prices[$id] > 0) { ++$paid; }
+            if ($expected_minor > 0) { ++$paid; }
             if (!class_exists('BYL_BF2026_R8_Readiness')) {
                 return ['ok'=>false,'reason'=>'approval_engine_unavailable'];
             }
