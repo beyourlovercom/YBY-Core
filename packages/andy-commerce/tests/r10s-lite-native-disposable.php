@@ -64,7 +64,7 @@ try {
   $_POST=[];$_SERVER['REQUEST_METHOD']='GET';
   return $result;
  };
- if(in_array($mode,['two_manual','api_ticket','ajax','invalid_nonce','legacy_only'],true)){ 
+ if(in_array($mode,['two_manual','api_ticket','ajax','invalid_nonce','legacy_only'],true)){
    $first=$manual('manual5');$second=$manual('manual7');
    $codes=$cart->get_applied_coupons();
    $passed=$first===true&&$second===false&&count($codes)===1
@@ -73,9 +73,9 @@ try {
    if($mode==='legacy_only')$passed=$passed&&$hook_off===false;
    echo 'R10S_FIRST='.($first?'YES':'NO').' SECOND='.($second?'YES':'NO').
      ' CODES='.json_encode($codes)."\n";
- }elseif(in_array($mode,['auto_then_manual','storeapps_auto','invalid_nonce_auto','dual_claim'],true)){ 
+ }elseif(in_array($mode,['auto_then_manual','storeapps_auto','invalid_nonce_auto','dual_claim'],true)){
    $auto=$coupons['auto10'][0];$aid=$coupons['auto10'][1];
-   if($mode==='storeapps_auto'){ 
+   if($mode==='storeapps_auto'){
     $session->set('wc_sc_auto_applied_coupons',[$auto]);
     $vendor=WC_SC_Auto_Apply_Coupon::get_instance()->is_coupon_applied_by_auto_apply($auto);
    }else{
