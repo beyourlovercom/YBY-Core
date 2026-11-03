@@ -2,7 +2,7 @@
 /**
  * Plugin Name: BYL Black Friday 2026 Campaign
  * Description: Independently deployed Black Friday gift selection, controlled by Andy Campaign Lite.
- * Version: 0.1.0
+ * Version: 0.1.1-dev
  * Requires Plugins: woocommerce,andy-campaign
  * Text Domain: byl-black-friday-2026
  */
@@ -51,7 +51,7 @@ add_action( 'andy_campaign_register', static function ( $host ) {
     $host->register( array(
         'id' => 'byl-black-friday-2026',
         'name' => 'BYL Black Friday 2026',
-        'version' => '0.1.0',
+        'version' => '0.1.1-dev',
         'resources' => array( 'gift' ),
         'ready' => array( 'BYL_BF2026_Gifts', 'ready' ),
         'boot' => array( 'BYL_BF2026_Gifts', 'boot' ),
