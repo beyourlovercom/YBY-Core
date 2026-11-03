@@ -62,24 +62,24 @@ $p=BYL_BF2026_R9C_Woo_Adapter::plan_premium($two,'US',5003,$prices,$approved);
 good($p['ok'] && $p['action']==='replace','2 gifts replace one');
 good($p['remove_key']==='first','keep second random');
 $withPaid=new WC_Cart(['normal'=>['product_id'=>900,'line_total'=>'199','quantity'=>1],
-    'first'=>gift(5001,10),'second'=>gift(6002,0)]);
+    'first'=>gift(5001,1000),'second'=>gift(6002,0)]);
 $p=BYL_BF2026_R9C_Woo_Adapter::plan_premium($withPaid,'US',5003,$prices,$approved);
 good($p['ok'] && $p['remove_key']==='first','switch paid without removing random');
 $p=BYL_BF2026_R9C_Woo_Adapter::plan_premium($withPaid,'US',5001,$prices,$approved);
 good($p['ok'] && $p['action']==='already_selected','repeat idempotent');
 $badPaidFirst=new WC_Cart(['normal'=>['product_id'=>900,'line_total'=>'199'],
-    'first'=>gift(5001,10),'second'=>gift(5002,15)]);
+    'first'=>gift(5001,1000),'second'=>gift(5002,1500)]);
 good(BYL_BF2026_R9C_Woo_Adapter::plan_premium(
     $badPaidFirst,'US',5001,$prices,$approved)['ok']===false,
     'do not allow early idempotence to hide a second premium');
 $bad=new WC_Cart(['normal'=>['product_id'=>900,'line_total'=>'199'],
-    'first'=>gift(5001,10),'second'=>gift(5002,15)]);
+    'first'=>gift(5001,1000),'second'=>gift(5002,1500)]);
 good(BYL_BF2026_R9C_Woo_Adapter::plan_premium($bad,'US',5003,$prices,$approved)['ok']===false,'2 paid rejected');
 $bad2=new WC_Cart(['normal'=>['product_id'=>900,'line_total'=>'199'],
     'first'=>gift(6001,0),'second'=>gift(6001,0)]);
 good(BYL_BF2026_R9C_Woo_Adapter::plan_premium($bad2,'US',5003,$prices,$approved)['ok']===false,'duplicate gift rejected');
 $cartWithFee=new WC_Cart(['normal'=>['product_id'=>900,'line_total'=>'98.99'],
-    'premium'=>gift(5001,10)]);
+    'premium'=>gift(5001,1000)]);
 $q=BYL_BF2026_R9C_Woo_Adapter::quote($cartWithFee,'US');
 good($q['basis_minor']===9899,'upgrade cannot unlock itself');
 good($q['entitlement']['premium_allowed']===false,'discounted below threshold revokes');
@@ -113,10 +113,10 @@ good($complete['ok']===true && $complete['free_slots']===2,'two free gifts fulfi
 $complete=BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($withPaid,'US',$prices,$approved);
 good($complete['ok']===true && $complete['paid_slots']===1 && $complete['free_slots']===1,'paid and random balance');
 $premiumOnly=new WC_Cart(['normal'=>['product_id'=>900,'line_total'=>'99'],
-    'premium'=>gift(5003,20)]);
+    'premium'=>gift(5003,2000)]);
 good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($premiumOnly,'US',$prices,$approved)['ok']===true,'99 premium completes one slot');
 $staleGift=new WC_Cart(['normal'=>['product_id'=>900,'line_total'=>'98.99'],
-    'premium'=>gift(5003,20)]);
+    'premium'=>gift(5003,2000)]);
 good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($staleGift,'US',$prices,$approved)['ok']===false,'coupon drops below99');
 good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($two,'CA',$prices,$approved)['ok']===false,'free US pool must not be claimed global');
 good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($bad,'US',$prices,$approved)['ok']===false,'2 premiums never settle');
@@ -130,14 +130,14 @@ good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment($withPaid,'US',$prices,$stale
     'selected premium stale inventory blocks');
 $incorrectUpgrade=new WC_Cart([
     'normal'=>['product_id'=>900,'line_total'=>'199'],
-    'premium'=>gift(5001,9.99),'free'=>gift(6002,0)
+    'premium'=>gift(5001,999),'free'=>gift(6002,0)
 ]);
 good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment(
     $incorrectUpgrade,'US',$prices,$approved)['reason']==='gift_charged_price_inconsistent',
     'premium undercharge or coupon leakage blocked');
 $incorrectFree=new WC_Cart([
     'normal'=>['product_id'=>900,'line_total'=>'199'],
-    'free1'=>gift(6001,19.90),'free2'=>gift(6002,0)
+    'free1'=>gift(6001,1990),'free2'=>gift(6002,0)
 ]);
 good(BYL_BF2026_R9C_Woo_Adapter::audit_fulfillment(
     $incorrectFree,'US',$prices,$approved)['reason']==='gift_charged_price_inconsistent',
