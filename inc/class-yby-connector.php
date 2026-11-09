@@ -499,7 +499,7 @@ class YBY_Connector {
 		$owner_hash = self::provision_lease_owner();
 		$reservation = YBY_Connector_Affiliate_Bindings::reserve( $connection, $kol, $owner_hash );
 		if ( is_wp_error( $reservation ) ) { return $reservation; }
-		if ( 'ready' === $reservation['status'] ) { return self::read_bound_result( $reservation['row'], false, false ); }
+		if ( 'ready' === $reservation['status'] ) { return self::read_bound_result( $reservation['row'], false, false, $input ); }
 		if ( 'busy' === $reservation['status'] ) { return new WP_Error( 'PROVISION_IN_PROGRESS', 'Affiliate provisioning for this ERP KOL is already processing.', array( 'status' => 409, 'retryable' => true ) ); }
 		$lease_failure = function () use ( $connection, $kol, $owner_hash ) {
 			YBY_Connector_Affiliate_Bindings::release( $connection, $kol, $owner_hash );
@@ -559,12 +559,17 @@ class YBY_Connector {
 		if ( ! $affiliate || null === $affiliate_id || $affiliate_id < 1 ) { return $provider_failure( 'PROVIDER_READBACK_FAILED', 'Affiliate read-back failed.' ); }
 		$other = YBY_Connector_Affiliate_Bindings::by_affiliate( $connection, $affiliate_id );
 		if ( $other && (int) $other['erp_kol_id'] !== $kol ) { YBY_Connector_Affiliate_Bindings::release( $connection, $kol, $owner_hash ); return new WP_Error( 'AFFILIATE_ID_CONFLICT', 'Affiliate is already bound to another ERP KOL.', array( 'status' => 409, 'retryable' => false ) ); }
-		if ( 'active' !== (string) $affiliate->status ) {
-			// Only an unbound affiliate may be brought to the ERP-approved active state.
-			if ( ! $other && function_exists( 'affwp_set_affiliate_status' ) && ( ! YBY_Connector_Affiliate_Bindings::renew( $connection, $kol, $owner_hash ) || ! affwp_set_affiliate_status( $affiliate_id, 'active' ) ) ) { return $provider_failure( 'PROVIDER_WRITE_FAILED', 'Affiliate status update failed.' ); }
+		if ( 'pending' === (string) $affiliate->status ) {
+			// ERP-created affiliates must be approved even when AffiliateWP auto-registers
+			// them as pending during wp_insert_user(). Never re-enable inactive/rejected accounts.
+			if ( ! function_exists( 'affwp_set_affiliate_status' ) || ! YBY_Connector_Affiliate_Bindings::renew( $connection, $kol, $owner_hash ) || ! affwp_set_affiliate_status( $affiliate_id, 'active' ) ) {
+				return $provider_failure( 'PROVIDER_WRITE_FAILED', 'ERP affiliate automatic approval failed.' );
+			}
+		} elseif ( 'active' !== (string) $affiliate->status ) {
+			return $provider_failure( 'PROVIDER_READBACK_FAILED', 'ERP affiliate is not active; non-pending status was preserved.' );
 		}
 		$affiliate = affwp_get_affiliate( $affiliate_id );
-		$expected_status = $other && $affiliate ? (string) $affiliate->status : 'active';
+		$expected_status = 'active';
 		if ( ! $affiliate || self::affiliate_id_from_object( $affiliate ) !== $affiliate_id || $expected_status !== (string) $affiliate->status ) { return $provider_failure( 'PROVIDER_READBACK_FAILED', 'Affiliate provider read-back did not match.' ); }
 		$stored = YBY_Connector_Affiliate_Bindings::finalize( $connection, $kol, $owner_hash, (int) $user->ID, $affiliate_id );
 		if ( ! $stored ) { $stored = YBY_Connector_Affiliate_Bindings::by_kol( $connection, $kol ); }
@@ -578,11 +583,27 @@ class YBY_Connector {
 		return hash( 'sha256', (string) $entropy . microtime( true ) );
 	}
 
-	private static function read_bound_result( $binding, $created_user, $created_affiliate ) {
+	private static function read_bound_result( $binding, $created_user, $created_affiliate, $input = null ) {
 		$affiliate = affwp_get_affiliate( (int) $binding['affiliate_id'] );
 		$user = get_user_by( 'id', (int) $binding['wp_user_id'] );
 		$affiliate_id = self::affiliate_id_from_object( $affiliate );
 		if ( ! $affiliate || ! $user || null === $affiliate_id || $affiliate_id !== (int) $binding['affiliate_id'] || (int) $affiliate->user_id !== (int) $binding['wp_user_id'] ) { return self::provider_failure( 'PROVIDER_READBACK_FAILED', 'Bound provider identity read-back failed.' ); }
+		if ( is_array( $input ) ) {
+			// Only the authenticated ERP provisioning flow may auto-approve an
+			// already bound pending affiliate. Require the exact KOL and user email.
+			if ( 'active' !== (string) ( $input['requested_affiliate_status'] ?? '' ) || (int) $binding['erp_kol_id'] !== (int) $input['erp_kol_id'] || strcasecmp( (string) $user->user_email, (string) $input['email'] ) !== 0 ) {
+				return new WP_Error( 'PROVIDER_IDENTITY_MISMATCH', 'ERP binding and WordPress identity differ.', array( 'status' => 409, 'retryable' => false ) );
+			}
+			if ( 'pending' === (string) $affiliate->status ) {
+				if ( ! function_exists( 'affwp_set_affiliate_status' ) || ! affwp_set_affiliate_status( $affiliate_id, 'active' ) ) {
+					return self::provider_failure( 'PROVIDER_WRITE_FAILED', 'ERP-bound Affiliate pending approval failed.' );
+				}
+				$affiliate = affwp_get_affiliate( $affiliate_id );
+				if ( ! $affiliate || self::affiliate_id_from_object( $affiliate ) !== $affiliate_id || 'active' !== (string) $affiliate->status ) {
+					return self::provider_failure( 'PROVIDER_READBACK_FAILED', 'ERP-bound Affiliate approval read-back failed.' );
+				}
+			}
+		}
 		return array( 'wp_user_id' => (int) $user->ID, 'affiliate_id' => $affiliate_id, 'affiliate_status' => (string) $affiliate->status, 'created_user' => (bool) $created_user, 'created_affiliate' => (bool) $created_affiliate );
 	}
 
