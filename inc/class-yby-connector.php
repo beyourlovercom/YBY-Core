@@ -521,7 +521,7 @@ class YBY_Connector {
 			if ( false === $username ) { return $provider_failure( 'PROVIDER_WRITE_FAILED', 'Username could not be resolved safely.' ); }
 			if ( ! YBY_Connector_Affiliate_Bindings::renew( $connection, $kol, $owner_hash ) ) { return $lease_failure(); }
 			$password = ! empty( $input['strict_create'] ) ? $input['password'] : wp_generate_password( 32, true, true );
-			$user_id = wp_insert_user( array( 'user_login' => substr( $username, 0, 60 ), 'user_pass' => $password, 'user_email' => $input['email'], 'display_name' => $input['display_name'], 'role' => 'subscriber' ) );
+			$user_id = wp_insert_user( array( 'user_login' => substr( $username, 0, 60 ), 'user_pass' => $password, 'user_email' => $input['email'], 'display_name' => $input['display_name'], 'first_name' => $input['display_name'], 'last_name' => '', 'role' => 'subscriber' ) );
 			unset( $password );
 			if ( is_wp_error( $user_id ) ) {
 				if ( ! empty( $input['strict_create'] ) && get_user_by( 'email', $input['email'] ) ) { return $conflict_failure( 'WP_USER_CONFLICT', 'A WordPress user was created concurrently for this email.' ); }
@@ -530,6 +530,9 @@ class YBY_Connector {
 			$user = get_user_by( 'id', $user_id ); $created_user = true;
 		}
 		if ( ! $user || empty( $user->ID ) ) { return $provider_failure( 'PROVIDER_READBACK_FAILED', 'WordPress user read-back failed.' ); }
+		if ( $created_user && (string) get_user_meta( (int) $user->ID, 'first_name', true ) !== (string) $input['display_name'] ) {
+			return $provider_failure( 'PROVIDER_READBACK_FAILED', 'New Affiliate display name read-back failed.' );
+		}
 		$affiliate = function_exists( 'affwp_get_affiliate_by' ) ? affwp_get_affiliate_by( 'user_id', (int) $user->ID ) : false;
 		if ( is_wp_error( $affiliate ) ) { $affiliate = false; }
 		$created_affiliate = false;
