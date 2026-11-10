@@ -11,6 +11,29 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 require_once __DIR__ . '/includes/class-byl-bf2026-r8-readiness.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-gifts.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-landing-preview.php';
+require_once __DIR__ . '/includes/class-byl-bf2026-r10-price-policy.php';
+require_once __DIR__ . '/includes/class-byl-bf2026-r10-sale-manager.php';
+require_once __DIR__ . '/includes/class-byl-bf2026-r10-catalog.php';
+require_once __DIR__ . '/includes/class-byl-bf2026-r10-country-gate.php';
+// R10 classes do not register product, cart, category or pricing writes.
+// Only an explicitly activated, approved price ledger can later be restored.
+add_action('byl_bf2026_restore_sale_prices', static function () {
+    $ledger=BYL_BF2026_R10_Sale_Manager::ledger();
+    if (in_array(($ledger['state']??''),['active','applying','conflicts'],true)) {
+        BYL_BF2026_R10_Sale_Manager::restore('scheduled_end');
+    }
+});
+if (function_exists('register_deactivation_hook')) {
+    register_deactivation_hook(__FILE__, static function () {
+        $ledger=BYL_BF2026_R10_Sale_Manager::ledger();
+        if (!in_array(($ledger['state']??''),['active','applying','restoring','conflicts'],true)) {return;}
+        $result=BYL_BF2026_R10_Sale_Manager::restore('plugin_deactivation');
+        if (empty($result['ok']) && function_exists('wp_die')) {
+            wp_die('Black Friday product prices were not fully restored. Review the saved price ledger before removing this plugin.',
+                'Black Friday price restoration incomplete',['response'=>409]);
+        }
+    });
+}
 /** Keep gift landing-page shortcode renderable while the campaign is OFF.
  * This registers display only: all cart writes remain behind the Campaign runtime.
  */
