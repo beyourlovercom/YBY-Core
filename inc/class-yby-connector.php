@@ -508,6 +508,13 @@ class YBY_Connector {
 		$provider_failure = function ( $code, $message ) use ( $connection, $kol, $owner_hash ) { YBY_Connector_Affiliate_Bindings::release( $connection, $kol, $owner_hash ); return self::provider_failure( $code, $message ); };
 		$conflict_failure = function ( $code, $message ) use ( $connection, $kol, $owner_hash ) { YBY_Connector_Affiliate_Bindings::release( $connection, $kol, $owner_hash ); return new WP_Error( $code, $message, array( 'status' => 409, 'retryable' => false ) ); };
 		if ( ! YBY_Connector_Affiliate_Bindings::renew( $connection, $kol, $owner_hash ) ) { return $lease_failure(); }
+		if ( isset( $input['affiliate_url_slug'] ) && $input['affiliate_url_slug'] !== $input['preferred_username'] ) {
+			$slug_preflight = self::erp_slug_preflight( $input['affiliate_url_slug'] );
+			if ( is_wp_error( $slug_preflight ) ) {
+				YBY_Connector_Affiliate_Bindings::release( $connection, $kol, $owner_hash );
+				return $slug_preflight;
+			}
+		}
 		$user = get_user_by( 'email', $input['email'] ); $created_user = false;
 		if ( ! empty( $input['strict_create'] ) && $user ) {
 			$existing_affiliate = function_exists( 'affwp_get_affiliate_by' ) ? affwp_get_affiliate_by( 'user_id', (int) $user->ID ) : false;
@@ -517,7 +524,15 @@ class YBY_Connector {
 		if ( ! $user ) {
 			$base = sanitize_user( $input['preferred_username'], true );
 			if ( '' === $base ) { return $provider_failure( 'PROVIDER_WRITE_FAILED', 'Username could not be resolved.' ); }
-			$username = self::resolve_username( $base, $connection, $kol );
+			if ( ! empty( $input['strict_create'] ) ) {
+				// ERP Username is an explicit immutable login, not a suggestion to append a KOL ID.
+				if ( $base !== $input['preferred_username'] || username_exists( $base ) ) {
+					return $conflict_failure( 'WP_USER_CONFLICT', 'Requested WordPress Username is unavailable.' );
+				}
+				$username = $base;
+			} else {
+				$username = self::resolve_username( $base, $connection, $kol );
+			}
 			if ( false === $username ) { return $provider_failure( 'PROVIDER_WRITE_FAILED', 'Username could not be resolved safely.' ); }
 			if ( ! YBY_Connector_Affiliate_Bindings::renew( $connection, $kol, $owner_hash ) ) { return $lease_failure(); }
 			$password = ! empty( $input['strict_create'] ) ? $input['password'] : wp_generate_password( 32, true, true );
@@ -574,11 +589,72 @@ class YBY_Connector {
 		$affiliate = affwp_get_affiliate( $affiliate_id );
 		$expected_status = 'active';
 		if ( ! $affiliate || self::affiliate_id_from_object( $affiliate ) !== $affiliate_id || $expected_status !== (string) $affiliate->status ) { return $provider_failure( 'PROVIDER_READBACK_FAILED', 'Affiliate provider read-back did not match.' ); }
+		$slug_result = self::erp_slug_result( $input, $user, $affiliate_id, true );
+		if ( is_wp_error( $slug_result ) ) {
+			YBY_Connector_Affiliate_Bindings::release( $connection, $kol, $owner_hash );
+			return $slug_result;
+		}
 		$stored = YBY_Connector_Affiliate_Bindings::finalize( $connection, $kol, $owner_hash, (int) $user->ID, $affiliate_id );
 		if ( ! $stored ) { $stored = YBY_Connector_Affiliate_Bindings::by_kol( $connection, $kol ); }
 		if ( ! $stored || 'ready' !== (string) ( $stored['state'] ?? '' ) ) { return new WP_Error( 'PROVISION_IN_PROGRESS', 'Affiliate provisioning reservation was taken over; retry safely.', array( 'status' => 503, 'retryable' => true ) ); }
 		if ( (int) $stored['affiliate_id'] !== $affiliate_id ) { return new WP_Error( 'AFFILIATE_ID_CONFLICT', 'Affiliate binding could not be established safely.', array( 'status' => 409, 'retryable' => false ) ); }
-		return array( 'wp_user_id' => (int) $user->ID, 'affiliate_id' => $affiliate_id, 'affiliate_status' => $expected_status, 'created_user' => $created_user, 'created_affiliate' => $created_affiliate );
+		return array_merge( array( 'wp_user_id' => (int) $user->ID, 'affiliate_id' => $affiliate_id, 'affiliate_status' => $expected_status, 'created_user' => $created_user, 'created_affiliate' => $created_affiliate ), $slug_result );
+	}
+
+	/**
+	 * AffiliateWP Custom Affiliate Slugs uses 'custom_slug' in affiliatemeta and
+	 * resolves it through its own affwp_tracking_get_affiliate_id filter.
+	 * Only signed ERP strict-create calls may request a distinct value.
+	 */
+	private static function erp_slug_addon() {
+		if ( ! function_exists( 'affiliatewp_custom_affiliate_slugs' ) || ! function_exists( 'affwp_get_affiliate_meta' ) || ! function_exists( 'affwp_update_affiliate_meta' ) ) {
+			return false;
+		}
+		$addon = affiliatewp_custom_affiliate_slugs();
+		return is_object( $addon ) && isset( $addon->base ) && is_object( $addon->base ) && method_exists( $addon->base, 'check' ) && method_exists( $addon->base, 'get_affiliate_id_from_slug' ) ? $addon->base : false;
+	}
+
+	private static function erp_slug_preflight( $slug ) {
+		$addon = self::erp_slug_addon();
+		if ( ! $addon ) { return self::provider_failure( 'PROVIDER_UNAVAILABLE', 'AffiliateWP Custom Affiliate Slugs addon is unavailable.' ); }
+		if ( username_exists( $slug ) || $addon->check( $slug ) ) {
+			return new WP_Error( 'AFFILIATE_CONFLICT', 'The custom Affiliate URL slug is already taken.', array( 'status' => 409, 'retryable' => false ) );
+		}
+		return true;
+	}
+
+	private static function erp_slug_result( $input, $user, $affiliate_id, $may_write ) {
+		if ( ! isset( $input['affiliate_url_slug'] ) ) { return array(); }
+		$requested = $input['affiliate_url_slug'];
+		$actual_login = (string) ( $user->user_login ?? '' );
+		if ( '' === $actual_login || ( ! empty( $input['strict_create'] ) && $actual_login !== $input['preferred_username'] ) ) {
+			return self::provider_failure( 'PROVIDER_READBACK_FAILED', 'WordPress Username does not match ERP request.' );
+		}
+		$custom = $requested !== $actual_login;
+		if ( $custom ) {
+			$addon = self::erp_slug_addon();
+			if ( ! $addon ) { return self::provider_failure( 'PROVIDER_UNAVAILABLE', 'AffiliateWP Custom Affiliate Slugs is unavailable.' ); }
+			$existing = (string) affwp_get_affiliate_meta( $affiliate_id, 'custom_slug', true );
+			if ( $existing !== $requested ) {
+				if ( ! $may_write ) { return new WP_Error( 'PROVIDER_IDENTITY_MISMATCH', 'The bound Affiliate URL differs from the ERP request.', array( 'status' => 409, 'retryable' => false ) ); }
+				if ( username_exists( $requested ) || ( $addon->check( $requested ) && (int) $addon->get_affiliate_id_from_slug( $requested ) !== (int) $affiliate_id ) ) {
+					return new WP_Error( 'AFFILIATE_CONFLICT', 'The custom Affiliate URL slug is already in use.', array( 'status' => 409, 'retryable' => false ) );
+				}
+				affwp_update_affiliate_meta( $affiliate_id, 'custom_slug', $requested );
+			}
+			if ( (string) affwp_get_affiliate_meta( $affiliate_id, 'custom_slug', true ) !== $requested
+				|| (int) $addon->get_affiliate_id_from_slug( $requested ) !== (int) $affiliate_id ) {
+				return self::provider_failure( 'PROVIDER_READBACK_FAILED', 'Custom Affiliate Slug could not be verified.' );
+			}
+		}
+		if ( ! function_exists( 'affwp_get_affiliate_referral_url' ) ) {
+			return self::provider_failure( 'PROVIDER_UNAVAILABLE', 'AffiliateWP referral URL generation is unavailable.' );
+		}
+		$url = affwp_get_affiliate_referral_url( array( 'affiliate_id' => $affiliate_id, 'format' => $custom ? 'slug' : 'username' ) );
+		if ( ! is_string( $url ) || '' === $url ) {
+			return self::provider_failure( 'PROVIDER_READBACK_FAILED', 'Affiliate referral URL generation failed.' );
+		}
+		return array( 'affiliate_url_slug' => $requested, 'affiliate_referral_url' => $url );
 	}
 
 	private static function provision_lease_owner() {
@@ -607,7 +683,9 @@ class YBY_Connector {
 				}
 			}
 		}
-		return array( 'wp_user_id' => (int) $user->ID, 'affiliate_id' => $affiliate_id, 'affiliate_status' => (string) $affiliate->status, 'created_user' => (bool) $created_user, 'created_affiliate' => (bool) $created_affiliate );
+		$slug_result = is_array( $input ) ? self::erp_slug_result( $input, $user, $affiliate_id, false ) : array();
+		if ( is_wp_error( $slug_result ) ) { return $slug_result; }
+		return array_merge( array( 'wp_user_id' => (int) $user->ID, 'affiliate_id' => $affiliate_id, 'affiliate_status' => (string) $affiliate->status, 'created_user' => (bool) $created_user, 'created_affiliate' => (bool) $created_affiliate ), $slug_result );
 	}
 
 	private static function set_affiliate_status( $input ) {
@@ -762,7 +840,11 @@ class YBY_Connector {
 	private static function validate_provision_input( $request, $body ) {
 		$required = array( 'erp_kol_id', 'email', 'display_name', 'preferred_username', 'requested_affiliate_status', 'payment_email' );
 		$strict = array_merge( $required, array( 'password', 'existing_account_policy' ) );
-		$is_strict = is_array( $body ) && count( $body ) === count( $strict ) && ! array_diff( $strict, array_keys( $body ) ) && ! array_diff( array_keys( $body ), $strict );
+		$strict_with_slug = array_merge( $strict, array( 'affiliate_url_slug' ) );
+		$is_strict = is_array( $body ) && (
+			( count( $body ) === count( $strict ) && ! array_diff( $strict, array_keys( $body ) ) && ! array_diff( array_keys( $body ), $strict ) )
+			|| ( count( $body ) === count( $strict_with_slug ) && ! array_diff( $strict_with_slug, array_keys( $body ) ) && ! array_diff( array_keys( $body ), $strict_with_slug ) )
+		);
 		$is_legacy = is_array( $body ) && count( $body ) === count( $required ) && ! array_diff( $required, array_keys( $body ) ) && ! array_diff( array_keys( $body ), $required );
 		if ( ( ! $is_legacy && ! $is_strict ) || 'active' !== (string) $body['requested_affiliate_status'] ) { return self::validation_error(); }
 		if ( $is_strict && ( ! is_string( $body['existing_account_policy'] ) || 'reject' !== $body['existing_account_policy'] || ! is_string( $body['password'] ) || strlen( $body['password'] ) < 12 || strlen( $body['password'] ) > 128 || ! preg_match( '/[A-Za-z]/', $body['password'] ) || ! preg_match( '/[0-9]/', $body['password'] ) ) ) { return self::validation_error(); }
@@ -772,9 +854,17 @@ class YBY_Connector {
 		$email = trim( (string) $body['email'] ); $payment = trim( (string) $body['payment_email'] );
 		if ( ! is_email( $email ) || ! is_email( $payment ) ) { return self::validation_error(); }
 		$display = trim( wp_strip_all_tags( (string) $body['display_name'] ) ); $username = trim( (string) $body['preferred_username'] );
-		if ( '' === $display || strlen( $display ) > 120 || '' === $username || strlen( $username ) > 60 || ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]*$/', $username ) ) { return self::validation_error(); }
+		if ( '' === $display || strlen( $display ) > 120 || '' === $username || strlen( $username ) > 60 || ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._@-]*$/D', $username ) ) { return self::validation_error(); }
 		$input = array( 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'erp_kol_id' => (int) $kol, 'email' => strtolower( $email ), 'display_name' => $display, 'preferred_username' => $username, 'requested_affiliate_status' => 'active', 'payment_email' => strtolower( $payment ) );
 		if ( $is_strict ) { $input['strict_create'] = true; $input['password'] = $body['password']; $input['existing_account_policy'] = 'reject'; }
+		if ( array_key_exists( 'affiliate_url_slug', $body ) ) {
+			$slug = $body['affiliate_url_slug'];
+			if ( ! $is_strict || ! is_string( $slug ) || '' === $slug || strlen( $slug ) > 60
+				|| ( $slug !== $username && ! preg_match( '/^[a-z][a-z0-9]*$/D', $slug ) ) ) {
+				return self::validation_error();
+			}
+			$input['affiliate_url_slug'] = $slug;
+		}
 		return $input;
 	}
 
