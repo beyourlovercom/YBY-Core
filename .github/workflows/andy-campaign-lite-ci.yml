@@ -56,5 +56,8 @@ jobs:
           php packages/andy-campaign-packs/black-friday-2026/tests/r10-price-restore-fixture.php
           php packages/andy-campaign-packs/black-friday-2026/tests/r10-catalog-fixture.php
           php packages/andy-campaign-packs/black-friday-2026/tests/r10-country-gate-fixture.php
+      - name: BF2026 R12 public route and automatic random-gift plan
+        run: |
+          php packages/andy-campaign-packs/black-friday-2026/tests/r12-auto-gift-planner-fixture.php
       - name: Existing Andy Core navigation regression
         run: php tests/andy-os-unified-nav-v1-harness.php

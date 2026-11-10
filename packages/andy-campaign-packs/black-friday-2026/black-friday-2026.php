@@ -15,6 +15,10 @@ require_once __DIR__ . '/includes/class-byl-bf2026-r10-price-policy.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-r10-sale-manager.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-r10-catalog.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-r10-country-gate.php';
+// Pure Gift policy/adapter and R12 planner: classes loaded but NO cart mutation hook registered.
+require_once __DIR__ . '/includes/class-byl-bf2026-r9-policy.php';
+require_once __DIR__ . '/includes/class-byl-bf2026-r9c-woo-adapter.php';
+require_once __DIR__ . '/includes/class-byl-bf2026-r12-auto-gift-planner.php';
 add_action('woocommerce_after_checkout_validation',
     ['BYL_BF2026_R10_Country_Gate','validate_classic'],90,2);
 add_action('woocommerce_checkout_validate_order_before_payment',
