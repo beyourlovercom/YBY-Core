@@ -46,7 +46,8 @@ foreach([0,0.01,98.99,99,198.99,199,250] as $sum) {
         $q=BYL_BF2026_R9C_Woo_Adapter::quote(base_cart($sum),$country);
         good($q['ok'] === true,'quote '.$sum.$country);
         good($q['entitlement']['premium_allowed']===($sum>=99&&$country==='US'),'premium '.$sum.$country);
-        good($q['entitlement']['gift_slots']===($sum<=0?0:($sum>=199?2:1)),'slots '.$sum.$country);
+        $expected=($sum<=0)?0:($sum>=199?2:(($country==='US'||$sum>=99)?1:0));
+        good($q['entitlement']['gift_slots']===$expected,'slots '.$sum.$country);
     }
 }
 $cart=base_cart(99);
