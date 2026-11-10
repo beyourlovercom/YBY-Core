@@ -108,4 +108,13 @@ check10(BYL_BF2026_R10_Price_Policy::snapshot($GLOBALS['catalog'][456])===$old45
 check10(BYL_BF2026_R10_Sale_Manager::ledger()['entries'][123]['phase']==='restored','ledger line restored');
 check10($GLOBALS['catalog'][123]->sku==='SKU-ABC','SKU intact');
 check10(BYL_BF2026_R10_Sale_Manager::restore('duplicate')['ok']===false,'idempotent end');
+$previous=BYL_BF2026_R10_Sale_Manager::ledger();
+$crash=$previous;
+$crash['state']='applying';
+$crash['entries']=[456=>$previous['entries'][456]];
+$crash['entries'][456]['phase']='applying';
+$GLOBALS['options'][BYL_BF2026_R10_Sale_Manager::OPTION]=$crash;
+$recover=BYL_BF2026_R10_Sale_Manager::restore('simulated_crash_before_write');
+check10($recover['ok']===true && $recover['state']==='restored','unwritten journal safely recovered');
+check10(BYL_BF2026_R10_Price_Policy::snapshot($GLOBALS['catalog'][456])===$old456,'crash restore does not change original');
 echo 'BF2026_R10_PRICE_RESTORE_FIXTURE_PASS='.$N.PHP_EOL;
