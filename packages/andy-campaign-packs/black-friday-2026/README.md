@@ -1,34 +1,34 @@
-# BYL Black Friday 2026 — v0.2.1-dev-rc2 (Canary ONLY)
+# BeYourLover Black Friday 2026 — Gift V2 / v0.2.2-dev-rc3
 
-**Release status:** R14 test-account Canary / Draft. Not authorized as a public Gift engine. Existing WWW page design and native product prices are not modified by this package.
+**Status:** GitHub Draft, Dev-only candidate, **not installed or enabled on WWW**. WWW currently runs v0.2.1-dev-rc2 and Campaign/Canary remain OFF.
 
-## Fixed campaign and pages
-- Dates: **2026-11-10 through 2026-11-30**, America/Los_Angeles.
-- WWW pages: `/holiday/black-friday/`, `/deals/clearance/`, `/holiday/gift/`. Existing product categories and approved 16 Clearance items are separate from coupon or Gift activation.
-- Merchandise over USD0: **one free random gift**. Post-native-coupon USD merchandise >=199: **two distinct free gifts**. US shipping + USD99 or more: customer may pay to choose **one** USD10/15/20 gift in place of one free slot (never a third gift).
-- All-page cart entitlement rather than landing-page URL trigger. Promotional gift selection is printed on the existing Gift page only when authorized and ready.
+## Current Owner-frozen customer rules
+- Dates: 2026 Nov 10–30 (America/Los_Angeles).
+- **US shipping:** positive merchandise cart receives 1 random surprise gift, USD199+ receives 2. At USD99+ the customer may pick **one** extra-cost gift from `/holiday/gift/`, charged USD10/15/20, replacing one random slot. Only 1 paid choice maximum.
+- **Non-US shipping:** USD merchandise **under $99 no random gift**, USD99–198.99 **one**, USD199+ **two**. No paid gift selection abroad.
+- USD threshold is source USD merchandise after native coupons, excluding gift, upgrade, fees, taxes and shipping.
+- Warehouse/ERP chooses the actual free surprise gift SKU. This plugin stores **random-gift entitlement quantity**; it never invents stock or warehouse SKU.
+- Order meta: `_byl_bf2026_random_gift_qty`, `_byl_bf2026_total_gift_slots`, `_byl_bf2026_paid_gift_product_id`; paid Woo product lines carry actual gift SKU and upgrade USD price.
 
-## Canary release safety
-1. The entire plugin is OFF for normal users by default. Neither installation nor `Andy Campaign Master=ON` alone makes Gift hooks globally eligible.
-2. An administrator visits **WooCommerce → BF2026 测试**, explicitly enables a **30-minute** test session for their **current browser only**, then tests real Woo cart. Single administrator user ID + secure HttpOnly/SameSite=Lax browser token + hashed server option; wrong account/browser/guest/expiry denied.
-3. Under Andy Campaign Master OFF, only the allowlisted browser detaches the host's automatic Gift-line cleanup **for that request** and boots BF2026 hooks. No change to other users' host session handling.
-4. **Stop** from the same page, or let 30 minutes expire. Host will revoke leftover Gift rows on subsequent non-Canary cart requests. Full public Gift mode requires a **separate explicit reviewed release constant** `BYL_BF2026_ALLOW_GLOBAL_GIFTS` that this package never defines.
-5. The R10 global Woo sale-price write path stays blocked by default because US-only discounts cannot simply modify `sale_price` for non-US shoppers. Existing normal Woo prices are untouched by Canary.
-6. No real payments, production orders or fulfillment shipment during Canary testing.
+## WWW Gift taxonomy
+The existing public `/holiday/gift/` Woo product categories are:
+- parent `gift` #2726, `gift-upgrade` #2728;
+- `gift-upgrade-10` #2729, `gift-upgrade-15` #2730, `gift-upgrade-20` #2731;
+- all 15 Owner-supplied approved-list product identities assigned, **5 per tier**, no product price/category removal.
+- Woo currently flags Cloud Spirit, Cloud Ipo, Wavey out of stock; they may be shown as unavailable but cannot be selected.
+- **Gift-free** category #2727 remains empty because warehouse chooses actual free products: no need to guess a Woo SKU.
 
-## Gift inventory / runtime integrations
-- Catalog / approvals are **empty by default** and require precise Woo Product IDs and SKUs, reviewed destination-country and warehouse mapping, actual available units, weight, landed cost, provider-reconciled evidence and a recent checked-at timestamp supplied through trusted server-side `byl_bf2026_gift_catalog` and `byl_bf2026_gift_approvals` filters.
-- Owner reports that warehouse teams have already confirmed two gifts per warehouse. **Do not request repeat signoff**, but the selected exact SKU-to-warehouse-to-country technical mapping still must be entered before the Canary can issue live gifts. Synthetic Dev test-only mappings must not be installed on WWW.
-- Gift slot assignment uses native Woo cart and stable session randomness; native total recalculation, premium replace, country change, zero-price Gift rows and order line SKU/warehouse metadata were verified in Dev CLI with temporary fixture data.
-- Verified influencer Woo coupon IDs can be injected via `byl_bf2026_verified_influencer_coupon_ids`; only those coupons exclude active BF sale SKUs. Arbitrary coupons and ordinary priced merchandise remain subject to their existing Woo rules.
-- FX entitlement relies exclusively on an audited USD source. Unknown or unverified foreign-currency context is rejected.
+## Activation
+- Install the package via existing WP admin only after Dev native UAT and Owner authorization. Dependency Andy Campaign Lite v0.1.0; do not uninstall host.
+- Default **no gift runtime** for public visitors. Only current administrator's 30-minute, signed, secure-cookie Canary activates gift hooks while Campaign master remains OFF.
+- WooCommerce Gift product loop offers native one-choice forms **only** during an authorized Canary session and qualifying US cart; the ordinary public page continues displaying the 15-item catalog without an active promotion CTA.
+- Actual globally available promotion still requires separate Owner release approval/constant, not provided in this candidate.
+- R10 global Woo sale price meta writer is still locked OFF. Do not conflate US-only Black Friday discount copy with globally visible pre-existing Woo sale prices.
 
-## Evidence and limits
-- R14 session/permission fixture **19/19** and combined isolated Black Friday fixtures **230/230 PASS**; GitHub CI expected at exact PR HEAD.
-- Dev WP plugin tested through `0.2.1-dev-rc2` installation with Master OFF; isolated CLI WordPress auth/cookie fixture 5/5, anonymous Store API cart smoke passed.
-- Browser Store API signed-in Canary persistence, real Woo coupon IDs, finalized gift SKU fulfillment manifest, saved Dev order/ERP data, US-only region price display/cache and WWW manual installation/canary are **NOT yet verified or released**.
-- The plugin is not a replacement for WooCommerce payment gateways, AffiliateWP, ERP or warehouse stock APIs.
+## Tests & release gates
+- Isolated PHP fixture suite: **268/268 PASS** (R15 38 new checks). On installed Dev plugin v0.2.2-dev-rc3, **16/16 real WooCommerce native cart and in-memory order-meta assertions PASS**, including US choice $10/$15, CA $69/$138/$217, cross-country revocation, and restored Dev test categories. Independent anonymous Dev Store API safety regression also PASS. GitHub exact-head CI, browser-signed Canary, persisted order metadata and ERP receipt still require verification.
+- **No real payment or automatic warehouse shipment** from tests.
+- Remaining: Dev Woo order metadata and ERP import readback, US paid choice from the actual Gift page, cross-country and FX/coupon UAT, then Owner manual WWW RC3 installation and restricted Canary. Only afterward seek full global launch approval.
+- Main Black Friday landing headline/FAQ previously said all global orders receive a free gift; now international cutoff is USD99, so public FAQ/hero requires an explicitly scoped copy QA before all-site launch.
 
-Rollback: stop Canary from WooCommerce admin, retain price snapshots, and restore the previous plugin release if needed. Never assume removal of a plugin reverses changes made by unrelated pricing tools.
-
-Documentation: `docs/andy-campaign-v1/BF2026-R14-ACCOUNT-SESSION-CANARY-20261110.md`.
+Full source contract: `docs/andy-campaign-v1/BF2026-R15-GIFT-CATALOG-AND-ORDER-ENTITLEMENTS-20261110.md`.

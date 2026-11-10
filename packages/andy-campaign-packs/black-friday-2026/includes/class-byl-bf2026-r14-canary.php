@@ -55,11 +55,14 @@ final class BYL_BF2026_R14_Canary {
     }
 
     public static function bootstrap(): void {
-        if (self::$booted || function_exists('is_admin') && is_admin()
+        $giftPost=function_exists('is_admin') && is_admin()
+            && isset($_POST['action'])
+            && $_POST['action']==='byl_bf2026_choose_gift';
+        if (self::$booted || (function_exists('is_admin') && is_admin() && !$giftPost)
             || !self::granted() || !class_exists('Andy_Campaign_Lite')
-            || !class_exists('BYL_BF2026_Gifts')
+            || !class_exists('BYL_BF2026_R15_Entitlements')
             || !class_exists('WooCommerce')
-            || !BYL_BF2026_Gifts::ready()) {return;}
+            || !BYL_BF2026_R15_Entitlements::ready()) {return;}
 
         // A global campaign is a separate release gate; a canary must never
         // silently turn on the host master for every visitor.
@@ -76,7 +79,7 @@ final class BYL_BF2026_R14_Canary {
             [$host,'revoke_stale_lines'],95)) {return;}
         self::$booted=true;
         if (function_exists('nocache_headers')) {nocache_headers();}
-        BYL_BF2026_Gifts::boot();
+        BYL_BF2026_R15_Entitlements::boot();
     }
 
     public static function admin_menu(): void {
@@ -93,7 +96,7 @@ final class BYL_BF2026_R14_Canary {
         echo '<div class="wrap"><h1>Black Friday 2026 · 受控测试</h1>';
         echo '<p>仅对当前管理员与当前浏览器开放，默认关闭。最长30分钟；不会开启全站 Andy Campaign。</p>';
         echo '<p><strong>当前状态：</strong>'.($active?'测试令牌有效（仅绑定账户及浏览器）':'关闭或已到期').'</p>';
-        echo '<p>启用前必须确认已映射真实礼品 SKU、仓库及允许国家。测试仍不能付款。</p>';
+        echo '<p>随机礼品由仓库配货，插件仅记录件数；美国选礼按 15 款 Gift 商品和实时库存验证。测试期间禁止真实付款。</p>';
         echo '<form method="post" action="'.esc_url(admin_url('admin-post.php')).'">';
         wp_nonce_field('byl_bf2026_canary_control');
         echo '<input type="hidden" name="action" value="byl_bf2026_canary_control">';

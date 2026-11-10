@@ -11,7 +11,8 @@ function check_bf(bool $v, string $label): void {
 foreach([0,1,9899,9900,19899,19900,20000] as $amount) {
     foreach(['US','GB','TW',''] as $country) {
         $r=BYL_BF2026_R9_Policy::eligibility($amount,$country);
-        $expected=$amount===0?0:($amount>=19900?2:1);
+        $expected=($amount<=0 || $country==='')?0
+            :($amount>=19900?2:(($country==='US' || $amount>=9900)?1:0));
         check_bf($r['gift_slots']===$expected, "gift_slots:$amount:$country");
         check_bf($r['premium_allowed']===($amount>=9900 && $country==='US'), "premium:$amount:$country");
         check_bf($r['premium_progress_minor']===max(0,9900-$amount), "progress:$amount:$country");

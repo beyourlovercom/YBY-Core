@@ -67,6 +67,7 @@ jobs:
           php packages/andy-campaign-packs/black-friday-2026/tests/r13-regional-price-write-gate.php
           php packages/andy-campaign-packs/black-friday-2026/tests/r13-campaign-window-fixture.php
           php packages/andy-campaign-packs/black-friday-2026/tests/r14-account-cookie-canary-fixture.php
+          php packages/andy-campaign-packs/black-friday-2026/tests/r15-customer-gift-entitlements-fixture.php
       - name: Existing Andy Core navigation regression
         run: php tests/andy-os-unified-nav-v1-harness.php
       - name: Build BF2026 Canary manual-install ZIP
@@ -78,7 +79,7 @@ jobs:
           source=Path("packages/andy-campaign-packs/black-friday-2026")
           dest=Path("dist")
           dest.mkdir(exist_ok=True)
-          out=dest/"BYL-Black-Friday-2026-v0.2.1-dev-rc2.zip"
+          out=dest/"BYL-Black-Friday-2026-v0.2.2-dev-rc3.zip"
           with ZipFile(out,"w",ZIP_DEFLATED,compresslevel=9) as z:
               for p in sorted(source.rglob("*")):
                   if not p.is_file() or "tests" in p.relative_to(source).parts:
@@ -92,7 +93,7 @@ jobs:
                         "black-friday-2026/uninstall.php"}
               assert required.issubset(names)
               assert not any("\\" in n or "/tests/" in n for n in names)
-              assert b"0.2.1-dev-rc2" in z.read("black-friday-2026/black-friday-2026.php")
+              assert b"0.2.2-dev-rc3" in z.read("black-friday-2026/black-friday-2026.php")
           digest=hashlib.sha256(out.read_bytes()).hexdigest()
           (dest/"SHA256SUMS.txt").write_text(f"{digest}  {out.name}\n")
           print("BF2026_MANUAL_CANARY_PACKAGE_PASS",len(names),digest)
@@ -100,9 +101,9 @@ jobs:
       - name: Attach BF2026 Canary manual-install ZIP to this workflow
         uses: actions/upload-artifact@v4
         with:
-          name: BYL-Black-Friday-2026-v0.2.1-dev-rc2
+          name: BYL-Black-Friday-2026-v0.2.2-dev-rc3
           path: |
-            dist/BYL-Black-Friday-2026-v0.2.1-dev-rc2.zip
+            dist/BYL-Black-Friday-2026-v0.2.2-dev-rc3.zip
             dist/SHA256SUMS.txt
           retention-days: 7
 
