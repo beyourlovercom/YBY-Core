@@ -106,3 +106,36 @@ jobs:
             dist/SHA256SUMS.txt
           retention-days: 7
 
+      - name: Build Andy Campaign Lite host manual-install ZIP
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          source=Path("packages/andy-campaign")
+          dest=Path("dist")
+          dest.mkdir(exist_ok=True)
+          out=dest/"Andy-Campaign-Lite-v0.1.0.zip"
+          with ZipFile(out,"w",ZIP_DEFLATED,compresslevel=9) as z:
+              for p in sorted(source.rglob("*")):
+                  if not p.is_file() or "tests" in p.relative_to(source).parts or p.name=="AGENTS.md":
+                      continue
+                  z.write(p,arcname="andy-campaign/"+p.relative_to(source).as_posix())
+          with ZipFile(out) as z:
+              names=set(z.namelist())
+              assert {"andy-campaign/andy-campaign.php",
+                      "andy-campaign/includes/class-andy-campaign-lite.php"}.issubset(names)
+              assert not any("\\" in n or "/tests/" in n for n in names)
+          digest=hashlib.sha256(out.read_bytes()).hexdigest()
+          (dest/"Andy-Campaign-Lite-SHA256SUMS.txt").write_text(f"{digest}  {out.name}\n")
+          print("ANDY_CAMPAIGN_LITE_HOST_PACKAGE_PASS",len(names),digest)
+          PY
+      - name: Attach Andy Campaign Lite host manual-install ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Andy-Campaign-Lite-v0.1.0
+          path: |
+            dist/Andy-Campaign-Lite-v0.1.0.zip
+            dist/Andy-Campaign-Lite-SHA256SUMS.txt
+          retention-days: 7
+
