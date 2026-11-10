@@ -59,5 +59,12 @@ jobs:
       - name: BF2026 R12 public route and automatic random-gift plan
         run: |
           php packages/andy-campaign-packs/black-friday-2026/tests/r12-auto-gift-planner-fixture.php
+      - name: BF2026 R13 native cart, influencer coupons, audited FX and lifecycle
+        run: |
+          php packages/andy-campaign-packs/black-friday-2026/tests/r13-native-cart-writer-fixture.php
+          php packages/andy-campaign-packs/black-friday-2026/tests/r13-influencer-coupon-fixture.php
+          php packages/andy-campaign-packs/black-friday-2026/tests/r13-audited-fx-fixture.php
+          php packages/andy-campaign-packs/black-friday-2026/tests/r13-regional-price-write-gate.php
+          php packages/andy-campaign-packs/black-friday-2026/tests/r13-campaign-window-fixture.php
       - name: Existing Andy Core navigation regression
         run: php tests/andy-os-unified-nav-v1-harness.php

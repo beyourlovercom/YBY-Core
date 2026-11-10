@@ -81,6 +81,8 @@ final class BYL_BF2026_Gifts {
 
     /** Minimum two free options; the USD199 promise must never require paid upgrades. */
     public static function ready(): bool {
+        if ( class_exists('BYL_BF2026_R13_Cart_Writer')
+             && !BYL_BF2026_R13_Cart_Writer::campaign_open() ) {return false;}
         if ( ! class_exists( 'WooCommerce' ) || ! self::valid_currency()
              || ! defined( 'WC_VERSION' ) || version_compare( WC_VERSION, '8.8.0', '<' ) ) {
             return false;
@@ -119,6 +121,10 @@ final class BYL_BF2026_Gifts {
         add_filter( 'woocommerce_coupon_get_items_to_apply', array( __CLASS__, 'exclude_gift_discount_items' ), 90, 3 );
         add_action( 'woocommerce_checkout_create_order_line_item', array( __CLASS__, 'order_line' ), 80, 4 );
         add_action( 'wp_loaded', array( __CLASS__, 'handle_post' ), 25 );
+        // Fully gated by Andy Campaign Lite: adds no cart hooks when OFF.
+        if ( class_exists('BYL_BF2026_R13_Cart_Writer') ) {
+            BYL_BF2026_R13_Cart_Writer::boot();
+        }
     }
 
     /**
@@ -351,6 +357,17 @@ final class BYL_BF2026_Gifts {
             wp_die( 'Invalid gift product ID', '', array( 'response' => 422 ) );
         }
         $id = absint( $raw_id );
+        if ( class_exists('BYL_BF2026_R13_Cart_Writer') ) {
+            WC()->cart->calculate_totals();
+            $decision = BYL_BF2026_R13_Cart_Writer::choose_from_form( WC()->cart, $id );
+            if ( empty($decision['ok']) ) {
+                wc_add_notice( 'This gift upgrade is not available for your current cart or shipping country.', 'error' );
+            } else {
+                wc_add_notice( 'Your gift selection has been updated.', 'success' );
+            }
+            wp_safe_redirect( wp_get_referer() ?: wc_get_cart_url() );
+            exit;
+        }
         $catalog = self::catalog();
         WC()->cart->calculate_totals();
         $slots = self::eligibility( WC()->cart )['slots'];
@@ -403,7 +420,10 @@ final class BYL_BF2026_Gifts {
             if ( self::is_gift( $line ) ) {
                 ++$selected;
                 $selected_ids[] = (int) ( $line['product_id'] ?? 0 );
-                $selected_keys[] = $key;
+                // Free gifts are automatic. Only paid upgrades may be removed.
+                if ( ! empty( $line['_byl_bf2026_paid_slot'] ) ) {
+                    $selected_keys[] = $key;
+                }
             }
         }
         ob_start();
@@ -415,6 +435,8 @@ final class BYL_BF2026_Gifts {
             echo '<p>No gift items are currently configured.</p>';
         } else {
             foreach ( $catalog as $id => $upgrade ) {
+                // Free gift slots are server-randomized, not customer-selected.
+                if ( (int)$upgrade === 0 ) { continue; }
                 $p = self::gift_product( (int) $id );
                 if ( ! $p ) { continue; }
                 echo '<form method="post">';
@@ -430,8 +452,10 @@ final class BYL_BF2026_Gifts {
                 echo '<span>' . esc_html( $p->get_name() . $label ) . '</span> ';
                 $country = self::shipping_country();
                 $restricted = '' !== $country && ! self::destination_allowed( (int) $id, $country );
-                $blocked = $selected >= $eligible['slots'] || in_array( $id, $selected_ids, true )
-                    || $restricted;
+                // A paid upgrade replaces a free slot even if all slots are filled.
+                $blocked = $restricted || $country !== 'US'
+                    || (int)($eligible['basis_minor']??0) < 9900
+                    || in_array( $id, $selected_ids, true );
                 if ( $restricted ) {
                     echo '<span class="byl-bf2026-region-blocked">Unavailable for your shipping country</span> ';
                 }
