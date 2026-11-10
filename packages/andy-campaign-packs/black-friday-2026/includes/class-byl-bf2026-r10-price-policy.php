@@ -83,6 +83,7 @@ final class BYL_BF2026_R10_Price_Policy {
             || $current['sku'] !== ($entry['before']['sku']??null)
             || $current['regular_price'] !== ($entry['before']['regular_price']??null)
             || $current['sale_price'] !== ($entry['after']['campaign_sale_price']??null)
+            || $current['current_price'] !== ($entry['after']['campaign_sale_price']??null)
             || $current['sale_from_utc']!==null || $current['sale_to_utc']!==null) {
             return ['ok'=>false,'reason'=>'concurrent_product_edit_conflict'];
         }
