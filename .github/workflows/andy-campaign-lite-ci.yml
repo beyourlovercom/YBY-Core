@@ -51,5 +51,10 @@ jobs:
           php packages/andy-campaign-packs/black-friday-2026/tests/r9-dev-display-map-contract.php
           php packages/andy-campaign-packs/black-friday-2026/tests/r9-policy-pure-contract.php
           php packages/andy-campaign-packs/black-friday-2026/tests/r9c-woo-adapter-fixture.php
+      - name: BF2026 R10 source-only sale restoration, catalog and US gate
+        run: |
+          php packages/andy-campaign-packs/black-friday-2026/tests/r10-price-restore-fixture.php
+          php packages/andy-campaign-packs/black-friday-2026/tests/r10-catalog-fixture.php
+          php packages/andy-campaign-packs/black-friday-2026/tests/r10-country-gate-fixture.php
       - name: Existing Andy Core navigation regression
         run: php tests/andy-os-unified-nav-v1-harness.php
