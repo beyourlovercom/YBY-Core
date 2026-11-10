@@ -23,7 +23,7 @@ Date: 2026-11-10. Status: **DRAFT, CODE-ONLY. NOT INSTALLED ON WWW OR DEV. NO PR
 ## Explicit release gates, current status
 
 1. **WWW Owner design read-only preservation: partial PASS**. Authenticated DOM readback, not full desktop/mobile screenshot or anonymous-public UAT.
-2. **Source-only price/rollback fixture 38/38**, **catalog fixture 24/24**, **country fixture 19/19**, total **81** in local isolated Windows PHP fixture. GitHub CI must still confirm current exact PR HEAD after PR creation.
+2. **Source-only price/rollback fixture 40/40**, **catalog fixture 24/24**, **country fixture 19/19**, total **83** in local isolated Windows PHP fixture. GitHub CI must still confirm current exact PR HEAD after PR creation.
 3. **DEV/WWW deployment: NOT DONE** for R10; prior Dev R9 display-only preview and WWW design are separate, do not conflate them.
 4. Verify **WWW real Woo product ID/SKU, actual source USD price/previous sale dates and stock**, on-location warehouse and country restrictions, and any promotion/price overrides from Smart Coupons, AffiliateWP, YayCurrency. Dev candidate SKU map is not proof of WWW parity.
 5. Implement, test and separately authorize **native gift selector on `/deals/gift/`** (one selected USD10/15/20 gift replacing one random slot; fallback random from approved per-country free pool; one slot every order, two at USD199+; US upgrade from USD99+) and coupon exclusions for Black Friday sale SKUs only.
