@@ -81,6 +81,10 @@ final class BYL_BF2026_Gifts {
 
     /** Minimum two free options; the USD199 promise must never require paid upgrades. */
     public static function ready(): bool {
+        // Installing a plugin or turning on the host master must NEVER
+        // enable gifts globally without a separate reviewed launch gate.
+        if ( class_exists('BYL_BF2026_R14_Canary')
+             && !BYL_BF2026_R14_Canary::runtime_allowed() ) {return false;}
         if ( class_exists('BYL_BF2026_R13_Cart_Writer')
              && !BYL_BF2026_R13_Cart_Writer::campaign_open() ) {return false;}
         if ( ! class_exists( 'WooCommerce' ) || ! self::valid_currency()
