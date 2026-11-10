@@ -2,7 +2,7 @@
 /**
  * Plugin Name: BYL Black Friday 2026 Campaign
  * Description: Independently deployed Black Friday gift selection, controlled by Andy Campaign Lite.
- * Version: 0.2.0-dev-rc1
+ * Version: 0.2.1-dev-rc2
  * Requires Plugins: woocommerce,andy-campaign
  * Text Domain: byl-black-friday-2026
  */
@@ -21,6 +21,11 @@ require_once __DIR__ . '/includes/class-byl-bf2026-r9c-woo-adapter.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-r12-auto-gift-planner.php';
 // R13 native cart writer is gated inside BYL_BF2026_Gifts::boot (Andy Campaign eligible only).
 require_once __DIR__ . '/includes/class-byl-bf2026-r13-cart-writer.php';
+require_once __DIR__ . '/includes/class-byl-bf2026-r14-canary.php';
+// Canary bypasses master OFF for exactly one administrator's signed browser.
+add_action('init',['BYL_BF2026_R14_Canary','bootstrap'],21);
+add_action('admin_menu',['BYL_BF2026_R14_Canary','admin_menu'],30);
+add_action('admin_post_byl_bf2026_canary_control',['BYL_BF2026_R14_Canary','admin_post']);
 add_action('woocommerce_after_checkout_validation',
     ['BYL_BF2026_R10_Country_Gate','validate_classic'],90,2);
 add_action('woocommerce_checkout_validate_order_before_payment',
@@ -84,7 +89,7 @@ add_action( 'andy_campaign_register', static function ( $host ) {
     $host->register( array(
         'id' => 'byl-black-friday-2026',
         'name' => 'BYL Black Friday 2026',
-        'version' => '0.2.0-dev-rc1',
+        'version' => '0.2.1-dev-rc2',
         'resources' => array( 'gift' ),
         'ready' => array( 'BYL_BF2026_Gifts', 'ready' ),
         'boot' => array( 'BYL_BF2026_Gifts', 'boot' ),
@@ -110,6 +115,8 @@ add_filter('the_content', static function ($content) {
     if (!class_exists('Andy_Campaign_Lite') || !class_exists('BYL_BF2026_Gifts')
         || !BYL_BF2026_Gifts::ready()) {return $content;}
     $state=Andy_Campaign_Lite::boot()->decisions()[BYL_BF2026_Gifts::ID]??'unregistered';
-    if ($state!=='eligible') {return $content;}
+    $canary=class_exists('BYL_BF2026_R14_Canary')
+        && BYL_BF2026_R14_Canary::granted();
+    if ($state!=='eligible' && !$canary) {return $content;}
     return $content."\n".do_shortcode('[byl_bf2026_gifts]');
 },35);
