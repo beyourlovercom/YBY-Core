@@ -74,7 +74,7 @@ final class BYL_BF2026_R10_Price_Policy {
 
     /** Never restore over changes another operator has made during the event. */
     public static function restore_check($product, array $entry): array {
-        if (($entry['phase']??'')!=='applied' || !is_array($entry['before']??null)
+        if (!in_array(($entry['phase']??''),['applied','applying'],true) || !is_array($entry['before']??null)
             || !is_array($entry['after']??null)) {
             return ['ok'=>false,'reason'=>'no_applied_snapshot'];
         }
