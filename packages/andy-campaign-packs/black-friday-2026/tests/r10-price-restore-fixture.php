@@ -72,6 +72,11 @@ check10(BYL_BF2026_R10_Sale_Manager::prepare(['SKU-ABC','SKU-ABC'],$now,$now+360
 check10(BYL_BF2026_R10_Sale_Manager::prepare(['SKU-ABC','NO-SUCH'],$now,$now+3600)['ok']===false,'missing product');
 check10(BYL_BF2026_R10_Sale_Manager::prepare(['SKU-OUT'],$now,$now+3600)['ok']===false,'out of stock');
 check10(BYL_BF2026_R10_Sale_Manager::prepare(['SKU-ABC'],$now,$now-1)['ok']===false,'past event');
+$future=BYL_BF2026_R10_Sale_Manager::prepare(['SKU-ABC'],$now+1200,$now+3600);
+check10($future['ok']===true,'future campaign preview allowed');
+check10(BYL_BF2026_R10_Sale_Manager::apply()['ok']===false,'future campaign must not activate early');
+check10(BYL_BF2026_R10_Price_Policy::snapshot($GLOBALS['catalog'][123])===$old123,'early activation did not mutate');
+unset($GLOBALS['options'][BYL_BF2026_R10_Sale_Manager::OPTION]); // isolated test only
 $p=BYL_BF2026_R10_Sale_Manager::prepare(['SKU-ABC','SKU-DEF'],$now,$now+3600);
 check10($p['ok'] && $p['count']===2,'prepare 2');
 check10($p['entries'][123]['phase']==='prepared','phase prepared');
