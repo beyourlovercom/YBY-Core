@@ -1,6 +1,6 @@
 <?php
 /**
- * R11 approved Black Friday catalog: existing PRIVATE WWW routes only.
+ * R12 Black Friday catalog: existing canonical WWW routes (public/private) only.
  * SOURCE ONLY; nothing here registers a cart hook or activates promotions.
  */
 declare(strict_types=1);
@@ -65,9 +65,9 @@ final class BYL_BF2026_R10_Catalog {
             'landing_exists'=>(bool)$landing,
             'landing_id'=>$landing?(int)$landing->ID:null,
             'clearance_page_exists'=>(bool)$clearance,
-            'clearance_private'=>$clearance && ($clearance->post_status??'')==='private',
+            'clearance_ready'=>$clearance && in_array(($clearance->post_status??''),['private','publish'],true),
             'gift_page_exists'=>(bool)$gift,
-            'gift_private'=>$gift && ($gift->post_status??'')==='private',
+            'gift_ready'=>$gift && in_array(($gift->post_status??''),['private','publish'],true),
             'designed_landing_always_untouched'=>true,
         ];
     }
@@ -83,7 +83,7 @@ final class BYL_BF2026_R10_Catalog {
     }
 
     /**
-     * EXPLICIT approved admin operation only; require known private pages.
+     * EXPLICIT approved admin operation only; require canonical public/private pages.
      * No page creation, permalink changes, promotion activation or price edits.
      * Gifting eligibility still requires per-country warehouse proof at checkout.
      */
@@ -95,9 +95,9 @@ final class BYL_BF2026_R10_Catalog {
             return ['ok'=>false,'reason'=>'invalid_sale_ids'];
         }
         $routes=self::audit_routes();
-        if (!$routes['landing_exists'] || !$routes['clearance_private']
-            || !$routes['gift_private']) {
-            return ['ok'=>false,'reason'=>'canonical_private_routes_missing'];
+        if (!$routes['landing_exists'] || !$routes['clearance_ready']
+            || !$routes['gift_ready']) {
+            return ['ok'=>false,'reason'=>'canonical_routes_missing_or_inactive'];
         }
 
         // Preflight ALL IDs and canonical SKUs BEFORE the first category write.
