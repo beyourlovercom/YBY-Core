@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 define('ABSPATH','/');
+// Test explicit opt-in ONLY; release package keeps global US-only sale writes OFF.
+define('BYL_BF2026_ALLOW_GLOBAL_SALE_META',true);
 class WooCommerce {}
 $GLOBALS['currency']='USD';
 $GLOBALS['options']=[];

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: BYL Black Friday 2026 Campaign
  * Description: Independently deployed Black Friday gift selection, controlled by Andy Campaign Lite.
- * Version: 0.1.1-dev
+ * Version: 0.2.0-dev-rc1
  * Requires Plugins: woocommerce,andy-campaign
  * Text Domain: byl-black-friday-2026
  */
@@ -19,6 +19,8 @@ require_once __DIR__ . '/includes/class-byl-bf2026-r10-country-gate.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-r9-policy.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-r9c-woo-adapter.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-r12-auto-gift-planner.php';
+// R13 native cart writer is gated inside BYL_BF2026_Gifts::boot (Andy Campaign eligible only).
+require_once __DIR__ . '/includes/class-byl-bf2026-r13-cart-writer.php';
 add_action('woocommerce_after_checkout_validation',
     ['BYL_BF2026_R10_Country_Gate','validate_classic'],90,2);
 add_action('woocommerce_checkout_validate_order_before_payment',
@@ -82,9 +84,32 @@ add_action( 'andy_campaign_register', static function ( $host ) {
     $host->register( array(
         'id' => 'byl-black-friday-2026',
         'name' => 'BYL Black Friday 2026',
-        'version' => '0.1.1-dev',
+        'version' => '0.2.0-dev-rc1',
         'resources' => array( 'gift' ),
         'ready' => array( 'BYL_BF2026_Gifts', 'ready' ),
         'boot' => array( 'BYL_BF2026_Gifts', 'boot' ),
     ) );
 }, 10, 1 );
+
+
+/**
+ * Attach the selection widget to the existing canonical Gift page without
+ * overwriting Elementor/content or displaying transaction buttons while OFF.
+ */
+add_filter('the_content', static function ($content) {
+    if (!is_string($content) || !function_exists('is_page')
+        || !is_page() || !is_main_query() || !in_the_loop()
+        || !function_exists('get_page_by_path') || !function_exists('get_the_ID')) {
+        return $content;
+    }
+    $page=get_page_by_path('holiday/gift');
+    if (!$page || (int)$page->ID !== (int)get_the_ID()
+        || (function_exists('has_shortcode') && has_shortcode($content,'byl_bf2026_gifts'))) {
+        return $content;
+    }
+    if (!class_exists('Andy_Campaign_Lite') || !class_exists('BYL_BF2026_Gifts')
+        || !BYL_BF2026_Gifts::ready()) {return $content;}
+    $state=Andy_Campaign_Lite::boot()->decisions()[BYL_BF2026_Gifts::ID]??'unregistered';
+    if ($state!=='eligible') {return $content;}
+    return $content."\n".do_shortcode('[byl_bf2026_gifts]');
+},35);

@@ -88,6 +88,13 @@ final class BYL_BF2026_R10_Sale_Manager {
     }
 
     public static function apply(): array {
+        // US-only campaign: Woo global sale meta would expose US prices to
+        // international shoppers and CDN caches. OFF unless a separate
+        // region-aware display/cart price release explicitly enables it.
+        if (!defined('BYL_BF2026_ALLOW_GLOBAL_SALE_META')
+            || BYL_BF2026_ALLOW_GLOBAL_SALE_META !== true) {
+            return ['ok'=>false,'reason'=>'global_sale_meta_disabled_us_only_policy'];
+        }
         return self::exclusive(static function() {
             $v=self::ledger();
             if (($v['state']??'')!=='prepared' || time()<($v['start_utc']??PHP_INT_MAX) || time()>($v['end_utc']??0)) {

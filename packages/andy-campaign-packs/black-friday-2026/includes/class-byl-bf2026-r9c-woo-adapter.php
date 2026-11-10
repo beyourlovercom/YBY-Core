@@ -18,9 +18,29 @@ final class BYL_BF2026_R9C_Woo_Adapter {
     public static function quote($cart, string $shipping_country): array {
         if (!class_exists('WC_Cart') || !$cart instanceof WC_Cart
             || !class_exists('BYL_BF2026_R9_Policy')
-            || !function_exists('get_woocommerce_currency')
-            || get_woocommerce_currency() !== 'USD') {
+            || !function_exists('get_woocommerce_currency')) {
             return ['ok'=>false, 'reason'=>'source_usd_unavailable'];
+        }
+        $currency=get_woocommerce_currency();
+        if ($currency !== 'USD') {
+            // Never infer a source-USD threshold from inverse FX rounding.
+            if (!in_array($currency,['EUR','GBP','AUD','CAD'],true)
+                || !class_exists('Andy_Commerce_Campaign_USD_Basis_V1')
+                || !class_exists('Andy_Commerce_Currency_Runtime_Dev_V1')
+                || !Andy_Commerce_Currency_Runtime_Dev_V1::allowed()
+                || Andy_Commerce_Currency_Runtime_Dev_V1::selected()!==$currency) {
+                return ['ok'=>false,'reason'=>'audited_source_usd_basis_unavailable'];
+            }
+            $q=Andy_Commerce_Campaign_USD_Basis_V1::quote($cart);
+            if (($q['ok']??false)!==true
+                || !is_int($q['basis_minor']??null)
+                || $q['basis_minor']<0 || $q['basis_minor']>1000000000) {
+                return ['ok'=>false,'reason'=>'invalid_audited_source_usd_quote'];
+            }
+            $basis=$q['basis_minor'];
+            return ['ok'=>true,'basis_minor'=>$basis,
+                'entitlement'=>BYL_BF2026_R9_Policy::eligibility($basis,$shipping_country),
+                'source'=>'commerce_audited_usd_basis'];
         }
         $basis = 0;
         $ordinary = 0;
