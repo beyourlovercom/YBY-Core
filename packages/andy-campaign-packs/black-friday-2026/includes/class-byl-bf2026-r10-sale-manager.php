@@ -151,6 +151,13 @@ final class BYL_BF2026_R10_Sale_Manager {
                     $entry['phase']='restored';self::persist($v);continue;
                 }
                 $p=self::product((int)$id,$entry['sku']);
+                // A crash may leave a journal record in 'applying' before
+                // any Woo write. The exact original state needs no restore.
+                if (($entry['phase']??'')==='applying' && $p
+                    && BYL_BF2026_R10_Price_Policy::snapshot($p)===$entry['before']) {
+                    $entry['phase']='restored';$entry['restored_at']=time();
+                    self::persist($v);++$restored;continue;
+                }
                 $check=BYL_BF2026_R10_Price_Policy::restore_check($p,$entry);
                 if (!$check['ok']) {
                     $conflicts[]=['id'=>(int)$id,'reason'=>$check['reason']];
