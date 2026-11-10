@@ -90,7 +90,7 @@ final class BYL_BF2026_R10_Sale_Manager {
     public static function apply(): array {
         return self::exclusive(static function() {
             $v=self::ledger();
-            if (($v['state']??'')!=='prepared' || time()>($v['end_utc']??0)) {
+            if (($v['state']??'')!=='prepared' || time()<($v['start_utc']??PHP_INT_MAX) || time()>($v['end_utc']??0)) {
                 return ['ok'=>false,'reason'=>'not_prepared_or_expired'];
             }
             // All-product preflight before the first price write.
