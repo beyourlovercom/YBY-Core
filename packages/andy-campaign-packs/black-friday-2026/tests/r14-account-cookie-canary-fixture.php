@@ -28,6 +28,8 @@ function nocache_headers(){++$GLOBALS['no_cache_count'];}
 class WooCommerce{}
 class BYL_BF2026_Gifts {
  public const ID='byl-black-friday-2026';
+}
+class BYL_BF2026_R15_Entitlements {
  public static function ready(){return $GLOBALS['ready'];}
  public static function boot(){++$GLOBALS['boot_count'];}
 }

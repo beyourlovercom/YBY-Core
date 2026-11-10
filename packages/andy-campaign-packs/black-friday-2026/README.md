@@ -1,25 +1,34 @@
-# BYL Black Friday 2026 — independent PHP Campaign Pack
+# BeYourLover Black Friday 2026 — Gift V2 / v0.2.2-dev-rc3
 
-**Status:** Dev-only implementation candidate; not production approved. The pack is independently versioned. It registers with Andy Campaign Lite through `andy_campaign_register`, has no top-level Woo mutations and is OFF unless Lite grants execution.
+**Status:** GitHub Draft, Dev-only candidate, **not installed or enabled on WWW**. WWW currently runs v0.2.1-dev-rc2 and Campaign/Canary remain OFF.
 
-Rules:
-- Product discounts are configured using **WooCommerce native sale prices**; this pack does **not** implement an additional “up to 50%” discount.
-- Gift entitlement is 1 per nonempty eligible USD merchandise cart; 2 if merchandise net **after native coupons**, excluding tax/shipping/gift-upgrade lines, is at least **USD 199.00**.
-- Gift catalog is deliberately **empty by default**. Site-specific reviewed PHP provides the exact Woo SKU IDs and `upgrade_minor` integer (USD cents) using `byl_bf2026_gift_catalog`. This cannot be populated by a shopper.
-- **Release-critical preflight:** at least **two distinct, free (`upgrade_minor=0`), in-stock, purchasable SIMPLE products** must exist before any campaign hook can launch. Expired/empty/invalid gift pool => `pack_not_ready`. An operator POST that tries to enable an unready pack is rejected. The paid premium choices are optional extras and cannot substitute for the promised free options.
-- Stockout or duplicate gift selections are revoked on Woo cart reconciliation; the Lite kernel removes stale gift lines if the pack is OFF, expired or missing. Abnormal array-shaped POST inputs fail safely rather than reaching scalar sanitizers.
-- Customer selects gifts through the `[byl_bf2026_gifts]` shortcode on an existing Andy Core-owned landing page or `/gift/` page. **No page is created or edited by this pack**. Selection is server-side POST + CSRF nonce; no extra JavaScript required.
-- Woo keeps product, tax class, stock and checkout authority. Gift line price is 0 or configured upgrade fee; original cart product base price remains untouched. Source is saved in Woo order item metadata for auditing.
-- Requires **WooCommerce 8.8+** for `woocommerce_coupon_get_items_to_apply`. Activation readiness fails closed on older versions. All coupon allocation (fixed-cart, percent, product discounts) must exclude promotional gift lines, including paid-upgrade fees. The earlier product eligibility filter alone is insufficient for fixed-cart coupon distribution.
-- Actual isolated Woo regression: merchandise USD205 + premium upgrade USD9.99 + fixed-cart USD20 coupon => net eligible merchandise USD185, full upgrade USD9.99, final USD194.99 (no tax/shipping). Another native test: shipping USD12.34 remains separate from qualifying merchandise and is not discounted by the gift rule.
-- The Classic checkout cart validation is complemented by `woocommerce_checkout_validate_order_before_payment` for Store API/Blocks. Source/tests support this hook path; **no actual persisted order or payment has been tested or approved**.
-- Never silently stack with another Campaign Pack that declares the gift resource. The Lite kernel gate is coarse: native coupons and unrelated third-party gift plugins still require compatibility tests.
-- **Known release blockers:** Currency OS live non-USD orders unsupported (gift selector fails closed); native Blocks/Classic Checkout, coupons, taxes, FX, shipping, stock race, order refunds, role negatives and frontend mobile visual UAT require isolated Woo tests. Current implementation is an engineering baseline, **not** permission to enable customer gifting.
-- No required automated gift redemption; a customer may checkout without selecting gifts. This is a deliberate nonblocking policy subject to Owner acceptance.
-- No clawback of a gift on refunds after purchase; resolve refund policy before Production.
+## Current Owner-frozen customer rules
+- Dates: 2026 Nov 10–30 (America/Los_Angeles).
+- **US shipping:** positive merchandise cart receives 1 random surprise gift, USD199+ receives 2. At USD99+ the customer may pick **one** extra-cost gift from `/holiday/gift/`, charged USD10/15/20, replacing one random slot. Only 1 paid choice maximum.
+- **Non-US shipping:** USD merchandise **under $99 no random gift**, USD99–198.99 **one**, USD199+ **two**. No paid gift selection abroad.
+- USD threshold is source USD merchandise after native coupons, excluding gift, upgrade, fees, taxes and shipping.
+- Warehouse/ERP chooses the actual free surprise gift SKU. This plugin stores **random-gift entitlement quantity**; it never invents stock or warehouse SKU.
+- Order meta: `_byl_bf2026_random_gift_qty`, `_byl_bf2026_total_gift_slots`, `_byl_bf2026_paid_gift_product_id`; paid Woo product lines carry actual gift SKU and upgrade USD price.
 
-### Safe OFF-state draft preview (R6)
-- The `[byl_bf2026_gifts]` shortcode is now registered from the independently installed pack's `init` display hook regardless of the campaign's master switch, **without** booting any cart mutation hooks.
-- When the host decision is not `eligible`, the shortcode only renders a neutral *not currently available* message; no gift buttons, no total recalculation and no coupon/checkout/POST hooks.
-- Gift selection is only interactive after the pack is explicitly enabled and its >=2 free in-stock SKU readiness gate succeeds. A draft `/gift` page can be reviewed with marketing OFF. This does **not** authorize publishing the page or opening the promotion.
-- Five-currency purchase is still **NOT** supported by this USD-only BF pack. The real Dev currency selector correctly updates five Store API cart amounts, but non-USD payment providers remain blocked in Commerce until their separate gateway/refund UAT. Do not misrepresent display/cart UAT as paid checkout.
+## WWW Gift taxonomy
+The existing public `/holiday/gift/` Woo product categories are:
+- parent `gift` #2726, `gift-upgrade` #2728;
+- `gift-upgrade-10` #2729, `gift-upgrade-15` #2730, `gift-upgrade-20` #2731;
+- all 15 Owner-supplied approved-list product identities assigned, **5 per tier**, no product price/category removal.
+- Woo currently flags Cloud Spirit, Cloud Ipo, Wavey out of stock; they may be shown as unavailable but cannot be selected.
+- **Gift-free** category #2727 remains empty because warehouse chooses actual free products: no need to guess a Woo SKU.
+
+## Activation
+- Install the package via existing WP admin only after Dev native UAT and Owner authorization. Dependency Andy Campaign Lite v0.1.0; do not uninstall host.
+- Default **no gift runtime** for public visitors. Only current administrator's 30-minute, signed, secure-cookie Canary activates gift hooks while Campaign master remains OFF.
+- WooCommerce Gift product loop offers native one-choice forms **only** during an authorized Canary session and qualifying US cart; the ordinary public page continues displaying the 15-item catalog without an active promotion CTA.
+- Actual globally available promotion still requires separate Owner release approval/constant, not provided in this candidate.
+- R10 global Woo sale price meta writer is still locked OFF. Do not conflate US-only Black Friday discount copy with globally visible pre-existing Woo sale prices.
+
+## Tests & release gates
+- Isolated PHP fixture suite: **268/268 PASS** (R15 38 new checks). On installed Dev plugin v0.2.2-dev-rc3, **16/16 real WooCommerce native cart and in-memory order-meta assertions PASS**, including US choice $10/$15, CA $69/$138/$217, cross-country revocation, and restored Dev test categories. Independent anonymous Dev Store API safety regression also PASS. GitHub exact-head CI, browser-signed Canary, persisted order metadata and ERP receipt still require verification.
+- **No real payment or automatic warehouse shipment** from tests.
+- Remaining: Dev Woo order metadata and ERP import readback, US paid choice from the actual Gift page, cross-country and FX/coupon UAT, then Owner manual WWW RC3 installation and restricted Canary. Only afterward seek full global launch approval.
+- Main Black Friday landing headline/FAQ previously said all global orders receive a free gift; now international cutoff is USD99, so public FAQ/hero requires an explicitly scoped copy QA before all-site launch.
+
+Full source contract: `docs/andy-campaign-v1/BF2026-R15-GIFT-CATALOG-AND-ORDER-ENTITLEMENTS-20261110.md`.

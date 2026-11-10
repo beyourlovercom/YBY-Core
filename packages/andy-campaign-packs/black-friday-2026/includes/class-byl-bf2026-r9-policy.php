@@ -12,7 +12,14 @@ final class BYL_BF2026_R9_Policy {
         $valid = $merchandise_minor >= 0 && $merchandise_minor <= 1000000000;
         $country = strtoupper(trim($shipping_country));
         $valid_country = preg_match('/^[A-Z]{2}$/D', $country) === 1;
-        $slots = !$valid || $merchandise_minor === 0 ? 0 : ($merchandise_minor >= 19900 ? 2 : 1);
+        // New Owner rule: non-US orders need USD99+ for their first
+        // warehouse-selected surprise gift. USD199+ gets two worldwide.
+        // US merchandise orders retain the original one-gift baseline.
+        $slots = 0;
+        if ($valid && $valid_country && $merchandise_minor > 0) {
+            if ($merchandise_minor >= 19900) { $slots = 2; }
+            elseif ($country === 'US' || $merchandise_minor >= 9900) { $slots = 1; }
+        }
         $premium = $slots > 0 && $valid_country && $country === 'US' && $merchandise_minor >= 9900;
         return [
             'valid' => $valid,
