@@ -15,6 +15,10 @@ require_once __DIR__ . '/includes/class-byl-bf2026-r10-price-policy.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-r10-sale-manager.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-r10-catalog.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-r10-country-gate.php';
+add_action('woocommerce_after_checkout_validation',
+    ['BYL_BF2026_R10_Country_Gate','validate_classic'],90,2);
+add_action('woocommerce_checkout_validate_order_before_payment',
+    ['BYL_BF2026_R10_Country_Gate','validate_store_api'],90,2);
 // R10 classes do not register product, cart, category or pricing writes.
 // Only an explicitly activated, approved price ledger can later be restored.
 add_action('byl_bf2026_restore_sale_prices', static function () {
