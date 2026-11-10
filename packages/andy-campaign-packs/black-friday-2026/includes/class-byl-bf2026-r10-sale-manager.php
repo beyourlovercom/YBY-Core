@@ -112,7 +112,8 @@ final class BYL_BF2026_R10_Sale_Manager {
                     $p->set_sale_price($entry['after']['campaign_sale_price']);
                     $p->save();
                     $saved=BYL_BF2026_R10_Price_Policy::snapshot($p);
-                    if ($saved['sale_price'] !== $entry['after']['campaign_sale_price']) {
+                    if ($saved['sale_price'] !== $entry['after']['campaign_sale_price']
+                        || $saved['current_price'] !== $entry['after']['campaign_sale_price']) {
                         throw new RuntimeException('sale_price_readback_mismatch');
                     }
                     $assigned=wp_set_object_terms((int)$id,[$term_id],'product_cat',true);
