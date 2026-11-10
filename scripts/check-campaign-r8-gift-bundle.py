@@ -12,15 +12,18 @@ BOOT = PREFIX + "black-friday-2026.php"
 FILES = (
     PREFIX + "includes/class-byl-bf2026-r8-readiness.php",
     PREFIX + "includes/class-byl-bf2026-gifts.php",
+    PREFIX + "includes/class-byl-bf2026-r15-gift-entitlements.php",
 )
 SOURCE_RELATIVE = {
     BOOT: "black-friday-2026.php",
     FILES[0]: "includes/class-byl-bf2026-r8-readiness.php",
     FILES[1]: "includes/class-byl-bf2026-gifts.php",
+    FILES[2]: "includes/class-byl-bf2026-r15-gift-entitlements.php",
 }
 REQUIRES = (
     "require_once __DIR__ . '/includes/class-byl-bf2026-r8-readiness.php';",
     "require_once __DIR__ . '/includes/class-byl-bf2026-gifts.php';",
+    "require_once __DIR__ . '/includes/class-byl-bf2026-r15-gift-entitlements.php';",
 )
 
 
@@ -41,8 +44,12 @@ def check(zip_path: str, source_root: str | None = None,
         for line in REQUIRES:
             if bootstrap.count(line) != 1:
                 failures.append("missing_or_duplicate_required_class:" + line)
-        if "array( 'BYL_BF2026_Gifts', 'ready' )" not in bootstrap:
+        # R15 replaces the legacy SKU-by-warehouse Gift callback; do not
+        # accept a bundle still registering the old live promotion rules.
+        if "array( 'BYL_BF2026_R15_Entitlements', 'ready' )" not in bootstrap:
             failures.append("missing_gift_readiness_registration")
+        if "array( 'BYL_BF2026_R15_Entitlements', 'boot' )" not in bootstrap:
+            failures.append("missing_gift_boot_registration")
         if source_root:
             for name, relative in SOURCE_RELATIVE.items():
                 file = Path(source_root) / relative
@@ -77,7 +84,7 @@ def main() -> int:
         for e in errors:
             print("R8_GIFT_BUNDLE_FAIL=" + e, file=sys.stderr)
         return 1
-    print("R8_GIFT_BUNDLE_PASS=3_FILES_2_REQUIRES"
+    print("R15_GIFT_BUNDLE_PASS=4_FILES_3_REQUIRES"
           + ("_SOURCE_PARITY" if args.source_root else "")
           + ("_INSTALLED_PARITY" if args.installed_root else ""))
     return 0
