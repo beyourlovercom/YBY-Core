@@ -1,3 +1,28 @@
+# R11 addendum — 2026-11-10 authoritative live/private routes and category implementation
+
+**This addendum supersedes earlier R10 route descriptions below, including `/clearance/` and `/deals/gift/`. Those older routes MUST NOT be created by the plugin.**
+
+Owner-frozen customer pages (WWW WordPress API verified):
+- `/holiday/black-friday/`: page **33288**, PRIVATE, unchanged existing branded design
+- `/deals/clearance/`: page **42276**, PRIVATE, parent Deals page **42273** (PRIVATE), product shortcode dynamically reads Woo category `clearance`
+- `/holiday/gift/`: page **42280**, PRIVATE, parent Holiday **31680**, sections for `gift-free` and `gift-upgrade`, no active add-to-cart/selection CTA
+
+Real WWW taxonomy assignment (only explicitly prevalidated source-promo items, no price mutation):
+- Created Woo product category **clearance ID 2725**, assigned **16** on-sale, in-stock, purchasable simple products already on the existing 19-product BF landing; **16/16** price/SKU/regular price and original categories preserved on readback; private clearance page renders **16/16** products.
+- Omitted 3 site products that have **no current sale**: `29799` Pulse Stimulator, `9098` Anita, `30454` Lubricant 35ml. Older candidate set of 24 was **NOT** an approval to assign all 24. `9118` Joy Cup Diamond is WWW canonical, not Dev candidate `9117`.
+- Original 16 product taxonomy and prices snapshotted in [Issue #253 prewrite audit](https://github.com/beyourlovercom/YBY-Core/issues/253#issuecomment-6763172176).
+- Created Woo gift categories **gift ID 2726**, **gift-free ID 2727** (child), **gift-upgrade ID 2728** (child). All currently have **0** approved assigned gift SKUs. Private page updated with two dynamic, nontransactional Woo category lists; standard prices/add-to-cart hidden for the preview. No unverified gift assigned as a free or paid benefit.
+
+Real Dev isolated Woo Store API guest cart preflight:
+- `9096` + `25358` = USD **138**, and + `9095` = USD **217**.
+- Woo native add-to-cart, totals/readback and cart cleanup passed; **0 gift cart lines** at both levels. Thus automatic free gifting, paid selection, global warehouse carrier constraints, AffiliateWP, refund and ERP integration remain **NO-GO**. No orders/payments.
+- Production ERP `BY489A-Lubes`: ERP stock rows at **us-ny 615**, **us-la 701** (not provider live proof), absent global delivery/cost/liquid proof => **NOT approved** for worldwide free gifting.
+
+R11 source adapter now *only audits existing canonical PRIVATE pages* and uses the already-created `clearance` and parent/child `gift` categories. It **never creates page routes, publishes a page, changes original Black Friday design, or assigns a gift without the explicit approved catalog manifest.** Windows isolated PHP R11 catalog 32/32, R10 price recovery 40/40, US checkout guard 19/19 PASS (91 source assertions). GitHub CI pending exact R11 branch checks.
+
+**Remaining production NO-GO:** This Draft stack still contains older R10 global Woo sale meta modification (US-only stated in marketing): do not deploy until regional pricing vs CDN cache/coupon behavior is corrected. No current gift inventory/fulfillment approval. WWW plugin install owner-manual.
+
+---
 # BYL Black Friday 2026 R10 — WWW design-preserving campaign plugin
 
 Date: 2026-11-10. Status: **DRAFT, CODE-ONLY. NOT INSTALLED ON WWW OR DEV. NO PRICE/CATEGORY/PAGE/ORDER WRITES.**
