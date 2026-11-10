@@ -7,6 +7,30 @@ declare(strict_types=1);
 if (!defined('ABSPATH')) { exit; }
 
 final class BYL_BF2026_R10_Country_Gate {
+    private static function checkout_error($cart, string $country, $errors): void {
+        if (!is_object($errors) || !method_exists($errors,'add')) {return;}
+        $result=self::inspect($cart,$country,BYL_BF2026_R10_Sale_Manager::ledger());
+        if (!$result['ok']) {
+            $errors->add('byl_bf2026_sale_us_only',
+                'Black Friday clearance prices are available for U.S. shipping addresses only. '
+                .'Please remove these clearance items to continue with an international order.');
+        }
+    }
+
+    public static function validate_classic($posted, $errors): void {
+        if (!function_exists('WC') || !WC() || !WC()->cart) {return;}
+        $country=is_array($posted) && is_string($posted['shipping_country']??null)
+            ? $posted['shipping_country'] : '';
+        self::checkout_error(WC()->cart,$country,$errors);
+    }
+
+    public static function validate_store_api($order, $errors): void {
+        if (!function_exists('WC') || !WC() || !WC()->cart) {return;}
+        $country=is_object($order) && method_exists($order,'get_shipping_country')
+            ? (string)$order->get_shipping_country() : '';
+        self::checkout_error(WC()->cart,$country,$errors);
+    }
+
     public static function inspect($cart, string $shipping_country, array $ledger): array {
         if (($ledger['state'] ?? '') !== 'active') {
             return ['ok'=>true,'reason'=>'campaign_not_active','affected_ids'=>[]];
