@@ -4,6 +4,21 @@
  * Manual FTP deletion cannot execute this file. Always End & Restore first.
  */
 if (!defined('WP_UNINSTALL_PLUGIN') || !defined('ABSPATH')) { exit; }
+require_once __DIR__.'/includes/class-byl-bf2026-r17-fixed-price.php';
+// If WordPress removes the pack, recover the current 2026 fixed-price ledger
+// before old R10 cleanup. Never delete the only audit snapshot.
+$r17=BYL_BF2026_R17_Fixed_Price::ledger();
+if (in_array(($r17['state']??''),['prepared','active','applying','restoring','conflicts'],true)) {
+    $result=BYL_BF2026_R17_Fixed_Price::restore('WordPress_uninstall');
+    if (empty($result['ok'])) {
+        if (function_exists('wp_die')) {
+            wp_die('Black Friday R17 fixed prices could not all be restored. '
+                .'The saved price ledger has been preserved for recovery.',
+                'Black Friday price restore conflict', ['response'=>409]);
+        }
+        exit;
+    }
+}
 require_once __DIR__.'/includes/class-byl-bf2026-r10-price-policy.php';
 require_once __DIR__.'/includes/class-byl-bf2026-r10-sale-manager.php';
 $ledger=BYL_BF2026_R10_Sale_Manager::ledger();

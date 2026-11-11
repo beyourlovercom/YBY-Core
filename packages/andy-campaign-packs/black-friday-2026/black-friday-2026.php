@@ -2,7 +2,7 @@
 /**
  * Plugin Name: BYL Black Friday 2026 Campaign
  * Description: Independently deployed Black Friday gift selection, controlled by Andy Campaign Lite.
- * Version: 0.2.3-dev-rc4
+ * Version: 0.2.4
  * Requires Plugins: woocommerce,andy-campaign
  * Text Domain: byl-black-friday-2026
  */
@@ -13,6 +13,7 @@ require_once __DIR__ . '/includes/class-byl-bf2026-gifts.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-landing-preview.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-r10-price-policy.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-r10-sale-manager.php';
+require_once __DIR__ . '/includes/class-byl-bf2026-r17-fixed-price.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-r10-catalog.php';
 require_once __DIR__ . '/includes/class-byl-bf2026-r10-country-gate.php';
 // Pure Gift policy/adapter and R12 planner: classes loaded but NO cart mutation hook registered.
@@ -38,6 +39,24 @@ add_action('woocommerce_after_checkout_validation',
     ['BYL_BF2026_R10_Country_Gate','validate_classic'],90,2);
 add_action('woocommerce_checkout_validate_order_before_payment',
     ['BYL_BF2026_R10_Country_Gate','validate_store_api'],90,2);
+/**
+ * R17: Owner-approved four fixed Woo sale prices. Product writes happen once
+ * on explicit activation (or one-time update migration for an already-active
+ * pack); Gift/Master remains independently gated. No random discounts.
+ * Deactivation and Nov 30 LA expiry restore exact pre-launch Woo prices.
+ */
+if (function_exists('register_activation_hook')) {
+    register_activation_hook(__FILE__, ['BYL_BF2026_R17_Fixed_Price','activate']);
+}
+if (function_exists('register_deactivation_hook')) {
+    register_deactivation_hook(__FILE__, ['BYL_BF2026_R17_Fixed_Price','deactivate']);
+}
+add_action('admin_init',['BYL_BF2026_R17_Fixed_Price','maybe_apply_after_update'],99);
+add_action('init',['BYL_BF2026_R17_Fixed_Price','expire_if_due'],9);
+add_action('byl_bf2026_r17_restore_fixed_prices',static function () {
+    BYL_BF2026_R17_Fixed_Price::restore('scheduled_end');
+});
+add_action('admin_notices',['BYL_BF2026_R17_Fixed_Price','admin_notice'],15);
 // R10 classes do not register product, cart, category or pricing writes.
 // Only an explicitly activated, approved price ledger can later be restored.
 add_action('byl_bf2026_restore_sale_prices', static function () {
@@ -97,7 +116,7 @@ add_action( 'andy_campaign_register', static function ( $host ) {
     $host->register( array(
         'id' => 'byl-black-friday-2026',
         'name' => 'BYL Black Friday 2026',
-        'version' => '0.2.3-dev-rc4',
+        'version' => '0.2.4',
         'resources' => array( 'gift' ),
         'ready' => array( 'BYL_BF2026_R15_Entitlements', 'ready' ),
         'boot' => array( 'BYL_BF2026_R15_Entitlements', 'boot' ),
