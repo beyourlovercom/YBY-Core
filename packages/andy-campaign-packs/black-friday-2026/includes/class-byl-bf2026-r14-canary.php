@@ -29,24 +29,56 @@ final class BYL_BF2026_R14_Canary {
 
     public static function granted(): bool {
         if (self::dev_cli_test()) { return true; }
-        if (!function_exists('is_user_logged_in') || !is_user_logged_in()
+        if (!function_exists('is_user_logged_in')
             || !function_exists('current_user_can')
-            || !current_user_can('manage_options')
             || !function_exists('get_current_user_id')) {return false;}
         $cfg=get_option(self::OPTION,[]);
         if (!is_array($cfg) || ($cfg['state']??null)!=='active'
             || !is_int($cfg['user_id']??null)
-            || $cfg['user_id']!==get_current_user_id()
             || !is_int($cfg['expires_at']??null) || $cfg['expires_at']<=time()
             || !is_string($cfg['token_sha256']??null)
             || preg_match('/^[a-f0-9]{64}$/D',$cfg['token_sha256'])!==1) {
             return false;
         }
+        // The normal WP principal is authoritative. Only if WordPress REST
+        // explicitly dropped that principal (no wp_rest nonce) may an otherwise
+        // valid logged-in administrator cookie prove the same exact identity.
+        $logged_in=is_user_logged_in();
+        $allowed=$logged_in
+            ? current_user_can('manage_options')
+                && (int)get_current_user_id()===$cfg['user_id']
+            : self::rest_admin_cookie_valid($cfg['user_id']);
+        if (!$allowed) {return false;}
         $token=$_COOKIE[self::COOKIE]??null;
         if (!is_string($token) || preg_match('/^[a-f0-9]{48}$/D',$token)!==1) {
             return false;
         }
         return hash_equals($cfg['token_sha256'],hash('sha256',$token));
+    }
+
+    /** Restore the operator identity ONLY for WordPress REST requests.
+
+     * WP core's rest_cookie_check_errors() intentionally replaces the current
+     * user with ID 0 when X-WP-Nonce is absent. Woo Store API relies on its own
+     * Cart-Token/Nonce instead; merely reading an already-authorized cart may
+     * therefore lose the admin capability during a later cart recalculation.
+     *
+     * Require BOTH the independently signed Canary cookie (checked by granted)
+     * and the valid WordPress logged-in cookie belonging to the allowlisted
+     * administrator. Never trust an unverified user ID or a Cart-Token.
+     */
+    private static function rest_admin_cookie_valid(int $expected_user): bool {
+        if (!defined('REST_REQUEST') || REST_REQUEST !== true
+            || !defined('LOGGED_IN_COOKIE')
+            || !function_exists('wp_validate_auth_cookie')
+            || !function_exists('user_can')
+            || !isset($_COOKIE[LOGGED_IN_COOKIE])
+            || !is_string($_COOKIE[LOGGED_IN_COOKIE])) {
+            return false;
+        }
+        $id=wp_validate_auth_cookie($_COOKIE[LOGGED_IN_COOKIE], 'logged_in');
+        return is_int($id) && $id===$expected_user
+            && user_can($id,'manage_options');
     }
 
     /** Campaign hook readiness must never affect guests while Canary is enabled. */

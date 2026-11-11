@@ -44,12 +44,12 @@ jobs:
           grep -q 'Plugin Name: BYL Black Friday' dist/stage/black-friday-2026/black-friday-2026.php
           cd dist/stage
           zip -q -r ../andy-campaign-0.1.0-preview.zip andy-campaign
-          zip -q -r ../byl-black-friday-2026-0.2.2-dev-rc3-preview.zip black-friday-2026
+          zip -q -r ../byl-black-friday-2026-0.2.3-dev-rc4-preview.zip black-friday-2026
           cd ..
           python3 ../scripts/check-campaign-r8-gift-bundle.py \
-            byl-black-friday-2026-0.2.2-dev-rc3-preview.zip \
+            byl-black-friday-2026-0.2.3-dev-rc4-preview.zip \
             --source-root ../packages/andy-campaign-packs/black-friday-2026
-          python3 - byl-black-friday-2026-0.2.2-dev-rc3-preview.zip <<'R8_NEG'
+          python3 - byl-black-friday-2026-0.2.3-dev-rc4-preview.zip <<'R8_NEG'
           import pathlib, sys, tempfile, subprocess, zipfile
           source=sys.argv[1]
           with zipfile.ZipFile(source) as z:
@@ -86,7 +86,7 @@ jobs:
           R8_NEG
           # Validate post-install parity against a disposable extracted folder.
           # The check is read-only; no Dev installation or live files are read.
-          python3 - byl-black-friday-2026-0.2.2-dev-rc3-preview.zip <<'R8_INSTALLED'
+          python3 - byl-black-friday-2026-0.2.3-dev-rc4-preview.zip <<'R8_INSTALLED'
           from pathlib import Path
           import subprocess, sys, tempfile, zipfile
           archive = Path(sys.argv[1]).resolve()
@@ -126,7 +126,7 @@ jobs:
           sha256sum *preview.zip > SHA256SUMS
           cat SHA256SUMS
           unzip -l andy-campaign-0.1.0-preview.zip
-          unzip -l byl-black-friday-2026-0.2.2-dev-rc3-preview.zip
+          unzip -l byl-black-friday-2026-0.2.3-dev-rc4-preview.zip
       - name: Upload source-only preview artifacts
         uses: actions/upload-artifact@v4
         with:

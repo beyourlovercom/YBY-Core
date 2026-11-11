@@ -2,7 +2,7 @@
 /**
  * Plugin Name: BYL Black Friday 2026 Campaign
  * Description: Independently deployed Black Friday gift selection, controlled by Andy Campaign Lite.
- * Version: 0.2.2-dev-rc3
+ * Version: 0.2.3-dev-rc4
  * Requires Plugins: woocommerce,andy-campaign
  * Text Domain: byl-black-friday-2026
  */
@@ -28,6 +28,10 @@ add_action('admin_post_byl_bf2026_choose_gift',['BYL_BF2026_R15_Entitlements','h
 add_action('admin_post_nopriv_byl_bf2026_choose_gift',['BYL_BF2026_R15_Entitlements','handle_post']);
 // Canary bypasses master OFF for exactly one administrator's signed browser.
 add_action('init',['BYL_BF2026_R14_Canary','bootstrap'],21);
+// Late-binding protection: Store API can restore Woo cart after REST auth
+// demotes the WP principal; run before the host's revocation at priority 95.
+add_action('woocommerce_cart_loaded_from_session',
+    ['BYL_BF2026_R14_Canary','bootstrap'],1);
 add_action('admin_menu',['BYL_BF2026_R14_Canary','admin_menu'],30);
 add_action('admin_post_byl_bf2026_canary_control',['BYL_BF2026_R14_Canary','admin_post']);
 add_action('woocommerce_after_checkout_validation',
@@ -93,7 +97,7 @@ add_action( 'andy_campaign_register', static function ( $host ) {
     $host->register( array(
         'id' => 'byl-black-friday-2026',
         'name' => 'BYL Black Friday 2026',
-        'version' => '0.2.2-dev-rc3',
+        'version' => '0.2.3-dev-rc4',
         'resources' => array( 'gift' ),
         'ready' => array( 'BYL_BF2026_R15_Entitlements', 'ready' ),
         'boot' => array( 'BYL_BF2026_R15_Entitlements', 'boot' ),

@@ -1,6 +1,6 @@
-# BeYourLover Black Friday 2026 — Gift V2 / v0.2.2-dev-rc3
+# BeYourLover Black Friday 2026 — Gift V2 / v0.2.3-dev-rc4
 
-**Status:** GitHub Draft, Dev-only candidate, **not installed or enabled on WWW**. WWW currently runs v0.2.1-dev-rc2 and Campaign/Canary remain OFF.
+**Status:** R16 P0 repair candidate. WWW currently runs Owner-manually-installed v0.2.2-dev-rc3 with Campaign Master OFF and Canary OFF. v0.2.3-dev-rc4 is source-only until independent Dev and CI gates pass; do not deploy it to WWW without Owner manual installation and approval.
 
 ## Current Owner-frozen customer rules
 - Dates: 2026 Nov 10–30 (America/Los_Angeles).
@@ -26,9 +26,9 @@ The existing public `/holiday/gift/` Woo product categories are:
 - R10 global Woo sale price meta writer is still locked OFF. Do not conflate US-only Black Friday discount copy with globally visible pre-existing Woo sale prices.
 
 ## Tests & release gates
-- Isolated PHP fixture suite: **268/268 PASS** (R15 38 new checks). On installed Dev plugin v0.2.2-dev-rc3, **16/16 real WooCommerce native cart and in-memory order-meta assertions PASS**, including US choice $10/$15, CA $69/$138/$217, cross-country revocation, and restored Dev test categories. Independent anonymous Dev Store API safety regression also PASS. GitHub exact-head CI, browser-signed Canary, persisted order metadata and ERP receipt still require verification.
+- R16 repair checks: authenticated REST signed-Canary 17 assertions PASS, updated R15 threshold and transient-address 43 PASS, baseline R14 19 PASS. Real Dev WooCommerce persistent session tested in **three separate PHP processes** (A/B/C) with saved DB session, Heart +$10 / Camera +$15 retained, CA country revocation, and temporary Dev terms/session cleaned. These cross-process tests are NOT yet full browser-HTTP/cart-reload Canary UAT. Exact-head CI and live WWW refresh await separate checks.
 - **No real payment or automatic warehouse shipment** from tests.
-- Remaining: Dev Woo order metadata and ERP import readback, US paid choice from the actual Gift page, cross-country and FX/coupon UAT, then Owner manual WWW RC3 installation and restricted Canary. Only afterward seek full global launch approval.
+- Remaining: R16 exact-head GitHub CI, Dev real-browser authenticated HTML/Store API persistence, safe Owner manual WWW RC4 upgrade and 30-minute Canary retest; independent ERP gift meta import and US-only price/FX/coupon checks. Full global launch remains NO-GO. P0 evidence: https://github.com/beyourlovercom/YBY-Core/issues/311.
 - Main Black Friday landing headline/FAQ previously said all global orders receive a free gift; now international cutoff is USD99, so public FAQ/hero requires an explicitly scoped copy QA before all-site launch.
 
 Full source contract: `docs/andy-campaign-v1/BF2026-R15-GIFT-CATALOG-AND-ORDER-ENTITLEMENTS-20261110.md`.

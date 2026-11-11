@@ -166,6 +166,28 @@ ok(!$r['ok'],'CA_PAID_SELECTION_BLOCKED');
 $u->country='US';$c->setMerch(9900);
 $r=BYL_BF2026_R15_Entitlements::choose_paid($c,'US',9103);
 ok(!$r['ok'],'OOS_CLOUD_IPO_NOT_SELECTABLE');
+// R16: an address that has not yet loaded from Woo session is unknown,
+// not proof that the signed shopper has moved outside the United States.
+// Keep paid SKU until the country is known; never allow checkout unresolved.
+$u->country='US';$c->setMerch(13800);
+$r=BYL_BF2026_R15_Entitlements::choose_paid($c,'US',9141);
+ok(!empty($r['ok']),'TEMP_COUNTRY_SETUP_PAID_GIFT');
+$u->country='';
+$c->calculate_totals();
+$g=array_filter($c->get_cart(),fn($v)=>!empty($v['_byl_bf2026_paid_slot']));
+ok(count($g)===1,'EMPTY_SHIPPING_COUNTRY_DOES_NOT_DELETE_CHOICE');
+$errors=new class {
+ public array $reasons=[];
+ public function add($code,$message){$this->reasons[$code]=$message;}
+};
+BYL_BF2026_R15_Entitlements::validate_classic(['shipping_country'=>''],$errors);
+ok(isset($errors->reasons['bf2026_selected_gift']),'UNRESOLVED_COUNTRY_CHECKOUT_BLOCKED');
+$u->country='US';$c->calculate_totals();
+$g=array_filter($c->get_cart(),fn($v)=>!empty($v['_byl_bf2026_paid_slot']));
+ok(count($g)===1,'RESTORED_US_COUNTRY_RETAINS_GIFT');
+$u->country='CA';$c->calculate_totals();
+$g=array_filter($c->get_cart(),fn($v)=>!empty($v['_byl_bf2026_paid_slot']));
+ok(count($g)===0,'DECIDED_CA_COUNTRY_REVOKES_GIFT');
 $GLOBALS['canary']=false;
 ok(!BYL_BF2026_R15_Entitlements::ready(),'ANONYMOUS_GLOBAL_GIFT_OFF');
 echo 'BF2026_R15_WAREHOUSE_AGNOSTIC_ENTITLEMENTS_PASS='.$n.PHP_EOL;

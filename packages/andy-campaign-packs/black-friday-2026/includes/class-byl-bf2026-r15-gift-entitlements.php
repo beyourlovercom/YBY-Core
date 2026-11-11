@@ -156,7 +156,13 @@ final class BYL_BF2026_R15_Entitlements {
         if (self::$mutating || !self::ready() || !$cart) {return;}
         $country=self::country();
         $q=self::quoted($cart,$country);
-        $allowed=!empty($q['ok']) && $country==='US'
+        // A transiently empty address or unverified source-USD quote while
+        // Woo restores its session is NOT an affirmative loss of eligibility.
+        // Never destructively remove a chosen gift in that intermediate state.
+        // Actual non-US/under-threshold changes still revoke immediately,
+        // and checkout_error() rejects any unresolved paid-gift state.
+        if ($country==='' || empty($q['ok'])) {return;}
+        $allowed=$country==='US'
             && !empty($q['entitlement']['premium_allowed']);
         $seen=false;$changed=false;
         self::$mutating=true;
