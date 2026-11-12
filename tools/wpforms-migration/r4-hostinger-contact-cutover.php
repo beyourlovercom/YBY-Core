@@ -90,8 +90,16 @@ if (!is_string($serialized) || substr_count($serialized,'site_contact_v1')!==1) 
 }
 $one=$backup_dir.'/'.$host.'-contact-'.$page_id.'-before.txt';
 $two=$backup_dir.'/'.$host.'-contact-'.$page_id.'-elementor-before.json';
-if (file_exists($one)||file_exists($two)) WP_CLI::error('Site snapshots already exist (possible prior run)');
-if (file_put_contents($one,$source_content)===false || file_put_contents($two,$source_meta)===false) {
+if (file_exists($one)||file_exists($two)) {
+	// Safe retry ONLY when BOTH existing snapshots exactly equal the current,
+	// still-untouched WPForms page. Never overwrite a divergent backup.
+	if (!is_file($one) || !is_file($two)
+		|| file_get_contents($one)!==$source_content
+		|| file_get_contents($two)!==$source_meta) {
+		WP_CLI::error('Existing snapshots differ from current source; refuse');
+	}
+} elseif (file_put_contents($one,$source_content)===false
+	|| file_put_contents($two,$source_meta)===false) {
 	WP_CLI::error('Could not preserve exact pre-cutover page snapshots');
 }
 chmod($one,0600);chmod($two,0600);
