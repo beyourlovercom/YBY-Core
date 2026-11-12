@@ -82,8 +82,22 @@ $patch($elements);
 if ($count!==1) WP_CLI::error('Expected exactly one Contact WPForms widget ID '.$source_id.'; found '.$count);
 $regex='/\[wpforms\b(?=[^\]]*\bid\s*=\s*["\']?'.preg_quote((string)$source_id,'/').'(?=["\']|\s|\]))[^\]]*\]/i';
 $raw_count=preg_match_all($regex,$source_content);
-if ($raw_count!==1) WP_CLI::error('Expected one raw source Contact shortcode: found '.var_export($raw_count,true));
-$replacement=preg_replace($regex,$form,$source_content,1);
+if ($raw_count===1) {
+	$replacement=preg_replace($regex,$form,$source_content,1);
+} elseif ($raw_count===0) {
+	// Some migrated Elementor imports contain an already-rendered WPForms
+	// HTML form in post_content, not its source shortcode. Replace ONLY the
+	// exact source form element; preserve newsletter/booking sibling forms.
+	$static='/<form\\b(?=[^>]*\\bid\\s*=\\s*["\\\']wpforms-form-'
+		.preg_quote((string)$source_id,'/').'["\\\'])[^>]*>.*?<\\/form>/is';
+	$static_count=preg_match_all($static,$source_content);
+	if ($static_count!==1) {
+		WP_CLI::error('Source Contact markup not uniquely matched: shortcode='.$raw_count.' HTML='.$static_count);
+	}
+	$replacement=preg_replace($static,$form,$source_content,1);
+} else {
+	WP_CLI::error('Multiple raw source Contact shortcodes; refuse bulk replace');
+}
 $serialized=wp_json_encode($elements,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
 if (!is_string($serialized) || substr_count($serialized,'site_contact_v1')!==1) {
 	WP_CLI::error('New Elementor widget serialization failed');
