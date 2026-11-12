@@ -28,8 +28,22 @@ if (!is_file(WP_CONTENT_DIR.'/mu-plugins/andy-contact-first-guard.php')) WP_CLI:
 if (!is_plugin_active('wpforms-lite/wpforms.php') || !is_plugin_active('yby-core/yby-core.php')) {
 	WP_CLI::error('WPForms and Andy Core must both be active before cutover');
 }
+// A previous preflight can fail before a page change because the CLI's
+// module-off bootstrap has not registered shortcodes. Reclaim ONLY that exact
+// known disabled state, never an active site or an arbitrary configuration.
+$partial=get_option('andy_cf_site_enabled','__missing__');
+if ('__missing__'!==$partial && 0===(int)$partial
+	&& (int)get_option('andy_cf_contact_page_id',0)===$page_id
+	&& get_option('andy_cf_contact_slug','')===$page_slug
+	&& get_option('yby_popup_field_studio_v2','__missing__')==='__missing__'
+	&& YBY_Module_Registry::enabled_modules()===array()) {
+	delete_option('andy_cf_site_enabled');
+	delete_option('andy_cf_contact_page_id');
+	delete_option('andy_cf_contact_slug');
+}
 if (get_option('yby_popup_field_studio_v2','__missing__')!=='__missing__'
 	|| get_option('andy_cf_site_enabled','__missing__')!=='__missing__'
+	|| get_option('andy_cf_contact_page_id','__missing__')!=='__missing__'
 	|| YBY_Module_Registry::enabled_modules()!==array()) {
 	WP_CLI::error('Site already configured. Refusing to overwrite or rerun');
 }
@@ -88,11 +102,21 @@ update_option('andy_cf_contact_page_id',$page_id,false);
 update_option('andy_cf_contact_slug',$page_slug,false);
 update_option('andy_cf_site_enabled',0,false);
 YBY_Module_Registry::save(array('inquiry_os'));
+// This invocation bootstrapped with the Inquiry module OFF; its init hook
+// was therefore not registered when WP-CLI loaded WordPress. Validate the
+// same shortcode via explicit, one-time registration without changing Core.
+if (!shortcode_exists('yby_inquiry')) {
+	$sc=new YBY_Inquiry_Shortcodes(new YBY_Inquiry_Manager(),new YBY_Inquiry_Renderer());
+	$sc->register();
+}
 $markup=do_shortcode($form);
 if (''===$markup || false===strpos($markup,'data-yby-inquiry-inline')) {
 	YBY_Module_Registry::save(array());
 	delete_option(YBY_Popup_Field_Studio::OPTION);
-	WP_CLI::error('Inline form renderer failed. Guard remains disabled.');
+	delete_option('andy_cf_site_enabled');
+	delete_option('andy_cf_contact_page_id');
+	delete_option('andy_cf_contact_slug');
+	WP_CLI::error('Inline form renderer failed; all new site options reverted.');
 }
 update_option('andy_cf_site_enabled',1,false);
 $updated=wp_update_post(array('ID'=>$page_id,'post_content'=>$replacement),true);
