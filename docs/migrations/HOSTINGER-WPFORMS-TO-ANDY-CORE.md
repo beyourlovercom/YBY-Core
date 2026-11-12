@@ -68,3 +68,15 @@ Check the output's errors and truncated_at_500 flags. Published-content SQL LIKE
     php tests/wpforms-migration-inventory-harness.php
 
 No test here proves site runtime, real mail receipt, or safe WPForms uninstall. Keep rollback backups, source WPForms definitions and existing form data until separately authorized removal.
+
+
+## R0/R1 implementation evidence (2026-11-12)
+
+- R0 audit executed **read-only with WordPress CLI** against all 12 installed WPForms sites after independent PHP lint/offline checks: **12/12 PASS**, no audit errors or 500-item truncations.
+- Exact R0 totals: **23 forms / 79 field instances / 0 unknown field types / 44 published post-content references** (the 44 are candidates that require human placement review). Elementor and WordPress options can also contain references; counts can overlap, so do not add them to 44 as a distinct-page total.
+- R1 candidate draft tool also executed read-only at all 12 sites: **12/12 JSON PASS / 23 inactive candidate presets / 45 draft site-specific fields**, plus built-in name and email fields. No presets enabled and **ready_to_apply=false** everywhere.
+- Found production compatibility gates that cannot be silently copied: notification destination/confirmation behavior at all 12 sites; several distinct select choice values; multipart name field behavior; some forms without an email field; and gsfdcy.com provider integration.
+- CI and offline test success **does not** approve the final email, anti-spam, embedding, frontend, or uninstall behavior.
+- Test command: php tests/wpforms-migration-draft-harness.php (compares generated candidate to real YBY_Popup_Field_Studio::sanitize). Candidate state stays disabled.
+- Draft CLI: wp --path=/home/u595431186/domains/SITE/public_html --skip-plugins --skip-themes eval-file /path/to/YBY-Core/tools/wpforms-migration/draft-site.php
+- The draft CLI produces only a **review candidate**; never use it to overwrite an existing site option. Existing Andy Core settings, integration credentials, and old form content are not modified by these tools.
