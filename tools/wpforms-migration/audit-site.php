@@ -10,14 +10,13 @@
  * No form entries, recipient emails, secrets, field values, options or database
  * mutations. Output must be reviewed before any migration or uninstall.
  */
+global $wpdb;
 if ( ! defined( 'ABSPATH' ) || ! isset( $wpdb ) ) {
 	fwrite( STDERR, "This script requires a bootstrapped WordPress site (wp eval-file).\n" );
 	exit( 1 );
 }
 
 require_once __DIR__ . '/class-inventory.php';
-
-global $wpdb;
 
 $limit = 500;
 $forms = array();
