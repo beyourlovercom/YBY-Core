@@ -5,6 +5,7 @@ function sanitize_key( $s ) { return preg_replace( '/[^a-z0-9_-]/', '', strtolow
 function sanitize_text_field( $s ) { return trim( strip_tags( (string) $s ) ); }
 function esc_url_raw( $s ) { return (string) $s; }
 function wp_json_encode( $data ) { return json_encode( $data ); }
+function absint( $n ) { return abs( (int) $n ); }
 function migration_draft_must( $ok, $message ) {
 	if ( ! $ok ) { fwrite( STDERR, "FAIL: $message\n" ); exit( 1 ); }
 }
