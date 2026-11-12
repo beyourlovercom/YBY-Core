@@ -45,7 +45,7 @@ $needle = '%' . $wpdb->esc_like( 'wpforms' ) . '%';
 $published_rows = $wpdb->get_results(
 	$wpdb->prepare(
 		"SELECT ID, post_type FROM {$wpdb->posts}
-		 WHERE post_status = 'publish' AND post_type <> 'revision'
+		 WHERE post_status = 'publish' AND post_type NOT IN ('revision', 'wpforms')
 		 AND post_content LIKE %s ORDER BY ID ASC LIMIT {$limit}",
 		$needle
 	),
