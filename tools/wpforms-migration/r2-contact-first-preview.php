@@ -63,8 +63,11 @@ $form = '[yby_inquiry preset="site_contact_v1" id="andy-contact-first-r2" '
 	. 'title="Contact Us" submit_label="Send inquiry" '
 	. 'desktop_fields="name,email,country,product_interest,quantity,company,message,site_contact_consent" '
 	. 'mobile_fields="name,email,country,product_interest,quantity,company,message,site_contact_consent"]';
-if ( '' === do_shortcode( $form ) ) { WP_CLI::error( 'Inline renderer emitted nothing; no changes.' ); }
 if ( ! update_option( $key, $clean, false ) ) { WP_CLI::error( 'Studio state write failed.' ); }
+if ( '' === do_shortcode( $form ) ) {
+	update_option( $key, $old, false );
+	WP_CLI::error( 'Inline renderer emitted nothing; Studio state restored.' );
+}
 $password = wp_generate_password( 18, false, false );
 $post = wp_insert_post( array(
 	'post_title' => 'R2 Contact First — Protected Visual Preview',
