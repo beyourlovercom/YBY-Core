@@ -157,6 +157,22 @@ add_action( 'wp_enqueue_scripts', static function () {
 }, 120 );
 
 
+/** Avoid serving a cached protected preview or a stale public form nonce. */
+add_action( 'init', static function () {
+	$path = wp_parse_url( (string) ( $_SERVER['REQUEST_URI'] ?? '' ), PHP_URL_PATH );
+	$is_preview = is_string( $path ) && (
+		0 === strpos( $path, '/andy-contact-first-r2-20261112/' ) ||
+		0 === strpos( $path, '/andy-core-r2-moccasin-429-20261112/' )
+	);
+	$is_live_contact = is_string( $path ) &&
+		1 === (int) get_option( 'andy_r2_contact_first_live', 0 ) &&
+		0 === strpos( $path, '/contact/' );
+	if ( $is_preview || $is_live_contact ) {
+		if ( ! defined( 'DONOTCACHEPAGE' ) ) { define( 'DONOTCACHEPAGE', true ); }
+		do_action( 'litespeed_control_set_nocache', 'andy_contact_first' );
+	}
+}, 0 );
+
 /** Scope the contact-page nonce to a tiny script; no global frontend assets. */
 add_action( 'wp_enqueue_scripts', static function () {
 	if ( 1 !== (int) get_option( 'andy_r2_contact_first_live', 0 ) || ! is_page( 'contact' ) ) { return; }
@@ -174,7 +190,9 @@ add_action( 'wp_enqueue_scripts', static function () {
 
 /** Contact page must never be cached with stale per-page controls. */
 add_action( 'send_headers', static function () {
-	if ( 1 === (int) get_option( 'andy_r2_contact_first_live', 0 ) && is_page( 'contact' ) ) {
+	if ( is_page( 'andy-contact-first-r2-20261112' )
+		|| is_page( 'andy-core-r2-moccasin-429-20261112' )
+		|| ( 1 === (int) get_option( 'andy_r2_contact_first_live', 0 ) && is_page( 'contact' ) ) ) {
 		nocache_headers();
 	}
 }, 90 );
