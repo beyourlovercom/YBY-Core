@@ -35,6 +35,7 @@ class YBY_Connector {
 	public function __construct() {
 		add_action( 'init', array( __CLASS__, 'register_completed_delivered_status' ), 10, 0 );
 		add_filter( 'wc_order_statuses', array( __CLASS__, 'add_completed_delivered_status' ), 10, 1 );
+		add_filter( 'woocommerce_coupon_get_description', array( __CLASS__, 'coupon_description_link_on_admin_list' ), 10, 2 );
 	}
 
 	/**
@@ -697,6 +698,17 @@ class YBY_Connector {
 		return array( 'affiliate_id' => $id, 'status' => (string) $read->status );
 	}
 
+	// WooCommerce's built-in Description column allows safe links via wp_kses_post().
+	// Restrict conversion to the coupon list, leaving the editor's plain URL unchanged.
+	public static function coupon_description_link_on_admin_list( $description, $coupon ) {
+		if ( ! is_admin() || ! function_exists( 'get_current_screen' ) ) { return $description; }
+		$screen = get_current_screen();
+		if ( ! $screen || 'edit-shop_coupon' !== $screen->id || ! is_string( $description ) ) { return $description; }
+		$url = trim( $description );
+		if ( ! filter_var( $url, FILTER_VALIDATE_URL ) || ! in_array( strtolower( (string) parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) { return $description; }
+		return '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $url ) . '</a>';
+	}
+
 	private static function provision_coupon( $input ) {
 		$connection = $input['connection_key']; $normalized = $input['normalized_code']; $owner = self::provision_lease_owner();
 		// Provider truth and exact Affiliate validation precede the durable lease.
@@ -710,13 +722,13 @@ class YBY_Connector {
 		// Re-check under the global normalized-code lease to close the check/acquire race.
 		if ( self::find_coupon_by_normalized_code( $input['code'] ) ) { return $release( new WP_Error( 'COUPON_CONFLICT', 'Coupon code already exists.', array( 'status' => 409, 'retryable' => false ) ) ); }
 		if ( ! YBY_Connector_Coupon_Bindings::renew( $normalized, $owner ) ) { return $release( new WP_Error( 'PROVISION_IN_PROGRESS', 'Coupon provisioning reservation was lost; retry safely.', array( 'status' => 503, 'retryable' => true ) ) ); }
-		$coupon = new WC_Coupon(); $coupon->set_code( $input['code'] ); $coupon->set_discount_type( $input['discount_type'] ); $coupon->set_amount( $input['amount'] ); $coupon->set_date_expires( $input['expiry_timestamp'] ); $coupon->update_meta_data( 'affwp_discount_affiliate', (string) $input['affiliate_id'] );
+		$coupon = new WC_Coupon(); $coupon->set_code( $input['code'] ); $coupon->set_discount_type( $input['discount_type'] ); $coupon->set_amount( $input['amount'] ); $coupon->set_date_expires( $input['expiry_timestamp'] ); if ( isset( $input['profile_url'] ) ) { $coupon->set_description( $input['profile_url'] ); } $coupon->update_meta_data( 'affwp_discount_affiliate', (string) $input['affiliate_id'] );
 		try { $coupon->save(); } catch ( Exception $e ) { return $release( self::provider_failure( 'PROVIDER_WRITE_FAILED', 'Coupon creation failed.' ) ); }
 		if ( ! $coupon->get_id() ) { return $release( self::provider_failure( 'PROVIDER_WRITE_FAILED', 'Coupon creation failed.' ) ); }
 		$created_id = (int) $coupon->get_id(); $read = null; $read_error = false;
 		try { $read = new WC_Coupon( $created_id ); } catch ( Exception $e ) { $read_error = true; }
 		$linked = $read ? self::coupon_affiliate_id( $read ) : null;
-		if ( $read_error || ! $read || self::normalize_coupon_code( $read->get_code() ) !== $normalized || (string) $read->get_discount_type() !== $input['discount_type'] || ! self::decimal_equal( $read->get_amount(), $input['amount'] ) || (int) $linked !== (int) $input['affiliate_id'] || ! self::coupon_expiry_matches( $read, $input['expiry_timestamp'] ) ) {
+		if ( $read_error || ! $read || self::normalize_coupon_code( $read->get_code() ) !== $normalized || (string) $read->get_discount_type() !== $input['discount_type'] || ! self::decimal_equal( $read->get_amount(), $input['amount'] ) || (int) $linked !== (int) $input['affiliate_id'] || ! self::coupon_expiry_matches( $read, $input['expiry_timestamp'] ) || ( isset( $input['profile_url'] ) && $read->get_description( 'edit' ) !== $input['profile_url'] ) ) {
 			return self::compensate_created_coupon( $connection, $normalized, $owner, $created_id, $release );
 		}
 		if ( ! YBY_Connector_Coupon_Bindings::finalize( $connection, $normalized, $owner, $created_id, $input['affiliate_id'], $input['erp_kol_id'] ) ) {
@@ -739,7 +751,7 @@ class YBY_Connector {
 
 	private static function coupon_reservation_owned( $row, $normalized, $owner ) { return is_array( $row ) && (string) ( $row['normalized_code'] ?? '' ) === (string) $normalized && 'processing' === (string) ( $row['state'] ?? '' ) && (string) ( $row['lease_owner_hash'] ?? '' ) === (string) $owner && ! empty( $row['lease_expires_at'] ) && strtotime( (string) $row['lease_expires_at'] . ' UTC' ) >= time(); }
 	private static function coupon_binding_matches( $row, $coupon_id, $affiliate_id, $kol, $normalized ) { if ( ! is_array( $row ) || 'ready' !== (string) ( $row['state'] ?? '' ) || (int) ( $row['coupon_id'] ?? 0 ) !== (int) $coupon_id || (int) ( $row['affiliate_id'] ?? 0 ) !== (int) $affiliate_id || (int) ( $row['erp_kol_id'] ?? 0 ) !== (int) $kol || (string) ( $row['normalized_code'] ?? '' ) !== (string) $normalized ) { return false; } $coupon = new WC_Coupon( (int) $coupon_id ); return (int) $coupon->get_id() === (int) $coupon_id && (int) self::coupon_affiliate_id( $coupon ) === (int) $affiliate_id; }
-	private static function coupon_result( $coupon, $affiliate_id ) { return array( 'coupon_id' => (int) $coupon->get_id(), 'code' => (string) $coupon->get_code(), 'normalized_code' => self::normalize_coupon_code( $coupon->get_code() ), 'affiliate_id' => (int) $affiliate_id, 'discount_type' => (string) $coupon->get_discount_type(), 'amount' => (string) $coupon->get_amount(), 'date_expires' => self::provider_date( $coupon->get_date_expires() ) ); }
+	private static function coupon_result( $coupon, $affiliate_id ) { return array( 'coupon_id' => (int) $coupon->get_id(), 'code' => (string) $coupon->get_code(), 'normalized_code' => self::normalize_coupon_code( $coupon->get_code() ), 'affiliate_id' => (int) $affiliate_id, 'discount_type' => (string) $coupon->get_discount_type(), 'amount' => (string) $coupon->get_amount(), 'date_expires' => self::provider_date( $coupon->get_date_expires() ), 'profile_url_sha256' => hash( 'sha256', (string) $coupon->get_description( 'edit' ) ) ); }
 	private static function coupon_binding_result( $row ) { $coupon = new WC_Coupon( (int) $row['coupon_id'] ); $linked = self::coupon_affiliate_id( $coupon ); return $coupon->get_id() && $linked === (int) $row['affiliate_id'] ? self::coupon_result( $coupon, $linked ) : self::provider_failure( 'PROVIDER_READBACK_FAILED', 'Bound coupon read-back failed.' ); }
 	private static function coupon_expiry_matches( $coupon, $timestamp ) { $date = $coupon->get_date_expires(); return null === $timestamp ? ! $date : ( $date instanceof DateTimeInterface && abs( $date->getTimestamp() - $timestamp ) <= 1 ); }
 	private static function decimal_equal( $left, $right ) { return self::canonical_decimal( $left ) === self::canonical_decimal( $right ); }
@@ -891,14 +903,20 @@ class YBY_Connector {
 
 	private static function validate_coupon_provision_input( $request, $body ) {
 		$required = array( 'erp_kol_id', 'affiliate_id', 'code', 'discount_type', 'amount', 'expiry' );
-		if ( ! is_array( $body ) || array_diff( $required, array_keys( $body ) ) || array_diff( array_keys( $body ), $required ) || 6 !== count( $body ) ) { return self::validation_error(); }
+		if ( ! is_array( $body ) || array_diff( $required, array_keys( $body ) ) || array_diff( array_keys( $body ), array_merge( $required, array( 'profile_url' ) ) ) ) { return self::validation_error(); }
 		foreach ( array( 'erp_kol_id', 'affiliate_id' ) as $key ) { if ( ! ( is_int( $body[ $key ] ) || ( is_string( $body[ $key ] ) && ctype_digit( $body[ $key ] ) ) ) || (int) $body[ $key ] < 1 ) { return self::validation_error(); } }
 		if ( ! is_scalar( $body['code'] ) ) { return self::validation_error(); }
 		$display_code = trim( (string) $body['code'] );
 		if ( '' === $display_code || strlen( $display_code ) > 255 || ( function_exists( 'wc_sanitize_coupon_code' ) && wc_sanitize_coupon_code( $display_code ) !== $display_code ) || ! is_scalar( $body['discount_type'] ) || ! in_array( (string) $body['discount_type'], array( 'percent', 'fixed_cart', 'fixed_product' ), true ) || ! is_scalar( $body['amount'] ) || ! preg_match( '/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/', (string) $body['amount'] ) ) { return self::validation_error(); }
 		if ( 'percent' === (string) $body['discount_type'] && ! self::decimal_at_most_100( (string) $body['amount'] ) ) { return self::validation_error(); }
 		$timestamp = null; if ( null !== $body['expiry'] ) { if ( ! is_scalar( $body['expiry'] ) || ! preg_match( '/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})$/', (string) $body['expiry'], $parts ) ) { return self::validation_error(); } $warning = false; set_error_handler( function () use ( &$warning ) { $warning = true; } ); try { $date = new DateTimeImmutable( (string) $body['expiry'] ); } catch ( Exception $e ) { $date = false; } restore_error_handler(); if ( $warning || ! $date || $date->format( 'Y-m-d\\TH:i:s' ) !== implode( '-', array_slice( $parts, 1, 3 ) ) . 'T' . implode( ':', array_slice( $parts, 4, 3 ) ) ) { return self::validation_error(); } $timestamp = $date->getTimestamp(); }
-		return array( 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'erp_kol_id' => (int) $body['erp_kol_id'], 'affiliate_id' => (int) $body['affiliate_id'], 'code' => $display_code, 'normalized_code' => self::normalize_coupon_code( $display_code ), 'discount_type' => (string) $body['discount_type'], 'amount' => (string) $body['amount'], 'expiry_timestamp' => $timestamp );
+		$validated = array( 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'erp_kol_id' => (int) $body['erp_kol_id'], 'affiliate_id' => (int) $body['affiliate_id'], 'code' => $display_code, 'normalized_code' => self::normalize_coupon_code( $display_code ), 'discount_type' => (string) $body['discount_type'], 'amount' => (string) $body['amount'], 'expiry_timestamp' => $timestamp );
+		if ( array_key_exists( 'profile_url', $body ) ) {
+			$url = is_string( $body['profile_url'] ) ? trim( $body['profile_url'] ) : '';
+			if ( '' === $url || strlen( $url ) > 500 || ! filter_var( $url, FILTER_VALIDATE_URL ) || ! in_array( strtolower( (string) parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) { return self::validation_error(); }
+			$validated['profile_url'] = $url;
+		}
+		return $validated;
 	}
 
 	private static function validation_error() { return new WP_Error( 'VALIDATION_FAILED', 'Request syntax or values are invalid.', array( 'status' => 400, 'retryable' => false ) ); }
