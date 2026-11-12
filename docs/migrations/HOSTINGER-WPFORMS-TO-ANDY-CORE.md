@@ -80,3 +80,39 @@ No test here proves site runtime, real mail receipt, or safe WPForms uninstall. 
 - Test command: php tests/wpforms-migration-draft-harness.php (compares generated candidate to real YBY_Popup_Field_Studio::sanitize). Candidate state stays disabled.
 - Draft CLI: wp --path=/home/u595431186/domains/SITE/public_html --skip-plugins --skip-themes eval-file /path/to/YBY-Core/tools/wpforms-migration/draft-site.php
 - The draft CLI produces only a **review candidate**; never use it to overwrite an existing site option. Existing Andy Core settings, integration credentials, and old form content are not modified by these tools.
+
+
+## R2 pilot evidence — moccasin-badger (2026-11-12)
+
+Only site moccasin-badger-830954.hostingersite.com was changed. Main, the other 11 WPForms sites, the original Contact page ID 213 and its WPForms form ID 429 remain unchanged. WPForms is still ACTIVE.
+
+### Backup, canonical test package and isolation
+
+- Pre-R2 DB backup is stored outside webroot: /home/u595431186/.andy-r2-backups/moccasin-20261112/pre-r2.sql.gz; gzip verification PASS, 63 CREATE TABLE statements; SHA256 b09411483babae6f36b5fcc4968649f51864bd6c6ad92101cdc16998ff249b6f. It is mode 600 in mode 700 directory.
+- A reproducible **unsigned UAT-only** Andy Core v2.3.3 package was assembled from canonical GitHub main commit ee540507bdd2ab35963a8c5da214bd1f24c9d912: 209/209 exact blob hash comparisons PASS, 154/154 PHP lint PASS. One divergent installed connector file was replaced **only in the staging copy** with the matching canonical GitHub content. Package SHA256 b561e1c51b5a16773903a728e7e485774ccff1b3942486e5376f64cf83839381. This package is NOT a signed Stable release and must NOT be propagated to other sites.
+- Andy Core v2.3.3 was installed and activated solely at the pilot site. The enabled-modules option was initially seeded empty; only Inquiry OS was enabled for the test.
+- Source-controlled pilot-only MU guard (tools/wpforms-migration/r2-moccasin-preview-guard.php) scopes Inquiry OS frontend to the preview URI; ordinary homepage and Contact page have no Andy Core popup JS and original WPForms is still present. The guard rejects ANY public Andy Core lead POST with HTTP 403 / andy_r2_leads_disabled. No real lead or email was submitted.
+- Pilot preview post ID 555, slug /andy-core-r2-moccasin-429-20261112/, is password protected, noindex and nofollow, with a site-owned Field Studio V2 preset site_wpforms_429. Actual preview password is not stored in this repository. Input Name/Email required; Subject/Message optional. Preview submission button is disabled and additionally guarded server-side.
+
+### R2 upstream bug: site Studio shortcode
+
+The v2.3.3 shortcode render_modal_shortcode() passes an imploded field-ID **string** to resolve_field_ids(), which only accepts an **array**, when site studio preset desktop_fields is omitted. The modal thus silently fails to render. Reproduced on the pilot. A one-time site-locked workaround (tools/wpforms-migration/r2-moccasin-fix-shortcode.php) updates only preview page 555 to supply explicit desktop_fields and mobile_fields attributes. Shared Andy Core code/main were not changed. Must add an actual regression/fix before R3 production migration.
+
+### Actual validation
+
+- Public homepage and /contact/ return HTTP 200. /contact/ includes the existing WPForms UI, not the Andy Core modal. Password-protected preview page HTTP 200 and noindex.
+- Real browser automation using a **separate disposable Chrome 156 headless session** (no restart or user Chrome takeover): desktop 1440px, mobile 390px; custom R2 modal opened and closed via actual click; modal dimensions 960px and 370px; four labels in both responsive layouts, Name and Email required; no horizontal overflow, no browser JavaScript exception; form submission disabled. Retested after site-isolation guard update.
+- Six independent WordPress-required-field validation cases passed, including empty/invalid email and minimum-valid desktop/mobile. No lead writes.
+- REST POST to /wp-json/yby/v1/leads returned **HTTP 403**, code andy_r2_leads_disabled.
+- This is **automated R2 visual/interactivity PASS only**: no Owner visual acceptance and **no real mail, notification inbox delivery, or lead-database end-to-end PASS**.
+
+### Remaining gates
+
+- [ ] Owner visual PASS on password-protected pilot preview.
+- [ ] Separate authorization for controlled synthetic lead test, SMTP acceptance, actual mailbox delivery and anti-spam.
+- [ ] Fix site Studio shortcode default resolution and cover by regression before full R3.
+- [ ] Signed shared release and site-by-site cutover authorization; WPForms stays enabled until replacement proven.
+
+### Pilot rollback (not executed)
+
+Preserve any legitimate records. Disable the R2 Inquiry OS module; delete only the R2 test post ID 555 and test-only Studio configuration, deactivate the R2 Andy Core instance, then remove the pilot-only MU plugin. Original WPForms form/page remain unmodified. Do not blindly restore the old database dump over newer content. Retain off-webroot backup.
