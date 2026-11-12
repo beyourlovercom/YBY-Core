@@ -169,7 +169,7 @@ class YBY_Inquiry_Shortcodes {
 		$fields = ! empty( $attributes['desktop_fields'] )
 			? $this->resolve_field_ids( $attributes['desktop_fields'] )
 			: ( class_exists( 'YBY_Popup_Field_Studio' ) && YBY_Popup_Field_Studio::has_preset( $preset['id'] )
-				? $this->resolve_field_ids( implode( ',', YBY_Popup_Field_Studio::desktop_fields( $preset['id'] ) ) )
+				? $this->resolve_field_ids( YBY_Popup_Field_Studio::desktop_fields( $preset['id'] ) )
 				: $this->resolve_preset_fields( $preset ) );
 		$mobile_fields = ! empty( $attributes['mobile_fields'] )
 			? $this->resolve_field_ids( $attributes['mobile_fields'] )
