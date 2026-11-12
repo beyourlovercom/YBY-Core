@@ -10,6 +10,28 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 if ( 'moccasin-badger-830954.hostingersite.com' !== wp_parse_url( home_url( '/' ), PHP_URL_HOST ) ) { return; }
 
+/**
+ * Restrict Inquiry OS runtime to the password-protected preview (and the
+ * intentionally blocked leads route). Existing home/Contact pages must not
+ * acquire Andy Core global popup, dock, JS, or public form handlers.
+ *
+ * CLI and WP admin retain the stored module configuration for safe inspection.
+ */
+add_filter( 'pre_option_yby_core_enabled_modules_v1', static function ( $pre ) {
+	if ( ( defined( 'WP_CLI' ) && WP_CLI ) || is_admin() ) {
+		return $pre;
+	}
+	$path = wp_parse_url( (string) ( $_SERVER['REQUEST_URI'] ?? '' ), PHP_URL_PATH );
+	if ( ! is_string( $path ) ) {
+		return array();
+	}
+	if ( 0 === strpos( $path, '/andy-core-r2-moccasin-429-20261112/' )
+		|| 0 === strpos( $path, '/wp-json/yby/v1/leads' ) ) {
+		return $pre;
+	}
+	return array();
+}, 1 );
+
 add_filter( 'rest_pre_dispatch', static function ( $result, $server, $request ) {
 	if ( '/yby/v1/leads' === $request->get_route() ) {
 		return new WP_Error(
