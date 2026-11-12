@@ -116,3 +116,31 @@ The v2.3.3 shortcode render_modal_shortcode() passes an imploded field-ID **stri
 ### Pilot rollback (not executed)
 
 Preserve any legitimate records. Disable the R2 Inquiry OS module; delete only the R2 test post ID 555 and test-only Studio configuration, deactivate the R2 Andy Core instance, then remove the pilot-only MU plugin. Original WPForms form/page remain unmodified. Do not blindly restore the old database dump over newer content. Retain off-webroot backup.
+
+
+## R5 FINAL readback — 2026-11-12 (supersedes earlier active-WPForms pilot notes)
+
+Owner specifically authorized WPForms removal on the nine migrated Contact First sites. All nine plugins have now been **deactivated and deleted** after site-scoped reference replacement, rollback snapshot, and real public HTTP verification. No source-form database records were deleted; the other three sites are reserved for Owner manual migration.
+
+| Migrated site | WPForms file+directory entries before | After | Contact HTTP / inline form |
+| --- | ---: | ---: | --- |
+| blanchedalmond-flamingo-601606.hostingersite.com | 4967 | 0 | PASS |
+| darkgoldenrod-camel-347943.hostingersite.com | 4967 | 0 | PASS |
+| darkturquoise-bee-276354.hostingersite.com | 4967 | 0 | PASS |
+| dodgerblue-mantis-171767.hostingersite.com | 4967 | 0 | PASS |
+| lightcoral-weasel-975054.hostingersite.com | 4967 | 0 | PASS |
+| lightsteelblue-caterpillar-245164.hostingersite.com | 4967 | 0 | PASS |
+| mediumpurple-meerkat-978434.hostingersite.com | 4967 | 0 | PASS |
+| moccasin-badger-830954.hostingersite.com | 4996 | 0 | PASS |
+| skyblue-gaur-779563.hostingersite.com | 4996 | 0 | PASS |
+| **Total** | **44761** | **0** | **9/9 PASS** |
+
+Remaining WPForms directories untouched: funnyslip.com 5541 entries, fondomanpowergroup.com 4967 entries, gsfdcy.com 5009 entries. All three source plugins are ACTIVE. Thus exact WPForms directory count across 12 target sites decreased from 60278 to 15517 entries: 44761 freed.
+
+Nine rollback ZIPs were saved outside webroot under /home/u595431186/.andy-contact-first-backups/20261112/, totaling 124531345 bytes. They add 9 file entries. After excluding only these 9 backup ZIP entries, the directly attributable plugin-files-versus-ZIP inode reduction is 44752; the overall hosting-account inode delta can vary due to other backups, installation changes, and temporary files. A post-run home directory scan saw 311739 accessible filesystem entries (271089 files, 40632 directories including root, 18 symlinks) but encountered 55 inaccessible paths, so this **is not a certified Hostinger hPanel quota reading**.
+
+Additional resolved dependencies before deletion: four old WPForms inquiry widgets across the About/Services pages of blanchedalmond and lightsteelblue, eleven newsletter or demo-appointment Elementor widgets across five sites, and one active lightcoral Blocksy Footer Gutenberg WPForms block. They were replaced with canonical Contact-page links, with complete pre-edit snapshots saved outside webroot. This deliberately retires their old standalone newsletter signup and simple appointment-request workflows; it does not promise equivalent mailing-list or booking functionality. All nine public Contact pages returned HTTP 200, rendered the Andy Core site_contact_v1 form and nonce, and did not display the old WPForms form. All 17 old WPForms form-definition database rows were preserved.
+
+WordPress SMTP acceptance for earlier synthetic submissions does NOT prove actual inbox delivery. Signed Andy Core v2.2.11 was used for eleven deployment sites; the approved moccasin R2 trial had v2.3.3. GitHub main was not merged; branch-specific migration and regression work stays in Draft PR #315.
+
+Recovery: restore the site's exact ZIP to its own plugins path, reactivate WPForms, restore page/Elementor/footer-widget snapshots as relevant, and disable the site-local Contact First gate before cutting back. Do not blindly restore full DB over newer real leads.
