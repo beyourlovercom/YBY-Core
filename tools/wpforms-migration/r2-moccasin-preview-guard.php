@@ -27,20 +27,56 @@ add_filter( 'pre_option_yby_core_enabled_modules_v1', static function ( $pre ) {
 	}
 	if ( 0 === strpos( $path, '/andy-core-r2-moccasin-429-20261112/' )
 		|| 0 === strpos( $path, '/andy-contact-first-r2-20261112/' )
-		|| 0 === strpos( $path, '/wp-json/yby/v1/leads' ) ) {
+		|| 0 === strpos( $path, '/wp-json/yby/v1/leads' )
+		|| ( 1 === (int) get_option('andy_r2_contact_first_live',0) && 0 === strpos( $path, '/contact/' ) ) ) {
 		return $pre;
 	}
 	return array();
 }, 1 );
 
+/**
+ * Pilot is DENY by default. Live mode requires an explicit local flag and
+ * same-site nonce, same-site browser source, valid consent, and rate limit.
+ * No bypass for other presets/routes; never intercept WPForms.
+ */
 add_filter( 'rest_pre_dispatch', static function ( $result, $server, $request ) {
-	if ( '/yby/v1/leads' === $request->get_route() ) {
-		return new WP_Error(
-			'andy_r2_leads_disabled',
-			'R2 visual preview only. Andy Core lead submissions are temporarily disabled on this pilot site.',
-			array( 'status' => 403 )
-		);
+	if ( '/yby/v1/leads' !== $request->get_route() ) { return $result; }
+	$deny = static function ( $code, $message, $status ) {
+		return new WP_Error( $code, $message, array( 'status' => $status ) );
+	};
+	if ( 1 !== (int) get_option( 'andy_r2_contact_first_live', 0 ) ) {
+		return $deny( 'andy_r2_leads_disabled', 'R2 preview-only; public inquiries disabled.', 403 );
 	}
+	if ( strtoupper( $request->get_method() ) !== 'POST'
+		|| (string) $request->get_param( 'source_preset' ) !== 'site_contact_v1'
+		|| (string) $request->get_param( 'source_component' ) !== 'inquiry_shortcode' ) {
+		return $deny( 'andy_cf_invalid_source', 'Use the Contact page form.', 403 );
+	}
+	$nonce = (string) $request->get_header( 'x-andy-contact-nonce' );
+	if ( '' === $nonce || ! wp_verify_nonce( $nonce, 'andy_contact_first_v1' ) ) {
+		return $deny( 'andy_cf_nonce_missing', 'Reload the Contact form.', 403 );
+	}
+	$expected_host = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
+	$referer = (string) ( $_SERVER['HTTP_ORIGIN'] ?? ( $_SERVER['HTTP_REFERER'] ?? '' ) );
+	$referer_host = strtolower( (string) wp_parse_url( $referer, PHP_URL_HOST ) );
+	$source = (string) $request->get_param( 'source_url' );
+	$source_host = strtolower( (string) wp_parse_url( $source, PHP_URL_HOST ) );
+	$source_path = (string) wp_parse_url( $source, PHP_URL_PATH );
+	if ( $referer_host !== $expected_host || $source_host !== $expected_host
+		|| ! in_array( untrailingslashit( $source_path ), array( '/contact', '/contact-us' ), true ) ) {
+		return $deny( 'andy_cf_origin_mismatch', 'Submit from the Contact page.', 403 );
+	}
+	$submitted_fields = $request->get_param( 'fields' );
+	if ( ! is_array( $submitted_fields ) || (string) ( $submitted_fields['site_contact_consent'] ?? '' ) !== '1' ) {
+		return $deny( 'andy_cf_consent_required', 'Please agree to be contacted.', 400 );
+	}
+	$ip = (string) ( $_SERVER['REMOTE_ADDR'] ?? 'unknown' );
+	$key = 'andy_cf_rate_' . substr( hash_hmac( 'sha256', $ip, wp_salt( 'nonce' ) ), 0, 24 );
+	$attempts = (int) get_transient( $key );
+	if ( $attempts >= 6 ) {
+		return $deny( 'andy_cf_rate_limited', 'Too many requests. Please try later.', 429 );
+	}
+	set_transient( $key, $attempts + 1, 10 * MINUTE_IN_SECONDS );
 	return $result;
 }, 5, 3 );
 
@@ -79,7 +115,8 @@ JS;
 
 /** Contact First: only in the protected preview, hide unneeded modal/dock. */
 add_action( 'wp', static function () {
-	if ( ! is_page( 'andy-contact-first-r2-20261112' ) ) { return; }
+	if ( ! is_page( 'andy-contact-first-r2-20261112' )
+		&& ! ( 1 === (int) get_option('andy_r2_contact_first_live',0) && is_page( 'contact' ) ) ) { return; }
 	global $wp_filter;
 	if ( ! isset( $wp_filter['wp_footer'] ) ) { return; }
 	foreach ( $wp_filter['wp_footer']->callbacks as $priority => $callbacks ) {
@@ -95,7 +132,8 @@ add_action( 'wp', static function () {
 
 /** Preview-only compact two-column contact layout, with mobile single column. */
 add_action( 'wp_enqueue_scripts', static function () {
-	if ( ! is_page( 'andy-contact-first-r2-20261112' ) ) { return; }
+	if ( ! is_page( 'andy-contact-first-r2-20261112' )
+		&& ! ( 1 === (int) get_option('andy_r2_contact_first_live',0) && is_page( 'contact' ) ) ) { return; }
 	wp_register_style( 'andy-r2-contact-first', false, array(), '1' );
 	wp_enqueue_style( 'andy-r2-contact-first' );
 	wp_add_inline_style( 'andy-r2-contact-first', '
@@ -117,3 +155,26 @@ add_action( 'wp_enqueue_scripts', static function () {
 	  .yby-shortcode-inquiry [data-yby-responsive="mobile"]{display:block}
 	}' );
 }, 120 );
+
+
+/** Scope the contact-page nonce to a tiny script; no global frontend assets. */
+add_action( 'wp_enqueue_scripts', static function () {
+	if ( 1 !== (int) get_option( 'andy_r2_contact_first_live', 0 ) || ! is_page( 'contact' ) ) { return; }
+	wp_register_script( 'andy-cf-nonce', false, array(), '1', false );
+	wp_enqueue_script( 'andy-cf-nonce' );
+	$nonce = wp_json_encode( wp_create_nonce( 'andy_contact_first_v1' ) );
+	wp_add_inline_script( 'andy-cf-nonce',
+		'(()=>{const original=window.fetch;window.fetch=function(input,init){'
+		.'let url=typeof input==="string"?input:(input&&input.url)||"";'
+		.'if(url==="/wp-json/yby/v1/leads"){init=Object.assign({},init);'
+		.'init.headers=Object.assign({},init.headers||{},{"X-Andy-Contact-Nonce":'.$nonce.'});}'
+		.'return original.call(this,input,init);};})();'
+	);
+}, 1 );
+
+/** Contact page must never be cached with stale per-page controls. */
+add_action( 'send_headers', static function () {
+	if ( 1 === (int) get_option( 'andy_r2_contact_first_live', 0 ) && is_page( 'contact' ) ) {
+		nocache_headers();
+	}
+}, 90 );
