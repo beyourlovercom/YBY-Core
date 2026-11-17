@@ -285,7 +285,8 @@ final class YBY_Andy_OS_Navigation {
 		// outside transfer_alias(). Preserve the same Andy Core L1/L2 parent
 		// after authorization, without altering any unrelated hidden menu.
 		$is_dev_translation_dashboard = 'byl-translation-dashboard' === $page &&
-			defined( 'BYL_TRANSLATION_DASHBOARD_V1' ) && function_exists( 'byl_td_admin_page' );
+			defined( 'BYL_TRANSLATION_DASHBOARD_V1' ) &&
+			function_exists( 'byl_td_module_enabled' ) && byl_td_module_enabled();
 		if ( ! $page || ( ! isset( self::$hidden_aliases[ $page ] ) && ! $is_dev_translation_dashboard ) ) { return; }
 		foreach ( $submenu[''] as $key => $item ) {
 			if ( isset( $item[2] ) && $page === $item[2] ) {
@@ -391,7 +392,8 @@ final class YBY_Andy_OS_Navigation {
 			$add( '项目列表', 'edit.php?post_type=yby_project', 'edit_posts', 'project_studio', '项目' );
 			$add( '项目工作台', 'admin.php?page=yby-project-studio', 'manage_options', 'project_studio', '项目' );
 			// Optional Dev-only MU dashboard: keep Andy Core's fixed seven L2 groups.
-			if ( defined( 'BYL_TRANSLATION_DASHBOARD_V1' ) && function_exists( 'byl_td_admin_page' ) ) {
+			if ( defined( 'BYL_TRANSLATION_DASHBOARD_V1' ) &&
+				function_exists( 'byl_td_module_enabled' ) && byl_td_module_enabled() ) {
 				$add( '翻译看板', 'admin.php?page=byl-translation-dashboard', 'manage_options', '', '翻译' );
 			}
 		} elseif ( 'andy-commerce' === $page ) {
