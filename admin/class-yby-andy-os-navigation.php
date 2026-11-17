@@ -281,7 +281,13 @@ final class YBY_Andy_OS_Navigation {
 				$page = $pagenow . '?post_type=' . $post_type;
 			}
 		}
-		if ( ! $page || ! isset( self::$hidden_aliases[ $page ] ) ) { return; }
+		// The Dev Translation Dashboard registers its own hidden controller,
+		// outside transfer_alias(). Preserve the same Andy Core L1/L2 parent
+		// after authorization, without altering any unrelated hidden menu.
+		$is_dev_translation_dashboard = 'byl-translation-dashboard' === $page &&
+			defined( 'BYL_TRANSLATION_DASHBOARD_V1' ) &&
+			function_exists( 'byl_td_module_enabled' ) && byl_td_module_enabled();
+		if ( ! $page || ( ! isset( self::$hidden_aliases[ $page ] ) && ! $is_dev_translation_dashboard ) ) { return; }
 		foreach ( $submenu[''] as $key => $item ) {
 			if ( isset( $item[2] ) && $page === $item[2] ) {
 				unset( $submenu[''][ $key ] );
@@ -362,7 +368,8 @@ final class YBY_Andy_OS_Navigation {
 		} elseif ( in_array( $page, array( 'andy-business', 'andy-business-programs',
 			'andy-business-applications', 'andy-business-settings', 'yby-content',
 			'yby-project-studio', 'yby-docs-os', 'yby-docs-all', 'yby-docs-directory',
-			'yby-docs-faq', 'yby-docs-tutorial', 'yby-docs-settings' ), true ) ) {
+			'yby-docs-faq', 'yby-docs-tutorial', 'yby-docs-settings',
+			'byl-translation-dashboard' ), true ) ) {
 
 			// V3 Owner-approved Content L3, existing WordPress controllers only.
 			if ( YBY_Module_Registry::is_enabled( 'docs_os' ) ) {
@@ -384,6 +391,11 @@ final class YBY_Andy_OS_Navigation {
 			$add( '新建落地页', 'post-new.php?post_type=landing_page', 'edit_pages', 'landing_pages', '落地页' );
 			$add( '项目列表', 'edit.php?post_type=yby_project', 'edit_posts', 'project_studio', '项目' );
 			$add( '项目工作台', 'admin.php?page=yby-project-studio', 'manage_options', 'project_studio', '项目' );
+			// Optional Dev-only MU dashboard: keep Andy Core's fixed seven L2 groups.
+			if ( defined( 'BYL_TRANSLATION_DASHBOARD_V1' ) &&
+				function_exists( 'byl_td_module_enabled' ) && byl_td_module_enabled() ) {
+				$add( '翻译看板', 'admin.php?page=byl-translation-dashboard', 'manage_options', '', '翻译' );
+			}
 		} elseif ( 'andy-commerce' === $page ) {
 			foreach ( array( 'overview'=>'总览', 'order-export'=>'订单导出',
 				'checkout-shipping'=>'结账运费', 'marketing-promotions'=>'促销',
@@ -443,7 +455,7 @@ final class YBY_Andy_OS_Navigation {
 			'andy-business-partners','andy-business-catalog','andy-business-fulfillment',
 			'yby-content','yby-project-studio','yby-docs-os','yby-docs-all',
 			'yby-docs-directory','yby-docs-editor','yby-docs-faq',
-			'yby-docs-tutorial','yby-docs-settings' ), true ) ) {
+			'yby-docs-tutorial','yby-docs-settings','byl-translation-dashboard' ), true ) ) {
 			return 'andy-core-content';
 		}
 		if ( in_array( $page, array( 'yby-core','yby-brand-os','yby-social-login','yby-login-os' ), true ) ) {
