@@ -281,7 +281,12 @@ final class YBY_Andy_OS_Navigation {
 				$page = $pagenow . '?post_type=' . $post_type;
 			}
 		}
-		if ( ! $page || ! isset( self::$hidden_aliases[ $page ] ) ) { return; }
+		// The Dev Translation Dashboard registers its own hidden controller,
+		// outside transfer_alias(). Preserve the same Andy Core L1/L2 parent
+		// after authorization, without altering any unrelated hidden menu.
+		$is_dev_translation_dashboard = 'byl-translation-dashboard' === $page &&
+			defined( 'BYL_TRANSLATION_DASHBOARD_V1' ) && function_exists( 'byl_td_admin_page' );
+		if ( ! $page || ( ! isset( self::$hidden_aliases[ $page ] ) && ! $is_dev_translation_dashboard ) ) { return; }
 		foreach ( $submenu[''] as $key => $item ) {
 			if ( isset( $item[2] ) && $page === $item[2] ) {
 				unset( $submenu[''][ $key ] );
