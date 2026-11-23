@@ -536,7 +536,7 @@ class YBY_Connector {
 			if ( false === $username ) { return $provider_failure( 'PROVIDER_WRITE_FAILED', 'Username could not be resolved safely.' ); }
 			if ( ! YBY_Connector_Affiliate_Bindings::renew( $connection, $kol, $owner_hash ) ) { return $lease_failure(); }
 			$password = ! empty( $input['strict_create'] ) ? $input['password'] : wp_generate_password( 32, true, true );
-			$user_id = wp_insert_user( array( 'user_login' => substr( $username, 0, 60 ), 'user_pass' => $password, 'user_email' => $input['email'], 'display_name' => $input['display_name'], 'first_name' => $input['display_name'], 'last_name' => '', 'role' => 'subscriber' ) );
+			$user_id = wp_insert_user( array( 'user_login' => ! empty( $input['strict_create'] ) ? $username : substr( $username, 0, 60 ), 'user_pass' => $password, 'user_email' => $input['email'], 'display_name' => $input['display_name'], 'first_name' => $input['display_name'], 'last_name' => '', 'role' => 'subscriber' ) );
 			unset( $password );
 			if ( is_wp_error( $user_id ) ) {
 				if ( ! empty( $input['strict_create'] ) && get_user_by( 'email', $input['email'] ) ) { return $conflict_failure( 'WP_USER_CONFLICT', 'A WordPress user was created concurrently for this email.' ); }
@@ -853,14 +853,13 @@ class YBY_Connector {
 		if ( ! ( is_int( $kol ) || ( is_string( $kol ) && ctype_digit( $kol ) ) ) || (int) $kol < 1 || (int) $kol > PHP_INT_MAX ) { return self::validation_error(); }
 		$email = trim( (string) $body['email'] ); $payment = trim( (string) $body['payment_email'] );
 		if ( ! is_email( $email ) || ! is_email( $payment ) ) { return self::validation_error(); }
-		$display = trim( wp_strip_all_tags( (string) $body['display_name'] ) ); $username = trim( (string) $body['preferred_username'] );
-		if ( '' === $display || strlen( $display ) > 120 || '' === $username || strlen( $username ) > 60 || ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._@-]*$/D', $username ) ) { return self::validation_error(); }
+		$display = trim( wp_strip_all_tags( (string) $body['display_name'] ) ); $username = $is_strict ? (string) $body['preferred_username'] : trim( (string) $body['preferred_username'] );
+		if ( '' === $display || strlen( $display ) > 120 || '' === $username ) { return self::validation_error(); }
 		$input = array( 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'erp_kol_id' => (int) $kol, 'email' => strtolower( $email ), 'display_name' => $display, 'preferred_username' => $username, 'requested_affiliate_status' => 'active', 'payment_email' => strtolower( $payment ) );
 		if ( $is_strict ) { $input['strict_create'] = true; $input['password'] = $body['password']; $input['existing_account_policy'] = 'reject'; }
 		if ( array_key_exists( 'affiliate_url_slug', $body ) ) {
 			$slug = $body['affiliate_url_slug'];
-			if ( ! $is_strict || ! is_string( $slug ) || '' === $slug || strlen( $slug ) > 60
-				|| ( $slug !== $username && ! preg_match( '/^[a-z][a-z0-9]*$/D', $slug ) ) ) {
+			if ( ! $is_strict || ! is_string( $slug ) || '' === $slug ) {
 				return self::validation_error();
 			}
 			$input['affiliate_url_slug'] = $slug;
