@@ -1,0 +1,3 @@
+# Andy Core 2.3.4 — ERP native AffiliateWP welcome
+
+Manual-install candidate for www.beyourlover.com only. Source includes PR #322 and previously merged ERP Connector identifier/password fixes. New native tags {initial_password} and {coupon_code} and deferred acceptance are opt-in; no new mail renderer. WordPress and ERP flags remain OFF until coordinated acceptance. Database markers unchanged (1.5.0 runtime, 1.4.0 updater). Preserve yby_lead_notifications, all user, Coupon, order and Connector data. No Stable/Latest publication, no automatic update activation, no installation by this build. Verify site-specific existing files and retain exact previous plugin directory before manual replacement. See docs/ERP_NATIVE_AFFILIATE_WELCOME_V1.md in source.

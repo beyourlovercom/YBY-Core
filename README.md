@@ -2,9 +2,9 @@
 
 Andy Core is the shared WordPress foundation plugin for managed websites.
 
-## v2.3.3 P0 Stable release (2026-10-30)
+## v2.3.4 P0 Stable release (2026-10-30)
 
-- Product version: `2.3.3` (signed P0 Bricks compatibility and dbDelta hotfix; site upgrades separately approved)
+- Product version: `2.3.4` (signed P0 Bricks compatibility and dbDelta hotfix; site upgrades separately approved)
 - Database version: `1.5.0`
 - Updater compatibility database version: `1.4.0`
 - Previous publicly published Stable was `2.3.2`; it remains immutable. Public Stable/Latest after R6 must be verified in the distribution repository. Historical v2.2.6 and v2.2.9 upgrade evidence remains below.

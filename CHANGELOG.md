@@ -1,3 +1,10 @@
+## v2.3.4 - 2026-11-27 (WWW manual-install candidate)
+
+- Opt-in native AffiliateWP welcome after a verified 20% WooCommerce Coupon, with request-local initial password and actual coupon tags.
+- Keep new welcome flow OFF by default; preserve existing ERP Connector contracts, idempotency and notification settings.
+- Includes merged ERP Affiliate identifier and password fixes since the v2.3.3 baseline. No database version bump.
+- Manual installation on WWW only; not an automatic-update channel publication.
+
 ## v2.3.3 - 2026-10-30 (P0 YBY Bricks / dbDelta recovery candidate)
 
 - Preserve site-owned Bricks child theme inquiry components on existing sites; load the Core fallback under a distinct class name.
