@@ -14,6 +14,7 @@ require_once __DIR__ . '/class-yby-subscriber-snapshot.php';
 require_once __DIR__ . '/class-yby-native-subscriber-snapshot.php';
 require_once __DIR__ . '/class-yby-connector-newsletter-readonly.php';
 require_once __DIR__ . '/class-yby-content-erp-contract.php';
+require_once __DIR__ . '/class-yby-connector-affiliate-welcome.php';
 
 /**
  * Connector foundation settings and truthful environment detection.
@@ -35,6 +36,8 @@ class YBY_Connector {
 	public function __construct() {
 		add_action( 'init', array( __CLASS__, 'register_completed_delivered_status' ), 10, 0 );
 		add_filter( 'wc_order_statuses', array( __CLASS__, 'add_completed_delivered_status' ), 10, 1 );
+		// The callback itself is default-OFF, including when the site opts in from its child theme.
+		add_filter( 'affwp_email_tags', array( 'YBY_Connector_Affiliate_Welcome', 'tags' ) );
 	}
 
 	/**
@@ -475,15 +478,26 @@ class YBY_Connector {
 		$idempotency_key = self::request_header( $request, 'X-YBY-Idempotency-Key' );
 		if ( '' === $idempotency_key ) { return self::mutation_failure( 'VALIDATION_FAILED', 'X-YBY-Idempotency-Key is required.', 400, false, $request, $request_id, $endpoint, $idempotency_key ); }
 		$body = self::json_params( $request );
+		// The optional one-time welcome secret is never part of Coupon identity, audit or replay storage.
+		$welcome_password = null;
+		if ( 'coupon_provision' === $operation && array_key_exists( 'initial_password', $body ) ) {
+			if ( ! YBY_Connector_Affiliate_Welcome::ready() || ! self::valid_wordpress_password( $body['initial_password'] ) ) return self::mutation_failure( 'VALIDATION_FAILED', 'Welcome email is unavailable or invalid.', 400, false, $request, $request_id, $endpoint, $idempotency_key );
+			$welcome_password = $body['initial_password']; unset( $body['initial_password'] );
+		}
 		$input = 'provision' === $operation ? self::validate_provision_input( $request, $body ) : ( 'status' === $operation ? self::validate_status_input( $request, $body ) : self::validate_coupon_provision_input( $request, $body ) );
 		if ( is_wp_error( $input ) ) { return self::mutation_failure( $input->get_error_code(), $input->get_error_message(), 400, false, $request, $request_id, $endpoint, $idempotency_key ); }
 		if ( ( 'coupon_provision' === $operation && ( ! self::woocommerce_coupon_ready() || ! self::affiliate_provider_ready( 'status' ) ) ) || ( 'coupon_provision' !== $operation && ! self::affiliate_provider_ready( $operation ) ) ) { return self::mutation_failure( 'PROVIDER_UNAVAILABLE', 'The required provider is unavailable.', 503, true, $request, $request_id, $endpoint, $idempotency_key, $input ); }
 		if ( 'status' === $operation && ! array_key_exists( $input['status'], affwp_get_affiliate_statuses() ) ) { return self::mutation_failure( 'VALIDATION_FAILED', 'Affiliate status is not supported.', 400, false, $request, $request_id, $endpoint, $idempotency_key, $input ); }
 		$begin = YBY_Connector_Idempotency::begin( self::request_header( $request, 'X-YBY-Connection-Key' ), $action, $idempotency_key, $input );
 		if ( is_wp_error( $begin ) ) { return self::mutation_failure( $begin->get_error_code(), $begin->get_error_message(), self::error_status( $begin ), ! empty( $begin->get_error_data()['retryable'] ), $request, $request_id, $endpoint, $idempotency_key, $input ); }
-		if ( 'replay' === $begin['status'] ) { self::audit( $request, $request_id, $endpoint, $idempotency_key, $begin['record']['result'], 'OK', true, false ); return self::mutation_success( $begin['record']['result'], $request, $request_id ); }
+		if ( 'replay' === $begin['status'] ) { self::audit( $request, $request_id, $endpoint, $idempotency_key, $begin['record']['result'], 'OK', true, false ); $replay = $begin['record']['result']; if ( 'coupon_provision' === $operation ) $replay = self::complete_native_welcome( $input, $replay, $welcome_password ); return self::mutation_success( $replay, $request, $request_id ); }
 		if ( 'failed' === $begin['status'] ) { $failed_code = $begin['record']['failure_code']; return self::mutation_failure( $failed_code, 'The previous mutation failed.', self::failure_replay_status( $failed_code ), false, $request, $request_id, $endpoint, $idempotency_key, $input ); }
-		$result = 'provision' === $operation ? self::provision_affiliate( $input ) : ( 'status' === $operation ? self::set_affiliate_status( $input ) : self::provision_coupon( $input ) );
+		$defer = 'provision' === $operation && ! empty( $input['defer_welcome'] );
+		$suppress = static function () { return false; };
+		if ( $defer ) add_filter( 'affwp_notify_on_approval', $suppress, PHP_INT_MAX );
+		try { $result = 'provision' === $operation ? self::provision_affiliate( $input ) : ( 'status' === $operation ? self::set_affiliate_status( $input ) : self::provision_coupon( $input ) ); }
+		finally { if ( $defer ) remove_filter( 'affwp_notify_on_approval', $suppress, PHP_INT_MAX ); }
+		if ( $defer && ! is_wp_error( $result ) && ! YBY_Connector_Affiliate_Welcome::enroll( $input, $result ) ) $result = self::provider_failure( 'WELCOME_ENROLLMENT_FAILED', 'New account welcome enrollment could not be verified; review the account, do not recreate.' );
 		if ( is_wp_error( $result ) ) {
 			$retryable = ! empty( $result->get_error_data()['retryable'] );
 			YBY_Connector_Idempotency::fail( $begin['id'], $result->get_error_code(), $retryable );
@@ -491,7 +505,15 @@ class YBY_Connector {
 		}
 		if ( ! YBY_Connector_Idempotency::succeed( $begin['id'], $result ) ) { return self::mutation_failure( 'IDEMPOTENCY_UNAVAILABLE', 'Could not persist mutation result.', 503, true, $request, $request_id, $endpoint, $idempotency_key, $input ); }
 		self::audit( $request, $request_id, $endpoint, $idempotency_key, $result, 'OK', true, false );
+		if ( 'coupon_provision' === $operation ) $result = self::complete_native_welcome( $input, $result, $welcome_password );
 		return self::mutation_success( $result, $request, $request_id );
+	}
+
+	private static function complete_native_welcome( $input, $result, $password ) {
+		try { $status = YBY_Connector_Affiliate_Welcome::complete( $input, $result, $password ); }
+		catch ( Throwable $e ) { $status = 'needs_review'; }
+		if ( null !== $status ) $result['welcome_status'] = $status;
+		return $result;
 	}
 
 	private static function provision_affiliate( $input ) {
@@ -838,6 +860,11 @@ class YBY_Connector {
 	private static function decimal_add( $left, $right ) { $a = explode( '.', self::canonical_decimal( $left ) ); $b = explode( '.', self::canonical_decimal( $right ) ); $scale = max( strlen( $a[1] ?? '' ), strlen( $b[1] ?? '' ) ); $ai = (int) ( $a[0] . str_pad( $a[1] ?? '', $scale, '0' ) ); $bi = (int) ( $b[0] . str_pad( $b[1] ?? '', $scale, '0' ) ); $sum = (string) ( $ai + $bi ); if ( $scale ) { $sum = str_pad( $sum, $scale + 1, '0', STR_PAD_LEFT ); $sum = substr( $sum, 0, -$scale ) . '.' . substr( $sum, -$scale ); } return self::canonical_decimal( $sum ); }
 
 	private static function validate_provision_input( $request, $body ) {
+		$defer = is_array( $body ) && array_key_exists( 'defer_welcome', $body );
+		if ( $defer ) {
+			if ( true !== $body['defer_welcome'] || ! YBY_Connector_Affiliate_Welcome::ready() ) return self::validation_error();
+			unset( $body['defer_welcome'] );
+		}
 		$required = array( 'erp_kol_id', 'email', 'display_name', 'preferred_username', 'requested_affiliate_status', 'payment_email' );
 		$strict = array_merge( $required, array( 'password', 'existing_account_policy' ) );
 		$strict_with_slug = array_merge( $strict, array( 'affiliate_url_slug' ) );
@@ -857,6 +884,7 @@ class YBY_Connector {
 		if ( '' === $display || strlen( $display ) > 120 || '' === $username ) { return self::validation_error(); }
 		$input = array( 'connection_key' => self::request_header( $request, 'X-YBY-Connection-Key' ), 'erp_kol_id' => (int) $kol, 'email' => strtolower( $email ), 'display_name' => $display, 'preferred_username' => $username, 'requested_affiliate_status' => 'active', 'payment_email' => strtolower( $payment ) );
 		if ( $is_strict ) { $input['strict_create'] = true; $input['password'] = $body['password']; $input['existing_account_policy'] = 'reject'; }
+		if ( $defer ) { if ( ! $is_strict ) return self::validation_error(); $input['defer_welcome'] = true; }
 		if ( array_key_exists( 'affiliate_url_slug', $body ) ) {
 			$slug = $body['affiliate_url_slug'];
 			if ( ! $is_strict || ! is_string( $slug ) || '' === $slug ) {
